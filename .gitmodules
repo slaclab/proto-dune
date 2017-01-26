@@ -1,1 +1,7 @@
 
+[submodule "firmware/submodules/rce-gen3-fw-lib"]
+	path = firmware/submodules/rce-gen3-fw-lib
+	url = https://github.com/slaclab/rce-gen3-fw-lib
+[submodule "firmware/submodules/ruckus"]
+	path = firmware/submodules/ruckus
+	url = https://github.com/slaclab/ruckus
