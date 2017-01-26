@@ -12,4 +12,10 @@ $ ln -s /path/to/build build
 # Building the DTM firmware
 
 #### Go to the DTM firmware target directory
-$ cd proto-dune/firmware/
+$ cd proto-dune/firmware/targets/ProtoDuneDtm
+
+#### Build the firmware in batch mode
+$ make
+
+#### Optional: Open up Vivado in GUI and see the batch mode results
+$ make gui
