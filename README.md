@@ -9,6 +9,12 @@ $ cd proto-dune/firmware/
 #### Make a symbolic link to the output build directory (typically a local hardware, not network drive)
 $ ln -s /path/to/build build
 
+### If on the SLAC AFS network, source this script to setup the Vivado environment and licensing  
+$ source proto-dune/firmware/setup_env_slac.csh
+
+### If on the CERN AFS network, source this script to setup the Vivado environment and licensing  
+TBD
+
 # Building the DTM firmware
 
 #### Go to the DTM firmware target directory
