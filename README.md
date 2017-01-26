@@ -3,11 +3,8 @@
 #### Checkout the GIT reposotiry from github
 $ git clone --progress --recursive -v https://github.com/slaclab/proto-dune
 
-#### Go to the base firmware directory
-$ cd proto-dune/firmware/
-
 #### Make a symbolic link to the output build directory (typically a local hardware, not network drive)
-$ ln -s /path/to/build build
+$ ln -s /path/to/build proto-dune/firmware/build
 
 ### If on the SLAC AFS network, source this script to setup the Vivado environment and licensing  
 $ source proto-dune/firmware/setup_env_slac.csh
