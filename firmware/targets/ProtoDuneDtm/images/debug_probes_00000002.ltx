@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<probeData version="1" minor="2">
+  <probeset name="EDA_PROBESET" active="true">
+    <probe type="ila" busType="net" source="netlist" spec="ILA_V2_RT">
+      <probeOptions Id="DebugProbeParams">
+        <Option Id="CORE_LOCATION" value="1:0"/>
+        <Option Id="HW_ILA" value="u_ila_0"/>
+        <Option Id="PROBE_PORT" value="0"/>
+        <Option Id="PROBE_PORT_BITS" value="0"/>
+        <Option Id="PROBE_PORT_BIT_COUNT" value="1"/>
+      </probeOptions>
+      <nets>
+        <net name="U_App/config[forceBusy]"/>
+      </nets>
+    </probe>
+    <probe type="ila" busType="net" source="netlist" spec="ILA_V2_RT">
+      <probeOptions Id="DebugProbeParams">
+        <Option Id="CORE_LOCATION" value="1:0"/>
+        <Option Id="HW_ILA" value="u_ila_0"/>
+        <Option Id="PROBE_PORT" value="1"/>
+        <Option Id="PROBE_PORT_BITS" value="0"/>
+        <Option Id="PROBE_PORT_BIT_COUNT" value="1"/>
+      </probeOptions>
+      <nets>
+        <net name="U_App/config[hardRst]"/>
+      </nets>
+    </probe>
+    <probe type="ila" busType="bus" source="netlist" spec="ILA_V2_RT">
+      <probeOptions Id="DebugProbeParams">
+        <Option Id="CORE_LOCATION" value="1:0"/>
+        <Option Id="HW_ILA" value="u_ila_0"/>
+        <Option Id="PROBE_PORT" value="2"/>
+        <Option Id="PROBE_PORT_BITS" value="0"/>
+        <Option Id="PROBE_PORT_BIT_COUNT" value="8"/>
+      </probeOptions>
+      <nets>
+        <net name="U_App/config[busyMask][7]"/>
+        <net name="U_App/config[busyMask][6]"/>
+        <net name="U_App/config[busyMask][5]"/>
+        <net name="U_App/config[busyMask][4]"/>
+        <net name="U_App/config[busyMask][3]"/>
+        <net name="U_App/config[busyMask][2]"/>
+        <net name="U_App/config[busyMask][1]"/>
+        <net name="U_App/config[busyMask][0]"/>
+      </nets>
+    </probe>
+    <probe type="ila" busType="bus" source="netlist" spec="ILA_V2_RT">
+      <probeOptions Id="DebugProbeParams">
+        <Option Id="CORE_LOCATION" value="1:0"/>
+        <Option Id="HW_ILA" value="u_ila_0"/>
+        <Option Id="PROBE_PORT" value="3"/>
+        <Option Id="PROBE_PORT_BITS" value="0"/>
+        <Option Id="PROBE_PORT_BIT_COUNT" value="8"/>
+      </probeOptions>
+      <nets>
+        <net name="U_App/status[busyVec][7]"/>
+        <net name="U_App/status[busyVec][6]"/>
+        <net name="U_App/status[busyVec][5]"/>
+        <net name="U_App/status[busyVec][4]"/>
+        <net name="U_App/status[busyVec][3]"/>
+        <net name="U_App/status[busyVec][2]"/>
+        <net name="U_App/status[busyVec][1]"/>
+        <net name="U_App/status[busyVec][0]"/>
+      </nets>
+    </probe>
+  </probeset>
+</probeData>

@@ -13,15 +13,16 @@ use ieee.std_logic_1164.all;
 
 package Version is
 
-   constant FPGA_VERSION_C : std_logic_vector(31 downto 0) := x"00000001";  -- MAKE_VERSION
+   constant FPGA_VERSION_C : std_logic_vector(31 downto 0) := x"00000002";  -- MAKE_VERSION
 
-   constant BUILD_STAMP_C : string := "ProtoDuneDtm: Vivado v2016.2 (x86_64) Built Mon Oct 31 11:57:09 PDT 2016 by ruckman";
+   constant BUILD_STAMP_C : string := "ProtoDuneDtm: Vivado v2016.2 (x86_64) Built Fri Jan 27 16:43:54 PST 2017 by ruckman";
 
 end Version;
 
 -------------------------------------------------------------------------------
 -- Revision History:
 --
+-- 01/27/2016 (0x00000002): Rebuilding with example ILA core
 -- 10/28/2016 (0x00000001): Initial version
 --
 -------------------------------------------------------------------------------
