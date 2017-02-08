@@ -5,7 +5,7 @@
 -- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-01-17
+-- Last update: 2017-01-31
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -67,8 +67,11 @@ end ProtoDuneDpmGtx7;
 
 architecture mapping of ProtoDuneDpmGtx7 is
 
+   constant DURATION_100MS_C : positive := 25000000;
+   constant DURATION_1S_C    : positive := 250000000;
+
    signal loopback      : slv(2 downto 0)  := (others => '0');
-   signal cnt           : slv(23 downto 0) := (others => '0');
+   signal cnt           : slv(31 downto 0) := (others => '0');
    signal data          : slv(15 downto 0) := (others => '0');
    signal dataK         : slv(1 downto 0)  := (others => '0');
    signal decErr        : slv(1 downto 0)  := (others => '0');
@@ -79,6 +82,9 @@ architecture mapping of ProtoDuneDpmGtx7 is
    signal rxRst         : sl               := '0';
    signal txPolarityFix : sl               := '1';
    signal rxBuff        : slv(2 downto 0)  := (others => '0');
+   signal wdtRstOneShot : sl               := '0';
+   signal wdtReset      : sl               := '0';
+   signal wdtRst        : sl               := '0';
 
 begin
 
@@ -94,14 +100,14 @@ begin
    process(clk)
    begin
       if rising_edge(clk) then
-         rxRst <= (not(dataValid) and linkUp) or rst or gtRst after TPD_G;
+         rxRst <= rst or gtRst or wdtRst after TPD_G;
          if (rst = '1') or (rxRstDone = '0') or (dataValid = '0') or (rxBuff(2) = '1') then
             cnt    <= (others => '0') after TPD_G;
             linkUp <= '0'             after TPD_G;
          else
-            if (SIMULATION_G = false) and (cnt = x"FFFFFF") then
+            if (SIMULATION_G = false) and (cnt = DURATION_100MS_C) then
                linkUp <= '1' after TPD_G;
-            elsif (SIMULATION_G = true) and (cnt = x"0000FF") then
+            elsif (SIMULATION_G = true) and (cnt = 255) then
                linkUp <= '1' after TPD_G;
             else
                cnt <= cnt + 1 after TPD_G;
@@ -110,6 +116,31 @@ begin
       end if;
    end process;
 
+   -------------------------
+   -- Watchdog State Machine
+   -------------------------
+   wdtReset <= (not(dataValid) and linkUp) or wdtRstOneShot;
+   U_PwrUpRst : entity work.PwrUpRst
+      generic map(
+         TPD_G      => TPD_G,
+         DURATION_G => DURATION_100MS_C)
+      port map (
+         arst   => wdtReset,
+         clk    => clk,
+         rstOut => wdtRst);
+
+   U_WatchDogRst : entity work.WatchDogRst
+      generic map(
+         TPD_G      => TPD_G,
+         DURATION_G => DURATION_1S_C)
+      port map (
+         clk    => clk,
+         monIn  => linkUp,
+         rstOut => wdtRstOneShot);
+
+   -------------------------
+   -- Watchdog State Machine
+   -------------------------   
    Gtx7Core_Inst : entity work.Gtx7Core
       generic map (
          -- SIM Generics
