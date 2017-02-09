@@ -1,0 +1,13 @@
+
+[Unit]
+Description=AxiStreamDma
+After=systemd-networkd-wait-online.service
+Requires=systemd-networkd-wait-online.service
+
+[Service]
+Type=forking
+ExecStart=/bin/axistreamdma.sh
+ExecStop=/usr/bin/killall /usr/bin/rceServer
+
+[Install]
+WantedBy=network-online.target

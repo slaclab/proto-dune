@@ -1,0 +1,32 @@
+<system>
+   <config>
+      <DebugCmdTime>True</DebugCmdTime>
+      <DebugEnable>True</DebugEnable>
+      <DataDpm>
+         <DataPath>
+            <EmuFebSelect>True</EmuFebSelect>
+            <EmuClkSel>True</EmuClkSel>
+         </DataPath>
+         <DataBuffer>
+            <BlowOffDmaData>False</BlowOffDmaData>
+            <BlowOffTxEth>True</BlowOffTxEth>
+         </DataBuffer>
+      </DataDpm>
+         <DataDpm index="0">
+            <DataBuffer index="0">
+              <DaqHost>192.168.1.1</DaqHost>
+              <DaqPort>8991</DaqPort>
+            </DataBuffer>
+         <DataDpm index="1">
+            <DataBuffer index="0">
+              <DaqHost>192.168.1.1</DaqHost>
+              <DaqPort>8992</DaqPort>
+            </DataBuffer>
+         <DataDpm index="2">
+            <DataBuffer index="0">
+              <DaqHost>192.168.1.1</DaqHost>
+              <DaqPort>8993</DaqPort>
+            </DataBuffer>
+      </DataDpm>
+   </config>
+</system>
