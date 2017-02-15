@@ -1,6 +1,6 @@
 # Setup 
 
-#### Checkout the GIT reposotiry from github
+#### Checkout the GIT reposotiry from github 
 $ git clone --progress --recursive -v https://github.com/slaclab/proto-dune
 
 #### Make a symbolic link to the output build directory (typically a local hardware, not network drive)
