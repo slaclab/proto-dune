@@ -1,13 +1,13 @@
 
 [submodule "firmware/submodules/rce-gen3-fw-lib"]
 	path = firmware/submodules/rce-gen3-fw-lib
-	url = https://github.com/slaclab/rce-gen3-fw-lib
+	url = git@github.com:/slaclab/rce-gen3-fw-lib
 [submodule "firmware/submodules/ruckus"]
 	path = firmware/submodules/ruckus
-	url = https://github.com/slaclab/ruckus
+	url = git@github.com:/slaclab/ruckus
 [submodule "firmware/submodules/surf"]
 	path = firmware/submodules/surf
-	url = https://github.com/slaclab/surf
+	url = git@github.com:/slaclab/surf
 [submodule "software/aes-stream-drivers"]
 	path = software/aes-stream-drivers
 	url = git@github.com:/slaclab/aes-stream-drivers
