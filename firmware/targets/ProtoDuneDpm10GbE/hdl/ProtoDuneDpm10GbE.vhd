@@ -34,7 +34,8 @@ use unisim.vcomponents.all;
 
 entity ProtoDuneDpm10GbE is
    generic (
-      TPD_G : time := 1 ns);
+      TPD_G        : time := 1 ns;
+      BUILD_INFO_G : BuildInfoType);
    port (
       -- Debug
       led         : out   slv(1 downto 0);
@@ -112,6 +113,7 @@ begin
    U_DpmCore : entity work.DpmCore
       generic map (
          TPD_G              => TPD_G,
+         BUILD_INFO_G       => BUILD_INFO_G,
          RCE_DMA_MODE_G     => RCE_DMA_AXIS_C,
          ETH_10G_EN_G       => true,
          UDP_SERVER_EN_G    => true,

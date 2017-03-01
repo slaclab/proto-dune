@@ -9,5 +9,4 @@ loadRuckusTcl $::env(PROJ_DIR)/../../common/VivadoHLS/DuneDataCompression
 
 # Load local Source Code and constraints
 loadSource -dir       "$::DIR_PATH/hdl/"
-loadSource -path      "$::DIR_PATH/Version.vhd"
 loadConstraints -dir  "$::DIR_PATH/hdl/"
