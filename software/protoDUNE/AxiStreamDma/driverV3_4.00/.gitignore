@@ -1,0 +1,21 @@
+# -----------------------------------------------------------------------
+# Ignore intermediary build products left in this directory
+#
+# NOTE
+# ---- 
+# The final .ko is commited, but generally this module should renamed to
+# indicate the kernel version it is targetting. 
+# -----------------------------------------------------------------------
+
+*.o
+*.mod.c
+*.mod.o
+*.ko-*xilinx*
+
+.*.ko.cmd
+.*.mod.o.cmd
+.*.o.cmd
+
+.tmp_versions
+Module.symvers
+modules.order

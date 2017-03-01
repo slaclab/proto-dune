@@ -792,6 +792,10 @@ int AxiStreamDmaProcRead(struct file *file, char __user *buf, size_t size, loff_
 
    len += sprintf(buf+len,"\n");
 
+   for (x=0; x < dev->rxCount; x++) {
+      len += sprintf(buf+len,"Buffer idx %i, kaddr=0x%x, paddr=0x%x\n",x,dev->rxBuffers[x]->buffAddr,dev->rxBuffers[x]->buffHandle);
+   }
+
    // Emulate the legacy "*eof=1;" functionality 
    if(!sent){
       sent = true;
@@ -844,8 +848,14 @@ static int AxiStreamDmaProbe(struct platform_device *pdev) {
    else dev->idx = 3;
 
    // Get and map register space
-   if (check_mem_region(dev->baseAddr,dev->baseSize) ) return(-1);
-   request_mem_region(dev->baseAddr,dev->baseSize,MODULE_NAME);
+   // ---------------------------------------------------------------
+   // -- 2017.02.14 -- jjr
+   // --------------------
+   // Commented out the following line per Sergio's instructions
+   // This causes compilation warnings which causes the build to fail
+   // ---------------------------------------------------------------
+   //// !!!! if (check_mem_region(dev->baseAddr,dev->baseSize) ) return(-1);
+   if ( request_mem_region(dev->baseAddr,dev->baseSize,MODULE_NAME) == NULL ) return(-1);
    dev->virtAddr = (char *) ioremap_nocache(dev->baseAddr,dev->baseSize);
    setRegisterPointers(dev);
 
@@ -976,6 +986,18 @@ static int AxiStreamDmaProbe(struct platform_device *pdev) {
    if (request_irq( dev->irq, AxiStreamDmaIrq, 0, MODULE_NAME, (void*)dev) < 0 ) {
       printk(KERN_WARNING"<%s> Init: Unable to allocate IRQ.",dev->devName);
       return (-1);
+   }
+
+
+
+   /* 
+    | 2017.02.17 -- jjr
+    | -----------------
+    | The following was added per Sergio's request. This deals
+    | with a coherency problem in the ACP
+   */
+   if(dev->rxAcp || of_dma_is_coherent(pdev->dev.of_node)) {
+       set_dma_ops(&pdev->dev,&arm_coherent_dma_ops);
    }
 
    // Setup /proc
