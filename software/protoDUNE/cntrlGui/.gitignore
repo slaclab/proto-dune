@@ -1,0 +1,5 @@
+# ignore build by-products
+
+moc_*.cpp
+*.o
+Makefile
