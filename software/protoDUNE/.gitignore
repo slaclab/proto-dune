@@ -1,0 +1,4 @@
+# Weed out make products
+
+bin/
+build/
