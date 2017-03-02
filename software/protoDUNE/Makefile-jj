@@ -1,0 +1,223 @@
+# -*-Mode: makefile;-*-
+
+
+MAKEUTILS_DIR := $(realpath $(dir $(lastword $(MAKEFILE_LIST)))/makeutils)
+include $(MAKEUTILS_DIR)/prologue.mk
+
+
+# =============================================================
+# PRJNAME
+# This strictly a descriptive string used for display purposes.
+# It serves only to make the output descriptive.
+# -------------------------------------------------------------
+PRJNAME     := protoDUNE
+# =============================================================
+
+
+
+# ==================================================================
+# SKIP if not instructed to continue
+# The make is done is a couple of phases, not all of which need the
+# following definitions. It is strictly not necessary; it is really
+# only an efficiency issue.
+# ------------------------------------------------------------------
+ifdef CONTINUE
+# ==================================================================
+
+
+# ===================================
+# SECTION: BUILD phase execution only 
+# ===================================
+
+
+# ----------------------------------------------------------------
+# -- Inherit the defaults, although the user is free to completely
+#    define his own flags and common suffixes.
+#
+#    CMPFLAGS are meant to originate from outside this file, i.e.
+#    coming from either the command line or an environment 
+#    variable.  This gives the a way to add (but notably, not
+#    remove) compile time flags.  A typical usage would be 
+#       CMPFLAGS=-O2
+# ----------------------------------------------------------------
+CPPFLAGS    := $(CPPFLAGS_DEF)
+CFLAGS      := $(CFLAGS_DEF)   $(CMPFLAGS)  
+CXXFLAGS    := $(CXXFLAGS_DEF) $(CMPFLAGS)
+
+CSuf        := c
+HSuf        := h
+CXXSuf      := cpp
+HHSuf       := hh
+
+
+#### --- NEED TO ADD FACILITY TO DRIVE FROM THE COMMAND LINE
+#override CFLAGS :=  -Wall  -Werror -std=c++0x                            \
+#                    $(DEFINES) $(if $(DEBUGFLAGS),$(DEBUGFLAGS),-O2 -g)  \
+#                    $(CCFLAGS) $(CCFLAGSX)
+
+
+# ======================================================================---
+# BEGIN: User define package builds
+# -------------------------------------------------------------------------
+ifeq ($(TARGET), arm_CA9-linux)
+#
+# -- arm_CA9=linux only targets
+#
+# -------------------------------------------------------------------------
+
+
+include $(MAKEUTILS_DIR)/xml_import.mk
+
+
+# -------------------------------------------------------------------------
+#
+# CONSITUTENT: generic.ro
+#
+generic_SRCDIR      := $(PRJROOT)/generic
+generic_OBJDIR      := $(OBJROOT)/generic
+generic_DEPDIR      := $(DEPROOT)/generic
+
+generic_CXXSRCFILES := $(wildcard $(generic_SRCDIR)/*.$(CXXSuf))
+generic_CSRCFILES   := $(wildcard $(generic_SRCDIR)/*.$(CSuf))
+
+generic_CPPFLAGS    := $(XML_CFLAGS)
+generic_INCPATHS    := $(PRJROOT)/generic
+generic_ALIAS       := generic.ro
+
+generic_RO          := $(generic_OBJDIR)/generic.ro
+RELOCATABLES        += generic
+#
+# -------------------------------------------------------------------------
+
+
+
+# -------------------------------------------------------------------------
+#
+# CONSTITUENT: deviceLib.ro
+#
+deviceLib_SRCDIR      := $(PRJROOT)/deviceLib
+deviceLib_DEPDIR      := $(DEPROOT)/deviceLib
+deviceLib_OBJDIR      := $(OBJROOT)/deviceLib
+
+deviceLib_CXXSRCFILES := $(wildcard $(deviceLib_SRCDIR)/*.$(CXXSuf))
+deviceLIB_CSRCFILES   := $(wildcard $(deviceLib_SRCDIR)/*.$(CSuf))
+
+deviceLib_CXXFLAGS    := $(XML_CFLAGS)
+deviceLib_INCPATHS    := $(PRJROOT)/deviceLib          \
+                         $(PRJROOT)/generic
+deviceLib_ALIAS       := deviceLib.ro
+
+deviceLib_RO          := $(deviceLib_OBJDIR)/deviceLib.ro
+RELOCATABLES          += deviceLib
+#
+# -------------------------------------------------------------------------
+
+
+
+# -------------------------------------------------------------------------
+#
+# CONSTITUENT: protoDune.ro
+#
+protoDune_SRCDIR      := $(PRJROOT)/protoDUNE
+protoDune_DEPDIR      := $(DEPROOT)/protoDUNE
+protoDune_OBJDIR      := $(OBJROOT)/protoDUNE
+
+protoDune_CXXSRCFILES := $(wildcard $(protoDune_SRCDIR)/*.$(CXXSuf))
+protoDune_CSRCFILES   := $(wildcard $(protoDune_SRCDIR)/*.$(CSuf))
+
+protoDune.AxiBufFree_CXXFLAGS := -O0
+protoDune.AxiBufGet_CXXFLAGS  := -O0
+protoDune.AxiBufChecker_CXXFLAGS := -O2
+protoDune.DaqBuffer_CXXFLAGS := -O0
+
+protoDune_CXXFLAGS    :=  $(XML_CFLAGS)
+protoDune_INCPATHS    :=  $(protoDune_SRCDIR)       \
+                          $(generic_SRCDIR)         \
+                          $(deviceLib_SRCDIR)
+protoDune_ALIAS       := protoDUNE.ro
+
+protoDune_RO          := $(protoDune_OBJDIR)/protoDUNE.ro
+RELOCATABLES          += protoDune
+#
+# -------------------------------------------------------------------------
+
+
+
+# -------------------------------------------------------------------------
+#
+# CONSTITUENT: rceServer.ro
+#
+rce_SRCDIR              := $(PRJROOT)/rce
+rce_DEPDIR              := $(DEPROOT)/rce
+rce_OBJDIR              := $(OBJROOT)/rce
+
+rce_CXXSRCFILES         := $(wildcard $(rce_SRCDIR)/rceServer.$(CXXSuf))
+rce.DaqBuffer_CXXFLAGS  := -O2
+
+rce_CXXFLAGS            := $(XML_CFLAGS)
+rce_INCPATHS            := $(rce_SRCDIR)          \
+                           $(protoDune_SRCDIR)    \
+                           $(generic_SRCDIR)      \
+                           $(deviceLib_SRCDIR)
+rce_ALIAS               := rceServer.ro rce.ro 
+
+rce_RO                  := $(rce_OBJDIR)/rceServer.ro
+RELOCATABLES            += rce
+#
+# -------------------------------------------------------------------------
+
+
+
+# -------------------------------------------------------------------------
+# 
+# CONSTITUENT: rceServer  (executable)
+#
+# -------------------------------------------------------------------
+rceServer_ROS    := $(rce_RO)           \
+                    $(protoDune_RO)     \
+                    $(generic_RO)       \
+                    $(deviceLib_RO)
+rceServer_LDLIBS := $(XML_LIBS) -lpthread -lrt
+rceServer_ALIAS  := rceServer
+
+rceServer_EXE    := $(BINDIR)/rceServer
+EXECUTABLES      += rceServer
+# -------------------------------------------------------------------
+# -- END arm_CA9-linux only build
+# -------------------------------------------------------------------
+
+
+else
+
+
+# -----------------------------
+# host targets
+# -----------------------------
+tcp_receiver_SRCDIR    := $(PRJROOT)/util
+tcp_receiver_DEPDIR    := $(DEPROOT)/util
+tcp_receiver_OBJDIR    := $(OBJROOT)/util
+
+tcp_receiver_CSRCFILES := $(tcp_receiver_SRCDIR)/tcp_receiver.c
+tcp_receiver_INCPATHS  := $(tcp_receiver_SRCDIR)
+tcp_receiver_ALIAS     := tcp_receiver
+
+tcp_receiver_EXE       := $(BINDIR)/tcp_receiver
+EXECUTABLES            += tcp_receiver
+
+
+# -------
+# GUI
+# -------
+gui_QT := $(PRJROOT)/cntrlGui
+QTS    += gui
+
+
+# -------------------------------------------------------------------
+endif  # -- END x86 targets
+# -------------------------------------------------------------------
+endif  # -- END CONTINUE
+# -------------------------------------------------------------------
+include $(MAKEUTILS_DIR)/epilogue.mk
+
+
+
