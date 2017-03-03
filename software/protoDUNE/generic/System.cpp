@@ -19,6 +19,23 @@
 // Modification history :
 // 04/12/2011: created
 //-----------------------------------------------------------------------------
+
+
+
+/* ---------------------------------------------------------------------- *\
+   
+   HISTORY
+   -------
+  
+   DATE       WHO WHAT
+   ---------- --- ---------------------------------------------------------
+   2017.03.02 jjr With version 5.2 of g++ and std=c0x11, one appears to
+                  no longer be able to pass a stringstream to cout. You
+                  must pass stream.str().
+  
+\* ---------------------------------------------------------------------- */
+
+
 #include <System.h>
 #include <CommLink.h>
 #include <Command.h>
@@ -911,7 +928,7 @@ void System::addRunStart() {
    //xml << "<user>" << getlogin() << "</user>" << endl;
    xml << "</runStart>" << endl;
 
-   std::cout << "addRunStart: " << xml << std::endl;
+   std::cout << "addRunStart: " << xml.str() << std::endl;
    commLink_->addRunStart(xml.str());
 }
 

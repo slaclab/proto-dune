@@ -20,6 +20,23 @@
 // 04/12/2011: created
 //-----------------------------------------------------------------------------
 
+
+
+/* ---------------------------------------------------------------------- *\
+   
+   HISTORY
+   -------
+  
+   DATE       WHO WHAT
+   ---------- --- ---------------------------------------------------------
+   2017.03.02 jjr With version 5.2 of g++ and std=c0x11, one appears to
+                  no longer be able to pass a stringstream to cout. You
+                  must pass stream.str().
+  
+\* ---------------------------------------------------------------------- */
+
+
+
 #include <Device.h>
 #include <System.h>
 #include <Register.h>
@@ -967,7 +984,7 @@ void Device::writeSingle ( string name, uint32_t value ) {
       err.str("");
       err << "Device::writeSingle -> Name: " << name_ << " Index: " << dec << index_;
       err << ", Invalid Register: " << name << endl;
-      if ( debug_ ) cout << err << endl;
+      if ( debug_ ) cout << err.str() << endl;
       throw(err.str());
    }
 
