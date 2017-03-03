@@ -23,6 +23,7 @@
 // 2016/10/13  jjr   Added status variables    
 //-----------------------------------------------------------------------------
 
+#ifdef ARM
 
 #include <DataCompression.h>
 #include <xdunedatacompressioncore_hw.h>
@@ -254,3 +255,5 @@ void DataCompression::writeConfig ( bool force ) {
 void DataCompression::verifyConfig ( ) {
    Device::verifyConfig();
 }
+
+#endif
