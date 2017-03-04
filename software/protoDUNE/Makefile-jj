@@ -77,8 +77,45 @@ generic_SRCDIR      := $(PRJROOT)/generic
 generic_OBJDIR      := $(OBJROOT)/generic
 generic_DEPDIR      := $(DEPROOT)/generic
 
-generic_CXXSRCFILES := $(wildcard $(generic_SRCDIR)/*.$(CXXSuf))
-generic_CSRCFILES   := $(wildcard $(generic_SRCDIR)/*.$(CSuf))
+# -------------------------------------------------------------
+# Removed files
+# -------------
+#                       $(generic_SRCDIR)/PgpCardG3Link.cpp   \
+#                       $(generic_SRCDIR)/PgpLink.cpp         \
+#                       $(generic_SRCDIR)/MultDestPgp.cpp     \
+#                       $(generic_SRCDIR)/MultDestPgpG3.cpp   \
+#                       $(generic_SRCDIR)/MultDestPgpMask.cpp \
+#
+#generic_CXXSRCFILES := $(wildcard $(generic_SRCDIR)/*.$(CXXSuf))
+#generic_CSRCFILES   := $(wildcard $(generic_SRCDIR)/*.$(CSuf))
+#
+# -------------------------------------------------------------
+
+generic_CXXSRCFILES := $(generic_SRCDIR)/CommLink.cpp        \
+                       $(generic_SRCDIR)/CommQueue.cpp       \
+                       $(generic_SRCDIR)/Command.cpp         \
+                       $(generic_SRCDIR)/ControlServer.cpp   \
+                       $(generic_SRCDIR)/Data.cpp            \
+                       $(generic_SRCDIR)/DataRead.cpp        \
+                       $(generic_SRCDIR)/Device.cpp          \
+                       $(generic_SRCDIR)/MappedMemory.cpp    \
+                       $(generic_SRCDIR)/McsRead.cpp         \
+                       $(generic_SRCDIR)/MultDest.cpp        \
+                       $(generic_SRCDIR)/MultDestAxis.cpp    \
+                       $(generic_SRCDIR)/MultDestMapped.cpp  \
+                       $(generic_SRCDIR)/MultDestUdp.cpp     \
+                       $(generic_SRCDIR)/MultDestUdpV2.cpp   \
+                       $(generic_SRCDIR)/MultLink.cpp        \
+                       $(generic_SRCDIR)/PrbsRx.cpp          \
+                       $(generic_SRCDIR)/PrbsTx.cpp          \
+                       $(generic_SRCDIR)/Register.cpp        \
+                       $(generic_SRCDIR)/RegisterLink.cpp    \
+                       $(generic_SRCDIR)/SimLink.cpp         \
+                       $(generic_SRCDIR)/SimLinkByte.cpp     \
+                       $(generic_SRCDIR)/System.cpp          \
+                       $(generic_SRCDIR)/UdpLink.cpp         \
+                       $(generic_SRCDIR)/Variable.cpp        \
+                       $(generic_SRCDIR)/XmlVariables.cpp
 
 generic_CPPFLAGS    := $(XML_CFLAGS)
 generic_INCPATHS    := $(PRJROOT)/generic
@@ -99,8 +136,47 @@ deviceLib_SRCDIR      := $(PRJROOT)/deviceLib
 deviceLib_DEPDIR      := $(DEPROOT)/deviceLib
 deviceLib_OBJDIR      := $(OBJROOT)/deviceLib
 
-deviceLib_CXXSRCFILES := $(wildcard $(deviceLib_SRCDIR)/*.$(CXXSuf))
-deviceLIB_CSRCFILES   := $(wildcard $(deviceLib_SRCDIR)/*.$(CSuf))
+# ----------------------------------------------------------------------
+# Removed files
+# -------------
+#                         $(deviceLib_SRCDIR)/Adc16Dx370.cpp           \
+#                         $(deviceLib_SRCDIR)/AxiAd5780.cpp            \
+#                         $(deviceLib_SRCDIR)/AxiAd9467.cpp            \
+#                         $(deviceLib_SRCDIR)/AxiAds42lb69.cpp         \
+#                         $(deviceLib_SRCDIR)/AxiDac7654.cpp           \
+#                         $(deviceLib_SRCDIR)/AxiLtc2270.cpp           \
+#                         $(deviceLib_SRCDIR)/AxiMicronN25Q.cpp        \
+#                         $(deviceLib_SRCDIR)/AxiMicronP30.cpp         \
+#                         $(deviceLib_SRCDIR)/AxiStreamDmaRing.cpp     \
+#                         $(deviceLib_SRCDIR)/AxiSy56040.cpp           \
+#                         $(deviceLib_SRCDIR)/AxiTdc.cpp               \
+#                         $(deviceLib_SRCDIR)/AxiVersion.cpp           \
+#                         $(deviceLib_SRCDIR)/AxiXadc.cpp              \
+#                         $(deviceLib_SRCDIR)/Dac38J84.cpp             \
+#                         $(deviceLib_SRCDIR)/DaqMuxV2.cpp             \
+#                         $(deviceLib_SRCDIR)/Gthe3Channel.cpp         \
+#                         $(deviceLib_SRCDIR)/JesdRx.cpp               \
+#                         $(deviceLib_SRCDIR)/JesdRxDaq.cpp            \
+#                         $(deviceLib_SRCDIR)/JesdTx.cpp               \
+#                         $(deviceLib_SRCDIR)/JesdTxGen.cpp            \
+#                         $( deviceLib_SRCDIR)/Lmk04828.cpp            \
+#                         $(deviceLib_SRCDIR)/Pgp2bAxi.cpp             \
+#                         $(deviceLib_SRCDIR)/PgpCard.cpp              \
+#                         $(deviceLib_SRCDIR)/PgpCardLane.cpp          \
+#                         $(deviceLib_SRCDIR)/TimingTrigPulse.cpp
+#
+#deviceLib_CXXSRCFILES := $(wildcard $(deviceLib_SRCDIR)/*.$(CXXSuf))
+#deviceLIB_CSRCFILES   := $(wildcard $(deviceLib_SRCDIR)/*.$(CSuf))
+#
+# ---------------------------------------------------------------------
+
+deviceLib_CXXSRCFILES :=                                              \
+                         $(deviceLib_SRCDIR)/RceCommon.cpp            \
+                         $(deviceLib_SRCDIR)/RceDpmTiming.cpp         \
+                         $(deviceLib_SRCDIR)/RceDtmTiming.cpp         \
+                         $(deviceLib_SRCDIR)/RssiReg.cpp              \
+
+
 
 deviceLib_CXXFLAGS    := $(XML_CFLAGS)
 deviceLib_INCPATHS    := $(PRJROOT)/deviceLib          \
@@ -125,10 +201,10 @@ protoDune_OBJDIR      := $(OBJROOT)/protoDUNE
 protoDune_CXXSRCFILES := $(wildcard $(protoDune_SRCDIR)/*.$(CXXSuf))
 protoDune_CSRCFILES   := $(wildcard $(protoDune_SRCDIR)/*.$(CSuf))
 
-protoDune.AxiBufFree_CXXFLAGS := -O0
-protoDune.AxiBufGet_CXXFLAGS  := -O0
+protoDune.AxiBufFree_CXXFLAGS    := -O0
+protoDune.AxiBufGet_CXXFLAGS     := -O0
 protoDune.AxiBufChecker_CXXFLAGS := -O2
-protoDune.DaqBuffer_CXXFLAGS := -O0
+protoDune.DaqBuffer_CXXFLAGS     := -O0
 
 protoDune_CXXFLAGS    :=  $(XML_CFLAGS)
 protoDune_INCPATHS    :=  $(protoDune_SRCDIR)       \
@@ -159,7 +235,7 @@ rce_INCPATHS            := $(rce_SRCDIR)          \
                            $(protoDune_SRCDIR)    \
                            $(generic_SRCDIR)      \
                            $(deviceLib_SRCDIR)
-rce_ALIAS               := rceServer.ro rce.ro 
+rce_ALIAS               := rceServer.ro
 
 rce_RO                  := $(rce_OBJDIR)/rceServer.ro
 RELOCATABLES            += rce
@@ -190,19 +266,36 @@ EXECUTABLES      += rceServer
 else
 
 
-# -----------------------------
+# ------------------------------------------------------------------
 # host targets
-# -----------------------------
-tcp_receiver_SRCDIR    := $(PRJROOT)/util
-tcp_receiver_DEPDIR    := $(DEPROOT)/util
-tcp_receiver_OBJDIR    := $(OBJROOT)/util
+# -----------------------------------------------------------------
 
-tcp_receiver_CSRCFILES := $(tcp_receiver_SRCDIR)/tcp_receiver.c
-tcp_receiver_INCPATHS  := $(tcp_receiver_SRCDIR)
-tcp_receiver_ALIAS     := tcp_receiver
+tcp_receiver_SRCDIR     := $(PRJROOT)/util
+tcp_receiver_DEPDIR     := $(DEPROOT)/util
+tcp_receiver_OBJDIR     := $(OBJROOT)/util
 
-tcp_receiver_EXE       := $(BINDIR)/tcp_receiver
-EXECUTABLES            += tcp_receiver
+tcp_receiver_CSRCFILES  := $(tcp_receiver_SRCDIR)/tcp_receiver.c
+tcp_receiver_INCPATHS   := $(tcp_receiver_SRCDIR)
+tcp_receiver_ALIAS      := tcp_receiver
+
+tcp_receiver_EXE        := $(BINDIR)/tcp_receiver
+EXECUTABLES             += tcp_receiver
+
+# ------------------------------------------------------------------
+
+readFromRCE_SRCDIR      := $(PRJROOT)/util
+readFromRCE_DEPDIR      := $(DEPROOT)/util
+readFromRCE_OBJDIR      := $(OBJROOT)/util
+
+readFromRCE_CXXSRCFILES := $(readFromRCE_SRCDIR)/readFromRCE.cpp
+readFromRCE_INCPATHS    := $(readFromRCE_SRCDIR)
+readFromRCE_ALIAS       := readFromRCE
+
+readFromRCE_EXE         := $(BINDIR)/readFromRCE
+EXECUTABLES             += readFromRCE
+
+# ------------------------------------------------------------------
+
 
 
 # -------
@@ -211,6 +304,15 @@ EXECUTABLES            += tcp_receiver
 gui_QT := $(PRJROOT)/cntrlGui
 QTS    += gui
 
+
+# ------
+# PYTHON
+# ------
+ifneq ($(PYTHONPATH),)
+  python_PYTHON := $(PRJROOT)/python
+  python_ALIAS  := python
+  PYTHONS       += python
+endif
 
 # -------------------------------------------------------------------
 endif  # -- END x86 targets

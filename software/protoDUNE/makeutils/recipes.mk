@@ -316,9 +316,17 @@ rofile  = $(subst $(BLDROOT)/,"",$(1))
 # ----------------------------------------------------------------------
 ifndef BUILD
 
+
+# --------------------------------------------------------------------------
+# For ALIASes that also name a directory, must declare them as phony targets
+# other make will base it's up-to-date decision on the directories date. 
+# Since there are no dependencies, nothing will happen
+# --------------------------------------------------------------------------
 .PHONY: all clean help
+.PHONY: $(foreach c,$(RELOCATABLES) $(EXECUTABLES) $(QTS) $(PYTHONS),$($c_ALIAS))
 
 .DEFAULT_GOAL := all
+
 
 space  := 
 space  +=
@@ -630,6 +638,11 @@ define LINKRO_template
 ifdef $1_ALIAS
    .PHONY: $($1_ALIAS)
    $($1_ALIAS): $($1_RO)
+
+   .PHONY: $($1_ALIAS)_clean clean_$($1_ALIAS)
+$($1_ALIAS)_clean clean_$($1_ALIAS):
+	@echo "    Cleaning................... $1"
+	@rm -f  $($1_RO) $($1_CXXOBJFILES) $($1_CXXDEPFILES) $($1_COBJFILES) $($1_CDEPFILES)
 endif
 
 # -- Create relocatable
@@ -660,6 +673,19 @@ define LINKEXE_template
 ifdef $1_ALIAS
    .PHONY: $($1_ALIAS)
    $($1_ALIAS): $($1_EXE)
+
+
+   # --------------------------------------------------------------
+   # Note: The decision was made not to clean the ROS and SOS files
+   #       on the theory that they are a higher level constituent
+   #       and, if they need to be cleaned, it is a user option
+   # --------------------------------------------------------------
+   .PHONY: $($1_ALIAS)_clean clean_$($1_ALIAS)
+
+   $($1_ALIAS)_clean clean_$($1_ALIAS):
+	@echo "    Cleaning................... $1"
+	@rm -f  $($1_EXE) $($1_CXXOBJFILES) $($1_CXXDEPFILES) \
+                          $($1_COBJFILES)   $($1_CDEPFILES)
 endif
 
 # -- Create exe
@@ -686,6 +712,21 @@ $1 :
 	@echo Building gui................... $($1_QT)
 	@cd $($1_QT); qmake
 	@cd $($1_QT); make
+endef
+# -----------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------
+#
+# PYTHON
+#
+# -----------------------------------------------------------------
+define PYTHON_template
+.PHONY: $1
+$1 :
+	@echo Building python ............... $($1_PYTHON)
+	@cd $($1_PYTHON); make
 endef
 # -----------------------------------------------------------------
 
@@ -799,10 +840,44 @@ endef
 #
 # -----------------------------------------------------------------
 define clean_qt
-.PHONY: $1_clean
-$1_clean:
+.PHONY: $1_clean clean_$1
+$1_clean clean_$1:
 	@cd $($1_QT); qmake; make clean distclean
 endef
+# -----------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------
+#
+# build_python
+# ------------
+# Rule to build a PYTHON project
+#
+# PARAMETER:
+#        $1: The constituent stem
+#
+# -----------------------------------------------------------------
+define build_python
+$(eval $(call PYTHON_template,$1)) 
+endef
+# -----------------------------------------------------------------
+
+# -----------------------------------------------------------------
+#
+# clean_python
+# ------------
+# Rule to clean a QT project
+#
+# -----------------------------------------------------------------
+define clean_python
+.PHONY: $1_clean clean_$1
+$1_clean clean_$1:
+	make -C $($1_PYTHON) clean
+endef
+# -----------------------------------------------------------------
+
+
 #
 # END: Template rules and other rules
 #==================================================================
@@ -815,10 +890,15 @@ endef
 ALL_ROS         := $(foreach r,$(RELOCATABLES),$($r_RO))
 ALL_EXES        := $(foreach x,$(EXECUTABLES),$($x_EXE))
 ALL_QTS         := $(foreach q,$(QTS),$q)
+ALL_PYTHONS     := $(foreach p,$(PYTHONS),$p)
 ALL_TARGETS     :=  $(ALL_ROS)                  \
                     $(ALL_EXES)                 \
-                    $(ALL_QTS)
+                    $(ALL_QTS)                  \
+                    $(ALL_PYTHONS)
 ALL_QT_CLEAN    := $(foreach q,$(ALL_QTS),$q_clean)
+ALL_PYTHON_CLEAN:= $(foreach p,$(ALL_PYTHONS),$p_clean)
+
+
 
 # -----------------------------------------------
 # Create the rules to build the top level targets
@@ -827,10 +907,11 @@ $(eval $(foreach r,$(RELOCATABLES),$(call build_ro,$r)))
 $(eval $(foreach x,$(EXECUTABLES),$(call build_exe,$x)))
 $(eval $(foreach q,$(QTS),$(call build_qt,$q)))
 $(eval $(foreach q,$(ALL_QTS),$(call clean_qt,$q)))
-
+$(eval $(foreach p,$(PYTHONS),$(call build_python,$p)))
+$(eval $(foreach q,$(ALL_PYTHONS),$(call clean_python,$q)))
 
 .PHONY: server_clean
-server_clean: $(ALL_QT_CLEAN)
+server_clean: $(ALL_QT_CLEAN) $(ALL_PYTHON_CLEAN)
 
 
 # --------------------------------------------------------------
@@ -931,11 +1012,6 @@ $(BINDIR):
 $(LIBDIR):
 	@echo  "    Create library directory .. $@"
 	$(make_directory)
-
-
-rceServer: $(RCESERVER)
-
-#LbneDpmZeroSuppressionTest : $(PROTODUNEDPMZEROSUPPRESSIONTEST)
 
 
 

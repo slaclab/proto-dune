@@ -10,6 +10,7 @@ ifeq ($(MACHINE), armv7l)
    $(info Compiling for RCE)
    DEF      := -DARM
    CFLAGS   := -g $(DEF_CFLAGS)
+   CXXFLAGS := -std=c++0x
    LFLAGS   := $(DEF_LFLAGS)
    EXT_TARS := 
    CLN      := 
@@ -20,6 +21,7 @@ else
    $(info Compiling for Server) 
    DEF      :=
    CFLAGS   := $(DEF_CFLAGS) -fpermissive
+   CXXFLAGS := -std=c++0x
    LFLAGS   := $(DEF_LFLAGS) 
    EXT_TARS := gui 
    CLN      := server_clean
@@ -66,26 +68,32 @@ clean: $(CLN)
 	rm -f $(UTL_BIN)
 	cd python; make clean
 
+
 # Compile Common Sources
 $(OBJ)/%.o: $(GEN_DIR)/%.cpp $(GEN_DIR)/%.h
-	$(CC) -c $(CFLAGS) $(DEF) -o $@ $<
+	$(CC) -c $(CXXFLAGS) $(CFLAGS) $(DEF) -o $@ $<
 
 # Compile Common Sources
 $(OBJ)/%.o: $(DEV_DIR)/%.cpp $(DEV_DIR)/%.h
-	$(CC) -c $(CFLAGS) $(DEF) -o $@ $<
+	$(CC) -c $(CXXFLAGS) $(CFLAGS) $(DEF) -o $@ $<
 
 # Compile Tracker Sources
 $(OBJ)/%.o: $(LOC_DIR)/%.cpp $(LOC_DIR)/%.h
-	$(CC) -c $(CFLAGS) $(DEF) -o $@ $<
+	$(CC) -c $(CXXFLAGS) $(CFLAGS) $(DEF) -o $@ $<
 
 # Comile utilities
+ifeq ($(MACHINE), armv7l)
 $(BIN)/%: $(UTL_DIR)/%.cpp $(GEN_OBJ) $(LOC_OBJ) $(DEV_OBJ)
 	$(CC) $(CFLAGS) $(DEF) $(OBJ)/* -o $@ $< $(LFLAGS) 
+else
+$(BIN)/%: $(UTL_DIR)/%.cpp
+	$(CC) $(CFLAGS) $(DEF)  -o $@ $< $(LFLAGS) 
 
 # Compile gui
 gui:
 	cd cntrlGui; qmake
 	cd cntrlGui; make
+endif
 
 # python libs
 pylibs:
