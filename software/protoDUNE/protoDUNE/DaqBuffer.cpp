@@ -24,12 +24,17 @@
 // ----------------------------------------------------------------------
 // -- Must ensure the the print macros are defined
 // ----------------------------------------------------------------------
-#define   STDC_FORMAT_MACROS
+#define   __STDC_FORMAT_MACROS
 
  
 #include "DaqBuffer.h"
 #include "FrameBuffer.h"
 #include "AxiStreamDma.h"
+#include "AxiBufChecker.h"
+
+typedef uint32_t __s32;
+typedef uint32_t __u32;
+
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -77,6 +82,10 @@ DaqBuffer::~DaqBuffer () {
    this->close();
 }
 
+
+
+
+
 // Method to reset configurations to default values
 void DaqBuffer::hardReset () {
    _config._runMode         = IDLE;
@@ -88,9 +97,8 @@ void DaqBuffer::hardReset () {
 
 // Open a dma interface and start threads
 bool DaqBuffer::open ( string devPath ) {
-   struct sched_param rxParam;
    struct sched_param txParam;
-   struct sched_param workParam;
+
 
 
    puts ("-------------------------\n"
@@ -99,22 +107,27 @@ bool DaqBuffer::open ( string devPath ) {
 
    this->close();
 
+
    // Open device
 #ifndef RTEMS // FIX
    if ( (_fd = ::open(devPath.c_str(),O_RDWR|O_NONBLOCK)) < 0 ) {
-      fprintf(stderr,"DaqBuffer::open -> Error opening device\n");
+      fprintf(stderr,"DaqBuffer::open -> Erroro pening device\n");
       return(false);
    }
 #else
    _fd = -1;
 #endif
 
+#if 1
    // Get DMA buffers
    if ( (_sampleData = axisMapUser(_fd,&_bCount,&_bSize)) == NULL ) {
       fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
       this->close();
       return(false);
    }
+#endif
+
+
 
    // Create queues
    _workQueue    = new CommQueue(RxFrameCount+5,true);
@@ -122,6 +135,7 @@ bool DaqBuffer::open ( string devPath ) {
    _rxQueue      = new CommQueue(RxFrameCount+5,false);
    _txReqQueue   = new CommQueue(TxFrameCount+5,true);
    _txAckQueue   = new CommQueue(TxFrameCount+5,true);
+
 
    // Create and populate the RX Queue Entries
    FrameBuffer *frames = new FrameBuffer[RxFrameCount];
@@ -135,6 +149,7 @@ bool DaqBuffer::open ( string devPath ) {
       _rxQueue->push (&frames[x]);
    }
 
+
    // Create RX thread
    _rxThreadEn = true;
    if ( pthread_create(&_rxThread,NULL,rxRunRaw,(void *)this) ) {
@@ -144,13 +159,38 @@ bool DaqBuffer::open ( string devPath ) {
       return(false);
    }
 
+
 #ifdef ARM
    else pthread_setname_np(_rxThread,"buffRxThread");
 #endif
+
+
+
    
    // Set priority
+#if 1
+   struct sched_param rxParam;
+   int policy;
+   struct timeval cur;
+   gettimeofday (&cur, NULL);
+   pthread_getschedparam (_rxThread, &policy, &rxParam);
+   fprintf (stderr, "Policy = %d priority = %d time = %lu.%06lu\n", 
+            policy, rxParam.sched_priority, cur.tv_sec, cur.tv_usec);
+
    rxParam.sched_priority = 3;
-   pthread_setschedparam(_rxThread, SCHED_FIFO, &rxParam);
+   policy                 = SCHED_FIFO;
+   pthread_setschedparam(_rxThread, policy, &rxParam);
+
+
+   pthread_getschedparam (_rxThread, &policy, &rxParam);
+   fprintf (stderr, "Policy = %d priority = %d\n", 
+            policy, rxParam.sched_priority);
+
+
+#endif
+
+   return true;
+
 
    // Create Work Thread
    _workThreadEn = true;
@@ -161,13 +201,22 @@ bool DaqBuffer::open ( string devPath ) {
       return(false);
    } 
 
+
 #ifdef ARM
    else pthread_setname_np(_workThread,"buffWorkThread");
 #endif
 
+
+
+
    // Set priority
+#if 0
+   struct sched_param workParam;
    workParam.sched_priority = 2;
    pthread_setschedparam(_workThread, SCHED_FIFO, &workParam);
+#endif
+
+
 
    // Create TX thread
    _txThreadEn = true;
@@ -189,6 +238,7 @@ bool DaqBuffer::open ( string devPath ) {
    // Init
    resetCounters ();
 
+   fprintf (stderr, "Running with %d buffers\n", _bCount);
 
    printf("DaqBuffer::open -> Running with %i buffers of %i bytes\n",_bCount,_bSize);
    return(true);
@@ -319,7 +369,7 @@ static inline uint64_t get_sequence (uint64_t w)
 static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
 {
 #  define N64_PER_FRAME 30
-#  define NBYTES       (((1 + N64_PER_FRAME * 1024) + 1) * sizeof (uint64_t))
+#  define NBYTES (unsigned int)(((1 + N64_PER_FRAME * 1024) + 1) * sizeof (uint64_t))
 
 
    static uint64_t History[2] = { 0, 0 };
@@ -470,6 +520,61 @@ void DaqBuffer::rxRun () {
 
    static uint32_t DumpCounter = 0;
 
+   struct timeval cur;
+   gettimeofday (&cur, NULL);
+   fprintf (stderr, "Rxrun time = %lu.%06lu\n",
+            cur.tv_sec, cur.tv_usec);
+      
+#if 0
+   // Get DMA buffers
+   if ( (_sampleData = axisMapUser(_fd,&_bCount,&_bSize)) == NULL ) {
+      fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
+      this->close();
+      return;
+   }
+#endif
+
+   char *line __attribute__ ((unused));
+
+   line = (char *)malloc (80);
+   size_t  n __attribute__ ((unused));
+   fprintf (stderr, ">");
+   getline (&line, &n, stdin);
+
+
+   // ----------------------------------------------
+   // !!! KLUDGE !!! CHECK READBILITY OF THE BUFFERS
+   // ----------------------------------------------
+   uint16_t bad[_bCount];
+   int nbad = AxiBufChecker::check_buffers (bad, _sampleData, _bCount, _bSize);
+   for (int idx = 0; idx < nbad; idx++) 
+   {
+      fprintf (stderr, "Bad = %3d\n", bad[idx]);
+   }
+   // ----------------------------------------------
+      
+      
+
+   // -------------------------------------------------------
+   // !!! KLUDGE !!!
+   // Get rid of the bad buffers
+   // ------------------------------
+   int nbufs     =    _bCount;
+   AxiBufChecker abc[_bCount];
+   for (int idx = 0; idx < 2; idx++)
+   {
+      int nbad = AxiBufChecker::extreme_vetting (abc 
+                                                 ,_fd,
+                                                 idx, 
+                                                 _sampleData, 
+                                                 nbufs, 
+                                                 _bSize);
+      nbufs -= nbad;
+   }
+
+   fprintf (stderr, "Done\n");
+   // -------------------------------------------------------
+
 
    // Run while enabled
    while (_rxThreadEn) {
@@ -482,10 +587,9 @@ void DaqBuffer::rxRun () {
       select(_fd+1,&fds,NULL, NULL, &timeout); 
 
       // Attempt to read
-      if ((rxSize = axisReadUser(_fd,&index,&firstUser,&lastUser,&dest)) > 0 ) {
-         
-
-         uint32_t print_it = ((DumpCounter & 0xfffff) < 4);
+      if ((rxSize = axisReadUser(_fd,&index,&firstUser,&lastUser,&dest)) > 0 ) 
+      {
+         uint32_t print_it = ((DumpCounter & 0xfffff) < 4) & 0;
          DumpCounter += 1;
          if (print_it)
          {
@@ -617,6 +721,8 @@ void DaqBuffer::workRun () {
    FrameBuffer * txBuffer;
    _txPend      = 0;
 
+
+
    // Run while enabled
    while (_workThreadEn) {
 
@@ -648,6 +754,8 @@ void * DaqBuffer::txRunRaw ( void *p ) {
    return(NULL);
 }
 
+
+
 // Transmit thread
 void DaqBuffer::txRun () {
    struct msghdr       msg;
@@ -671,6 +779,7 @@ void DaqBuffer::txRun () {
    msg_iov[0].iov_base = &header;
    msg_iov[0].iov_len  = sizeof(struct DaqHeader);
 
+
    while ( _txThreadEn ) 
    {
       // Wait for data in the pend buffer
@@ -679,23 +788,28 @@ void DaqBuffer::txRun () {
          continue;
       }
 
-      // Init header
-      uint32_t txSize    = tempBuffer->size ();
-      header.frame_size  = sizeof(struct DaqHeader) + txSize;
-      header.rx_sequence = tempBuffer->rx_sequence ();
-      header.tx_sequence = _txSequence++;
-      header.type_id     = SoftwareVersion & 0xffff;
-      msg.msg_iovlen     = 1;
 
-
-      // Setup buffer pointers if valid payload
-      msg_iov[msg.msg_iovlen].iov_base = tempBuffer->baseAddr();
-      msg_iov[msg.msg_iovlen].iov_len  = txSize;
-      msg.msg_iovlen++;
-
-
+      int disconnect_wait = 10;
       if (_config._blowOffTxEth == 0)
       {
+         int      frame_idx = tempBuffer->index ();
+         uint32_t txSize    = tempBuffer->size  ();
+         void    *ptr       = tempBuffer->baseAddr ();
+
+
+         // Init header
+         header.frame_size  = sizeof(struct DaqHeader) + txSize;
+         header.rx_sequence = tempBuffer->rx_sequence ();
+         header.tx_sequence = _txSequence++;
+         header.type_id     = SoftwareVersion & 0xffff;
+         msg.msg_iovlen     = 1;
+
+
+         // Setup buffer pointers if valid payload
+         msg_iov[msg.msg_iovlen].iov_base = ptr;
+         msg_iov[msg.msg_iovlen].iov_len  = txSize;
+         msg.msg_iovlen++;
+
          ssize_t ret;
          if ( (_txFd < 0)  || 
               (ret = sendmsg(_txFd,&msg,0) != (int32_t)header.frame_size )) 
@@ -704,22 +818,30 @@ void DaqBuffer::txRun () {
             {
                /// Kill the ethernet 
                _config._blowOffTxEth = 1;
-               sleep (2);
-               disableTx ();
+
+               fprintf (stderr,
+                        "Have error, waiting %d seconds to disconnect\n",
+                        disconnect_wait);
+
                fprintf (stderr, 
-                        "sendmsg: %zu %d\n"
+                        "sendmsg: %zu errno: %d\n"
                         "Header; %8.8" PRIx32 " %8.8" PRIx32
                                " %8.8" PRIx32 " %8.8" PRIx32 "\n"
-                        "msg_iovlen = %2d\n"
+                        "msg_iovlen = %2zu\n"
                         "0. iov_base: %p  iov_len: %zu\n"
-                        "1. iov_base: %p  iov_len: %zu\n",
+                        "1. iov_base: %p  iov_len: %zu idx: %d\n",
                         ret, errno,
                         header.frame_size,  header.tx_sequence, 
                         header.rx_sequence, header.type_id,
                         msg.msg_iovlen,
-                        msg_iov[0].iov_base, msg_iov[0].iov_len,
-                        msg_iov[1].iov_base, msg_iov[1].iov_len);
+                        msg_iov[0].iov_base, msg_iov[0].iov_len, 
+                        msg_iov[1].iov_base, msg_iov[1].iov_len, frame_idx);
                _counters._txErrors++;
+
+
+               sleep (disconnect_wait);
+               disableTx ();
+               fputs ("Disconnected", stderr);
             }
          } 
          else
@@ -729,7 +851,6 @@ void DaqBuffer::txRun () {
             _counters._txTotal += header.frame_size;
          }
       }
-
 
       // Return entry
       _txAckQueue->push(tempBuffer);
@@ -877,5 +998,3 @@ void DaqBuffer::setConfig (
 void DaqBuffer::setRunMode ( RunMode mode ) {
    _config._runMode        = mode;
 }
-
-
