@@ -20,13 +20,10 @@
 // 06/18/2014: created
 //-----------------------------------------------------------------------------
 #include <MultLink.h>
-#include <PgpCardMod.h>
-#include <PgpCardWrap.h>
 #include <sstream>
 #include "Register.h"
 #include "Command.h"
 #include "Data.h"
-#include "AxiStreamDma.h"
 #include <fcntl.h>
 #include <iostream>
 #include <iomanip>

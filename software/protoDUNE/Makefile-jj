@@ -85,6 +85,13 @@ generic_DEPDIR      := $(DEPROOT)/generic
 #                       $(generic_SRCDIR)/MultDestPgp.cpp     \
 #                       $(generic_SRCDIR)/MultDestPgpG3.cpp   \
 #                       $(generic_SRCDIR)/MultDestPgpMask.cpp \
+#                       $(generic_SRCDIR)/DataRead.cpp        \
+#                       $(generic_SRCDIR)/McsRead.cpp         \
+#                       $(generic_SRCDIR)/MultDestUdp.cpp     \
+#                       $(generic_SRCDIR)/MultDestUdpV2.cpp   \
+#                       $(generic_SRCDIR)/UdpLink.cpp         \
+#                       $(generic_SRCDIR)/SimLink.cpp         \
+#                       $(generic_SRCDIR)/SimLinkByte.cpp     \
 #
 #generic_CXXSRCFILES := $(wildcard $(generic_SRCDIR)/*.$(CXXSuf))
 #generic_CSRCFILES   := $(wildcard $(generic_SRCDIR)/*.$(CSuf))
@@ -96,24 +103,17 @@ generic_CXXSRCFILES := $(generic_SRCDIR)/CommLink.cpp        \
                        $(generic_SRCDIR)/Command.cpp         \
                        $(generic_SRCDIR)/ControlServer.cpp   \
                        $(generic_SRCDIR)/Data.cpp            \
-                       $(generic_SRCDIR)/DataRead.cpp        \
                        $(generic_SRCDIR)/Device.cpp          \
                        $(generic_SRCDIR)/MappedMemory.cpp    \
-                       $(generic_SRCDIR)/McsRead.cpp         \
                        $(generic_SRCDIR)/MultDest.cpp        \
                        $(generic_SRCDIR)/MultDestAxis.cpp    \
                        $(generic_SRCDIR)/MultDestMapped.cpp  \
-                       $(generic_SRCDIR)/MultDestUdp.cpp     \
-                       $(generic_SRCDIR)/MultDestUdpV2.cpp   \
                        $(generic_SRCDIR)/MultLink.cpp        \
                        $(generic_SRCDIR)/PrbsRx.cpp          \
                        $(generic_SRCDIR)/PrbsTx.cpp          \
                        $(generic_SRCDIR)/Register.cpp        \
                        $(generic_SRCDIR)/RegisterLink.cpp    \
-                       $(generic_SRCDIR)/SimLink.cpp         \
-                       $(generic_SRCDIR)/SimLinkByte.cpp     \
                        $(generic_SRCDIR)/System.cpp          \
-                       $(generic_SRCDIR)/UdpLink.cpp         \
                        $(generic_SRCDIR)/Variable.cpp        \
                        $(generic_SRCDIR)/XmlVariables.cpp
 

@@ -2,7 +2,7 @@
 MACHINE    := $(shell uname -m)
 CC         := g++
 BIN        := $(PWD)/bin
-DEF_CFLAGS := -Wall `xml2-config --cflags` -I$(PWD)/generic -I$(PWD)/deviceLib -I$(PWD)/protoDUNE -I$(PWD)/offline -I$(PWD)/driver 
+DEF_CFLAGS := -Wall `xml2-config --cflags` -I$(PWD)/generic -I$(PWD)/deviceLib -I$(PWD)/protoDUNE -I$(PWD)/offline -I$(PWD)/driver -I$(PWD)/../aes-stream-drivers/include/
 DEF_LFLAGS := `xml2-config --libs` -lpthread -lrt 
 
 # RCE Build

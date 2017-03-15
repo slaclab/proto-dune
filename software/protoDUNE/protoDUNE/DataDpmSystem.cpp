@@ -56,8 +56,8 @@ DataDpmSystem::DataDpmSystem (string defaults, uint32_t idx ) : System("DataDpmS
       0xA3000000,0x1000); // Timing registers
 
    //dest_[0]->setDebug(true);      
-   dest_[1] = new MultDestAxis("/dev/axi_stream_dma_0");  // Future FEB path???
-   dest_[2] = new MultDestAxis("/dev/axi_stream_dma_1");  // DMA'd Local register Interface
+   dest_[1] = new MultDestAxis("/dev/axi_stream_dma_0",0);  // Future FEB path???
+   dest_[2] = new MultDestAxis("/dev/axi_stream_dma_1",0);  // DMA'd Local register Interface
 
 
    link = new MultLink();

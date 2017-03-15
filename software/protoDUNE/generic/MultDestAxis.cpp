@@ -36,15 +36,16 @@
 #include <sstream>
 #include <Register.h>
 #include <Command.h>
-#include <AxiStreamDma.h>
-#include <PgpCardMod.h>
-#include <PgpCardWrap.h>
+//#include <AxisDriver.h>
+#include "../../aes-stream-drivers/include/AxisDriver.h"
+
 #include <stdint.h>
 using namespace std;
 
 //! Constructor
-MultDestAxis::MultDestAxis (string path) : MultDest(512) { 
+MultDestAxis::MultDestAxis (string path, uint32_t dest) : MultDest(512) { 
    path_ = path;
+   dest_ = dest;
 }
 
 //! Deconstructor
@@ -55,6 +56,7 @@ MultDestAxis::~MultDestAxis() {
 //! Open link
 void MultDestAxis::open ( uint32_t idx, uint32_t maxRxTx ) {
    stringstream tmp;
+   uint8_t mask[DMA_MASK_SIZE];
 
    this->close();
 
@@ -63,6 +65,16 @@ void MultDestAxis::open ( uint32_t idx, uint32_t maxRxTx ) {
    if ( fd_ < 0 ) {
       tmp.str("");
       tmp << "MultDestPgp::open -> Could Not Open AXIS path " << path_;
+      throw tmp.str();
+   }
+
+   dmaInitMaskBytes(mask);
+   dmaAddMaskBytes(mask,dest_);
+
+   if  ( dmaSetMaskBytes(fd_,mask) < 0 ) {
+      ::close(fd_);
+      tmp.str("");
+      tmp << "MultDestPgp::open -> Could open dest " << dec << dest_;
       throw tmp.str();
    }
 
@@ -77,7 +89,6 @@ void MultDestAxis::open ( uint32_t idx, uint32_t maxRxTx ) {
 int32_t MultDestAxis::transmit ( MultType type, void *ptr, uint32_t size, uint32_t context, uint32_t config ) {
    uint32_t   firstUser;
    uint32_t   lastUser;
-   uint32_t   axisDest;
    Register * reg;
    Command  * cmd;
    bool       isWrite;
@@ -95,7 +106,6 @@ int32_t MultDestAxis::transmit ( MultType type, void *ptr, uint32_t size, uint32
       case MultTypeRegisterRead  :
          txData   = (uint32_t *)txData_;
          reg      = (Register*)ptr;
-         axisDest = (config >> 8) & 0xFF;
 
          // Setup buffer
          txData[0]  = context;
@@ -120,7 +130,6 @@ int32_t MultDestAxis::transmit ( MultType type, void *ptr, uint32_t size, uint32
       case MultTypeCommand :
          txData   = (uint32_t *)txData_;
          cmd      = (Command*)ptr;
-         axisDest = (config >> 16) & 0xFF;
 
          // Setup buffer
          txData[0]  = context;
@@ -133,7 +142,6 @@ int32_t MultDestAxis::transmit ( MultType type, void *ptr, uint32_t size, uint32
       case MultTypeData :
          txData   = (uint32_t *)ptr;
          txSize   = size;
-         axisDest = (config >> 24) & 0xFF;
          break;
 
       default:
@@ -168,21 +176,24 @@ int32_t MultDestAxis::transmit ( MultType type, void *ptr, uint32_t size, uint32
 
    }
 
-   return(axisWrite(fd_, txData, txSize,firstUser,lastUser,axisDest));
+   return(dmaWrite(fd_, txData, txSize,axisSetFlags(firstUser,lastUser,0),dest_));
 }
 
 // Receive data
 int32_t MultDestAxis::receive ( MultType *type, void **ptr, uint32_t *context) {
    int32_t  ret;
-   uint32_t firstUser;
    uint32_t lastUser;
    uint32_t axisDest;
    uint32_t dataSource;
+   uint32_t flags;
 
    uint32_t *rxData = (uint32_t*)rxData_;
 
    // Attempt receive
-   ret = axisRead(fd_, rxData_, dataSize_,&firstUser,&lastUser,&axisDest);
+   ret = dmaRead(fd_, rxData_, dataSize_, &flags, NULL, NULL);
+
+   lastUser  = axisGetLuser(flags);
+   axisDest  = dest_;
 
    // No data
    if ( ret == 0 ) return(0);

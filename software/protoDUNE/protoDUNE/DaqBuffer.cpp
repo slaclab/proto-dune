@@ -29,7 +29,7 @@
  
 #include "DaqBuffer.h"
 #include "FrameBuffer.h"
-#include "AxiStreamDma.h"
+#include "../../aes-stream-drivers/include/AxisDriver.h"
 #include "AxiBufChecker.h"
 
 typedef uint32_t __s32;
@@ -98,8 +98,7 @@ void DaqBuffer::hardReset () {
 // Open a dma interface and start threads
 bool DaqBuffer::open ( string devPath ) {
    struct sched_param txParam;
-
-
+   uint8_t mask[DMA_MASK_SIZE];
 
    puts ("-------------------------\n"
          "JJ's version of rceServer\n"
@@ -118,9 +117,18 @@ bool DaqBuffer::open ( string devPath ) {
    _fd = -1;
 #endif
 
+   dmaInitMaskBytes(mask);
+   dmaAddMaskBytes(mask,0);
+
+   if  ( dmaSetMaskBytes(_fd,mask) < 0 ) {
+      ::close(_fd);
+      fprintf(stderr,"DaqBuffer::open -> Unable to set mask\n");
+      return(false);
+   }
+
 #if 1
    // Get DMA buffers
-   if ( (_sampleData = axisMapUser(_fd,&_bCount,&_bSize)) == NULL ) {
+   if ( (_sampleData = (uint8_t **)dmaMapDma(_fd,&_bCount,&_bSize)) == NULL ) {
       fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
       this->close();
       return(false);
@@ -271,7 +279,7 @@ void DaqBuffer::close () {
    }
 
    // Unmap user space
-   if ( _sampleData != NULL ) axisUnMapUser(_fd,(uint8_t **)_sampleData);
+   if ( _sampleData != NULL ) dmaUnMapDma(_fd,(void **)_sampleData);
    _sampleData = NULL;
 
    // Close the device
@@ -509,7 +517,7 @@ void DaqBuffer::rxRun () {
    int32_t        rxSize;
    uint32_t       dest;
    uint32_t       lastUser;
-   uint32_t       firstUser;
+   uint32_t       flags;
 
    int32_t       naccept = 0;
    int32_t         nwait = 0;
@@ -587,8 +595,9 @@ void DaqBuffer::rxRun () {
       select(_fd+1,&fds,NULL, NULL, &timeout); 
 
       // Attempt to read
-      if ((rxSize = axisReadUser(_fd,&index,&firstUser,&lastUser,&dest)) > 0 ) 
+      if ((rxSize = dmaReadIndex(_fd,&index,&flags,NULL, &dest)) > 0 )
       {
+         lastUser = axisGetLuser(flags);
          uint32_t print_it = ((DumpCounter & 0xfffff) < 4) & 0;
          DumpCounter += 1;
          if (print_it)
@@ -600,14 +609,14 @@ void DaqBuffer::rxRun () {
          // Check if blowing off the DMA data
          if ( (_config._blowOffDmaData != 0) || (dest > MAX_DEST) ) {
             // Return index value 
-            axisPostUser(_fd,index);         
+            dmaRetIndex(_fd,index);         
             
          //////////////////////////////////////////////////////////////////////
          // Check for a external trigger
          } else if ( dest == 8 ) {
             printf ("qWeird dest = %u\n", dest);
             _counters._triggers++;
-            axisPostUser(_fd,index);
+            dmaRetIndex(_fd,index);
             
          //////////////////////////////////////////////////////////////////////
          // Else this is HLS data (dest < MAX_DEST) 
@@ -634,7 +643,7 @@ void DaqBuffer::rxRun () {
             // Check if there is error
             if( lastUser & TUserEOFE ){
                _counters._rxErrors++;
-               axisPostUser(_fd,index);
+               dmaRetIndex(_fd,index);
 
             // Try to Move the data
             } else {
@@ -680,7 +689,7 @@ void DaqBuffer::rxRun () {
                {
                   // We are saturated, drop this frame
                   _counters._dropCount++;            
-                  axisPostUser(_fd,index);
+                  dmaRetIndex(_fd,index);
                }
             }            
          }
@@ -697,7 +706,7 @@ void DaqBuffer::rxRun () {
             _rxQueue->push(tempBuffer);
 
             // Return the data buffer
-            axisPostUser(_fd,tempBuffer->index());
+            dmaRetIndex(_fd,tempBuffer->index());
 
             _rxPend--;
          } 

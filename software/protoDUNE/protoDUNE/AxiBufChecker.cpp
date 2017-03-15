@@ -46,7 +46,7 @@
 #include <stddef.h>
 #include <unistd.h>
 #include "AxiBufChecker.h"
-#include "AxiStreamDma.h"
+#include "../../aes-stream-drivers/include/AxisDriver.h"
 
 #include <setjmp.h>
 #include <signal.h>
@@ -327,10 +327,6 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
    {
       uint32_t       index;
       int32_t        rxSize;
-      uint32_t       dest          __attribute__ ((unused));
-      uint32_t       lastUser      __attribute__ ((unused));
-      uint32_t       firstUser     __attribute__ ((unused));
-
 
       // ---------------------------------------
       // Grab a buffer and check for readability
@@ -341,7 +337,7 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
       nerrs   =  0;
       while (1)
      {
-         rxSize = axisReadUser (fd, &index, &firstUser, &lastUser, &dest);
+         rxSize = dmaReadIndex(fd, &index, NULL, NULL, NULL);
 
          if (rxSize <= 0)
          {
@@ -424,7 +420,7 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          // -----------------------------------
          // Return the good and skipped buffers
          // -----------------------------------
-         int status = axisPostUser (fd, idx);
+         int status = dmaRetIndex (fd, idx);
          if (status)
          {
             fprintf (stderr, "\naxisPostUser error %d %d\n", status, errno);
