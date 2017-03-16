@@ -1,7 +1,7 @@
 # Setup 
 
 #### Checkout the GIT reposotiry from github 
-$ git clone --progress --recursive -v https://github.com/slaclab/proto-dune
+$ git clone --recursive git@github.com:slaclab/slaclab/proto-dune
 
 #### Make a symbolic link to the output build directory (typically a local hardware, not network drive)
 $ ln -s /path/to/build proto-dune/firmware/build
