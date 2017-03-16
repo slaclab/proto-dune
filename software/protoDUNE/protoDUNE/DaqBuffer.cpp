@@ -29,7 +29,7 @@
  
 #include "DaqBuffer.h"
 #include "FrameBuffer.h"
-#include "../../aes-stream-drivers/include/AxisDriver.h"
+#include <AxisDriver.h>
 #include "AxiBufChecker.h"
 
 typedef uint32_t __s32;

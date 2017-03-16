@@ -36,8 +36,7 @@
 #include <sstream>
 #include <Register.h>
 #include <Command.h>
-//#include <AxisDriver.h>
-#include "../../aes-stream-drivers/include/AxisDriver.h"
+#include <AxisDriver.h>
 
 #include <stdint.h>
 using namespace std;

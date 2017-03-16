@@ -46,7 +46,7 @@
 #include <stddef.h>
 #include <unistd.h>
 #include "AxiBufChecker.h"
-#include "../../aes-stream-drivers/include/AxisDriver.h"
+#include <AxisDriver.h>
 
 #include <setjmp.h>
 #include <signal.h>

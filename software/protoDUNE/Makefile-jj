@@ -68,7 +68,6 @@ ifeq ($(TARGET), arm_CA9-linux)
 
 include $(MAKEUTILS_DIR)/xml_import.mk
 
-
 # -------------------------------------------------------------------------
 #
 # CONSITUTENT: generic.ro
@@ -118,7 +117,7 @@ generic_CXXSRCFILES := $(generic_SRCDIR)/CommLink.cpp        \
                        $(generic_SRCDIR)/XmlVariables.cpp
 
 generic_CPPFLAGS    := $(XML_CFLAGS)
-generic_INCPATHS    := $(PRJROOT)/generic
+generic_INCPATHS    := $(PRJROOT)/generic $(PRJROOT)/../aes-stream-drivers/include/
 generic_ALIAS       := generic.ro
 
 generic_RO          := $(generic_OBJDIR)/generic.ro
@@ -180,7 +179,8 @@ deviceLib_CXXSRCFILES :=                                              \
 
 deviceLib_CXXFLAGS    := $(XML_CFLAGS)
 deviceLib_INCPATHS    := $(PRJROOT)/deviceLib          \
-                         $(PRJROOT)/generic
+                         $(PRJROOT)/generic 
+
 deviceLib_ALIAS       := deviceLib.ro
 
 deviceLib_RO          := $(deviceLib_OBJDIR)/deviceLib.ro
@@ -209,7 +209,8 @@ protoDune.DaqBuffer_CXXFLAGS     := -O0
 protoDune_CXXFLAGS    :=  $(XML_CFLAGS)
 protoDune_INCPATHS    :=  $(protoDune_SRCDIR)       \
                           $(generic_SRCDIR)         \
-                          $(deviceLib_SRCDIR)
+                          $(deviceLib_SRCDIR)       \
+								  $(PRJROOT)/../aes-stream-drivers/include
 protoDune_ALIAS       := protoDUNE.ro
 
 protoDune_RO          := $(protoDune_OBJDIR)/protoDUNE.ro
