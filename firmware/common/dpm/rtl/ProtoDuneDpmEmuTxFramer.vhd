@@ -42,7 +42,8 @@ end ProtoDuneDpmEmuTxFramer;
 
 architecture rtl of ProtoDuneDpmEmuTxFramer is
 
-   constant DLY_C : positive := 3;
+   constant DLY_C     : positive         := 3;
+   constant TS_INCR_C : slv(63 downto 0) := toSlv(500, 64);  -- timestamp's LSB is 1ns 
 
    type RegType is record
       convt      : sl;
@@ -73,9 +74,9 @@ architecture rtl of ProtoDuneDpmEmuTxFramer is
 
    signal crcResult : slv(31 downto 0);
 
-   attribute dont_touch              : string;
-   attribute dont_touch of r         : signal is "TRUE";
-   attribute dont_touch of crcResult : signal is "TRUE";
+   -- attribute dont_touch              : string;
+   -- attribute dont_touch of r         : signal is "TRUE";
+   -- attribute dont_touch of crcResult : signal is "TRUE";
 
 begin
 
@@ -147,11 +148,11 @@ begin
             -- Send the WIB timestamp       
             v.txData(0) := r.timestamp(31 downto 16);
          ----------------------------------------------------------------------
-         when 5 =>
+         when 7 =>
             -- Send the WIB timestamp       
             v.txData(0) := r.timestamp(47 downto 32);
          ----------------------------------------------------------------------
-         when 6 =>
+         when 8 =>
             -- Send the WIB timestamp       
             v.txData(0) := sendCnt & r.timestamp(62 downto 48);
          ----------------------------------------------------------------------       
@@ -216,7 +217,7 @@ begin
             -- Reset the CRC module
             v.crcRst         := '1';
             -- Increment the counters
-            v.febTs          := r.febTs + 500;  -- timestamp's LSB is 1ns 
+            v.timestamp      := r.timestamp + TS_INCR_C;
             v.convertCnt     := r.convertCnt + 1;
          ----------------------------------------------------------------------
          when others =>
