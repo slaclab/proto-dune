@@ -1,13 +1,8 @@
 -------------------------------------------------------------------------------
--- Title      : 
--------------------------------------------------------------------------------
 -- File       : ProtoDuneDpmEmuTxFramer.vhd
--- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2016-11-29
--- Platform   : 
--- Standard   : VHDL'93/02
+-- Last update: 2017-03-16
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -50,30 +45,28 @@ architecture rtl of ProtoDuneDpmEmuTxFramer is
    constant DLY_C : positive := 3;
 
    type RegType is record
-      convt    : sl;
-      txData   : Slv16Array(DLY_C downto 0);
-      txdataK  : Slv2Array(DLY_C downto 0);
-      febTs    : slv(39 downto 0);
-      wibTs    : slv(31 downto 0);
-      seqCnt   : slv(32 downto 0);
-      crcValid : sl;
-      crcRst   : sl;
-      crcData  : slv(15 downto 0);
-      cnt      : natural range 0 to 125;
-      idx      : natural range 0 to 47;
+      convt      : sl;
+      txData     : Slv16Array(DLY_C downto 0);
+      txdataK    : Slv2Array(DLY_C downto 0);
+      timestamp  : slv(63 downto 0);
+      convertCnt : slv(15 downto 0);
+      crcValid   : sl;
+      crcRst     : sl;
+      crcData    : slv(15 downto 0);
+      cnt        : natural range 0 to 125;
+      idx        : natural range 0 to 47;
    end record RegType;
    constant REG_INIT_C : RegType := (
-      convt    => '0',
-      txData   => (others => (K28_2_C & K28_1_C)),
-      txdataK  => (others => "11"),
-      febTs    => (others => '0'),
-      wibTs    => (others => '0'),
-      seqCnt   => (others => '0'),
-      crcValid => '0',
-      crcRst   => '1',
-      crcData  => (others => '0'),
-      cnt      => 1,
-      idx      => 0);
+      convt      => '0',
+      txData     => (others => (K28_2_C & K28_1_C)),
+      txdataK    => (others => "11"),
+      timestamp  => (others => '0'),
+      convertCnt => (others => '0'),
+      crcValid   => '0',
+      crcRst     => '1',
+      crcData    => (others => '0'),
+      cnt        => 1,
+      idx        => 0);
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -83,7 +76,7 @@ architecture rtl of ProtoDuneDpmEmuTxFramer is
    attribute dont_touch              : string;
    attribute dont_touch of r         : signal is "TRUE";
    attribute dont_touch of crcResult : signal is "TRUE";
-   
+
 begin
 
    comb : process (adcData, crcResult, enable, r, rst, sendCnt) is
@@ -112,8 +105,6 @@ begin
          else
             v.cnt := r.cnt + 1;
          end if;
-         -- Increment counter
-         v.seqCnt := r.seqCnt + 1;
       else
          -- Pre-fill the SlvDelay modules
          v.convt := '1';
@@ -132,15 +123,14 @@ begin
                -- Send Start of Frame pattern
                v.txdataK(0)             := "01";
                v.txData(0)(7 downto 0)  := K28_5_C;
-               v.txData(0)(15 downto 8) := r.febTs(23 downto 16);
+               v.txData(0)(15 downto 8) := x"01";
                -- Start the CRC engine
                v.crcValid               := '1';
                v.crcRst                 := '0';
             else
                -- Reset the time stamp
-               v.febTs      := (others => '0');
-               v.wibTs      := (others => '0');
-               v.seqCnt     := (others => '0');
+               v.timestamp  := (others => '0');
+               v.convertCnt := (others => '0');
                -- Send IDLE pattern
                v.txdataK(0) := "11";
                v.txData(0)  := (K28_2_C & K28_1_C);
@@ -149,26 +139,25 @@ begin
                v.crcRst     := '1';
             end if;
          ----------------------------------------------------------------------
-         when 2 =>
-            -- Send the reset of "reset counter"
-            v.txdataK(0) := "00";
-            v.txData(0)  := r.febTs(39 downto 24);
-         ----------------------------------------------------------------------
-         when 3 =>
-            -- Send the convert counter        
-            v.txData(0) := r.febTs(15 downto 0);
-         ----------------------------------------------------------------------
          when 5 =>
             -- Send the WIB timestamp       
-            v.txData(0) := r.wibTs(15 downto 0);
+            v.txData(0) := r.timestamp(15 downto 0);
          ----------------------------------------------------------------------
          when 6 =>
             -- Send the WIB timestamp       
-            v.txData(0) := r.wibTs(31 downto 16);
+            v.txData(0) := r.timestamp(31 downto 16);
+         ----------------------------------------------------------------------
+         when 5 =>
+            -- Send the WIB timestamp       
+            v.txData(0) := r.timestamp(47 downto 32);
+         ----------------------------------------------------------------------
+         when 6 =>
+            -- Send the WIB timestamp       
+            v.txData(0) := sendCnt & r.timestamp(62 downto 48);
          ----------------------------------------------------------------------       
          when 12 =>
             -- Send the convert counter        
-            v.txData(0) := r.febTs(15 downto 0);
+            v.txData(0) := r.convertCnt;
          ----------------------------------------------------------------------
          when 17 to 64 =>
             -- Send the COLDDATA 1
@@ -183,7 +172,7 @@ begin
          ----------------------------------------------------------------------       
          when 68 =>
             -- Send the convert counter        
-            v.txData(0) := r.febTs(15 downto 0);
+            v.txData(0) := r.convertCnt;
          ----------------------------------------------------------------------
          when 73 to 120 =>
             -- Send the COLDDATA 2
@@ -226,12 +215,11 @@ begin
             v.txData(DLY_C)  := crcResult(31 downto 16);
             -- Reset the CRC module
             v.crcRst         := '1';
-            -- Increment the counter
-            v.febTs          := r.febTs + 1;
-            -- Latch the WIB timestamp 
-            v.wibTs          := r.seqCnt(32 downto 1);
+            -- Increment the counters
+            v.febTs          := r.febTs + 500;  -- timestamp's LSB is 1ns 
+            v.convertCnt     := r.convertCnt + 1;
          ----------------------------------------------------------------------
-         when others=>
+         when others =>
             -- Send ZEROS pattern
             v.txdataK(0) := "00";
             v.txData(0)  := x"0000";
@@ -265,7 +253,7 @@ begin
       convt   <= r.convt;
       txdata  <= r.txdata(DLY_C);
       txdataK <= r.txdataK(DLY_C);
-      
+
    end process comb;
 
    seq : process (clk) is
@@ -298,6 +286,6 @@ begin
          init => r.crcRst,
          ce   => r.crcValid,
          d    => r.crcData,
-         crc  => crcResult);           
+         crc  => crcResult);
 
 end rtl;
