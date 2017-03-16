@@ -5,7 +5,7 @@
 -- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-05-02
--- Last update: 2017-01-06
+-- Last update: 2017-03-16
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -56,6 +56,51 @@ architecture mapping of DuneDataCompression is
    -- 2016/10/18 jjr -- Reduced after eliminating the channel-by-channel status
    constant ADDR_WIDTH_C : natural := 7;
 
+   component DuneDataCompressionCore
+      port (
+         s_axi_BUS_A_AWVALID : in  std_logic;
+         s_axi_BUS_A_AWREADY : out std_logic;
+         s_axi_BUS_A_AWADDR  : in  std_logic_vector(6 downto 0);
+         s_axi_BUS_A_WVALID  : in  std_logic;
+         s_axi_BUS_A_WREADY  : out std_logic;
+         s_axi_BUS_A_WDATA   : in  std_logic_vector(31 downto 0);
+         s_axi_BUS_A_WSTRB   : in  std_logic_vector(3 downto 0);
+         s_axi_BUS_A_ARVALID : in  std_logic;
+         s_axi_BUS_A_ARREADY : out std_logic;
+         s_axi_BUS_A_ARADDR  : in  std_logic_vector(6 downto 0);
+         s_axi_BUS_A_RVALID  : out std_logic;
+         s_axi_BUS_A_RREADY  : in  std_logic;
+         s_axi_BUS_A_RDATA   : out std_logic_vector(31 downto 0);
+         s_axi_BUS_A_RRESP   : out std_logic_vector(1 downto 0);
+         s_axi_BUS_A_BVALID  : out std_logic;
+         s_axi_BUS_A_BREADY  : in  std_logic;
+         s_axi_BUS_A_BRESP   : out std_logic_vector(1 downto 0);
+         ap_clk              : in  std_logic;
+         ap_rst_n            : in  std_logic;
+         interrupt           : out std_logic;
+         sAxis_TDATA         : in  std_logic_vector(63 downto 0);
+         sAxis_TKEEP         : in  std_logic_vector(7 downto 0);
+         sAxis_TSTRB         : in  std_logic_vector(7 downto 0);
+         sAxis_TUSER         : in  std_logic_vector(3 downto 0);
+         sAxis_TLAST         : in  std_logic_vector(0 downto 0);
+         sAxis_TID           : in  std_logic_vector(0 downto 0);
+         sAxis_TDEST         : in  std_logic_vector(0 downto 0);
+         mAxis_TDATA         : out std_logic_vector(63 downto 0);
+         mAxis_TKEEP         : out std_logic_vector(7 downto 0);
+         mAxis_TSTRB         : out std_logic_vector(7 downto 0);
+         mAxis_TUSER         : out std_logic_vector(3 downto 0);
+         mAxis_TLAST         : out std_logic_vector(0 downto 0);
+         mAxis_TID           : out std_logic_vector(0 downto 0);
+         mAxis_TDEST         : out std_logic_vector(0 downto 0);
+         moduleIdx_V         : in  std_logic_vector(0 downto 0);
+         sAxis_TVALID        : in  std_logic;
+         sAxis_TREADY        : out std_logic;
+         mAxis_TVALID        : out std_logic;
+         mAxis_TREADY        : in  std_logic
+         );
+   end component;
+
+
    signal axilRstL    : sl;
    signal slaveTUser  : slv(3 downto 0);
    signal masterTUser : slv(3 downto 0);
@@ -74,7 +119,7 @@ begin
    -----------------------------------
    -- Vivado HLS Data Compression Core
    -----------------------------------
-   U_Core : entity work.DuneDataCompressionCore
+   U_Core : DuneDataCompressionCore
       port map (
          s_axi_BUS_A_AWVALID => axilWriteMaster.awvalid,
          s_axi_BUS_A_AWREADY => axilWriteSlave.awready,
