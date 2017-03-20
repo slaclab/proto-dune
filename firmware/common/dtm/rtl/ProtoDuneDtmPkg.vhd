@@ -1,13 +1,9 @@
 -------------------------------------------------------------------------------
--- Title      : 
--------------------------------------------------------------------------------
 -- File       : ProtoDuneDtmPkg.vhd
--- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2016-10-31
--- Platform   : 
--- Standard   : VHDL'93/02
+-- Last update: 2017-03-20
+
 -------------------------------------------------------------------------------
 -- Description:
 -------------------------------------------------------------------------------
@@ -41,13 +37,31 @@ package ProtoDuneDtmPkg is
       emuTimingSel => '0',
       emuClkSel    => '0',
       softRst      => '0',
-      hardRst      => '0');      
+      hardRst      => '0');
+
+   type ProtoDuneDtmTimingType is record
+      stat      : slv(3 downto 0);
+      linkUp    : sl;
+      syncCmd   : slv(3 downto 0);
+      syncValid : sl;
+      timestamp : slv(63 downto 0);
+      eventCnt  : slv(31 downto 0);
+   end record;
+   constant PROTO_DUNE_DTM_TIMING_INIT_C : ProtoDuneDtmTimingType := (
+      stat      => (others => '0'),
+      linkUp    => '0',
+      syncCmd   => (others => '0'),
+      syncValid => '0',
+      timestamp => (others => '0'),
+      eventCnt  => (others => '0'));
 
    type ProtoDuneDtmStatusType is record
+      timing  : ProtoDuneDtmTimingType;
       busyVec : slv(7 downto 0);
       busyOut : sl;
    end record;
    constant PROTO_DUNE_DTM_STATUS_INIT_C : ProtoDuneDtmStatusType := (
+      timing  => PROTO_DUNE_DTM_TIMING_INIT_C,
       busyVec => (others => '0'),
       busyOut => '0');
 

@@ -1,13 +1,8 @@
 -------------------------------------------------------------------------------
--- Title      : 
--------------------------------------------------------------------------------
 -- File       : ProtoDuneDtmCore.vhd
--- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2016-10-31
--- Platform   : 
--- Standard   : VHDL'93/02
+-- Last update: 2017-03-20
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -36,13 +31,8 @@ entity ProtoDuneDtmCore is
       TPD_G            : time             := 1 ns;
       AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
       AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
-      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");      
+      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
-      -- -- RTM High Speed
-      --dtmToRtmHsP : out   sl;
-      --dtmToRtmHsN : out   sl;
-      --rtmToDtmHsP : in    sl;
-      --rtmToDtmHsN : in    sl;  
       -- RTM Low Speed
       dtmToRtmLsP     : inout slv(5 downto 0);
       dtmToRtmLsN     : inout slv(5 downto 0);
@@ -60,7 +50,7 @@ entity ProtoDuneDtmCore is
       axilReadMaster  : in    AxiLiteReadMasterType;
       axilReadSlave   : out   AxiLiteReadSlaveType;
       axilWriteMaster : in    AxiLiteWriteMasterType;
-      axilWriteSlave  : out   AxiLiteWriteSlaveType);   
+      axilWriteSlave  : out   AxiLiteWriteSlaveType);
 end ProtoDuneDtmCore;
 
 architecture rtl of ProtoDuneDtmCore is
@@ -79,95 +69,52 @@ architecture rtl of ProtoDuneDtmCore is
    signal status : ProtoDuneDtmStatusType;
    signal config : ProtoDuneDtmConfigType;
 
-   signal timingClk  : sl;
-   signal timingData : sl;
-   signal sfpTx      : sl;
-   signal qsfpRst    : sl;
-   signal sfpTxDis   : sl;
-   signal dpmBusy    : slv(7 downto 0);
+   signal recClk  : sl;
+   signal recData : sl;
+   signal recLol  : sl;
+   signal dpmBusy : slv(7 downto 0);
+   signal cdrClk  : sl;
+   signal cdrRst  : sl;
 
 begin
 
    ----------------
    -- RTM Interface
    ----------------
-   DTM_RTM0 : IBUFDS
+   U_RTM_INTF : entity work.ProtoDuneDtmRtmIntf
       generic map (
-         DIFF_TERM => true)
-      port map(
-         I  => dtmToRtmLsP(0),
-         IB => dtmToRtmLsN(0),
-         O  => timingClk);  
-
-   DTM_RTM1 : IBUFDS
-      generic map (
-         DIFF_TERM => true)
-      port map(
-         I  => dtmToRtmLsP(1),
-         IB => dtmToRtmLsN(1),
-         O  => timingData);           
-
-   sfpTx <= '0';                        -- Unused
-   DTM_RTM2 : OBUFDS
+         TPD_G => TPD_G)
       port map (
-         I  => sfpTx,
-         O  => dtmToRtmLsP(2),
-         OB => dtmToRtmLsN(2));    
-
-   qsfpRst <= axilRst or config.hardRst;
-   DTM_RTM3 : OBUFDS
-      port map (
-         I  => qsfpRst,
-         O  => dtmToRtmLsP(3),
-         OB => dtmToRtmLsN(3));   
-
-   sfpTxDis <= '0';                     -- Unused
-   DTM_RTM4 : OBUFDS
-      port map (
-         I  => sfpTxDis,
-         O  => dtmToRtmLsP(4),
-         OB => dtmToRtmLsN(4));
-
-   DTM_RTM5 : OBUFDS
-      port map (
-         I  => status.busyOut,
-         O  => dtmToRtmLsP(5),
-         OB => dtmToRtmLsN(5));         
+         -- Clocks and Resets
+         axilClk      => axilClk,
+         axilRst      => axilRst,
+         refClk200    => refClk200,
+         refRst200    => refRst200,
+         -- RTM Interface
+         hardRst      => config.hardRst,
+         busyOut      => status.busyOut,
+         sfpTxDis     => '0',
+         sfpTx        => '0',
+         -- Status (axilClk domain)
+         cdrLocked    => status.cdrLocked,
+         freqMeasured => status.freqMeasured,
+         -- CDR Interface
+         recClk       => recClk,
+         recData      => recData
+         recLol       => recLol);
 
    ----------------
    -- DPM Interface
    ----------------
-   -- DPM Feedback Signals
-   U_DpmFbGen : for i in 0 to 7 generate
-      U_DpmFbIn : IBUFDS
-         generic map (
-            DIFF_TERM => true)
-         port map(
-            I  => dpmFbP(i),
-            IB => dpmFbN(i),
-            O  => dpmBusy(i));
-   end generate;
-
-   -- DPM's MGT Clock
-   DPM_MGT_CLK : OBUFDS
-      port map(
-         I  => timingClk,
-         O  => dpmClkP(0),              --DPM_CLK0_P
-         OB => dpmClkN(0));             --DPM_CLK0_M
-
-   -- DPM's FPGA Clock
-   DPM_FPGA_CLK : OBUFDS
-      port map(
-         I  => timingClk,
-         O  => dpmClkP(1),              --DPM_CLK1_P
-         OB => dpmClkN(1));             --DPM_CLK1_M 
-
-   -- DPM's FPGA Data
-   DPM_FPGA_DATA : OBUFDS
+   U_DPM_INTF : entity work.ProtoDuneDtmDpmIntf
+      generic map (
+         TPD_G => TPD_G)
       port map (
-         I  => timingData,
-         O  => dpmClkP(2),              -- DPM_CLK2_P
-         OB => dpmClkN(2));             --DPM_CLK2_M     
+         -- DPM Interface
+         dpmBusy => dpmBusy
+         -- CDR Interface
+         recClk  => recClk,
+         recData => recData);
 
    --------------------
    -- AXI-Lite Crossbar
@@ -189,7 +136,7 @@ begin
          mAxiWriteMasters    => axilWriteMasters,
          mAxiWriteSlaves     => axilWriteSlaves,
          mAxiReadMasters     => axilReadMasters,
-         mAxiReadSlaves      => axilReadSlaves);        
+         mAxiReadSlaves      => axilReadSlaves);
 
    ------------------------
    -- AXI-Lite: Core Module
@@ -197,9 +144,11 @@ begin
    U_Reg : entity work.ProtoDuneDtmReg
       generic map (
          TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)   
+         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
       port map (
          -- Status/Configuration Interface
+         cdrClk          => cdrClk,
+         cdrRst          => cdrRst,
          status          => status,
          config          => config,
          -- AXI-Lite Interface 
@@ -208,14 +157,14 @@ begin
          axilReadMaster  => axilReadMasters(CORE_INDEX_C),
          axilReadSlave   => axilReadSlaves(CORE_INDEX_C),
          axilWriteMaster => axilWriteMasters(CORE_INDEX_C),
-         axilWriteSlave  => axilWriteSlaves(CORE_INDEX_C));   
+         axilWriteSlave  => axilWriteSlaves(CORE_INDEX_C));
 
    --------------
    -- Busy Module
    --------------
    U_Busy : entity work.ProtoDuneDtmBusy
       generic map (
-         TPD_G => TPD_G)   
+         TPD_G => TPD_G)
       port map (
          axilClk => axilClk,
          axilRst => axilRst,
@@ -223,5 +172,30 @@ begin
          dpmBusy => dpmBusy,
          busyVec => status.busyVec,
          busyOut => status.busyOut);
+
+   ---------------------         
+   -- CERN Timing Module
+   ---------------------         
+   U_Timing : entity work.pdts_endpoint
+      generic map (
+         SCLK_FREQ => 125.0)
+      port map (
+         sclk    => axilClk,            -- Free-running system clock
+         srst    => axilRst,            -- System reset (sclk domain)
+         addr    => x"00",  -- "Any address except 0x01 is acceptable for this test" from Dave Newbold (20MARCH2017)
+         tgrp    => "00",  -- "Any tgrp is acceptable - 0x0 will do" from Dave Newbold (20MARCH2017)
+         stat    => status.timing.stat,  -- The status signal (stat) that indicates the internal state of the endpoint
+         rec_clk => recClk,
+         rec_d   => recData,
+         sfp_los => '0',
+         cdr_los => '0',
+         cdr_lol => recLol,
+         clk     => cdrClk,
+         rst     => cdrRst,
+         rdy     => status.timing.linkUp,
+         sync    => status.timing.syncCmd,  -- Sync command output (clk domain)
+         sync_v  => status.timing.syncValid,  -- Sync command valid flag (clk domain)
+         tstamp  => status.timing.timestamp,  -- Timestamp out
+         evtctr  => status.timing.eventCnt);  -- Event counter out
 
 end architecture rtl;
