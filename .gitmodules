@@ -11,3 +11,6 @@
 [submodule "firmware/submodules/proto-dune-ep-timing-core"]
 	path = firmware/submodules/proto-dune-ep-timing-core
 	url = git@github.com:/slaclab/proto-dune-ep-timing-core
+[submodule "firmware/submodules/surf"]
+	path = firmware/submodules/surf
+	url = git@github.com:/slaclab/surf
