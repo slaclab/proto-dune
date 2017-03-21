@@ -19,9 +19,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 use work.StdRtlPkg.all;
-use work.AxiLitePkg.all;
-use work.AxiStreamPkg.all;
-use work.ProtoDuneDtmPkg.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -30,55 +27,28 @@ entity ProtoDuneDtmRtmIntf is
    generic (
       TPD_G : time := 1 ns);
    port (
-      -- Clocks and Resets
-      axilClk      : in  sl;
-      axilRst      : in  sl;
-      refClk200    : in  sl;
-      refRst200    : in  sl;
-      -- RTM Interface
-      hardRst      : in  sl;
-      busyOut      : in  sl;
-      sfpTxDis     : in  sl;
-      sfpTx        : in  sl;
-      -- Status (axilClk domain)
-      cdrLocked    : out sl;
-      freqMeasured : out slv(31 downto 0);
+      -- Control Interface
+      qsfpRst     : in    sl;
+      busyOut     : in    sl;
+      sfpTxDis    : in    sl;
+      sfpTx       : in    sl;
       -- CDR Interface
-      recClk       : out sl;
-      recData      : out sl;
-      recLol       : out sl);
+      recClk      : out   sl;
+      recData     : out   sl;
+      -- RTM Low Speed Ports
+      dtmToRtmLsP : inout slv(5 downto 0);
+      dtmToRtmLsN : inout slv(5 downto 0));
 end ProtoDuneDtmRtmIntf;
 
 architecture mapping of ProtoDuneDtmRtmIntf is
 
-   signal qsfpRst : sl;
-   signal locked  : sl;
+   signal clock : sl;
+   signal clk   : sl;
+   signal data  : sl;
 
 begin
 
-   U_ClkMon : entity work.ProtoDuneDtmCdrMmcm
-      generic map (
-         TPD_G             => TPD_G,
-         LOC_CLK_FREQ_G    => 125.0E+6,  -- Local clock frequency (in units of Hz)
-         REF_CLK_FREQ_G    => 200.0E+6,  -- Reference clock frequency (in units of Hz)
-         CLK_FREQ_TARGET_G => 250.0E+6,  -- CDR's targeted clock frequency (in units of Hz)
-         CLK_FREQ_BW_G     => 1.0E+6,  -- CDR's allow frequency bandwidth (in units of Hz)
-         REFRESH_RATE_G    => 1.0E+3)  -- Clock frequency refresh  (in units of Hz)
-      port map (
-         -- Input CDR clock
-         clkIn         => timingClk,
-         -- Reference clock
-         refClk        => refClk200,
-         refRst        => refRst200,
-         -- Clock Monitor Interface (locClk domain)
-         locClk        => axilClk,
-         freqMonlocked => locked,
-         freqMeasured  => freqMeasured);
-
-   qsfpRst <= axilRst or hardRst;
-
-   cdrLocked <= locked;
-   recLol    <= not(locked);
+   recClk <= clk;
 
    ----------------
    -- RTM Interface
@@ -89,12 +59,12 @@ begin
       port map(
          I  => dtmToRtmLsP(0),
          IB => dtmToRtmLsN(0),
-         O  => timingClock);
+         O  => clock);
 
-   U_Bufg : BUFG
+   U_BUFG : BUFG
       port map (
-         I => timingClock,
-         O => timingClk);
+         I => clock,
+         O => clk);
 
    DTM_RTM1 : IBUFDS
       generic map (
@@ -102,7 +72,22 @@ begin
       port map(
          I  => dtmToRtmLsP(1),
          IB => dtmToRtmLsN(1),
-         O  => cdrData);
+         O  => data);
+
+   U_IDDR : IDDR
+      generic map (
+         DDR_CLK_EDGE => "OPPOSITE_EDGE",  -- "OPPOSITE_EDGE", "SAME_EDGE", or "SAME_EDGE_PIPELINED"
+         INIT_Q1      => '0',           -- Initial value of Q1: '0' or '1'
+         INIT_Q2      => '0',           -- Initial value of Q2: '0' or '1'
+         SRTYPE       => "SYNC")        -- Set/Reset type: "SYNC" or "ASYNC" 
+      port map (
+         D  => data,                    -- 1-bit DDR data input
+         C  => clk,                     -- 1-bit clock input
+         CE => '1',                     -- 1-bit clock enable input
+         R  => '0',                     -- 1-bit reset
+         S  => '0',                     -- 1-bit set
+         Q1 => recData,           -- 1-bit output for positive edge of clock 
+         Q2 => open);  -- 1-bit output for negative edge of clock          
 
    DTM_RTM2 : OBUFDS
       port map (

@@ -72,11 +72,15 @@ architecture rtl of ProtoDuneDtmCore is
    signal recClk  : sl;
    signal recData : sl;
    signal recLol  : sl;
+   signal qsfpRst  : sl;
    signal dpmBusy : slv(7 downto 0);
    signal cdrClk  : sl;
    signal cdrRst  : sl;
 
 begin
+
+   qsfpRst <= axilRst or config.hardRst;
+   recLol <= not(status.cdrLocked);
 
    ----------------
    -- RTM Interface
@@ -85,23 +89,17 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
-         -- Clocks and Resets
-         axilClk      => axilClk,
-         axilRst      => axilRst,
-         refClk200    => refClk200,
-         refRst200    => refRst200,
-         -- RTM Interface
-         hardRst      => config.hardRst,
+         -- Control Interface
+         qsfpRst      => qsfpRst,
          busyOut      => status.busyOut,
          sfpTxDis     => '0',
          sfpTx        => '0',
-         -- Status (axilClk domain)
-         cdrLocked    => status.cdrLocked,
-         freqMeasured => status.freqMeasured,
          -- CDR Interface
          recClk       => recClk,
-         recData      => recData
-         recLol       => recLol);
+         recData      => recData,
+         -- RTM Low Speed Ports
+         dtmToRtmLsP     => dtmToRtmLsP,
+         dtmToRtmLsN     => dtmToRtmLsN);           
 
    ----------------
    -- DPM Interface
@@ -110,12 +108,38 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
-         -- DPM Interface
-         dpmBusy => dpmBusy
+         -- Busy Interface
+         dpmBusy => dpmBusy,
          -- CDR Interface
          recClk  => recClk,
-         recData => recData);
-
+         recData => recData,
+         -- DPM Ports
+         dpmClkP  => dpmClkP,
+         dpmClkN  => dpmClkN,
+         dpmFbP   => dpmFbP,
+         dpmFbN   => dpmFbN);
+         
+   ---------------------------------------------------------
+   -- Measure the CDR clock frequency and determine 
+   -- if (CLK_LOWER_LIMIT_G < CDR Clock < CLK_UPPER_LIMIT_G)
+   ---------------------------------------------------------
+   U_ClockFreq : entity work.SyncClockFreq
+      generic map (
+         TPD_G             => TPD_G,
+         REF_CLK_FREQ_G    => 200.0E+6,
+         REFRESH_RATE_G    => 1.0E+3,
+         CLK_UPPER_LIMIT_G => 251.0E+6,
+         CLK_LOWER_LIMIT_G => 249.0E+6,
+         CNT_WIDTH_G       => 32)
+      port map (
+         -- Frequency Measurement and Monitoring Outputs (locClk domain)
+         freqOut => status.freqMeasured,
+         locked  => status.cdrLocked,
+         -- Clocks
+         clkIn   => recClk,
+         locClk  => axilClk,
+         refClk  => refClk200);         
+         
    --------------------
    -- AXI-Lite Crossbar
    --------------------

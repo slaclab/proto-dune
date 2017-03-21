@@ -5,7 +5,7 @@
 -- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2016-10-31
+-- Last update: 2017-03-20
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -29,6 +29,9 @@ use work.AxiStreamPkg.all;
 use work.RceG3Pkg.all;
 
 entity ProtoDuneDtm is
+   generic (
+      TPD_G        : time := 1 ns;
+      BUILD_INFO_G : BuildInfoType);
    port (
       -- Debug
       led         : out   slv(1 downto 0);
@@ -70,11 +73,6 @@ entity ProtoDuneDtm is
       ethMdc      : out   Slv(1 downto 0);
       ethMio      : inout Slv(1 downto 0);
       ethResetL   : out   Slv(1 downto 0);
-      -- -- RTM High Speed
-      --dtmToRtmHsP : out   sl;
-      --dtmToRtmHsM : out   sl;
-      --rtmToDtmHsP : in    sl;
-      --rtmToDtmHsM : in    sl;
       -- RTM Low Speed
       dtmToRtmLsP : inout slv(5 downto 0);
       dtmToRtmLsM : inout slv(5 downto 0);
@@ -93,8 +91,6 @@ end ProtoDuneDtm;
 
 architecture TOP_LEVEL of ProtoDuneDtm is
 
-   constant TPD_C : time := 1 ns;
-
    signal axiClk       : sl;
    signal axiClkRst    : sl;
    signal sysClk200    : sl;
@@ -111,7 +107,7 @@ architecture TOP_LEVEL of ProtoDuneDtm is
    signal dmaObSlave  : AxiStreamSlaveArray(2 downto 0);
    signal dmaIbMaster : AxiStreamMasterArray(2 downto 0);
    signal dmaIbSlave  : AxiStreamSlaveArray(2 downto 0);
-   
+
 begin
 
    led      <= (others => '0');
@@ -122,9 +118,10 @@ begin
    -----------
    U_DtmCore : entity work.DtmCore
       generic map (
-         TPD_G          => TPD_C,
+         TPD_G          => TPD_G,
+         BUILD_INFO_G   => BUILD_INFO_G,
          RCE_DMA_MODE_G => RCE_DMA_AXIS_C,
-         OLD_BSI_MODE_G => false) 
+         OLD_BSI_MODE_G => false)
       port map (
          i2cSda             => i2cSda,
          i2cScl             => i2cScl,
@@ -189,14 +186,9 @@ begin
    -----------
    U_App : entity work.ProtoDuneDtmCore
       generic map (
-         TPD_G            => TPD_C,
+         TPD_G            => TPD_G,
          AXI_ERROR_RESP_G => AXI_RESP_OK_C)
-      port map (
-         -- -- RTM High Speed
-         -- dtmToRtmHsP => dtmToRtmHsP,
-         -- dtmToRtmHsN => dtmToRtmHsM,
-         -- rtmToDtmHsP => rtmToDtmHsP,
-         -- rtmToDtmHsN => rtmToDtmHsM,     
+      port map (    
          -- RTM Low Speed
          dtmToRtmLsP     => dtmToRtmLsP,
          dtmToRtmLsN     => dtmToRtmLsM,

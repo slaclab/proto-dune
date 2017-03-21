@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2016-10-31
+-- Last update: 2017-03-20
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -30,6 +30,8 @@ entity ProtoDuneDtmReg is
       AXI_ERROR_RESP_G : slv(1 downto 0) := AXI_RESP_DECERR_C);
    port (
       -- Status/Configuration Interface
+      cdrClk          : in  sl;
+      cdrRst          : in  sl;
       status          : in  ProtoDuneDtmStatusType;
       config          : out ProtoDuneDtmConfigType;
       -- AXI-Lite Interface
@@ -43,7 +45,7 @@ end ProtoDuneDtmReg;
 
 architecture rtl of ProtoDuneDtmReg is
 
-   constant STATUS_SIZE_C : positive := 9;
+   constant STATUS_SIZE_C : positive := 11;
 
    type RegType is record
       cntRst         : sl;
@@ -66,12 +68,15 @@ architecture rtl of ProtoDuneDtmReg is
    signal statusOut : slv(STATUS_SIZE_C-1 downto 0);
    signal statusCnt : SlVectorArray(STATUS_SIZE_C-1 downto 0, 31 downto 0);
 
+   signal linkUp : sl;
+
    -- attribute dont_touch               : string;
    -- attribute dont_touch of r          : signal is "TRUE";
-   
+
 begin
 
-   comb : process (axilReadMaster, axilRst, axilWriteMaster, r, statusCnt, statusOut) is
+   comb : process (axilReadMaster, axilRst, axilWriteMaster, r, status,
+                   statusCnt, statusOut) is
       variable v      : RegType;
       variable regCon : AxiLiteEndPointType;
    begin
@@ -89,6 +94,7 @@ begin
          axiSlaveRegisterR(regCon, toSlv((4*i), 12), 0, muxSlVectorArray(statusCnt, i));
       end loop;
       axiSlaveRegisterR(regCon, x"400", 0, statusOut);
+      axiSlaveRegisterR(regCon, x"404", 0, status.freqMeasured);
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.config.busyMask);
@@ -115,7 +121,7 @@ begin
       axilWriteSlave <= r.axilWriteSlave;
       axilReadSlave  <= r.axilReadSlave;
       config         <= r.config;
-      
+
    end process comb;
 
    seq : process (axilClk) is
@@ -125,15 +131,25 @@ begin
       end if;
    end process seq;
 
+   U_linkUp : entity work.Synchronizer
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         clk     => axilClk,
+         dataIn  => status.timing.linkUp,
+         dataOut => linkUp);
+
    U_SyncStatusVector : entity work.SyncStatusVector
       generic map (
          TPD_G          => TPD_G,
          OUT_POLARITY_G => '1',
          CNT_RST_EDGE_G => false,
          CNT_WIDTH_G    => 32,
-         WIDTH_G        => STATUS_SIZE_C)     
+         WIDTH_G        => STATUS_SIZE_C)
       port map (
          -- Input Status bit Signals (wrClk domain)
+         statusIn(10)         => linkUp,
+         statusIn(9)          => status.cdrLocked,
          statusIn(8)          => status.busyOut,
          statusIn(7 downto 0) => status.busyVec,
          -- Output Status bit Signals (rdClk domain)  
@@ -144,6 +160,6 @@ begin
          cntOut               => statusCnt,
          -- Clocks and Reset Ports
          wrClk                => axilClk,
-         rdClk                => axilClk);      
+         rdClk                => axilClk);
 
 end rtl;

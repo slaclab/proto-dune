@@ -19,9 +19,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 use work.StdRtlPkg.all;
-use work.AxiLitePkg.all;
-use work.AxiStreamPkg.all;
-use work.ProtoDuneDtmPkg.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -30,11 +27,16 @@ entity ProtoDuneDtmDpmIntf is
    generic (
       TPD_G : time := 1 ns);
    port (
-      -- DPM Interface
+      -- Busy Interface
       dpmBusy : out slv(7 downto 0);
       -- CDR Interface
-      recClk       : in sl;
-      recData      : in sl);
+      recClk  : in  sl;
+      recData : in  sl;
+      -- DPM Ports
+      dpmClkP : out slv(2 downto 0);
+      dpmClkN : out slv(2 downto 0);
+      dpmFbP  : in  slv(7 downto 0);
+      dpmFbN  : in  slv(7 downto 0));
 end ProtoDuneDtmDpmIntf;
 
 architecture mapping of ProtoDuneDtmDpmIntf is
@@ -60,36 +62,37 @@ begin
    -- DPM's MGT Clock
    DPM_MGT_CLK : entity work.ClkOutBufDiff
       generic map (
-         TPD_G        => TPD_G)
+         TPD_G => TPD_G)
       port map (
-         clkIn   => '0',-- Unused
-         clkOutP => dpmClkP(0),  
+         clkIn   => '0',                -- Unused
+         clkOutP => dpmClkP(0),
          clkOutN => dpmClkN(0));
-   
+
    -- DPM's FPGA Clock
    DPM_FPGA_CLK : entity work.ClkOutBufDiff
       generic map (
-         TPD_G        => TPD_G)
+         TPD_G    => TPD_G,
+         INVERT_G => false)
       port map (
          clkIn   => recClk,
-         clkOutP => dpmClkP(1),    --DPM_CLK1_P
-         clkOutN => dpmClkN(1));    --DPM_CLK1_M   
-         
+         clkOutP => dpmClkP(1),         --DPM_CLK1_P
+         clkOutN => dpmClkN(1));        --DPM_CLK1_M   
+
    -- DPM's FPGA Data
    U_ODDR : ODDR
       generic map(
          DDR_CLK_EDGE => "OPPOSITE_EDGE",  -- "OPPOSITE_EDGE" or "SAME_EDGE" 
-         INIT         => '0',              -- Initial value for Q port ('1' or '0')
-         SRTYPE       => "SYNC")           -- Reset Type ("ASYNC" or "SYNC")
+         INIT         => '0',  -- Initial value for Q port ('1' or '0')
+         SRTYPE       => "SYNC")        -- Reset Type ("ASYNC" or "SYNC")
       port map (
-         D1 => recData,                -- 1-bit data input (positive edge)
-         D2 => recData,                -- 1-bit data input (negative edge)
-         Q  => recDataDdr,             -- 1-bit DDR output
-         C  => recClk,                 -- 1-bit clock input
-         CE => '1',                       -- 1-bit clock enable input
-         R  => '0',                       -- 1-bit reset
-         S  => '0');                      -- 1-bit set
-         
+         D1 => recData,                 -- 1-bit data input (positive edge)
+         D2 => recData,                 -- 1-bit data input (negative edge)
+         Q  => recDataDdr,              -- 1-bit DDR output
+         C  => recClk,                  -- 1-bit clock input
+         CE => '1',                     -- 1-bit clock enable input
+         R  => '0',                     -- 1-bit reset
+         S  => '0');                    -- 1-bit set
+
    DPM_FPGA_DATA : OBUFDS
       port map (
          I  => recDataDdr,

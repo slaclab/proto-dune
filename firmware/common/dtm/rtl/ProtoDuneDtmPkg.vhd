@@ -3,7 +3,6 @@
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
 -- Last update: 2017-03-20
-
 -------------------------------------------------------------------------------
 -- Description:
 -------------------------------------------------------------------------------
@@ -56,13 +55,17 @@ package ProtoDuneDtmPkg is
       eventCnt  => (others => '0'));
 
    type ProtoDuneDtmStatusType is record
-      timing  : ProtoDuneDtmTimingType;
-      busyVec : slv(7 downto 0);
-      busyOut : sl;
+      cdrLocked    : sl;
+      freqMeasured : slv(31 downto 0);
+      timing       : ProtoDuneDtmTimingType;
+      busyVec      : slv(7 downto 0);
+      busyOut      : sl;
    end record;
    constant PROTO_DUNE_DTM_STATUS_INIT_C : ProtoDuneDtmStatusType := (
-      timing  => PROTO_DUNE_DTM_TIMING_INIT_C,
-      busyVec => (others => '0'),
-      busyOut => '0');
+      cdrLocked    => '0',
+      freqMeasured => (others => '0'),
+      timing       => PROTO_DUNE_DTM_TIMING_INIT_C,
+      busyVec      => (others => '0'),
+      busyOut      => '0');
 
 end ProtoDuneDtmPkg;
