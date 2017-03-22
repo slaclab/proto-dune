@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-03-20
+-- Last update: 2017-03-22
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -95,6 +95,7 @@ begin
       end loop;
       axiSlaveRegisterR(regCon, x"400", 0, statusOut);
       axiSlaveRegisterR(regCon, x"404", 0, status.freqMeasured);
+      axiSlaveRegisterR(regCon, x"408", 0, status.timing.stat);
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.config.busyMask);
