@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmRtmIntf.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2017-03-20
--- Last update: 2017-03-20
+-- Last update: 2017-03-22
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -28,6 +28,8 @@ entity ProtoDuneDtmRtmIntf is
       TPD_G : time := 1 ns);
    port (
       -- Control Interface
+      cdrEdgeSel  : in    sl;
+      cdrDataInv  : in    sl;
       qsfpRst     : in    sl;
       busyOut     : in    sl;
       sfpTxDis    : in    sl;
@@ -45,6 +47,8 @@ architecture mapping of ProtoDuneDtmRtmIntf is
    signal clock : sl;
    signal clk   : sl;
    signal data  : sl;
+   signal Q1    : sl;
+   signal Q2    : sl;
 
 begin
 
@@ -76,7 +80,7 @@ begin
 
    U_IDDR : IDDR
       generic map (
-         DDR_CLK_EDGE => "OPPOSITE_EDGE",  -- "OPPOSITE_EDGE", "SAME_EDGE", or "SAME_EDGE_PIPELINED"
+         DDR_CLK_EDGE => "SAME_EDGE_PIPELINED",  -- "OPPOSITE_EDGE", "SAME_EDGE", or "SAME_EDGE_PIPELINED"
          INIT_Q1      => '0',           -- Initial value of Q1: '0' or '1'
          INIT_Q2      => '0',           -- Initial value of Q2: '0' or '1'
          SRTYPE       => "SYNC")        -- Set/Reset type: "SYNC" or "ASYNC" 
@@ -86,8 +90,19 @@ begin
          CE => '1',                     -- 1-bit clock enable input
          R  => '0',                     -- 1-bit reset
          S  => '0',                     -- 1-bit set
-         Q1 => recData,           -- 1-bit output for positive edge of clock 
-         Q2 => open);  -- 1-bit output for negative edge of clock          
+         Q1 => Q1,   -- 1-bit output for positive edge of clock 
+         Q2 => Q2);  -- 1-bit output for negative edge of clock          
+
+   process(clk)
+   begin
+      if rising_edge(clk) then
+         if (cdrEdgeSel = '0') then
+            recData <= Q1 xor cdrDataInv after TPD_G;
+         else
+            recData <= Q2 xor cdrDataInv after TPD_G;
+         end if;
+      end if;
+   end process;
 
    DTM_RTM2 : OBUFDS
       port map (

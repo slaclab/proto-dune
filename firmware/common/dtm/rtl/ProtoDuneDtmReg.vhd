@@ -100,8 +100,12 @@ begin
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.config.busyMask);
       axiSlaveRegister(regCon, x"804", 0, v.config.forceBusy);
+      axiSlaveRegister(regCon, x"808", 0, v.config.cdrEdgeSel);
+      axiSlaveRegister(regCon, x"80C", 0, v.config.cdrDataInv);
+      
       axiSlaveRegister(regCon, x"900", 0, v.config.emuTimingSel);
       axiSlaveRegister(regCon, x"904", 0, v.config.emuClkSel);
+      
       axiSlaveRegister(regCon, x"FF0", 0, v.config.softRst);
       axiSlaveRegister(regCon, x"FF4", 0, v.config.hardRst);
       axiSlaveRegister(regCon, x"FF8", 0, v.rollOverEn);

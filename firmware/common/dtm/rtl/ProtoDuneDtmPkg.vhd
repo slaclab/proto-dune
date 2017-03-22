@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmPkg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-03-20
+-- Last update: 2017-03-22
 -------------------------------------------------------------------------------
 -- Description:
 -------------------------------------------------------------------------------
@@ -25,6 +25,8 @@ package ProtoDuneDtmPkg is
    type ProtoDuneDtmConfigType is record
       busyMask     : slv(7 downto 0);
       forceBusy    : sl;
+      cdrEdgeSel   : sl;
+      cdrDataInv   : sl;
       emuTimingSel : sl;
       emuClkSel    : sl;
       softRst      : sl;
@@ -33,6 +35,8 @@ package ProtoDuneDtmPkg is
    constant PROTO_DUNE_DTM_CONFIG_INIT_C : ProtoDuneDtmConfigType := (
       busyMask     => (others => '0'),
       forceBusy    => '1',
+      cdrEdgeSel   => '0',
+      cdrDataInv   => '0',
       emuTimingSel => '0',
       emuClkSel    => '0',
       softRst      => '0',

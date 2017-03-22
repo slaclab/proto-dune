@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-03-20
+-- Last update: 2017-03-22
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ architecture rtl of ProtoDuneDtmCore is
    signal recClk  : sl;
    signal recData : sl;
    signal recLol  : sl;
-   signal qsfpRst  : sl;
+   signal qsfpRst : sl;
    signal dpmBusy : slv(7 downto 0);
    signal cdrClk  : sl;
    signal cdrRst  : sl;
@@ -80,7 +80,7 @@ architecture rtl of ProtoDuneDtmCore is
 begin
 
    qsfpRst <= axilRst or config.hardRst;
-   recLol <= not(status.cdrLocked);
+   recLol  <= not(status.cdrLocked);
 
    ----------------
    -- RTM Interface
@@ -90,16 +90,18 @@ begin
          TPD_G => TPD_G)
       port map (
          -- Control Interface
-         qsfpRst      => qsfpRst,
-         busyOut      => status.busyOut,
-         sfpTxDis     => '0',
-         sfpTx        => '0',
+         cdrEdgeSel  => config.cdrEdgeSel,
+         cdrDataInv  => config.cdrDataInv,
+         qsfpRst     => qsfpRst,
+         busyOut     => status.busyOut,
+         sfpTxDis    => '0',
+         sfpTx       => '0',
          -- CDR Interface
-         recClk       => recClk,
-         recData      => recData,
+         recClk      => recClk,
+         recData     => recData,
          -- RTM Low Speed Ports
-         dtmToRtmLsP     => dtmToRtmLsP,
-         dtmToRtmLsN     => dtmToRtmLsN);           
+         dtmToRtmLsP => dtmToRtmLsP,
+         dtmToRtmLsN => dtmToRtmLsN);
 
    ----------------
    -- DPM Interface
@@ -114,11 +116,11 @@ begin
          recClk  => recClk,
          recData => recData,
          -- DPM Ports
-         dpmClkP  => dpmClkP,
-         dpmClkN  => dpmClkN,
-         dpmFbP   => dpmFbP,
-         dpmFbN   => dpmFbN);
-         
+         dpmClkP => dpmClkP,
+         dpmClkN => dpmClkN,
+         dpmFbP  => dpmFbP,
+         dpmFbN  => dpmFbN);
+
    ---------------------------------------------------------
    -- Measure the CDR clock frequency and determine 
    -- if (CLK_LOWER_LIMIT_G < CDR Clock < CLK_UPPER_LIMIT_G)
@@ -138,8 +140,8 @@ begin
          -- Clocks
          clkIn   => recClk,
          locClk  => axilClk,
-         refClk  => refClk200);         
-         
+         refClk  => refClk200);
+
    --------------------
    -- AXI-Lite Crossbar
    --------------------
