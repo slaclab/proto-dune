@@ -121,6 +121,14 @@ TimingDtm::TimingDtm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    rl->getVariable()->setTrueFalse();
    rl->getVariable()->setDescription("true = forces RTM Busy out to 0x0, false = normal mode");     
    
+   addRegisterLink(rl = new RegisterLink("CdrEdgeSel",  0xA0000808, Variable::Configuration,0,0x1));
+   rl->getVariable()->setTrueFalse();
+   rl->getVariable()->setDescription("false = using IDDR's rising edge sample, true = using IDDR's falling edge sample");
+
+   addRegisterLink(rl = new RegisterLink("CdrDataInv",  0xA000080C, Variable::Configuration,0,0x1));
+   rl->getVariable()->setTrueFalse();
+   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
+
    addRegister(new Register("SoftReset",    0xA0000FF0));
    addRegister(new Register("HardReset",    0xA0000FF4));
    addRegister(new Register("CounterReset", 0xA0000FFC));
