@@ -10,7 +10,7 @@ $ ln -s /path/to/build proto-dune/firmware/build
 $ source proto-dune/firmware/setup_env_slac.csh
 
 ### If on the CERN AFS network, source this script to setup the Vivado environment and licensing  
-TBD
+TBD 
 
 # Building the DTM firmware
 
