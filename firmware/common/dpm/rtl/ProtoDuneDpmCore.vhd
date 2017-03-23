@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2016-12-02
+-- Last update: 2017-03-22
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ entity ProtoDuneDpmCore is
       CASCADE_SIZE_G   : positive         := 1;
       AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
       AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
-      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");      
+      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
@@ -57,8 +57,11 @@ entity ProtoDuneDpmCore is
       dtmRefClkN      : in  sl;
       dtmClkP         : in  slv(1 downto 0);
       dtmClkN         : in  slv(1 downto 0);
-      dtmFbP          : in  sl;
-      dtmFbN          : in  sl;
+      dtmFbP          : out sl;
+      dtmFbN          : out sl;
+      -- Reference 200 MHz clock
+      refClk200       : in    sl;
+      refRst200       : in    sl;      
       -- User ETH interface (userEthClk domain)
       ethClk          : in  sl;
       ethRst          : in  sl;
@@ -134,7 +137,7 @@ begin
          mAxiWriteMasters    => axilWriteMasters,
          mAxiWriteSlaves     => axilWriteSlaves,
          mAxiReadMasters     => axilReadMasters,
-         mAxiReadSlaves      => axilReadSlaves);        
+         mAxiReadSlaves      => axilReadSlaves);
 
    --------------------------
    -- AXI-Lite: Timing Module
@@ -143,11 +146,11 @@ begin
       generic map (
          TPD_G            => TPD_G,
          AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(TIMING_INDEX_C).baseAddr)   
+         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(TIMING_INDEX_C).baseAddr)
       port map (
          -- Timing Interface (clk domain)
-         clk             => clk,
-         rst             => rst,
+         wibClk          => clk,
+         wibRst          => rst,
          emuEnable       => emuEnable,
          runEnable       => runEnable,
          swFlush         => swFlush,
@@ -158,6 +161,14 @@ begin
          axilReadSlave   => axilReadSlaves(TIMING_INDEX_C),
          axilWriteMaster => axilWriteMasters(TIMING_INDEX_C),
          axilWriteSlave  => axilWriteSlaves(TIMING_INDEX_C),
+         -- AXI Stream Interface (dmaClk domain)
+         dmaClk          => dmaClk,
+         dmaRst          => dmaRst,
+         dmaIbMaster     => open,
+         dmaIbSlave      => AXI_STREAM_SLAVE_FORCE_C,   
+         -- Reference 200 MHz clock
+         refClk200       => refClk200,
+         refRst200       => refRst200,            
          -- DTM Interface
          dtmRefClkP      => dtmRefClkP,
          dtmRefClkN      => dtmRefClkN,
@@ -173,7 +184,7 @@ begin
       generic map (
          TPD_G            => TPD_G,
          AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(EMU_INDEX_C).baseAddr)   
+         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(EMU_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
@@ -202,7 +213,7 @@ begin
          CASCADE_SIZE_G   => CASCADE_SIZE_G,
          AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
          AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(WIB_INDEX_C).baseAddr)   
+         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(WIB_INDEX_C).baseAddr)
       port map (
          -- Stable clock and reset reference
          clk             => clk,
@@ -233,7 +244,7 @@ begin
          txDiffCtrl      => txDiffCtrl,
          -- WIB Interface (axilClk domain)
          wibMasters      => wibMasters,
-         wibSlaves       => wibSlaves);     
+         wibSlaves       => wibSlaves);
 
    -----------------------
    -- AXI-Lite: HLS Module
@@ -244,7 +255,7 @@ begin
          CASCADE_SIZE_G   => CASCADE_SIZE_G,
          AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
          AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(HLS_INDEX_C).baseAddr)   
+         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(HLS_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
@@ -269,7 +280,7 @@ begin
       generic map (
          TPD_G            => TPD_G,
          AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(RSSI_INDEX_C).baseAddr)   
+         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(RSSI_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
