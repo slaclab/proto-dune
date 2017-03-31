@@ -8,9 +8,9 @@
 ## the terms contained in the LICENSE.txt file.
 ##############################################################################
 ## Get variables and Custom Procedures
-set VIVADO_BUILD_DIR $::env(VIVADO_BUILD_DIR)
-source ${VIVADO_BUILD_DIR}/vivado_hls_env_var_v1.tcl
-source ${VIVADO_BUILD_DIR}/vivado_hls_proc_v1.tcl 
+set RUCKUS_DIR $::env(RUCKUS_DIR)
+source ${RUCKUS_DIR}/vivado_hls_env_var.tcl
+source ${RUCKUS_DIR}/vivado_hls_proc.tcl 
 
 ## Set the top level module
 set_top DuneDataCompressionCore
