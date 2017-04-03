@@ -593,7 +593,7 @@ namespace Frame
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \namespace Frame::Vo
+ *  \namespace Frame::V0
  *  \brief     Defines the layout and construction of V0 frame header
  *             and trailer.
  *

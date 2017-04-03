@@ -1,8 +1,8 @@
 #include "DuneDataCompressionHistogram.h"
 #include "BitStream64.h"
 
-#if !defined (HIST_DECODE_CHECK) && !defined (__SYNTHESIS__)
-#define HIST_DECODE_CHECK 0
+#if !defined (HIST_DECODE_CHECK) || defined (__SYNTHESIS__)
+#undef HIST_DECODE_CHECK 0
 #endif
 
 

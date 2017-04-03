@@ -231,7 +231,6 @@ inline Histogram::Histogram ()
    #pragma HLS RESET variable=m_clastgt1 off
    #pragma HLS RESET variable=m_clastgt2 off
    #pragma HLS RESET variable=m_cmin     off
-   #pragma HLS RESET variable=m_cmax     off
 
 
    #pragma HLS RESOURCE variable=m_comask   core=RAM_2P_LUTRAM
@@ -239,7 +238,6 @@ inline Histogram::Histogram ()
    #pragma HLS RESOURCE variable=m_clastgt1 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt2 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_cmin     core=RAM_2P_LUTRAM
-   #pragma HLS RESOURCE variable=m_cmax     core=RAM_2P_LUTRAM
 
    #pragma HLS ARRAY_PARTITION variable=m_bins cyclic factor=2 dim=1
 

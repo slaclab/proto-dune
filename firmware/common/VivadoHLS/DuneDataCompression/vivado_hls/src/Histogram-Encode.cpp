@@ -38,7 +38,7 @@
 //----------------------------------------------------
 // Now of these can be used during the SYNTHESIS stage
 // ---------------------------------------------------
-#if defined(__SYNTHETIS__)
+#if     defined(__SYNTHESIS__)
 #undef  HIST_ENCODE_DEBUG
 #undef  HIST_DECODE_DEBUG
 #undef  HIST_ENCODE_CHECK
@@ -47,7 +47,7 @@
 
 
 /* ---------------------------------------------------------------------- */
-#if HIST_ENCODE_DEBUG
+#ifdef HIST_ENCODE_DEBUG
 /* ---------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------- *//*!
@@ -101,7 +101,7 @@ static void hist_encode_summary_print (bool              debug,
 
 
 /* ---------------------------------------------------------------------- */
-#if HIST_ENCODE_CHECK
+#ifdef  HIST_ENCODE_CHECK
 #define HISTOGORAM_DECODE_CHECK
 #include "Histogram-Decode.cpp"
 #define HIST_ENCODE_CHECK_statement(_statement) _statement
@@ -109,6 +109,7 @@ static void hist_encode_summary_print (bool              debug,
 #else
 /* ---------------------------------------------------------------------- */
 #define hist_check(_hist, _bs64, _ebits, _m_cbins)
+#define HIST_ENCODE_CHECK_statement(_statement) _statement
 /* ---------------------------------------------------------------------- */
 #endif   /* HIST_ENCODE_CHECK                                             */
 /* ---------------------------------------------------------------------- */
@@ -628,7 +629,7 @@ static void print_bte_masks (char const *title,
 
 
 /* ---------------------------------------------------------------------- */
-#if HIST_ENCODE_DEBUG
+#ifdef HIST_ENCODE_DEBUG
 /* ---------------------------------------------------------------------- *//*!
  *
  *   \brief  Prints the occupancy masks

@@ -48,7 +48,7 @@
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
    2016.11.16 jjr To get around the Vivado HLS crash when update_write was
-                  implemeented as a DATAFLOW method, it was merged with
+                  implemented as a DATAFLOW method, it was merged with
                   write_frame.  This hurts performance a bit, but still
                   completes in the necessary time.  It is just esthically
                   not very pleasing.
@@ -135,7 +135,7 @@
 /*  PROCESS_K_TYPE must be set to one of the above PROCESS_K_<xxxx> to    */
 /*  select the desired processing mode.                                   */
 /* ---------------------------------------------------------------------- */
-#define PROCESS_K_MODE PROCESS_K_COMPRESS /* Select compress              */
+#define PROCESS_K_MODE PROCESS_K_DATAFLOW /* Select dataflow copy         */
 /* ====================================================================== */
 
 
@@ -640,7 +640,7 @@ typedef ap_uint<6> ReadStatus_t;
  *  \brief  Structure to bind the read status with the frame's data
  *
 \* ----------------------------------------------------------------------- */
-struct Frame
+struct ReadFrame
 {
    ReadStatus_t             status;  /*!< The frame's read status          */
    uint64_t d[MODULE_K_MAXSIZE_IB];  /*!< The frame's data. This data is
@@ -670,7 +670,7 @@ static void      configure (ModuleConfig const &cfg,
                             StatusCfg          &gbl,
                             StatusCfg          &lcl);
 
-static void     read_frame (Frame            &frame,
+static void     read_frame (ReadFrame        &frame,
                             AxisIn           &sAxis);
 
 static void    update_read (StatusRead         &gbl,
@@ -680,7 +680,7 @@ static void    update_read (StatusRead         &gbl,
 
 static void    write_frame (AxisOut          &mAxis,
                             int                &odx,
-                            Frame            &frame,
+                            ReadFrame        &frame,
                             StatusWrite        &gbl,
                             StatusWrite        &lcl,
                             ModuleConfig const &cfg);
@@ -756,7 +756,7 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
    #pragma HLS RESOURCE variable=cfg  core=RAM_2P_LUTRAM
    #pragma HLS STREAM   variable=lclCfg off
 
-   static Frame        frame;
+   static ReadFrame     frame;
    #pragma HLS RESOURCE variable=frame core=RAM_2P_LUTRAM
    #pragma HLS STREAM   variable=frame off
 
@@ -860,8 +860,8 @@ static void configure (ModuleConfig const  &cfg,
  *   the user field of the last word is not set
  *
 \* ---------------------------------------------------------------------- */
-static void read_frame (Frame  &frame,
-                        AxisIn  &axis)
+static void read_frame (ReadFrame  &frame,
+                        AxisIn      &axis)
 {
    ///static uint64_t   HeaderWord = 0x0;
 
@@ -1065,7 +1065,7 @@ static void update_read (StatusRead         &gbl,
 \* ---------------------------------------------------------------------- */
 static void write_frame (AxisOut           &axis,
                          int                &odx,
-                         Frame            &frame,
+                         ReadFrame        &frame,
                          StatusWrite        &gbl,
                          StatusWrite        &lcl,
                          ModuleConfig const &cfg)
@@ -2029,9 +2029,10 @@ static void write_adcs_encode_chan (int ichan)
 #else
 /* ---------------------------------------------------------------------- */
 
-define write_adcs_print(_adcs)
+#define write_adcs_print(_adcs)
 #define write_adcs_bit_size_print(_ichan, _ebit_size)
 #define write_adcs_encode_chan(_ichan)
+#define write_sizes_print(_ichan, _size)
 
 /* ---------------------------------------------------------------------- */
 #endif
@@ -2213,8 +2214,8 @@ static inline void
    APE_etx                  etx[NPARALLEL];
    ChannelSize   sizes[MODULE_K_NCHANNELS];
 
-   #pragma     HLS ARRAY_PARTITION variable=etx       complete dim=1
-   PRAGMA_HLS (HLS ARRAY_PARTITION varible=end dim=1 factor=NPARALLEL)
+   #pragma     HLS ARRAY_PARTITION variable=etx         complete dim=1
+   PRAGMA_HLS (HLS ARRAY_PARTITION variable=sizes dim=1 factor=NPARALLEL)
 
    // ------------------------------------
    // Transform 64-bit index to bit index
@@ -2222,9 +2223,9 @@ static inline void
    int bdx = mdx << 6;
    uint64_t buf;
    ap_uint<64> babuf[NPARALLEL];
-   ap_uint<6>  bavld[NPARALLEL] = 0;
+   ap_uint<6>  bavld[NPARALLEL] = {0};
    ap_uint<64> oabuf[NPARALLEL];
-   ap_uint<6>  oavld[NPARALLEL] = 0;
+   ap_uint<6>  oavld[NPARALLEL] = {0};
 
 
    WRITE_ADCS_CHANNEL_LOOP:
@@ -2235,8 +2236,8 @@ static inline void
 
       write_adcs_encode_chan (ichan);
       encodeN (etx, sizes, hists,  adcs, PACKET_K_NSAMPLES, NPARALLEL, NSERIAL, ichan);
-      writeN  (mAxis, buf, bdx,   babuf, bavld,
-                                  oabuf, oavld, etx, sizes, NPARALLEL, NSERIAL, ichan);
+      //writeN  (mAxis, buf, bdx,   babuf, bavld,
+      //                            oabuf, oavld, etx, sizes, NPARALLEL, NSERIAL, ichan);
    }
 
    return;
@@ -2374,9 +2375,37 @@ static void writeN (AxisOut                        &mAxis,
 }
 /* -------------------------------------------------------------------- */
 
+/* ---------------------------------------------------------------------- */
+#ifndef __SYNTHESIS__
+#define PACK_DATA_PRINT 1
+#endif
+/* ---------------------------------------------------------------------- */
 
 
+
+/* ---------------------------------------------------------------------- */
+#if  PACK_DATA_PRINT
+
+static void pack_data_print (int        bleft,
+                             ap_uint<64> data,
+                             int       rshift,
+                             int       lshift)
+{
+std::cout << "Pack data read("
+          << std::hex << bleft << " = " << std::setw(16) << data
+          << "l:rshift" << std::setw(2) << lshift << ':'
+          << rshift << std::endl;
+}
+
+/* ---------------------------------------------------------------------- */
+#else
+/* ---------------------------------------------------------------------- */
+
+#define pack_data_print(_bleft, _data, _rshift, _lshift)
+
+#endif
 /* -------------------------------------------------------------------- */
+
 
 static void pack (AxisOut                           &mAxis,
                   uint64_t                            &buf,
@@ -2411,7 +2440,7 @@ static void pack (AxisOut                           &mAxis,
    {
       buf  <<= lshift;
       data   = bs.m_out.read ();
-      std::cout << "Pack data read(" << std::hex << bleft << " = " << std::setw(16) << data << "l:rshift" << std::setw(2) << lshift << ':' << rshift << std::endl;
+      pack_data_print (bleft, data, rshift, lshift);
       buf   |= data >> rshift;
       commit (mAxis, mdx, true, buf, 0, 0);
       bleft -= 64;
@@ -2512,7 +2541,7 @@ static void write_overflow (AxisOut  &mAxis,
    for (int idx = 0; idx < n64; idx++)
    {
        #pragma HLS PIPELINE
-       #pragma HLS LOOP_TRIPLONE min=1 max=192 avg=8
+       #pragma HLS LOOP_TRIPCOUNT min=1 max=192 avg=8
 
        uint64_t w64;
        bs.m_out.read_nb (w64);
