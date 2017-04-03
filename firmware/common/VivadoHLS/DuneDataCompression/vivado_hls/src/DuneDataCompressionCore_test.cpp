@@ -683,6 +683,9 @@ int main (int argc, char const *argv[])
 {
 #  define NSLICES 4
 
+   return 0;  //////   !!! KLUDGE !!!
+
+
     MyStreamIn                sAxis ("In");
     MyStreamOut              mAxis ("Out");
     ModuleIdx_t              moduleIdx = 3;

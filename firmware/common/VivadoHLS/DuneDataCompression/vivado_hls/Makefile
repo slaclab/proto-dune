@@ -9,7 +9,7 @@ export TOP_DIR  = $(abspath $(PWD)/../../../..)
 
 # Set ARGV, CFLAGs, LDFLAGs
 export ARGV      =
-export CFLAGS    = 
+export CFLAGS    = -std=c++0x
 export CXXFLAGS  = 
 export LDFLAGS   =
 

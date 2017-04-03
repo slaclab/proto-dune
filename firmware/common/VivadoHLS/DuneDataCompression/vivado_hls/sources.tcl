@@ -17,6 +17,7 @@ set_top DuneDataCompressionCore
 
 ## Add source code
 add_files ${PROJ_DIR}/src/DuneDataCompressionCore.cpp -cflags ${CFLAGS}
+add_files ${PROJ_DIR}/src/AP-Decode.cpp -cflags ${CFLAGS}
 
 ## Add testbed files
 add_files -tb ${PROJ_DIR}/src/DuneDataCompressionCore_test.cpp -cflags ${CFLAGS}
