@@ -29,6 +29,8 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2017.04.05  jjr  Added rx and tx DMA buffer counts.  The new DMA driver
+//                  lumps these buffers together. 
 // 2016.11.05  jjr  Added receive sequence number
 // 2016.11.05  jjr  Incorporated new DaqHeader
 // 2016.10.27  jjr  Added throttling of the output in the configuation block
@@ -235,11 +237,13 @@ class DaqBuffer {
       struct timeval _lastTime;
  
       // Device interfaces
-      int32_t     _fd;
-      uint32_t    _bSize;
-      uint32_t    _bCount;
-      uint8_t  ** _sampleData;
-
+      int32_t             _fd;   /*!< File descriptor of DMA driver               */
+      uint32_t         _bSize;   /*!< Size, in bytes, of the DMA buffers          */
+      uint32_t        _bCount;   /*!< Total count of DMA buffers (tx + rx)        */
+      uint32_t       _rxCount;   /*!< Count of DMA receive  buffers               */
+      uint32_t       _txCount;   /*!< Count of DMA transmit buffers               */
+      uint8_t  ** _sampleData;   /*!< Index -> virtual address DMA buffer mapping */
+ 
       // Static methods for threads
       static void * rxRunRaw   ( void *p );
       static void * workRunRaw ( void *p );

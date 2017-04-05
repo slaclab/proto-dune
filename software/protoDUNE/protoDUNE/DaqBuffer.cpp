@@ -126,16 +126,16 @@ bool DaqBuffer::open ( string devPath ) {
       return(false);
    }
 
-#if 1
+
    // Get DMA buffers
    if ( (_sampleData = (uint8_t **)dmaMapDma(_fd,&_bCount,&_bSize)) == NULL ) {
       fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
       this->close();
       return(false);
    }
-#endif
 
-
+   _rxCount = dmaGetRxBuffCount (_fd);
+   _txCount = dmaGetTxBuffCount (_fd);
 
    // Create queues
    _workQueue    = new CommQueue(RxFrameCount+5,true);
@@ -173,7 +173,6 @@ bool DaqBuffer::open ( string devPath ) {
 #endif
 
 
-
    
    // Set priority
 #if 1
@@ -194,7 +193,6 @@ bool DaqBuffer::open ( string devPath ) {
 
 
 #endif
-
 
    // Create Work Thread
    _workThreadEn = true;
@@ -242,9 +240,8 @@ bool DaqBuffer::open ( string devPath ) {
    // Init
    resetCounters ();
 
-   fprintf (stderr, "Running with %d buffers\n", _bCount);
-
-   printf("DaqBuffer::open -> Running with %i buffers of %i bytes\n",_bCount,_bSize);
+   printf("DaqBuffer::open -> Running with %i + %i = %i (tx+rx=total) buffers of %i bytes\n",
+          _txCount, _rxCount, _bCount,_bSize);
    return(true);
 }
 
@@ -554,30 +551,28 @@ void DaqBuffer::rxRun () {
    // !!! KLUDGE !!! CHECK READBILITY OF THE BUFFERS
    // ----------------------------------------------
    uint16_t bad[_bCount];
-   int nbad = AxiBufChecker::check_buffers (bad, _sampleData, _bCount, _bSize);
-   for (int idx = 0; idx < nbad; idx++) 
-   {
-      fprintf (stderr, "Bad = %3d\n", bad[idx]);
-   }
+   AxiBufChecker::check_buffers (bad, _sampleData, _bCount, _bSize);
    // ----------------------------------------------
       
       
-
    // -------------------------------------------------------
    // !!! KLUDGE !!!
    // Get rid of the bad buffers
    // ------------------------------
    int nbufs     =    _bCount;
+   int nrxbufs   =   _rxCount;
    AxiBufChecker abc[_bCount];
+
    for (int idx = 0; idx < 2; idx++)
    {
       int nbad = AxiBufChecker::extreme_vetting (abc 
                                                  ,_fd,
                                                  idx, 
                                                  _sampleData, 
+                                                 nrxbufs,
                                                  nbufs, 
                                                  _bSize);
-      nbufs -= nbad;
+      nrxbufs -= nbad;
    }
 
    fprintf (stderr, "Done\n");
@@ -786,7 +781,6 @@ void DaqBuffer::txRun () {
    // Init iov
    msg_iov[0].iov_base = &header;
    msg_iov[0].iov_len  = sizeof(struct DaqHeader);
-
 
    while ( _txThreadEn ) 
    {
