@@ -1,7 +1,7 @@
 # Setup 
 
 #### Checkout the GIT reposotiry from github 
-$ git clone --progress --recursive -v https://github.com/slaclab/proto-dune
+$ git clone --recursive git@github.com:slaclab/proto-dune
 
 #### Make a symbolic link to the output build directory (typically a local hardware, not network drive)
 $ ln -s /path/to/build proto-dune/firmware/build
@@ -10,7 +10,7 @@ $ ln -s /path/to/build proto-dune/firmware/build
 $ source proto-dune/firmware/setup_env_slac.csh
 
 ### If on the CERN AFS network, source this script to setup the Vivado environment and licensing  
-TBD
+TBD 
 
 # Building the DTM firmware
 

@@ -10,7 +10,7 @@
 *.o
 *.mod.c
 *.mod.o
-*.ko-*xilinx*
+
 
 .*.ko.cmd
 .*.mod.o.cmd

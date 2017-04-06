@@ -5,7 +5,7 @@
 -- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2016-11-02
+-- Last update: 2017-03-22
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -61,8 +61,8 @@ entity ProtoDuneDpm10GbE is
       dtmRefClkM  : in    sl;
       dtmClkP     : in    slv(1 downto 0);
       dtmClkM     : in    slv(1 downto 0);
-      dtmFbP      : in    sl;
-      dtmFbM      : in    sl;
+      dtmFbP      : out   sl;
+      dtmFbM      : out   sl;
       -- Clock Select
       clkSelA     : out   slv(1 downto 0);
       clkSelB     : out   slv(1 downto 0));
@@ -102,7 +102,7 @@ architecture TOP_LEVEL of ProtoDuneDpm10GbE is
    signal ibMacSlave  : AxiStreamSlaveType;
    signal obMacMaster : AxiStreamMasterType;
    signal obMacSlave  : AxiStreamSlaveType;
-   
+
 begin
 
    led <= "00";
@@ -119,7 +119,7 @@ begin
          ETH_10G_EN_G       => true,
          UDP_SERVER_EN_G    => true,
          UDP_SERVER_SIZE_G  => 1,
-         UDP_SERVER_PORTS_G => RSSI_PORTS_C) 
+         UDP_SERVER_PORTS_G => RSSI_PORTS_C)
       port map (
          -- I2C
          i2cSda             => i2cSda,
@@ -178,7 +178,7 @@ begin
    U_DMA_XBAR : entity work.RceG3AppRegCrossbar
       generic map (
          TPD_G        => TPD_G,
-         COMMON_CLK_G => true) 
+         COMMON_CLK_G => true)
       port map (
          -- DMA Bus: SRPv0 Protocol
          dmaClk             => dmaClk(1),
@@ -242,6 +242,9 @@ begin
          dtmClkN         => dtmClkM,
          dtmFbP          => dtmFbP,
          dtmFbN          => dtmFbM,
+         -- Reference 200 MHz clock
+         refClk200       => ref200Clk,
+         refRst200       => ref200Rst,            
          -- User ETH interface (ethClk domain)
          ethClk          => ethClk,
          ethRst          => ethRst,
@@ -250,6 +253,6 @@ begin
          ibMacMaster     => ibMacMaster,
          ibMacSlave      => ibMacSlave,
          obMacMaster     => obMacMaster,
-         obMacSlave      => obMacSlave);         
+         obMacSlave      => obMacSlave);
 
 end architecture TOP_LEVEL;

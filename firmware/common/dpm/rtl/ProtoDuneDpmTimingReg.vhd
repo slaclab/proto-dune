@@ -1,13 +1,8 @@
 -------------------------------------------------------------------------------
--- Title      : 
--------------------------------------------------------------------------------
 -- File       : ProtoDuneDpmTimingReg.vhd
--- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-09-26
--- Last update: 2017-01-19
--- Platform   : 
--- Standard   : VHDL'93/02
+-- Last update: 2017-03-22
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -33,11 +28,20 @@ entity ProtoDuneDpmTimingReg is
       TPD_G            : time            := 1 ns;
       AXI_ERROR_RESP_G : slv(1 downto 0) := AXI_RESP_DECERR_C);
    port (
-      -- Timing Interface (clk domain)
-      clk             : in  sl;
-      rst             : in  sl;
+      -- WIB Interface (wibClk domain)
+      wibClk          : in  sl;
+      wibRst          : in  sl;
       runEnable       : in  sl;
       swFlush         : out sl;
+      -- Timing RX Interface (cdrClk domain)
+      cdrClk          : in  sl;
+      cdrRst          : in  sl;
+      cdrEdgeSel      : out sl;
+      cdrDataInv      : out sl;
+      timingLinkUp    : in  sl;
+      cdrLocked       : in  sl;
+      timingStat      : in  slv(3 downto 0);
+      freqMeasured    : in  slv(31 downto 0);
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
       axilRst         : in  sl;
@@ -49,9 +53,11 @@ end ProtoDuneDpmTimingReg;
 
 architecture rtl of ProtoDuneDpmTimingReg is
 
-   constant STATUS_SIZE_C : positive := 1;
+   constant STATUS_SIZE_C : positive := 2;
 
    type RegType is record
+      cdrEdgeSel     : sl;
+      cdrDataInv     : sl;
       swFlush        : sl;
       cntRst         : sl;
       rollOverEn     : slv(STATUS_SIZE_C-1 downto 0);
@@ -61,6 +67,8 @@ architecture rtl of ProtoDuneDpmTimingReg is
    end record;
 
    constant REG_INIT_C : RegType := (
+      cdrEdgeSel     => '0',
+      cdrDataInv     => '0',
       swFlush        => '1',
       cntRst         => '1',
       rollOverEn     => (others => '0'),
@@ -74,13 +82,15 @@ architecture rtl of ProtoDuneDpmTimingReg is
    signal statusOut : slv(STATUS_SIZE_C-1 downto 0);
    signal statusCnt : SlVectorArray(STATUS_SIZE_C-1 downto 0, 31 downto 0);
 
+   signal linkUp : sl;   
+   
    -- attribute dont_touch               : string;
    -- attribute dont_touch of r          : signal is "TRUE";
 
 begin
 
-   comb : process (axilReadMaster, axilRst, axilWriteMaster, r, statusCnt,
-                   statusOut) is
+   comb : process (axilReadMaster, axilRst, axilWriteMaster, freqMeasured, r,
+                   statusCnt, statusOut, timingStat) is
       variable v      : RegType;
       variable regCon : AxiLiteEndPointType;
    begin
@@ -105,9 +115,14 @@ begin
          axiSlaveRegisterR(regCon, toSlv((4*i), 12), 0, muxSlVectorArray(statusCnt, i));
       end loop;
       axiSlaveRegisterR(regCon, x"400", 0, statusOut);
+      axiSlaveRegisterR(regCon, x"404", 0, freqMeasured);
+      axiSlaveRegisterR(regCon, x"408", 0, timingStat);
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.swFlush);
+      axiSlaveRegister(regCon, x"804", 0, v.cdrEdgeSel);
+      axiSlaveRegister(regCon, x"808", 0, v.cdrDataInv);
+
       axiSlaveRegister(regCon, x"FF0", 0, v.rollOverEn);
       axiSlaveRegister(regCon, x"FF4", 0, v.cntRst);
       axiSlaveRegister(regCon, x"FFC", 0, v.hardRst);
@@ -137,14 +152,27 @@ begin
       end if;
    end process seq;
 
-   U_SyncOutVec : entity work.SynchronizerVector
+   U_SyncVec : entity work.SynchronizerVector
       generic map (
          TPD_G   => TPD_G,
-         WIDTH_G => 1)
+         WIDTH_G => 2)
       port map (
-         clk        => clk,
+         clk        => wibClk,
          dataIn(0)  => r.swFlush,
-         dataOut(0) => swFlush);
+         dataIn(1)  => timingLinkUp,
+         dataOut(0) => swFlush,
+         dataOut(1) => linkUp);
+
+   U_CdrSync : entity work.SynchronizerVector
+      generic map (
+         TPD_G   => TPD_G,
+         WIDTH_G => 2)
+      port map (
+         clk        => cdrClk,
+         dataIn(0)  => r.cdrEdgeSel,
+         dataIn(1)  => r.cdrDataInv,
+         dataOut(0) => cdrEdgeSel,
+         dataOut(1) => cdrDataInv);
 
    U_SyncStatusVector : entity work.SyncStatusVector
       generic map (
@@ -155,6 +183,7 @@ begin
          WIDTH_G        => STATUS_SIZE_C)
       port map (
          -- Input Status bit Signals (wrClk domain)
+         statusIn(1)  => linkUp,
          statusIn(0)  => runEnable,
          -- Output Status bit Signals (rdClk domain)  
          statusOut    => statusOut,
@@ -163,7 +192,7 @@ begin
          rollOverEnIn => r.rollOverEn,
          cntOut       => statusCnt,
          -- Clocks and Reset Ports
-         wrClk        => clk,
+         wrClk        => wibClk,
          rdClk        => axilClk);
 
 end rtl;

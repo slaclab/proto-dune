@@ -185,19 +185,15 @@ bool DaqBuffer::open ( string devPath ) {
    fprintf (stderr, "Policy = %d priority = %d time = %lu.%06lu\n", 
             policy, rxParam.sched_priority, cur.tv_sec, cur.tv_usec);
 
-   rxParam.sched_priority = 3;
-   policy                 = SCHED_FIFO;
-   pthread_setschedparam(_rxThread, policy, &rxParam);
-
-
-   pthread_getschedparam (_rxThread, &policy, &rxParam);
-   fprintf (stderr, "Policy = %d priority = %d\n", 
-            policy, rxParam.sched_priority);
+   //rxParam.sched_priority = 3;
+   //policy                 = SCHED_FIFO;
+   //pthread_setschedparam(_rxThread, policy, &rxParam);
+   //pthread_getschedparam (_rxThread, &policy, &rxParam);
+   //fprintf (stderr, "Policy = %d priority = %d\n", 
+   //         policy, rxParam.sched_priority);
 
 
 #endif
-
-   return true;
 
 
    // Create Work Thread
@@ -495,8 +491,12 @@ static inline bool post (CommQueue   *rxQueue,
       // Successfully allocated a buffer, try to prompt the data
       tempBuffer->setData (index, data, nbytes, rx_sequence);
       bool posted = workQueue->push (tempBuffer);
+
+      printf ("Posted\n");
       return posted;
    }
+
+
 
 
    return false;
@@ -600,7 +600,7 @@ void DaqBuffer::rxRun () {
          lastUser = axisGetLuser(flags);
          uint32_t print_it = ((DumpCounter & 0xfffff) < 4) & 0;
          DumpCounter += 1;
-         if (print_it)
+         if ( print_it)
          {
             printf ("Index:%4u  dest: %3u rxSize = %6u\n", index, dest, rxSize);
          }
@@ -665,15 +665,15 @@ void DaqBuffer::rxRun () {
                 // Should this frame be accepted
                if (naccept >= 0)
                {
-                  //printf ("Posting: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
-                  //         naccept, nwait);
+                  printf ("Posting[%3d]: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
+                         index, naccept, nwait);
 
-                   posted = post (_rxQueue, 
-                                  _workQueue, 
-                                  _sampleData[index], 
-                                  index, 
-                                  rxSize,
-                                  _rxSequence);
+                  posted = post (_rxQueue, 
+                                 _workQueue, 
+                                 _sampleData[index], 
+                                 index, 
+                                 rxSize,
+                                 _rxSequence);
                   naccept -= 1;
                }
                else
@@ -748,8 +748,7 @@ void DaqBuffer::workRun () {
       if ( (tempBuffer = (FrameBuffer *)_workQueue->pop(WaitTime)) == NULL) continue;
 
       // Custom code here
-      txBuffer = tempBuffer;
-     
+      txBuffer = tempBuffer;     
       _txReqQueue->push(txBuffer);
       _txPend++;
    }
@@ -796,7 +795,6 @@ void DaqBuffer::txRun () {
       {
          continue;
       }
-
 
       int disconnect_wait = 10;
       if (_config._blowOffTxEth == 0)
