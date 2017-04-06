@@ -16,7 +16,7 @@ else
 endif
 
 # Setup the VCS software
-source /afs/slac.stanford.edu/g/reseng/synopsys/vcs-mx/I-2014.03/settings.csh
+source /afs/slac.stanford.edu/g/reseng/synopsys/vcs-mx/L-2016.06/settings.csh
 source /afs/slac.stanford.edu/g/reseng/synopsys/ns/G-2012.06/settings.csh
 source /afs/slac.stanford.edu/g/reseng/synopsys/CosmosScope/D-2010.03/settings.csh
 
