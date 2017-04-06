@@ -315,22 +315,21 @@ class LbneAliasMap:
             ( '10.0.1.196' ):'FNAL-122',
             ( '10.0.1.197' ):'FNAL-130',
             ( '10.0.1.198' ):'FNAL-132',
-            ( '10.0.1.200' ):'FNAL-DTM1',
+            ( '10.0.1.200' ):'FNAL-DTM1', 
             ###################
-            # BU Defined RCEs
+            # CERN Defined RCEs
             ###################
-            ( '192.168.10.171' ):'BU-SM',
-            ( '192.168.10.128' ):'BU-200',
-            ( '192.168.10.129' ):'BU-202',
-            ( '192.168.10.130' ):'BU-210',
-            ( '192.168.10.131' ):'BU-212',
-            ( '192.168.10.132' ):'BU-220',
-            ( '192.168.10.133' ):'BU-222',
-            ( '192.168.10.134' ):'BU-230',
-            ( '192.168.10.135' ):'BU-232',
-            ( '192.168.10.136' ):'BU-DTM'
+            ( '192.168.1.2' ):'CERN-SM',
+            ( '10.193.160.31' ):'CERN-100',
+            ( '10.193.160.32' ):'CERN-102',
+            ( '10.193.160.33' ):'CERN-110',
+            ( '10.193.160.34' ):'CERN-112',
+            ( '10.193.160.35' ):'CERN-120',
+            ( '10.193.160.36' ):'CERN-122',
+            ( '10.193.160.37' ):'CERN-130',
+            ( '10.193.160.38' ):'CERN-132',
+            ( '10.193.160.39' ):'CERN-DTM1' 
             }
-
         self.sector_map = dict((v,k) for k, v in self.slot_map.iteritems())
 
     def getSectorMap(self):
@@ -564,7 +563,8 @@ def main(argv):
     elif (cmd=="check_host" and argc==0):
         ssh_cmd  = "uname -r; "
         ssh_cmd += "uptime; "
-        ssh_cmd += "/mnt/host/protoDUNE/rceData/dtm_src/bin/firmware_version; "
+#        ssh_cmd += "/mnt/host/protoDUNE/rceData/dtm_src/bin/firmware_version; "
+        ssh_cmd += "sysinfo|grep 'bitfile'; "
         ssh_cmd += "ps auxww | grep rceServer | grep -v grep;"
         ssh_cmd += "df -h ."
         g.action("ssh_cmd",ssh_cmd)
