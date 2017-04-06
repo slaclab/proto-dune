@@ -114,7 +114,8 @@ begin
       generic map (
          TPD_G              => TPD_G,
          BUILD_INFO_G       => BUILD_INFO_G,
-         RCE_DMA_MODE_G     => RCE_DMA_AXIS_C,
+         -- RCE_DMA_MODE_G     => RCE_DMA_AXIS_C,-- AXIS V1 Driver
+         RCE_DMA_MODE_G     => RCE_DMA_AXISV2_C,-- AXIS V2 Driver
          ETH_10G_EN_G       => true,
          UDP_SERVER_EN_G    => true,
          UDP_SERVER_SIZE_G  => 1,
