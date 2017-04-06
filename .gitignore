@@ -1,0 +1,7 @@
+# Compiled source files
+*.o
+*.so
+*.pyc
+*.bit
+*.mcs
+

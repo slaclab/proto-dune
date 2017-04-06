@@ -1,5 +1,7 @@
+export GIT_BYPASS = 0
+
 # define firmware version
-export PRJ_VERSION = 0x0000002B
+export PRJ_VERSION = 0x0000002C
 
 # Define target output
 target: bit
@@ -13,6 +15,7 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/03/22 0x0000002C llr  Added the first draft of the CERN Timing receiver
 # 2017/03/01 0x0000002B rth  Added register settable cache setting for DMA
 # 2017/01/31 0x0000002A llr  Added 1 second linkUP watchdog resets to WIB links
 # 2017/01/19 0x00000029 llr  Added OneShotWibCapture command
