@@ -417,7 +417,7 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
 
       if ( (status != last_status) && idx != 0)
       {
-         first_idx = idx + 1;
+         first_idx = idx;
          if (need_lf) fputc ('\n', stderr);
       }
 
@@ -428,7 +428,7 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          // They are permanently out of circulation
          // ---------------------------------------
          fprintf (stderr,
-                  "       \033[1;31mBuffer  %4u      is a bad hombre, not returned\033[0m\n",
+                  "       \033[1;31mBuffer  %4u      is a bad hombre, deported/not returned\033[0m\n",
                   idx);
          need_lf = false;
       }
@@ -441,14 +441,15 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          int status = dmaRetIndex (fd, idx);
          if (status)
          {
-            fprintf (stderr, "       Buffer  %4u      had dmaRetIndex failure errno=%d\n", 
+            fprintf (stderr,
+                     "       Buffer  %4u      had dmaRetIndex failure errno=%d\n", 
                      idx, errno);
             need_lf   = false;
-            first_idx = idx + 1;
          }
          else
          {
-            fprintf (stderr, "       Buffers %4u-%4u were successfully returned\r", 
+            fprintf (stderr,
+                     "       Buffers %4u-%4u were successfully returned\r", 
                      first_idx, idx);
             need_lf = true;
          }
@@ -460,9 +461,10 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          // The most likely reason is that these buffers 
          // were previously removed from circulation
          // --------------------------------------------
-         fprintf (stderr, "       Buffers %4u-%4u were not catalogued - likely tx's\r",
+         fprintf (stderr, 
+                  "       Buffers %4u-%4u were not catalogued - likely tx's\r",
                   first_idx, idx);
-         need_lf = true;
+         need_lf   = true;
       }
 
       last_status = status;

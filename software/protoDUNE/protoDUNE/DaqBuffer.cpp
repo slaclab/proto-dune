@@ -106,10 +106,12 @@ bool DaqBuffer::open ( string devPath ) {
 
    this->close();
 
+   fprintf (stderr, "Dma device = %s\n", devPath.c_str ());
 
    // Open device
 #ifndef RTEMS // FIX
-   if ( (_fd = ::open(devPath.c_str(),O_RDWR|O_NONBLOCK)) < 0 ) {
+//   if ( (_fd = ::open(devPath.c_str(),O_RDWR|O_NONBLOCK)) < 0 ) {
+   if ( (_fd = ::open("/dev/axi_stream_dma_0", O_RDWR|O_NONBLOCK)) < 0 ) {
       fprintf(stderr,"DaqBuffer::open -> Erroro pening device\n");
       return(false);
    }
@@ -117,8 +119,14 @@ bool DaqBuffer::open ( string devPath ) {
    _fd = -1;
 #endif
 
+   /*
+    | 2017.04.08 -- jjr
+    | -----------------
+    | Adjustmets for the V2 driver
+   */
    dmaInitMaskBytes(mask);
-   dmaAddMaskBytes(mask,0);
+   dmaAddMaskBytes(mask,128); // HLS[0]
+   dmaAddMaskBytes(mask,129); // HLS[1]
 
    if  ( dmaSetMaskBytes(_fd,mask) < 0 ) {
       ::close(_fd);
@@ -530,14 +538,6 @@ void DaqBuffer::rxRun () {
    fprintf (stderr, "Rxrun time = %lu.%06lu\n",
             cur.tv_sec, cur.tv_usec);
       
-#if 0
-   // Get DMA buffers
-   if ( (_sampleData = axisMapUser(_fd,&_bCount,&_bSize)) == NULL ) {
-      fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
-      this->close();
-      return;
-   }
-#endif
 
    char *line __attribute__ ((unused));
 
@@ -579,9 +579,18 @@ void DaqBuffer::rxRun () {
    // -------------------------------------------------------
 
 
+   struct timeval curTime;
+   struct timeval prvTime;
+   struct timeval difTime;
+   uint32_t     count = 0;
+
+   gettimeofday (&prvTime, NULL);
+
+
+
    // Run while enabled
    while (_rxThreadEn) {
-      timeout.tv_sec  = 0;
+      timeout.tv_sec  = 1;
       timeout.tv_usec = WaitTime;
       FD_ZERO(&fds);
       FD_SET(_fd,&fds);
@@ -592,17 +601,30 @@ void DaqBuffer::rxRun () {
       // Attempt to read
       if ((rxSize = dmaReadIndex(_fd,&index,&flags,NULL, &dest)) > 0 )
       {
+         gettimeofday (&curTime, NULL);
+         timersub (&curTime, &prvTime, &difTime); 
+
+         uint32_t interval = 1000 * 1000 * difTime.tv_sec 
+                           +               difTime.tv_usec;
+         count += 1;
+         if (interval >= 10* 1000 * 1000)
+         {
+            fprintf (stderr, "Rate = %6u/%9u\n", count, interval);
+            prvTime = curTime;
+            count   = 0;
+         }
+
          lastUser = axisGetLuser(flags);
          uint32_t print_it = ((DumpCounter & 0xfffff) < 4) & 0;
          DumpCounter += 1;
-         if ( print_it)
+         if (print_it)
          {
             printf ("Index:%4u  dest: %3u rxSize = %6u\n", index, dest, rxSize);
          }
 
          //////////////////////////////////////////////////////////////////////
          // Check if blowing off the DMA data
-         if ( (_config._blowOffDmaData != 0) || (dest > MAX_DEST) ) {
+         if ( (_config._blowOffDmaData != 0) || ((dest != 128) && (dest != 129)) ) {
             // Return index value 
             dmaRetIndex(_fd,index);         
             
@@ -688,6 +710,10 @@ void DaqBuffer::rxRun () {
                }
             }            
          }
+      }
+      else
+      {
+         // Placeholder for empty reads
       }
 
 
