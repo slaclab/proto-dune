@@ -64,8 +64,8 @@ DataDpmSystem::DataDpmSystem (string defaults, uint32_t idx ) : System("DataDpmS
     | Adjustmets for the V2 driver
    */
    dest_[1] = new MultDestAxis("/dev/axi_stream_dma_0", 0); // Future FEB path???
-   dest_[2] = new MultDestAxis("/dev/axi_stream_dma_0",64); // DMA'd Local register Interface
-
+   //dest_[2] = new MultDestAxis("/dev/axi_stream_dma_0",64); // DMA'd Local register Interface
+   dest_[2] = new MultDestAxis("/dev/axi_stream_dma_1",0); // DMA'd Local register Interface
 
    link = new MultLink();
    //link->setDebug(true);

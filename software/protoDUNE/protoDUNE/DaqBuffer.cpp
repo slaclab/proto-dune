@@ -111,7 +111,8 @@ bool DaqBuffer::open ( string devPath ) {
    // Open device
 #ifndef RTEMS // FIX
 //   if ( (_fd = ::open(devPath.c_str(),O_RDWR|O_NONBLOCK)) < 0 ) {
-   if ( (_fd = ::open("/dev/axi_stream_dma_0", O_RDWR|O_NONBLOCK)) < 0 ) {
+   //if ( (_fd = ::open("/dev/axi_stream_dma_0", O_RDWR|O_NONBLOCK)) < 0 ) {
+   if ( (_fd = ::open("/dev/axi_stream_dma_2", O_RDWR|O_NONBLOCK)) < 0 ) {
       fprintf(stderr,"DaqBuffer::open -> Erroro pening device\n");
       return(false);
    }
@@ -125,8 +126,10 @@ bool DaqBuffer::open ( string devPath ) {
     | Adjustmets for the V2 driver
    */
    dmaInitMaskBytes(mask);
-   dmaAddMaskBytes(mask,128); // HLS[0]
-   dmaAddMaskBytes(mask,129); // HLS[1]
+   //dmaAddMaskBytes(mask,128); // HLS[0]
+   //dmaAddMaskBytes(mask,129); // HLS[1]
+   dmaAddMaskBytes(mask,0); // HLS[0]
+   dmaAddMaskBytes(mask,1); // HLS[1]
 
    if  ( dmaSetMaskBytes(_fd,mask) < 0 ) {
       ::close(_fd);
