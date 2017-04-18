@@ -50,7 +50,7 @@ architecture mapping of DuneDataCompression is
    -- 2017/01/06 llr -- Decreased back to 7 (not sure if I have the most up-to-date version of JJ's code or if he forgot to SVN commit this file with his other HLS code)
    -- 2016/11/29 jjr -- Increased back to 8 after adding some new stuff
    -- 2016/10/18 jjr -- Reduced after eliminating the channel-by-channel status
-   constant ADDR_WIDTH_C : natural := 7;
+   constant ADDR_WIDTH_C : natural := 8
 
    component DuneDataCompressionCore
       port (
