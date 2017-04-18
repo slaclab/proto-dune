@@ -585,7 +585,8 @@ void DaqBuffer::rxRun () {
    struct timeval curTime;
    struct timeval prvTime;
    struct timeval difTime;
-   uint32_t     count = 0;
+   uint32_t     count[3] = {0, 0, 0};
+   uint32_t     empty    =  0;
 
    gettimeofday (&prvTime, NULL);
 
@@ -593,7 +594,7 @@ void DaqBuffer::rxRun () {
 
    // Run while enabled
    while (_rxThreadEn) {
-      timeout.tv_sec  = 1;
+      timeout.tv_sec  = 0;
       timeout.tv_usec = WaitTime;
       FD_ZERO(&fds);
       FD_SET(_fd,&fds);
@@ -609,12 +610,18 @@ void DaqBuffer::rxRun () {
 
          uint32_t interval = 1000 * 1000 * difTime.tv_sec 
                            +               difTime.tv_usec;
-         count += 1;
+         if      (dest == 128) count[0] += 1;
+         else if (dest == 129) count[1] += 1;
+         else                  count[2] += 1;
          if (interval >= 10* 1000 * 1000)
          {
-            fprintf (stderr, "Rate = %6u/%9u\n", count, interval);
-            prvTime = curTime;
-            count   = 0;
+            uint32_t total = count[0] + count[1] + count[2];
+            fprintf (stderr, "Empty = %6u Rate = %6u+%6u+%6u=%6u/%9u\n", 
+                     empty, count[0], count[1], count[2], total, interval);
+            prvTime  = curTime;
+            count[0] = 0;
+            count[1] = 0;
+            count[2] = 0;
          }
 
          lastUser = axisGetLuser(flags);
@@ -717,6 +724,7 @@ void DaqBuffer::rxRun () {
       else
       {
          // Placeholder for empty reads
+         empty += 1;
       }
 
 
