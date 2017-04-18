@@ -714,7 +714,7 @@ int main (int argc, char const *argv[])
    last_status = status;
    config.init = false;
 
-   return 0;  //////   !!! KLUDGE !!!
+   ////return 0;  //////   !!! KLUDGE !!!
 
 
 

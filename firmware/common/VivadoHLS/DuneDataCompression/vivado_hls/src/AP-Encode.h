@@ -73,8 +73,24 @@ typedef ap_uint<10>          APE_table_t;
 typedef ap_uint<10+2>        APE_cv_t;
 typedef ap_uint<10+3>        APE_range_t;
 typedef ap_uint<10 + (10+2)> APE_scaled_t;
-typedef ap_int<10+3>         APE_xscv_t; /*  Extended signed reverse of cv_t */
+typedef ap_int<10+3>         APE_xscv_t; /* Extended signed reverseo of cv_t */
 typedef ap_uint<4>           APE_cvcnt_t;
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \struct  APE_instruction
+ *  \brief  The data/instructions needed to encode an ADC value
+ *
+\* ---------------------------------------------------------------------- */
+struct APE_instruction
+{
+   ap_uint< 4>     m_nbits; /*!< The number of valid bits in m_bits       */
+   ap_uint<12>      m_bits; /*!< The bit pattern to insert                */
+   ap_uint< 8>  m_npending; /*!< The number of pending bits               */
+};
 /* ---------------------------------------------------------------------- */
 
 
@@ -318,8 +334,11 @@ static __inline int APE_encode  (APE_etx              &etx,
                                  AdcIn_t      const  *adcs,
                                  int                 nadcs)
 {
-   Histogram::Entry_t table[Histogram::NBins+1];
+   Histogram::Table table[Histogram::NBins+1];
    APE_start (etx);
+
+   //static APE_instruction   instructions[1024];
+   //APE_instruction *instruction = instructions;
 
    hist.encode (etx.ba, table);
    ///APE_dumpStatement (hist.print (0));
@@ -339,7 +358,7 @@ static __inline int APE_encode  (APE_etx              &etx,
    while (--nadcs > 0)
    {
       //////#pragma HLS ALLOCATION instances=insert limit=1 function
-      #pragma HLS PIPELINE II=2
+      #pragma HLS PIPELINE II=1
 
        Histogram::Symbol_t ovr;
        AdcIn_t             cur = *adcs++;
@@ -425,7 +444,7 @@ static __inline int APE_encode  (APE_etx              &etx,
        //  of cv.m_lo = cv.m_hi.
        //
        //  The final detail is that the reduction of cv.m_hi depends
-       //  on whehter there are pending bits. The straight-forward
+       //  on whether there are pending bits. The straight-forward
        //  method would be use the calculated number of pending bits.
        //  However this means that one must wait until that number is
        //  calculated, This introduces too much detail, so the out is
@@ -480,11 +499,17 @@ static __inline int APE_encode  (APE_etx              &etx,
           bits  = lo >> (lo.length () - nsame);
 
           APE_ENCODE_STUFF:
+#if 0
+          instruction->m_nbits    = nsame;
+          instruction->m_bits     = bits;
+          instruction->m_npending = npending;
+          instruction            += 1;
+#else
           ebits  = compose (bits, nsame, npending);
           nebits = nsame + npending;
           etx.ba.insert  (ebits, nebits);
           etx.xba.insert (ebits, nebits);
-
+#endif
           // -----------------------------------------------
           // If finishing up for either because we are done
           // or are encoding an overflow symbol.
@@ -715,6 +740,8 @@ inline APE_cv_t APE_cv::scale_hi (APE_cv_t        lo,
       APE_scaled_t xlo = lo - 1;
       xlo <<= APC_K_NORM_NBITS;
 
+
+
       // -------------------------------------------------------
       // This is the straightforward calculation but cannot map
       // to a*b + c as does the following form.
@@ -763,9 +790,7 @@ inline APE_cv_t APE_cv::scale_lo (APE_cv_t       lo,
    // -------------------------------------------------------
    // This is the straightforward calculation but cannot map
    // to a*b + c as does the following form.
-   // ------------------------------------------------------
-   //////APC_cv_t val = ((range * value) >> APC_K_NORM_NBITS) + lo;
-
+   // ----------------------------------------------------
    APE_cv_t val = ((range * value + xlo) >> APC_K_NORM_NBITS);
 
 
