@@ -357,7 +357,63 @@ int main (int argc, char *const argv[])
 /* ---------------------------------------------------------------------- */
 #endif
 
-static inline void commit (AxisIn &axis, uint64_t w, int user, int last)
+
+class MyStreamIn : public AxisIn
+{
+public:
+   MyStreamIn () :                 AxisIn ("input stream") { return; }
+   MyStreamIn (const char *name) : AxisIn (name)           { return; }
+  ~MyStreamIn ()         { puts ("Deleting input stream"); return; }
+};
+
+class MyStreamOut : public AxisOut
+{
+public:
+   MyStreamOut () :                 AxisIn ("output stream") { return; }
+   MyStreamOut (const char *name) : AxisIn (name)            { return; }
+  ~MyStreamOut ()           { puts ("Deleting output stream"); return; }
+};
+
+
+class Source
+{
+public:
+   Source ();
+
+
+
+   void                    fill_frame (uint64_t                      timestamp,
+                                       uint16_t  const adcs[MODULE_K_NCHANNELS],
+                                       int                           runEnable,
+                                       int                               flush);
+   void              fill_dummy_frame (int     first,
+                                       int     flush);
+   void              fill_empty_frame (int  runEnable,
+                                       int      flush);
+   void         fill_runDisable_frame ();
+   void              fill_flush_frame ();
+   void fill_runDisableAndFlush_frame ();
+   void                        commit (uint64_t    w,
+                                       int      user,
+                                       int      last);
+
+public:
+   MyStreamIn m_src;   /*!< The stream used by the HLS module    */
+   MyStreamIn m_chk;   /*!< The stream used to check the results */
+};
+
+
+Source::Source () :
+      m_src ("In"),
+      m_chk ("Check")
+{
+   return;
+}
+
+
+inline void Source::commit (uint64_t    w,
+                                   int      user,
+                                   int      last)
 {
    AxisIn_t in;
    in.data = w;
@@ -368,17 +424,15 @@ static inline void commit (AxisIn &axis, uint64_t w, int user, int last)
    in.id   = 0;
    in.dest = 0;
 
-   axis.write (in);
+   m_src.write (in);
+   m_chk.write (in);
+
    return;
 }
+;
 
-static void fill_frame (AxisIn                            &axis,
-                        uint64_t                      timestamp,
-                        uint16_t  const adcs[MODULE_K_NCHANNELS],
-                        int                           runEnable,
-                        int                               flush);
-
-static void fill_dummy_frame (AxisIn &axis, int first, int flush)
+void Source::fill_dummy_frame (int     first,
+                               int     flush)
 {
    int     iaxis = 0;
    int      last = (int)AxisLast::Eof;
@@ -392,7 +446,7 @@ static void fill_dummy_frame (AxisIn &axis, int first, int flush)
       adcs[idx] = 0xf00 | idx;
    }
 
-   fill_frame (axis, 0, adcs, 0, flush);
+   fill_frame (0, adcs, 0, flush);
 
    return;
 }
@@ -402,14 +456,15 @@ static void fill_dummy_frame (AxisIn &axis, int first, int flush)
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \brief Writes the data to the AXI input stream
+ *  \brief Writes a dummy WIB frame to the AXI input stream when doing
+ *         a run disable.
  *                                                                        */
 /* ---------------------------------------------------------------------- */
-static inline void fill_runDisable_frame (AxisIn &axis)
+inline void Source::fill_runDisable_frame ()
 {
    int first = (int)AxisUserFirst::Sof;
    int flush = 0;
-   fill_dummy_frame (axis, first, flush);
+   fill_dummy_frame (first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -417,16 +472,17 @@ static inline void fill_runDisable_frame (AxisIn &axis)
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \brief Writes the data to the AXI input stream
- *                                                                        */
+ *  \brief Writes a dummy WIB frame to the AXI input stream when doing
+ *         a frame flush
+ *                                                                                 */
 /* ---------------------------------------------------------------------- */
-static inline void fill_flush_frame (AxisIn &axis)
+inline void Source::fill_flush_frame ()
 {
    int first =  (int)AxisUserFirst::Sof
              |  (int)AxisUserFirst::RunEnable;
    int flush = (int)AxisUserLast::Flush;
 
-   fill_dummy_frame (axis, first, flush);
+   fill_dummy_frame (first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -435,33 +491,36 @@ static inline void fill_flush_frame (AxisIn &axis)
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \brief Writes the data to the AXI input stream
+ *  \brief Writes a dummy WIB frame to the AXI input stream when doing
+ *         a run disable and flush
  *                                                                        */
 /* ---------------------------------------------------------------------- */
-static inline void fill_runDisableAndFlush_frame (AxisIn &axis)
+inline void Source::fill_runDisableAndFlush_frame ()
 {
    int first = (int)AxisUserFirst::Sof;
    int flush = (int)AxisUserLast::Flush;
 
-   fill_dummy_frame (axis, first, flush);
+   fill_dummy_frame (first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \brief Writes the data to the AXI input stream
+ *  \brief Writes an empty WIB frame to the AXI input stream
+ *
+ *  \param[ in] runEnable   The run enable flag, if 0, data is pitched
+ *  \param[ in]     flush   Flush flag
  *                                                                        */
 /* ---------------------------------------------------------------------- */
-static inline void fill_empty_frame (AxisIn   &axis,
-                                     int  runEnable,
-                                     int      flush)
+inline void Source::fill_empty_frame (int  runEnable,
+                                      int      flush)
 {
    int first = (int)AxisUserFirst::Sof
              | (runEnable ? (int)AxisUserFirst::RunEnable : 0);
    flush     = flush ? (int)AxisUserLast::Flush : 0;
 
-   fill_dummy_frame (axis, first, flush);
+   fill_dummy_frame (first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -470,41 +529,48 @@ static inline void fill_empty_frame (AxisIn   &axis,
  *  \brief Writes the data to the AXI input stream
  *
  *  \param[out]      axis   The target AXI stream
+ *  \param[ount]    xaxis   Duplicate copy of the target AXI stream
+ *                          used in checking the output
  *  \param[ in]      nova   The nova timestamp + status bits
  *  \param[ in]       adc   The ADC value
  *  \param[ in] runEnable   The run enable flag, if 0, data is pitched
  *  \param[ in]     flush   Flush flag
  *                                                                        */
 /* ---------------------------------------------------------------------- */
-static void fill_frame (AxisIn                            &axis,
-                        uint64_t                      timestamp,
-                        uint16_t  const adcs[MODULE_K_NCHANNELS],
-                        int                           runEnable,
-                        int                               flush)
+void Source::fill_frame (uint64_t                      timestamp,
+                         uint16_t  const adcs[MODULE_K_NCHANNELS],
+                         int                           runEnable,
+                         int                               flush)
 {
    static const WibFrame::Crate Crate (1);
    static const WibFrame::Slot  Slot  (2);
    static const WibFrame::Fiber Fiber (3);
-   static int                   Phase (8);
 
    static const WibFrame::Id id = WibFrame::id (Crate, Slot, Fiber);
    int iaxis = 0;
 
    int first =              (int)AxisUserFirst::Sof
              | (runEnable ? (int)AxisUserFirst::RunEnable : 0);
+
    int last  = 0;
+
    flush  = flush ? (int)AxisUserLast::Flush : 0;
 
    if (flush) printf ("Nonzero flush = %d\n", flush);
 
+   WibFrame::Rsvd    rsvd0 = 0;
+   WibFrame::ErrWord error = 0;
+
    // Set the first and runEnable flags = 3
-   uint64_t w0 = WibFrame::w0 (timestamp);
-   commit (axis, w0, first, 0);
+   uint64_t w0 = WibFrame::w0 (WibFrame::K28_5, id, rsvd0, error);
+   commit (w0, first, 0);
+
 
    // 125/2 = 64.5
-   WibFrame::Timestamp ts (64*timestamp + timestamp/2 + Phase);
-   uint64_t w1 = WibFrame::w1 (ts, id);
-   commit (axis, w1, 0, 0);
+   uint64_t w1 = WibFrame::w1 (timestamp);
+   commit (w1, 0, 0);
+
+   WibFrame::ColdData::ConvertCount cvt_cnt = timestamp/500;
 
 
    uint16_t const *in = (uint16_t const *)adcs;
@@ -519,13 +585,13 @@ static void fill_frame (AxisIn                            &axis,
       WibFrame::ColdData::ChecksumWord csA (0);
       WibFrame::ColdData::ChecksumWord csB (0);
       uint64_t s0 = WibFrame::ColdData::s0 (0, 0, 0, timestamp);
-      commit (axis, s0, 0, 0);
+      commit (s0, 0, 0);
 
 
       WibFrame::ColdData::ErrReg errReg (0);
       WibFrame::ColdData::Hdrs     hdrs (0);
       uint64_t s1 = WibFrame::ColdData::s1 (errReg, hdrs);
-      commit (axis, s1, 0, 0);
+      commit (s1, 0, 0);
 
 
       int shift =  0;
@@ -543,7 +609,7 @@ static void fill_frame (AxisIn                            &axis,
             /// If on the last word...
             ///if (icolddata == 1 && iadc == 63) { user = flush;  last = (int)AxisLast::Eof; }
             ///if (user) printf ("Non-zero user = %d (last = %d)\n", user, last);
-            commit (axis, sdat, user, last);
+            commit (sdat, user, last);
 
             std::cout << "WibIdx:" << std::setw (2) << iaxis
                       << "  "   << std::setw(16) << std::hex << sdat << std::endl;
@@ -649,25 +715,14 @@ static void print_status (ModuleStatus const &s0,
       return;
 }
 
-class MyStreamIn : public AxisIn
-{
-public:
-   MyStreamIn () :                 AxisIn ("input stream") { return; }
-   MyStreamIn (const char *name) : AxisIn (name)           { return; }
-  ~MyStreamIn ()         { puts ("Deleting input stream"); return; }
-};
 
-class MyStreamOut : public AxisOut
-{
-public:
-   MyStreamOut () :                 AxisIn ("output stream") { return; }
-   MyStreamOut (const char *name) : AxisIn (name)            { return; }
-  ~MyStreamOut ()         { puts ("Deleting output stream"); return; }
-};
-
+static int check (MyStreamOut             &mAxis,
+                  MyStreamIn              &sAxis,
+                 ModuleStatus       &last_status,
+                 ModuleStatus            &status,
+                 int                     isample);
 
 /* ---------------------------------------------------------------------- *//*!
-
   \process Processes all the data from the specified file
 
   \param[out]   slice  The array of time slices to fill
@@ -683,8 +738,7 @@ int main (int argc, char const *argv[])
 {
 #  define NSLICES 4
 
-
-    MyStreamIn                sAxis ("In");
+    Source                             src;
     MyStreamOut              mAxis ("Out");
     ModuleIdx_t              moduleIdx = 3;
     ModuleConfig                    config;
@@ -692,33 +746,33 @@ int main (int argc, char const *argv[])
     ModuleStatus               last_status;
 
 
-   unsigned int run = 15660;
-   static char const DefaultDirectory[] = "/u/eb/convery/ForJJ";
-   static char const *dir = DefaultDirectory;
-
-   static const char  FileTemplate[] = "%s/run%u_binary/run%u.bin";
+   unsigned int                     run =                       15660;
+   static char const DefaultDirectory[] =       "/u/eb/convery/ForJJ";
+   static char const               *dir =            DefaultDirectory;
+   static const char     FileTemplate[] = "%s/run%u_binary/run%u.bin";
    char filename[256];
 
    sprintf (filename, FileTemplate, dir, run, run);
 
-   Packets::Pidx_t     pidx = 1;
+
    uint64_t timestamp = 0;
 
    // This is suppose to do the configuration
    config.init = true;
    config.mode = MODE_K_COPY;
    memset (&last_status, 0, sizeof (last_status));
-   fill_runDisableAndFlush_frame  (sAxis);
-   DuneDataCompressionCore (sAxis, mAxis, moduleIdx, config, status);
+   src.fill_runDisableAndFlush_frame ();
+   DuneDataCompressionCore (src.m_src, mAxis, moduleIdx, config, status);
    print_status (last_status, status, -1);
    last_status = status;
    config.init = false;
 
    ////return 0;  //////   !!! KLUDGE !!!
 
-
-
-   int fd = open (filename, O_RDONLY);
+   // ------------------
+   // Open the test file
+   // ------------------
+   int fd = ::open (filename, O_RDONLY);
    if (fd < 0)
    {
       char const *err = strerror (errno);
@@ -730,13 +784,15 @@ int main (int argc, char const *argv[])
    }
 
 
-   uint16_t    adcs[1024][128];
-
-   unsigned int ntimes    = sizeof (adcs)    / sizeof (adcs[0]);
+   uint16_t adcs[1024][128];
+   unsigned int    ntimes = sizeof (adcs)    / sizeof (adcs[0]);
    unsigned int nchannels = sizeof (adcs[0]) / sizeof (adcs[0][0]);
    for (int its = 0; its < NSLICES; its++)
    {
-      ssize_t nread = read (fd, adcs, sizeof (adcs));
+      // -------------------
+      // Read one time slice
+      // -------------------
+      ssize_t nread = ::read (fd, adcs, sizeof (adcs));
       if (nread != sizeof (adcs))
       {
          if (nread < 0)
@@ -750,17 +806,17 @@ int main (int argc, char const *argv[])
          }
          else
          {
+            // ---
+            // EOF
+            // ---
             break;
          }
       }
 
       int runEnable = 1;
       int flush     = 0;
+      runEnable     = 1;
 
-      AxisOut buf ("Buf");
-
-
-      runEnable = 1;
 
       // Process each slice of 1024 time samples
       for (int isample = 0; isample < 1024; isample++)
@@ -771,14 +827,14 @@ int main (int argc, char const *argv[])
          if (flush | (runEnable == 0))
          {
             printf ("Sample[%4u] Flush:%d runEnable:%d\n", isample, flush, runEnable);
-            fill_empty_frame (sAxis, flush, runEnable);
+            src.fill_empty_frame (flush, runEnable);
          }
          else
          {
-            fill_frame (sAxis, timestamp, adcs[isample], runEnable, flush);
+            src.fill_frame (timestamp, adcs[isample], runEnable, flush);
          }
 
-         DuneDataCompressionCore(sAxis, mAxis, moduleIdx, config, status);
+         DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, status);
 
          if (differ (last_status, status))
          {
@@ -786,41 +842,90 @@ int main (int argc, char const *argv[])
             last_status = status;
          }
 
-         timestamp += 1;
-         while (!mAxis.empty ())
-         {
-            AxisOut_t out = mAxis.read ();
-            std::cout << std::dec << std::setw ( 2) << "User: "  << out.user
-                                                    << " Last: " << out.last
-                      << std::hex << std::setw ( 4) << " Keep: " << out.keep
-                      << std::hex << std::setw (16) << " Data: " << out.data << std::endl;
-
-            if ( (out.user & 2) || (out.last & 1))
-            {
-               // Flush frame
-               if (!buf.empty ())
-               {
-                  print_status (last_status, status, isample);
-                  print (buf);
-               }
-            }
-
-
-            //write_packet   (fd, mAxis);
-            //print_status   (status);
-            //print_packet   (mAxis);
-            //SIMULATION (print_internal (pframe, beg, end);)
-         }
-
+         timestamp += 500;
       }
 
-      pidx ^= 1;
+      check (mAxis, src.m_chk, last_status, status, its * 1024);
+
+
+      //write_packet   (fd, mAxis);
+      //print_status   (status);
+      //print_packet   (mAxis);
+      //SIMULATION (print_internal (pframe, beg, end);)
+
       printf ("NEXT\n");
    }
 
-   if (!mAxis.empty())  std::cout << "mAxis is not empty" << std::endl;
-   if (!sAxis.empty())  std::cout << "sAxis is not empty" << std::endl;
-    //if (!buf.empty  ())  std::cout << "buf   is not empty" << std::endl;
+   if (!    mAxis.empty())  std::cout << "mAxis is not empty" << std::endl;
+   if (!src.m_src.empty())  std::cout << "sAxis is not empty" << std::endl;
+
+   return 0;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Check that the output stream matches the input stream
+ *   \return == 0, okay
+ *   \return != 0, failure
+ *
+ *   \param[in]   mAxis   The output stream
+ *   \param[in]   sAxis   The source input stream
+ *
+\* ---------------------------------------------------------------------- */
+static int check (MyStreamOut             &mAxis,
+                  MyStreamIn              &sAxis,
+                 ModuleStatus       &last_status,
+                 ModuleStatus            &status,
+                 int                     isample)
+{
+   while (1)
+   {
+      bool dst_empty = mAxis.empty ();
+      bool src_empty = sAxis.empty ();
+
+      if (!dst_empty && !src_empty)
+      {
+         AxisOut_t  dst = mAxis.read  ();
+         AxisIn_t   src = sAxis.read  ();
+
+         int error = dst.data != src.data;
+
+         if (error)
+         {
+            std::cout << std::dec << std::setw ( 2) << "User: "  << dst.user
+                                                    << " Last: "  << dst.last
+                      << std::hex << std::setw ( 4) << " Keep: " << dst.keep
+                      << std::hex << std::setw (16) << " Data: " << dst.data
+                      << std::endl;
+         }
+
+         if ( (dst.user & 2) || (dst.last & 1))
+         {
+            // Flush frame
+            if (!mAxis.empty ())
+            {
+               // If not empty, pring what's left
+               print_status (last_status, status, isample);
+               print (mAxis);
+            }
+         }
+      }
+      else if (dst_empty && src_empty)
+      {
+         // This should not happen, dst.user or dst.last should signal the end
+         break;
+      }
+      else
+      {
+         std::cout << "Error" << "dst:src mismatch empty "
+                   << dst_empty << ':' << src_empty
+                   << std::endl;
+      }
+   }
+
    return 0;
 }
 /* ---------------------------------------------------------------------- */
