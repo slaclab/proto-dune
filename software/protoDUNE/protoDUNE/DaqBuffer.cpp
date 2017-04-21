@@ -610,9 +610,9 @@ void DaqBuffer::rxRun () {
 
          uint32_t interval = 1000 * 1000 * difTime.tv_sec 
                            +               difTime.tv_usec;
-         if      (dest == 128) count[0] += 1;
-         else if (dest == 129) count[1] += 1;
-         else                  count[2] += 1;
+         if      (dest == 0) count[0] += 1;
+         else if (dest == 1) count[1] += 1;
+         else                count[2] += 1;
          if (interval >= 10* 1000 * 1000)
          {
             uint32_t total = count[0] + count[1] + count[2];
@@ -634,7 +634,7 @@ void DaqBuffer::rxRun () {
 
          //////////////////////////////////////////////////////////////////////
          // Check if blowing off the DMA data
-         if ( (_config._blowOffDmaData != 0) || ((dest != 128) && (dest != 129)) ) {
+         if ( (_config._blowOffDmaData != 0) || ((dest != 0) && (dest != 1)) ) {
             // Return index value 
             dmaRetIndex(_fd,index);         
             
