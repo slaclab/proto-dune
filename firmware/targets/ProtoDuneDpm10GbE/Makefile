@@ -1,4 +1,4 @@
-export GIT_BYPASS = 0
+export GIT_BYPASS = 1
 
 # define firmware version
 export PRJ_VERSION = 0x0000002D
