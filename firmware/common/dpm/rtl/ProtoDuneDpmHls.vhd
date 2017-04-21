@@ -134,7 +134,8 @@ begin
             TPD_G               => TPD_G,
             PIPE_STAGES_G       => 1,
             EN_FRAME_FILTER_G   => true,
-            VALID_THOLD_G       => 1,
+            -- VALID_THOLD_G       => 1,
+            VALID_THOLD_G       => 384,
             -- FIFO configurations
             BRAM_EN_G           => true,
             XIL_DEVICE_G        => "7SERIES",
@@ -188,9 +189,13 @@ begin
    --------------               
    U_Mux : entity work.AxiStreamMux
       generic map (
-         TPD_G         => TPD_G,
-         PIPE_STAGES_G => 1,
-         NUM_SLAVES_G  => WIB_SIZE_C)
+         TPD_G          => TPD_G,
+         PIPE_STAGES_G  => 1,
+         NUM_SLAVES_G   => WIB_SIZE_C,
+         MODE_G         => "INDEXED",
+         TDEST_LOW_G    => 0,
+         ILEAVE_EN_G    => true,
+         ILEAVE_REARB_G => 0)
       port map (
          -- Clock and reset
          axisClk      => dmaClk,
