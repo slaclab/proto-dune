@@ -135,14 +135,14 @@ begin
             PIPE_STAGES_G       => 1,
             EN_FRAME_FILTER_G   => true,
             -- VALID_THOLD_G       => 1,
-            VALID_THOLD_G       => 384,
+            VALID_THOLD_G       => 128,
             -- FIFO configurations
             BRAM_EN_G           => true,
             XIL_DEVICE_G        => "7SERIES",
             USE_BUILT_IN_G      => false,
             GEN_SYNC_FIFO_G     => false,
             CASCADE_SIZE_G      => CASCADE_SIZE_G,
-            FIFO_ADDR_WIDTH_G   => 9,
+            FIFO_ADDR_WIDTH_G   => 10,
             -- AXI Stream Port Configurations
             SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
             MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)            
