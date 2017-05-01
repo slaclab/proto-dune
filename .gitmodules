@@ -14,3 +14,6 @@
 [submodule "firmware/submodules/surf"]
 	path = firmware/submodules/surf
 	url = git@github.com:/slaclab/surf
+[submodule "firmware/submodules/timing-board-firmware"]
+	path = firmware/submodules/timing-board-firmware
+	url = https://gitlab.cern.ch/protoDUNE-SP-DAQ/timing-board-firmware/
