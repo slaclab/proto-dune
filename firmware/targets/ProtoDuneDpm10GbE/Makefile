@@ -1,4 +1,4 @@
-export GIT_BYPASS = 1
+export GIT_BYPASS = 0
 
 # define firmware version
 export PRJ_VERSION = 0x0000002F
@@ -8,10 +8,6 @@ target: bit
 
 # Define target part
 export PRJ_PART = XC7Z045FFG900-2
-
-# If REMOVE_UNUSED_CODE = 0, all source code is kept after importing to Vivado project
-# If REMOVE_UNUSED_CODE = 1, all unused source code is removed from Vivado project
-export REMOVE_UNUSED_CODE = 1
 
 # Use top level makefile
 include ../../submodules/ruckus/system_vivado.mk

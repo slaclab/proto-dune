@@ -135,7 +135,7 @@ begin
             PIPE_STAGES_G       => 1,
             EN_FRAME_FILTER_G   => true,
             -- VALID_THOLD_G       => 1,
-            VALID_THOLD_G       => 384,
+            VALID_THOLD_G       => 128,
             -- FIFO configurations
             BRAM_EN_G           => true,
             XIL_DEVICE_G        => "7SERIES",
