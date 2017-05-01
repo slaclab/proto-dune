@@ -3,8 +3,6 @@
 #### Checkout the GIT reposotiry from github 
 $ git clone --recursive git@github.com:slaclab/proto-dune
 
-> Note: firmware/submodules/timing-board-firmware requires a CERN account for git cloning
-
 #### Make a symbolic link to the output build directory (typically a local hardware, not network drive)
 $ ln -s /path/to/build proto-dune/firmware/build
 
