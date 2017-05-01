@@ -683,6 +683,8 @@ int main (int argc, char const *argv[])
 {
 #  define NSLICES 4
 
+   return 0;  //////   !!! KLUDGE !!!
+
 
     MyStreamIn                sAxis ("In");
     MyStreamOut              mAxis ("Out");
@@ -713,9 +715,6 @@ int main (int argc, char const *argv[])
    print_status (last_status, status, -1);
    last_status = status;
    config.init = false;
-
-   return 0;  //////   !!! KLUDGE !!!
-
 
 
    int fd = open (filename, O_RDONLY);
