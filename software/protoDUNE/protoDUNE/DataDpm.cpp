@@ -49,7 +49,6 @@
 
 using namespace std;
 
-#define USE_MMAP 0
 
 // Constructor
 DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) : 
@@ -69,21 +68,6 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    addDevice(d = new RceCommon (linkConfig, 0, this));d->pollEnable(false);
 
    // RCE Firmware Devices
-#if USE_MMAP // USE_MMAP = 1
-   addDevice(d = new DataCompression(linkConfig, 0xA0000000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new DataCompression(linkConfig, 0xA0010000, 1, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmHlsMon  (linkConfig, 0xA0020000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmWib(     linkConfig, 0xA1000000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmWib(     linkConfig, 0xA1010000, 1, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmWibDbg(  linkConfig, 0xA1020000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmWibDbg(  linkConfig, 0xA1030000, 1, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmEmu(     linkConfig, 0xA2000000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmTiming(  linkConfig, 0xA3000000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new UdpReg(         linkConfig, 0xA4000000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-   addDevice(d = new RssiReg(        linkConfig, 0xA4010000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-   addDevice(d = new PrbsTx(         linkConfig, 0xA4020000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-   addDevice(d = new PrbsRx(         linkConfig, 0xA4030000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-#else// USE_MMAP = 0
    addDevice(d = new DataCompression(0x00000002, 0xA0000000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataCompression(0x00000002, 0xA0010000, 1, this, 4));d->pollEnable(true);
    addDevice(d = new DataDpmHlsMon(  0x00000002, 0xA0020000, 0, this, 4));d->pollEnable(true);
@@ -97,8 +81,6 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    addDevice(d = new RssiReg(        0x00000002, 0xA4010000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
    addDevice(d = new PrbsTx(         0x00000002, 0xA4020000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
    addDevice(d = new PrbsRx(         0x00000002, 0xA4030000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-#endif
-
 }
 
 // Deconstructor

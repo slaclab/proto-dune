@@ -1,7 +1,7 @@
 export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x0000002D
+export PRJ_VERSION = 0x0000002F
 
 # Define target output
 target: bit
@@ -15,6 +15,19 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/04/25 0x0000002F jjr  Larry eliminated the cascading FIFO in the DMA
+#                            path.  There was a worry that the way it was
+#                            configured may cause small timescale studders.
+# 2017/04/25 0x0000002E jjr  Increase the number of DMA Channel 2 buffers from
+#                            4 -> 8. This is to see if this cures the sporadic
+#                            dropped WIB frames.  (Currently with both HLS
+#                            modules enabled, the drop rate is ~4-10 /sec.
+#                            Did not bump the PRJ_VERSION, so produced a 
+#                            second version 2E.  It was better, but not a
+#                            complete success
+# 2017/04/21 0x0000002E jjr  Try version of DMA driver with multiple 
+#                            independent FIFO's. This is an attempt to up
+#                            the thru-put.
 # 2017/04/18 0x0000002D jjr  Incorportates Ryan's  V2 rce_stream driver which
 #                            uses the ACP rather than HP as the DMA path 
 # 2017/03/22 0x0000002C llr  Added the first draft of the CERN Timing receiver

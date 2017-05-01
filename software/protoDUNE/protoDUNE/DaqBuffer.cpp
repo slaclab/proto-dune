@@ -347,27 +347,6 @@ static inline void dump_frame (void const *data, int nbytes)
 
 
 
-/* ---------------------------------------------------------------------- *//*!
- *
- * \brief  Constructs the sequence counter for the bits and pieces of the
- *         first 64-bit word in the frame
- * \return The constructed sequence number
- *
- * \param[in] w The 64-bit word containing the bits and pieces of the 
- *               sequence counter
- *
-\* ---------------------------------------------------------------------- */
-static inline uint64_t get_sequence (uint64_t w)
-{
-   uint64_t seq =  (w >> 32) & 0xffff;
-   seq         |= ((w >>  8) & 0xffffff) << 16;
-
-   return seq;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
 
 /* ---------------------------------------------------------------------- *//*!
  *
@@ -378,18 +357,24 @@ static inline uint64_t get_sequence (uint64_t w)
  *  \param[in]   dest The originating module, 0 or 1
  *
 \* ---------------------------------------------------------------------- */
-static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
+static void check_frame (uint64_t const *data, int nbytes, unsigned int dest, int sample)
 {
 #  define N64_PER_FRAME 30
 #  define NBYTES (unsigned int)(((1 + N64_PER_FRAME * 1024) + 1) * sizeof (uint64_t))
 
 
-   static uint64_t History[2] = { 0, 0 };
+   struct History_s
+   {
+      uint64_t  timestamp;
+      uint16_t convert[2];
+   };
 
-   static unsigned int Counter = 0;
-   int                     n64 = nbytes / sizeof (*data) - 2;
+   static struct History_s History[2] = { {0, {0, 0}}, {0, {0,0}} };
+   static unsigned int        Counter = 0;
+   int                            n64 = nbytes / sizeof (*data) - 2;
   
    //uint64_t hdr = data[0];
+   data += 1;
 
 
    // ------------------------------------
@@ -401,21 +386,36 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
               dest, Counter, nbytes, NBYTES);
       return;
    }
+
+   
       
 
    // -------------------------------------------------------------
    // Seed predicted sequence number with either
-   //   1) The sequence number of the previous packet 
-   //   2) The sequence number of the first frame
+   //   1) The GPS timestamp of the previous packet
+   //   2) The GPS timestamp of the first frame
    // -------------------------------------------------------------
-   uint64_t predicted = History[dest] ? History[dest] : get_sequence (data[1]);
-   unsigned int frame = 0;
+   uint16_t   predicted_cvt_0;
+   uint16_t   predicted_cvt_1;
+   uint64_t   predicted_ts = History[dest].timestamp;
+   if (predicted_ts)
+   {
+      predicted_ts    = data[ 1];
+      predicted_cvt_0 = data[ 2] >> 48;
+      predicted_cvt_1 = data[16] >> 48;
+   }
+   else
+   {
+      predicted_cvt_0 = History[dest].convert[0];
+      predicted_cvt_1 = History[dest].convert[1];
+   }
 
 
    // --------------------
    // Loop over each frame
    // --------------------
-   for (int idx = 1; idx < n64; idx += N64_PER_FRAME)
+   unsigned int    frame = 0;
+   for (int idx = 0; idx < n64; idx += N64_PER_FRAME)
    {
       uint64_t d = data[idx];
 
@@ -431,18 +431,45 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
       // -----------------------------------
       // Form and check the sequence counter
       // ----------------------------------
-      uint64_t seq  =  get_sequence (d);
-      if      (seq != predicted)
+      uint64_t timestamp = data[idx+1];
+      uint16_t     cvt_0 = data[idx +  2] >> 48;
+      uint16_t     cvt_1 = data[idx + 16] >> 48;
+
+      int error = ((timestamp != predicted_ts   ) << 0)
+                | ((cvt_0     != predicted_cvt_0) << 1)
+                | ((cvt_1     != predicted_cvt_1) << 2);
+
+      if (error)
       {
-         printf ("Error sequence @ %2u.%6u.%4u: %16.16"
-                  PRIx64 " != %16.16" PRIx64 "\n",
-                 dest, Counter, frame, seq, predicted);
+         printf ("Error  seq @ %2u.%6u.%4u: "
+                 "ts: %16.16" PRIx64 " %c= %16.16" PRIx64 " "
+                 "cvt: %4.4" PRIx16 " %c= %4.4" PRIx16 " "
+                 "cvt: %4.4" PRIx16 " %c= %4.4" PRIx16 "\n",
+                 dest, Counter, frame, 
+                 timestamp, (error&1) ? '!' : '=', predicted_ts,
+                 cvt_0    , (error&2) ? '!' : '=', predicted_cvt_0,
+                 cvt_1    , (error&4) ? '!' : '=', predicted_cvt_1);
+
+         // -----------------------------------------------------
+         // In case of error, resynch the predicted to the actual
+         // -----------------------------------------------------
+         predicted_ts    = timestamp;
+         predicted_cvt_0 = cvt_0;
+         predicted_cvt_1 = cvt_1;
       }
-      else if (0 && ((Counter % 1024) == 0) && ((frame % 256) == 0))
+      else if (1 && ((Counter % (1024/sample)) == 0) && ((frame % 256) == 0))
       {
+         // --------------------------------------
          // Print reassuring message at about 2 Hz
-         printf ("Spot check @ %2u.%6u.%4u: %16.16" PRIx64 "  = %16.16" PRIx64 "\n",
-                 dest, Counter, frame, seq, predicted);
+         // --------------------------------------
+         printf ("Spot check @ %2u.%6u.%4u: "
+                 "ts: %16.16" PRIx64 " == %16.16" PRIx64 " "
+                 "cvt: %4.4" PRIx16 " == %4.4" PRIx16 " "
+                 "cvt: %4.4" PRIx16 " == %4.4" PRIx16 "\n",
+                 dest, Counter, frame, 
+                 timestamp, predicted_ts,
+                 cvt_0    , predicted_cvt_0,
+                 cvt_1    , predicted_cvt_1);
       }
 
 
@@ -450,8 +477,10 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
       // Advance the predicted sequence number
       // Advance the frame counter
       // -------------------------------------
-      predicted = seq + 1;
-      frame    += 1;
+      predicted_ts     = timestamp + 500;
+      predicted_cvt_0 += 1;
+      predicted_cvt_1 += 1;
+      frame           += 1;
    }
 
    // -----------------------------------------------
@@ -459,8 +488,10 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
    // the expected sequence number of the next packet
    // for this destination.
    // -----------------------------------------------
-   Counter      += 1;
-   History[dest] = predicted;
+   Counter                 += sample;
+   History[dest].timestamp  = predicted_ts    + (sample - 1) * 500;
+   History[dest].convert[0] = predicted_cvt_0 +  sample - 1;
+   History[dest].convert[1] = predicted_cvt_1 +  sample - 1;
 
    return;
 }
@@ -534,7 +565,7 @@ void DaqBuffer::rxRun () {
    _rxPend      = 0;   
 
 
-   static uint32_t DumpCounter = 0;
+   static uint32_t DumpCounter[2] = {0, 0};
 
    struct timeval cur;
    gettimeofday (&cur, NULL);
@@ -625,9 +656,9 @@ void DaqBuffer::rxRun () {
          }
 
          lastUser = axisGetLuser(flags);
-         uint32_t print_it = ((DumpCounter & 0xfffff) < 4) & 0;
-         DumpCounter += 1;
-         if (print_it)
+         uint32_t print_it = ((DumpCounter[dest] & 0xfffff) < 4);
+         DumpCounter[dest] += 1;
+         if (0 && print_it)
          {
             printf ("Index:%4u  dest: %3u rxSize = %6u\n", index, dest, rxSize);
          }
@@ -653,14 +684,16 @@ void DaqBuffer::rxRun () {
 
             _rxSequence += 1;
 
-            if  (print_it)
+            int check_it = ((DumpCounter[dest] & 0xff) == 0);
+            if  (check_it)
             {
                check_frame ((uint64_t const *)_sampleData[index],
                             rxSize,
-                            dest);
+                            dest,
+                            256);
             }
 
-            if (print_it)
+            if (0 & print_it)
             {
                dump_frame (_sampleData[index], rxSize);
             }

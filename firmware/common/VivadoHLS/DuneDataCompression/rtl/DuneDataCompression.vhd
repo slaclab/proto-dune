@@ -115,7 +115,7 @@ begin
    -----------------------------------
    -- Vivado HLS Data Compression Core
    -----------------------------------
-   U_Core : scDuneDataCompressionCore
+   U_Core : DuneDataCompressionCore
       port map (
          s_axi_BUS_A_AWVALID => axilWriteMaster.awvalid,
          s_axi_BUS_A_AWREADY => axilWriteSlave.awready,

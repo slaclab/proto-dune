@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHls.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2016-09-15
+-- Last update: 2017-04-25
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -141,8 +141,8 @@ begin
             XIL_DEVICE_G        => "7SERIES",
             USE_BUILT_IN_G      => false,
             GEN_SYNC_FIFO_G     => false,
-            CASCADE_SIZE_G      => CASCADE_SIZE_G,
-            FIFO_ADDR_WIDTH_G   => 9,
+            CASCADE_SIZE_G      => 1,
+            FIFO_ADDR_WIDTH_G   => 12,
             -- AXI Stream Port Configurations
             SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
             MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)            

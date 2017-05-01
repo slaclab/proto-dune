@@ -380,8 +380,8 @@ class Source
 public:
    Source ();
 
-
-
+   void                    add_header (uint32_t id, uint32_t version);
+   void                    add_trailer(uint32_t id, int       nbytes);
    void                    fill_frame (uint64_t                      timestamp,
                                        uint16_t  const adcs[MODULE_K_NCHANNELS],
                                        int                           runEnable,
@@ -396,10 +396,19 @@ public:
    void                        commit (uint64_t    w,
                                        int      user,
                                        int      last);
+   static void                 commit (MyStreamIn  &stream,
+                                       uint64_t          w,
+                                       int            user,
+                                       int            last);
+   static void                 commit (MyStreamOut &stream,
+                                       uint64_t          w,
+                                       int            user,
+                                       int            last);
+
 
 public:
-   MyStreamIn m_src;   /*!< The stream used by the HLS module    */
-   MyStreamIn m_chk;   /*!< The stream used to check the results */
+   MyStreamIn  m_src;  /*!< The stream used by the HLS module    */
+   MyStreamOut m_chk;  /*!< The stream used to check the results */
 };
 
 
@@ -410,10 +419,45 @@ Source::Source () :
    return;
 }
 
+inline void Source::commit (MyStreamIn &stream, uint64_t w, int user, int last)
+{
+   AxisIn_t in;
+   in.data = w;
+   in.keep = 0xff;
+   in.strb = 0;
+   in.user = user;
+   in.last = last;
+   in.id   = 0;
+   in.dest = 0;
+
+   stream.write (in);
+}
+
+
+inline void Source::commit (MyStreamOut &stream, uint64_t w, int user, int last)
+{
+   AxisIn_t out;
+   out.data = w;
+   out.keep = 0xff;
+   out.strb = 0;
+   out.user = user;
+   out.last = last;
+   out.id   = 0;
+   out.dest = 0;
+
+   if (user)
+   {
+      printf ("Setting User = %d", user);
+   }
+
+   stream.write (out);
+}
+
+
 
 inline void Source::commit (uint64_t    w,
-                                   int      user,
-                                   int      last)
+                            int      user,
+                            int      last)
 {
    AxisIn_t in;
    in.data = w;
@@ -425,11 +469,33 @@ inline void Source::commit (uint64_t    w,
    in.dest = 0;
 
    m_src.write (in);
+
+   // WIB Frames are not delimited on the check/output stream
+   in.user = 0;
+   in.last = 0;
    m_chk.write (in);
 
    return;
 }
-;
+
+void Source::add_header (uint32_t id, uint32_t version)
+{
+   uint64_t header  = Header::header (id, version);
+
+   commit (m_chk, header, (int)AxisUserFirst::Sof, 0);
+
+   return;
+}
+
+
+// Add the trailer to the check stream
+void Source::add_trailer (uint32_t id, int nbytes)
+{
+   uint64_t tlr = Trailer::trailer (id | nbytes + sizeof (tlr));
+   commit (m_chk, tlr, 0, (int)AxisLast::Eof);
+   return;
+}
+
 
 void Source::fill_dummy_frame (int     first,
                                int     flush)
@@ -563,7 +629,8 @@ void Source::fill_frame (uint64_t                      timestamp,
 
    // Set the first and runEnable flags = 3
    uint64_t w0 = WibFrame::w0 (WibFrame::K28_5, id, rsvd0, error);
-   commit (w0, first, 0);
+   commit (m_src, w0, first, 0);
+   commit (m_chk, w0, 0,     0);
 
 
    // 125/2 = 64.5
@@ -717,7 +784,7 @@ static void print_status (ModuleStatus const &s0,
 
 
 static int check (MyStreamOut             &mAxis,
-                  MyStreamIn              &sAxis,
+                  MyStreamOut             &sAxis,
                  ModuleStatus       &last_status,
                  ModuleStatus            &status,
                  int                     isample);
@@ -740,7 +807,7 @@ int main (int argc, char const *argv[])
 
     Source                             src;
     MyStreamOut              mAxis ("Out");
-    ModuleIdx_t              moduleIdx = 3;
+    ModuleIdx_t              moduleIdx = 1;
     ModuleConfig                    config;
     ModuleStatus                    status;
     ModuleStatus               last_status;
@@ -763,11 +830,20 @@ int main (int argc, char const *argv[])
    memset (&last_status, 0, sizeof (last_status));
    src.fill_runDisableAndFlush_frame ();
    DuneDataCompressionCore (src.m_src, mAxis, moduleIdx, config, status);
+
+   // Drain the check stream
+   while (!src.m_chk.empty ()) src.m_chk.read ();
+
    print_status (last_status, status, -1);
    last_status = status;
    config.init = false;
 
    ////return 0;  //////   !!! KLUDGE !!!
+
+   uint32_t version = 1;
+   uint32_t hdr_id  = Identifier::identifier (Identifier::FrameType::DATA,
+                                              Identifier::DataType::WIB,
+                                              0);
 
    // ------------------
    // Open the test file
@@ -817,6 +893,10 @@ int main (int argc, char const *argv[])
       int flush     = 0;
       runEnable     = 1;
 
+      // Add the header to the check stream
+      src.add_header (hdr_id, version);
+
+      int nbytes = sizeof (Header);
 
       // Process each slice of 1024 time samples
       for (int isample = 0; isample < 1024; isample++)
@@ -832,6 +912,7 @@ int main (int argc, char const *argv[])
          else
          {
             src.fill_frame (timestamp, adcs[isample], runEnable, flush);
+            nbytes += sizeof (WibFrame);
          }
 
          DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, status);
@@ -845,6 +926,8 @@ int main (int argc, char const *argv[])
          timestamp += 500;
       }
 
+      // Add trailer to the check frame
+      src.add_trailer (hdr_id, nbytes);
       check (mAxis, src.m_chk, last_status, status, its * 1024);
 
 
@@ -876,15 +959,18 @@ int main (int argc, char const *argv[])
  *
 \* ---------------------------------------------------------------------- */
 static int check (MyStreamOut             &mAxis,
-                  MyStreamIn              &sAxis,
+                  MyStreamOut             &sAxis,
                  ModuleStatus       &last_status,
                  ModuleStatus            &status,
                  int                     isample)
 {
+   int idx = 0;
+
    while (1)
    {
       bool dst_empty = mAxis.empty ();
       bool src_empty = sAxis.empty ();
+
 
       if (!dst_empty && !src_empty)
       {
@@ -895,35 +981,75 @@ static int check (MyStreamOut             &mAxis,
 
          if (error)
          {
-            std::cout << std::dec << std::setw ( 2) << "User: "  << dst.user
-                                                    << " Last: "  << dst.last
+            std::cout << std::dec << std::setw ( 5) << "Error: Data @" << idx
+                      << std::dec << std::setw ( 2) << " User: " << dst.user
+                                                    << " Last: " << dst.last
                       << std::hex << std::setw ( 4) << " Keep: " << dst.keep
                       << std::hex << std::setw (16) << " Data: " << dst.data
                       << std::endl;
          }
 
-         if ( (dst.user & 2) || (dst.last & 1))
+         // Bit 1 of the user field must be set on the first word
+         if ( (idx == 0) && (((dst.user & 2) == 0) || ((src.user & 2) == 0)) )
          {
-            // Flush frame
-            if (!mAxis.empty ())
+            std::cout << std::dec << std::setw ( 5) << "Error: User 1 bit clear @" << idx
+                      << std::dec << std::setw ( 2) << " User: " << dst.user
+                                                    << " Last: " << dst.last
+                      << std::hex << std::setw ( 4) << " Keep: " << dst.keep
+                      << std::hex << std::setw (16) << " Data: " << dst.data
+                      << std::endl;
+            return  -1;
+         }
+
+         // Bit 1 of the user field must be clear all but the first word
+         if ( (idx != 0) && ( (dst.user & 2) || (src.user & 2)) )
+         {
+            std::cout << std::dec << std::setw ( 5) << "Error: User 1 bit set @" << idx
+                      << std::dec << std::setw ( 2) << " User: " << dst.user
+                                                    << " Last: " << dst.last
+                      << std::hex << std::setw ( 4) << " Keep: " << dst.keep
+                      << std::hex << std::setw (16) << " Data: " << dst.data
+                      << std::endl;
+            return -1;
+         }
+
+         if (dst.last & (int)AxisLast::Eof)
+         {
+            if (src.last & (int)AxisLast::Eof)
             {
-               // If not empty, pring what's left
-               print_status (last_status, status, isample);
-               print (mAxis);
+               // Check that both are now empty
+               dst_empty = mAxis.empty ();
+               src_empty = sAxis.empty ();
+               if (dst_empty && src_empty)
+               {
+                  // All is well
+                  return 0;
+               }
+               else if (dst_empty)
+               {
+                  std::cout << "Error: destination empty, but source not @ "
+                            << std::dec << std::setw (5) << idx << std::endl;
+                  return -1;
+               }
+               else
+               {
+                  std::cout << "Error: source empty, but destination not @ "
+                                << std::dec << std::setw (5) << idx << std::endl;
+                  return -1;
+               }
             }
          }
       }
-      else if (dst_empty && src_empty)
+      else if (dst_empty || src_empty)
       {
          // This should not happen, dst.user or dst.last should signal the end
+         std::cout << "Error:Premature empty: dst:src" << dst_empty << ':' << src_empty
+                   << std::endl;
          break;
       }
-      else
-      {
-         std::cout << "Error" << "dst:src mismatch empty "
-                   << dst_empty << ':' << src_empty
-                   << std::endl;
-      }
+
+      idx += 1;
+
    }
 
    return 0;
