@@ -1,7 +1,7 @@
-export GIT_BYPASS = 0
+export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x0000002F
+export PRJ_VERSION = 0x00000030
 
 # Define target output
 target: bit
@@ -15,6 +15,13 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/02 0x00000030 jjr  Using new firmware from Ryan that addresses the
+#                            the dropped WibFrame issue.  I think the idea
+#                            is that there was contention when the 2 FIFO
+#                            that interface directly with the HLS modules
+#                            merged into 1 FIFO that feeds the DMA engine.
+#                            This fix has been tested in a standalone fashion
+#                            by Ryan. 
 # 2017/04/25 0x0000002F jjr  Larry eliminated the cascading FIFO in the DMA
 #                            path.  There was a worry that the way it was
 #                            configured may cause small timescale studders.
