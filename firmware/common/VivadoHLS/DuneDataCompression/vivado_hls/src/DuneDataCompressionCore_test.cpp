@@ -981,7 +981,7 @@ static int check (MyStreamOut             &mAxis,
 
          if (error)
          {
-            std::cout << std::dec << std::setw ( 5) << "Error: Data @" << idx
+            std::cout << std::dec << std::setw ( 5) << "Eror: Data @" << idx
                       << std::dec << std::setw ( 2) << " User: " << dst.user
                                                     << " Last: " << dst.last
                       << std::hex << std::setw ( 4) << " Keep: " << dst.keep
@@ -992,7 +992,7 @@ static int check (MyStreamOut             &mAxis,
          // Bit 1 of the user field must be set on the first word
          if ( (idx == 0) && (((dst.user & 2) == 0) || ((src.user & 2) == 0)) )
          {
-            std::cout << std::dec << std::setw ( 5) << "Error: User 1 bit clear @" << idx
+            std::cout << std::dec << std::setw ( 5) << "Eror: User 1 bit clear @" << idx
                       << std::dec << std::setw ( 2) << " User: " << dst.user
                                                     << " Last: " << dst.last
                       << std::hex << std::setw ( 4) << " Keep: " << dst.keep
@@ -1004,7 +1004,7 @@ static int check (MyStreamOut             &mAxis,
          // Bit 1 of the user field must be clear all but the first word
          if ( (idx != 0) && ( (dst.user & 2) || (src.user & 2)) )
          {
-            std::cout << std::dec << std::setw ( 5) << "Error: User 1 bit set @" << idx
+            std::cout << std::dec << std::setw ( 5) << "Eror: User 1 bit set @" << idx
                       << std::dec << std::setw ( 2) << " User: " << dst.user
                                                     << " Last: " << dst.last
                       << std::hex << std::setw ( 4) << " Keep: " << dst.keep
@@ -1027,13 +1027,13 @@ static int check (MyStreamOut             &mAxis,
                }
                else if (dst_empty)
                {
-                  std::cout << "Error: destination empty, but source not @ "
+                  std::cout << "Eror: destination empty, but source not @ "
                             << std::dec << std::setw (5) << idx << std::endl;
                   return -1;
                }
                else
                {
-                  std::cout << "Error: source empty, but destination not @ "
+                  std::cout << "Eror: source empty, but destination not @ "
                                 << std::dec << std::setw (5) << idx << std::endl;
                   return -1;
                }
@@ -1043,7 +1043,7 @@ static int check (MyStreamOut             &mAxis,
       else if (dst_empty || src_empty)
       {
          // This should not happen, dst.user or dst.last should signal the end
-         std::cout << "Error:Premature empty: dst:src" << dst_empty << ':' << src_empty
+         std::cout << "Eror:Premature empty: dst:src" << dst_empty << ':' << src_empty
                    << std::endl;
          break;
       }
