@@ -132,7 +132,7 @@ begin
          generic map (
             -- General Configurations
             TPD_G               => TPD_G,
-            PIPE_STAGES_G       => 1,
+            PIPE_STAGES_G       => 0,
             EN_FRAME_FILTER_G   => true,
             -- VALID_THOLD_G       => 1,
             VALID_THOLD_G       => 128,
