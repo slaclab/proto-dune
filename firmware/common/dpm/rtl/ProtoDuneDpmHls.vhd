@@ -136,6 +136,7 @@ begin
             EN_FRAME_FILTER_G   => true,
             -- VALID_THOLD_G       => 1,
             VALID_THOLD_G       => 128,
+            VALID_BURST_MODE_G  => true,
             -- FIFO configurations
             BRAM_EN_G           => true,
             XIL_DEVICE_G        => "7SERIES",
