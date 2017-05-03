@@ -275,6 +275,7 @@ static void prologue (AxisOut &mAxis, int &odx, bool writeFlag, int moduleIdx)
 
    #define WIB_VERSION VERSION_COMPOSE (0, 0, 0, 1)
 
+   writeFlag = true;
    if (odx == 0)
    {
       // --------------------------------------------------------------
@@ -326,6 +327,7 @@ static void epilogue (AxisOut    &mAxis,
    #pragma HLS PIPELINE
 
    bool wrote;
+   write = true;
 
    // --------------------------------------------
    // OUTPUT TRAILER
@@ -1106,6 +1108,7 @@ static void write_frame (AxisOut           &axis,
 
       d = frame.d[idx];
 
+      valid = false; /// !!! KLUDGE !!!
       if (valid)
       {
          commit (axis, odx, write, d, 0, 0);
