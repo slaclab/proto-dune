@@ -803,7 +803,7 @@ static int check (MyStreamOut             &mAxis,
 /* ---------------------------------------------------------------------- */
 int main (int argc, char const *argv[])
 {
-#  define NSLICES 4
+#  define NSLICES 2
 
     Source                             src;
     MyStreamOut              mAxis ("Out");
