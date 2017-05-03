@@ -71,6 +71,10 @@ architecture mapping of ProtoDuneDpmHls is
    signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
    
+   attribute dont_touch                 : string;
+   attribute dont_touch of dmaIbMasters : signal is "TRUE";
+   attribute dont_touch of dmaIbSlaves  : signal is "TRUE";   
+   
 begin
 
    --------------------
@@ -128,12 +132,11 @@ begin
       --------------
       -- FIFO Module
       --------------              
-      U_Fifo : entity work.SsiFifo
+      U_Fifo : entity work.AxiStreamFifoV2
          generic map (
             -- General Configurations
             TPD_G               => TPD_G,
             PIPE_STAGES_G       => 0,
-            EN_FRAME_FILTER_G   => true,
             -- VALID_THOLD_G       => 1,
             VALID_THOLD_G       => 128,
             VALID_BURST_MODE_G  => true,
