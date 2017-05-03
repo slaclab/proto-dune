@@ -1,7 +1,7 @@
 export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x00000030
+export PRJ_VERSION = 0x00000032
 
 # Define target output
 target: bit
@@ -15,6 +15,11 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/03 0x00000032 jjr  Neuter the output to verify that the back-pressure
+#                            is coming from the output stream not accepting
+#                            data.
+# 2017/05/02 0x00000031 jjr  Next attempt. -- Failed, no obvious difference
+#                            from the 0x30.
 # 2017/05/02 0x00000030 jjr  Using new firmware from Ryan that addresses the
 #                            the dropped WibFrame issue.  I think the idea
 #                            is that there was contention when the 2 FIFO
@@ -22,6 +27,13 @@ include ../../submodules/ruckus/system_vivado.mk
 #                            merged into 1 FIFO that feeds the DMA engine.
 #                            This fix has been tested in a standalone fashion
 #                            by Ryan. 
+#
+#                            NOTE: Did not work. It dropped frames even with
+#                            only one enabled HLS module.  Frames did not
+#                            appear to dropped, but corrupted.  In particular
+#                            the WIB 64-bit timestamp was in error (sometimes
+#                            even 0), but the Convert Counts matched. Had not
+#                            seen the pattern till now.
 # 2017/04/25 0x0000002F jjr  Larry eliminated the cascading FIFO in the DMA
 #                            path.  There was a worry that the way it was
 #                            configured may cause small timescale studders.
