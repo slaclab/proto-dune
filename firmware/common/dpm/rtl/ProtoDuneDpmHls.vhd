@@ -75,6 +75,10 @@ architecture mapping of ProtoDuneDpmHls is
    signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
    
    attribute dont_touch                 : string;
+   attribute dont_touch of ibHlsMasters : signal is "TRUE";
+   attribute dont_touch of ibHlsSlaves  : signal is "TRUE";   
+   attribute dont_touch of obHlsMasters : signal is "TRUE";
+   attribute dont_touch of obHlsSlaves  : signal is "TRUE";   
    attribute dont_touch of dmaIbMasters : signal is "TRUE";
    attribute dont_touch of dmaIbSlaves  : signal is "TRUE";   
    
