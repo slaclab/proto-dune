@@ -1,7 +1,7 @@
 export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x00000034
+export PRJ_VERSION = 0x00000035
 
 # Define target output
 target: bit
@@ -15,7 +15,11 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
-# 2017/05/03 0x00000034 jjr  Back to using the SsiFifo
+# 2017/05/04 0x00000035 jjr  Larry thinks that we need a small SsiFifo between
+#                            the HLS module and the 'large' fifo to filter out
+#                            'garbage' seen at a power cycle.
+# 2017/05/03 0x00000034 jjr  Back to using the SsiFifo. This works as 
+#                            anticipated, being basically back 0x30
 # 2017/05/03 0x00000033 jjr  Back to full output. This was to be an attempt
 #                            to use ILA as a monitor, but that failed when
 #                            the driver would not load.  Rebuild without ILA.
