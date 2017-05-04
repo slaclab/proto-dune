@@ -22,41 +22,66 @@ open_run synth_1
 ###############################
 ## Set the name of the ILA core
 ###############################
-set ilaName u_ila_0
+set ilaName0 u_ila_0
+set ilaName1 u_ila_1
 
 ##################
 ## Create the core
 ##################
-CreateDebugCore ${ilaName}
+CreateDebugCore ${ilaName0}
+CreateDebugCore ${ilaName1}
 
 #######################
 ## Set the record depth
 #######################
-set_property C_DATA_DEPTH 1024 [get_debug_cores ${ilaName}]
+set_property C_DATA_DEPTH 1024 [get_debug_cores ${ilaName0}]
+set_property C_DATA_DEPTH 1024 [get_debug_cores ${ilaName1}]
 
 #################################
 ## Set the clock for the ILA core
 #################################
-SetDebugCoreClk ${ilaName} {U_App/U_Hls/dmaClk}
+SetDebugCoreClk ${ilaName0} {U_App/U_Hls/dmaClk}
+SetDebugCoreClk ${ilaName1} {U_App/U_Hls/axilClk}
 
 #######################
 ## Set the debug Probes
 #######################
 
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbMaster[tLast]}
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbMaster[tValid]}
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbSlave[tReady]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMaster[tLast]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMaster[tValid]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbSlave[tReady]}
 
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbMasters[0][tLast]}
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbMasters[0][tValid]}
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbSlaves[0][tReady]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMasters[0][tLast]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMasters[0][tValid]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbSlaves[0][tReady]}
 
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbMasters[1][tLast]}
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbMasters[1][tValid]}
-ConfigProbe ${ilaName} {U_App/U_Hls/dmaIbSlaves[1][tReady]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMasters[1][tLast]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMasters[1][tValid]}
+ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbSlaves[1][tReady]}
 
+ConfigProbe ${ilaName1} {U_App/U_Hls/ibHlsMasters[0][tLast]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/ibHlsMasters[0][tValid]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/ibHlsSlaves[0][tReady]}
+
+ConfigProbe ${ilaName1} {U_App/U_Hls/ibHlsMasters[1][tLast]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/ibHlsMasters[1][tValid]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/ibHlsSlaves[1][tReady]}
+
+ConfigProbe ${ilaName1} {U_App/U_Hls/obHlsMasters[0][tLast]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/obHlsMasters[0][tValid]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/obHlsSlaves[0][tReady]}
+
+ConfigProbe ${ilaName1} {U_App/U_Hls/obHlsMasters[1][tLast]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/obHlsMasters[1][tValid]}
+ConfigProbe ${ilaName1} {U_App/U_Hls/obHlsSlaves[1][tReady]}
 
 ##########################
 ## Write the port map file
 ##########################
-WriteDebugProbes ${ilaName} ${PROJ_DIR}/images/debug_probes.ltx
+
+# Delete the last unused port
+delete_debug_port [get_debug_ports [GetCurrentProbe ${ilaName0}]]
+delete_debug_port [get_debug_ports [GetCurrentProbe ${ilaName1}]]
+
+# Write the port map file
+write_debug_probes -force ${PROJ_DIR}/images/debug_probes.ltx
