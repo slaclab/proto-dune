@@ -68,6 +68,9 @@ architecture mapping of ProtoDuneDpmHls is
    signal hlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal hlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
+   signal ssiMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
+   signal ssiSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+
    signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
    
@@ -131,7 +134,35 @@ begin
 
       --------------
       -- FIFO Module
-      --------------              
+      --------------    
+      U_Filter : entity work.SsiFifo
+         generic map (
+            -- General Configurations
+            TPD_G               => TPD_G,
+            INT_PIPE_STAGES_G   => 1,
+            PIPE_STAGES_G       => 1,
+            SLAVE_READY_EN_G    => true,
+            VALID_THOLD_G       => 1,
+            -- FIFO configurations
+            BRAM_EN_G           => false,
+            GEN_SYNC_FIFO_G     => true,
+            CASCADE_SIZE_G      => 1,
+            FIFO_ADDR_WIDTH_G   => 4,
+            -- AXI Stream Port Configurations
+            SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
+            MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)            
+         port map (
+            -- Slave Port
+            sAxisClk    => axilClk,
+            sAxisRst    => axilRst,
+            sAxisMaster => hlsMasters(i),
+            sAxisSlave  => hlsSlaves(i),
+            -- Master Port
+            mAxisClk    => axilClk,
+            mAxisRst    => axilRst,
+            mAxisMaster => ssiMasters(i),
+            mAxisSlave  => ssiSlaves(i));  
+            
       U_Fifo : entity work.AxiStreamFifoV2
          generic map (
             -- General Configurations
@@ -154,8 +185,8 @@ begin
             -- Slave Port
             sAxisClk    => axilClk,
             sAxisRst    => axilRst,
-            sAxisMaster => hlsMasters(i),
-            sAxisSlave  => hlsSlaves(i),
+            sAxisMaster => ssiMasters(i),
+            sAxisSlave  => ssiSlaves(i),
             -- Master Port
             mAxisClk    => dmaClk,
             mAxisRst    => dmaRst,
