@@ -825,8 +825,9 @@ int main (int argc, char const *argv[])
    uint64_t timestamp = 0;
 
    // This is suppose to do the configuration
-   config.init = true;
-   config.mode = MODE_K_COPY;
+   config.init  = true;
+   config.mode  = MODE_K_COPY;
+   config.limit = 1 + 30 * 1024 + 1;
    memset (&last_status, 0, sizeof (last_status));
    src.fill_runDisableAndFlush_frame ();
    DuneDataCompressionCore (src.m_src, mAxis, moduleIdx, config, status);

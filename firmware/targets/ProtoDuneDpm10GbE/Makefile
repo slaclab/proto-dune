@@ -1,7 +1,7 @@
 export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x00000032
+export PRJ_VERSION = 0x00000034
 
 # Define target output
 target: bit
@@ -15,6 +15,14 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/03 0x00000034 jjr  Back to using the SsiFifo
+# 2017/05/03 0x00000033 jjr  Back to full output. This was to be an attempt
+#                            to use ILA as a monitor, but that failed when
+#                            the driver would not load.  Rebuild without ILA.
+#                            This also hung the processor. (I did not properly
+#                            label the initial build with ILA, it was versioned
+#                            as 32. But since it did not work, it will never
+#                            be used again.
 # 2017/05/03 0x00000032 jjr  Neuter the output to verify that the back-pressure
 #                            is coming from the output stream not accepting
 #                            data.

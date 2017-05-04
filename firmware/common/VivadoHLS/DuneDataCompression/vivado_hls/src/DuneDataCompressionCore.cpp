@@ -1106,7 +1106,10 @@ static void write_frame (AxisOut           &axis,
 
       d = frame.d[idx];
 
-      if (valid)
+      // --------------------------------------------------------------
+      // Only output the frame if valid and below the 64-bit word limit
+      // --------------------------------------------------------------
+      if (valid && odx < cfg.limit)
       {
          commit (axis, odx, write, d, 0, 0);
       }
