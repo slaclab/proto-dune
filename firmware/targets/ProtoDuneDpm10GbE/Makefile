@@ -1,7 +1,7 @@
 export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x00000036
+export PRJ_VERSION = 0x00000037
 
 # Define target output
 target: bit
@@ -15,6 +15,7 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/04 0x00000037 jjr  Add ILA for both HLS modules
 # 2017/05/04 0x00000036 jjr  Small SsiFifo + ILA 
 # 2017/05/04 0x00000035 jjr  Larry thinks that we need a small SsiFifo between
 #                            the HLS module and the 'large' fifo to filter out
