@@ -47,6 +47,40 @@ SetDebugCoreClk ${ilaName1} {U_App/U_Hls/axilClk}
 ## Set the debug Probes
 #######################
 
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/axiWriteCtrl[pause]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[ackCount][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[awlen][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[continue]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[dmaWrTrack][dropEn]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[dmaWrTrack][inUse]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[dmaWrTrack][overflow]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[dmaWrTrack][dest][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[reqCount][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[result][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[slave][tReady]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[state][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[wMaster][wlast]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[wMaster][wvalid]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[wMaster][wstrb][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/r[wMaster][awvalid]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/axiWriteCtrl[pause]}
+
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/axisMaster[tDest][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/axisMaster[tKeep][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/axisMaster[tLast]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/axisMaster[tValid]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/U_AxiStreamDmaV2/U_ChanGen[0].U_DmaWrite/axisSlave[tReady]}
+
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteMaster[awvalid]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteMaster[awid][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteMaster[wid][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteMaster[wlast]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteMaster[wvalid]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteMaster[wstrb][*]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteSlave[awready]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteSlave[bvalid]}
+ConfigProbe ${ilaName0} {U_DpmCore/U_RceG3Top/U_RceG3Dma/U_AxisV2DmaGen.U_RceG3DmaAxisV2/U_Gen2Dma[2].U_RceG3DmaAxisChan/axiWriteSlave[wready]}
+
 ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMaster[tLast]}
 ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbMaster[tValid]}
 ConfigProbe ${ilaName0} {U_App/U_Hls/dmaIbSlave[tReady]}
