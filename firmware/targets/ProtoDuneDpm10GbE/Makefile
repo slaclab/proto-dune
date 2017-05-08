@@ -1,7 +1,7 @@
 export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x00000038
+export PRJ_VERSION = 0x00000039
 
 # Define target output
 target: bit
@@ -15,7 +15,12 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/05 0x00000039 jjr  Larry simplified the monitoring done by ILA
+#                            (See comment on 0x38.)
 # 2017/05/04 0x00000038 jjr  Much more extensive monitoring added by Ryan
+#                            -- This failed.  Larry believes it had something
+#                            to do with the attempt to monitor both the 125
+#                            and 200 MHz clock domains.
 # 2017/05/04 0x00000037 jjr  Add ILA for both HLS modules
 # 2017/05/04 0x00000036 jjr  Small SsiFifo + ILA 
 # 2017/05/04 0x00000035 jjr  Larry thinks that we need a small SsiFifo between
