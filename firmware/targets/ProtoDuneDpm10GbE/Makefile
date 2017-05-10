@@ -1,7 +1,7 @@
 export GIT_BYPASS = 1
 
 # define firmware version
-export PRJ_VERSION = 0x00000039
+export PRJ_VERSION = 0x00000040
 
 # Define target output
 target: bit
@@ -15,6 +15,10 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/09 0x00000040 jjr  Ryan's attemtp to fix the drop packet problem. 
+#                            This correction addresses the handling of the
+#                            cache properties, both on the main DMA data path
+#                            and the descriptor path.
 # 2017/05/05 0x00000039 jjr  Larry simplified the monitoring done by ILA
 #                            (See comment on 0x38.)
 # 2017/05/04 0x00000038 jjr  Much more extensive monitoring added by Ryan
