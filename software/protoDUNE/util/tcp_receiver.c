@@ -606,22 +606,6 @@ static inline uint32_t get_word (uint8_t const *data)
 /* ---------------------------------------------------------------------- */
 
 
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief   Extracts the 64 time from a time sample
-  \return  The 64-bit time (well, technically 56-bits)
-
-  \param[in]  w  The time sample
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static uint64_t get_time (uint32_t const *w)
-{
-    uint64_t tim = *(uint64_t const *)w;
-    return tim;
-}
-/* ---------------------------------------------------------------------- */
-
-
 
 /* ---------------------------------------------------------------------- *//*!
 
@@ -691,107 +675,159 @@ static inline unsigned int checkHeader (Ctx            *ctx,
   \param[in] ndata  The number of bytes in the data
                                                                           */
 /* ---------------------------------------------------------------------- */
-static inline unsigned int checkData (Ctx            *ctx,
-                                      uint8_t const *data,
-                                      int           ndata)
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief Performs basic integrity checks on the frame.
+ *
+ *  \param[in]  bytes The frame data
+ *  \param[in] nbytes The number bytes in the data
+ *  \param[in]   dest The originating module, 0 or 1
+ *
+\* ---------------------------------------------------------------------- */
+static inline unsigned int checkData (Ctx             *ctx,
+                                      uint8_t  const *bytes,
+                                      int            nbytes)
 {
-   uint32_t const *w = (uint32_t const *)data;
-   int         nwrds = ndata /sizeof (*w);
-   uint64_t     xtim = get_time (w);
-   int         nerrs = 0;
-   int          npkt = 0;
-   uint32_t      inc = 0x00020002;
-   uint32_t      beg = 0x00020001;
-
-   int seqIdx = (w[2] >> 24) & 0xff;
-   ctx->history [seqIdx] = ctx->seqNum;
-   uint32_t   tb = ((seqIdx & 0xff) << 24);
-
-   while (nwrds > 0)
-    {
-       int      cnt;
-
-       uint64_t gtim = get_time (w);
-       
-       w     += 2;
-       nwrds -= 2;
-       
-
-       uint32_t xdat = beg | tb; ///// | ((npkt & 0xff) << 8);
+#  define N64_PER_FRAME 30
+#  define NBYTES (unsigned int)(((1 + N64_PER_FRAME * 1024) + 1) * sizeof (uint64_t))
 
 
-       if (xtim != gtim)
-       {
-          printf ("Error at pkt %4u %16.16"PRIx64" != %16.16"PRIx64"\n",
-                  npkt, xtim, gtim);
-       }
-
-
-
-       if (nwrds < 64)
-       {
-          printf ("Error at pkt %4u partial record, only %4u adcs\n",
-                  npkt, 2*nwrds);
-          cnt = (nwrds + 1)/ 2;
-       }
-       else
-       {
-          cnt = 128/2;
-       }
-
-
-       int idx;
-       for (idx = 0; idx < cnt; idx++)
-       {
-          uint32_t gdat = *w++;
-          if ((gdat ^ xdat) & 0x00ff00ff)
-          {
-             int      gidx = (gdat >> 24) & 0xff;
-             int      xidx = (xdat >> 24) & 0xff;
-             uint32_t gseq = ctx->history[gidx];
-             uint32_t xseq = ctx->history[xidx];
-
-             if (nerrs == 0) 
-             {
-                putchar ('\n');
-             }
-
-             nerrs += 1;
-
-             printf ("Error at pkt %4u w[%4u] = %8.8"PRIx32" %8.8"PRIx32
-                     " %2.2x:%8.8"PRIx32" %2.2x:%8.8"PRIx32"\n",
-                     npkt, idx, 
-                     gdat, xdat,
-                     gidx, gseq, xidx, xseq);
-             if (nerrs > 50) break;
-          }
-          
-          xdat += inc;
-       }
-       
-       npkt  += 1;
-       nwrds -= idx;
-       xtim  += 0x20;
-    }
-
-
-   if (nerrs) 
+   struct History_s
    {
-      uint32_t const *hdr = (uint32_t const *)(data - 28);
-      printf ("Hdr:"
-              " %8.8"PRIx32" %8.8"PRIx32" %8.8"PRIx32" %8.8"PRIx32
-              " %8.8"PRIx32" %8.8"PRIx32" %8.8"PRIx32"\n",
-              hdr[0], hdr[1], hdr[2], hdr[3], hdr[4], hdr[5], hdr[6]);
+      uint64_t  timestamp;
+      uint16_t convert[2];
+   };
 
-      ctx->errs.datVal += 1;
-      return ERR_M_DATVAL;
+   static struct History_s History[2] = { {0, {0, 0}}, {0, {0,0}} };
+   static unsigned int        Counter = 0;
+   uint64_t const               *data = (uint64_t const *)bytes;
+   int                            n64 = nbytes / sizeof (*data) - 1;
+   int                           dest = 0;  
+
+
+   // ------------------------------------
+   // Check for the correct amount of data
+   // ------------------------------------
+   if (nbytes != NBYTES)
+   {
+      printf ("Aborting @ %2u.%6u %u != %u incorrect amount of data received\n",
+              dest, Counter, nbytes, NBYTES);
+      return 1;
+   }
+
+   // SKip FPGA header
+   data += 1;
+   n64  -= 1;
+
+   // -------------------------------------------------------------
+   // Seed predicted sequence number with either
+   //   1) The GPS timestamp of the previous packet
+   //   2) The GPS timestamp of the first frame
+   // -------------------------------------------------------------
+   uint16_t   predicted_cvt_0;
+   uint16_t   predicted_cvt_1;
+   uint64_t   predicted_ts = History[dest].timestamp;
+   if (predicted_ts)
+   {
+      predicted_ts    = data[ 1];
+      predicted_cvt_0 = data[ 2] >> 48;
+      predicted_cvt_1 = data[16] >> 48;
    }
    else
    {
-      return 0;
+      predicted_cvt_0 = History[dest].convert[0];
+      predicted_cvt_1 = History[dest].convert[1];
    }
+
+
+   // --------------------
+   // Loop over each frame
+   // --------------------
+   unsigned int    frame = 0;
+   for (int idx = 0; idx < n64; idx += N64_PER_FRAME)
+   {
+      uint64_t d = data[idx];
+
+      // -------------------------
+      // Check the comma character
+      // -------------------------
+      if ((d & 0xff) != 0xbc)
+      {
+         printf ("Error frame @ %2u.%6u.%4u: %16.16" PRIx64 "\n",
+                 dest, Counter, frame, d);
+      }
+
+      // -----------------------------------
+      // Form and check the sequence counter
+      // ----------------------------------
+      uint64_t timestamp = data[idx+1];
+      uint16_t     cvt_0 = data[idx +  2] >> 48;
+      uint16_t     cvt_1 = data[idx + 16] >> 48;
+
+      int error = ((timestamp != predicted_ts   ) << 0)
+                | ((cvt_0     != predicted_cvt_0) << 1)
+                | ((cvt_1     != predicted_cvt_1) << 2);
+
+      if (error)
+      {
+         printf ("Error  seq @ %2u.%6u.%4u: "
+                 "ts: %16.16" PRIx64 " %c= %16.16" PRIx64 " "
+                 "cvt: %4.4" PRIx16 " %c= %4.4" PRIx16 " "
+                 "cvt: %4.4" PRIx16 " %c= %4.4" PRIx16 "\n",
+                 dest, Counter, frame, 
+                 timestamp, (error&1) ? '!' : '=', predicted_ts,
+                 cvt_0    , (error&2) ? '!' : '=', predicted_cvt_0,
+                 cvt_1    , (error&4) ? '!' : '=', predicted_cvt_1);
+
+         // -----------------------------------------------------
+         // In case of error, resynch the predicted to the actual
+         // -----------------------------------------------------
+         predicted_ts    = timestamp;
+         predicted_cvt_0 = cvt_0;
+         predicted_cvt_1 = cvt_1;
+      }
+      else if (1 && ((Counter % (1024)) == 0) && ((frame % 256) == 0))
+      {
+         // --------------------------------------
+         // Print reassuring message at about 2 Hz
+         // --------------------------------------
+         printf ("Spot check @ %2u.%6u.%4u: "
+                 "ts: %16.16" PRIx64 " == %16.16" PRIx64 " "
+                 "cvt: %4.4" PRIx16 " == %4.4" PRIx16 " "
+                 "cvt: %4.4" PRIx16 " == %4.4" PRIx16 "\n",
+                 dest, Counter, frame, 
+                 timestamp, predicted_ts,
+                 cvt_0    , predicted_cvt_0,
+                 cvt_1    , predicted_cvt_1);
+      }
+
+
+      // -------------------------------------
+      // Advance the predicted sequence number
+      // Advance the frame counter
+      // -------------------------------------
+      predicted_ts     = timestamp + 500;
+      predicted_cvt_0 += 1;
+      predicted_cvt_1 += 1;
+      frame           += 1;
+   }
+
+   // -----------------------------------------------
+   // Keep track of the number of time called and
+   // the expected sequence number of the next packet
+   // for this destination.
+   // -----------------------------------------------
+   Counter                 += 1;
+   History[dest].timestamp  = predicted_ts    +  500;
+   History[dest].convert[0] = predicted_cvt_0 +    1;
+   History[dest].convert[1] = predicted_cvt_1 +    1;
+
+   return 0;
 }
 /* ---------------------------------------------------------------------- */
+
 
 
 /* ---------------------------------------------------------------------- *//*!
@@ -892,15 +928,15 @@ static char    if_newline       (char        need_lf);
 int main(int argc, char *const argv[])
 {
     uint32_t              headerSize = 4 * sizeof (uint32_t);  //bytes
-    uint32_t		    maxWords = 100000; ///66002 + 7 - 1;
-                                        //in units of 32-bit words
-                                       // ....header says the size is 
-                                       // 264028 instead of 264036 
+    uint32_t		    maxBytes = headerSize
+                                     + sizeof (uint64_t)
+                                     + 1024 * 30 * sizeof (uint64_t) 
+                                     + sizeof (uint64_t);
 
 
-    uint8_t  rxData[maxWords*sizeof(uint32_t)]; //byte array
-    uint32_t                             eject = 60;
-    char                               need_lf =  0;
+    uint8_t  rxData[maxBytes]; 
+    uint32_t       eject = 60;
+    char         need_lf =  0;
 
     Prms      prms;
     getPrms (&prms, argc, argv);

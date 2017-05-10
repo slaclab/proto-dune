@@ -2,7 +2,7 @@
 -- File       : DuneDataCompression.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-05-02
--- Last update: 2017-03-16
+-- Last update: 2017-04-18
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -46,23 +46,24 @@ end DuneDataCompression;
 
 architecture mapping of DuneDataCompression is
 
+   -- 2017/04/18 jjr -- Back to 8
    -- 2017/01/06 llr -- Decreased back to 7 (not sure if I have the most up-to-date version of JJ's code or if he forgot to SVN commit this file with his other HLS code)
    -- 2016/11/29 jjr -- Increased back to 8 after adding some new stuff
    -- 2016/10/18 jjr -- Reduced after eliminating the channel-by-channel status
-   constant ADDR_WIDTH_C : natural := 7;
+   constant ADDR_WIDTH_C : natural := 8;
 
    component DuneDataCompressionCore
       port (
          s_axi_BUS_A_AWVALID : in  std_logic;
          s_axi_BUS_A_AWREADY : out std_logic;
-         s_axi_BUS_A_AWADDR  : in  std_logic_vector(6 downto 0);
+         s_axi_BUS_A_AWADDR  : in  std_logic_vector(ADDR_WIDTH_C-1 downto 0);
          s_axi_BUS_A_WVALID  : in  std_logic;
          s_axi_BUS_A_WREADY  : out std_logic;
          s_axi_BUS_A_WDATA   : in  std_logic_vector(31 downto 0);
          s_axi_BUS_A_WSTRB   : in  std_logic_vector(3 downto 0);
          s_axi_BUS_A_ARVALID : in  std_logic;
          s_axi_BUS_A_ARREADY : out std_logic;
-         s_axi_BUS_A_ARADDR  : in  std_logic_vector(6 downto 0);
+         s_axi_BUS_A_ARADDR  : in  std_logic_vector(ADDR_WIDTH_C-1 downto 0);
          s_axi_BUS_A_RVALID  : out std_logic;
          s_axi_BUS_A_RREADY  : in  std_logic;
          s_axi_BUS_A_RDATA   : out std_logic_vector(31 downto 0);

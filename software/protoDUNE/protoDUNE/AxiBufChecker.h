@@ -90,6 +90,7 @@ public:
                                int             fd,
                                int          trial,
                                uint8_t     **bufs,
+                               int        nrxbufs,
                                int          nbufs,
                                int           size);
 

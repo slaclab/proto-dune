@@ -27,8 +27,6 @@
 #include <iomanip>
 #include <unistd.h>
 #include <string.h>
-#include <PgpCardMod.h>
-#include <PgpCardWrap.h>
 #include <sstream>
 #include <Register.h>
 #include <Command.h>

@@ -135,7 +135,7 @@
 /*  PROCESS_K_TYPE must be set to one of the above PROCESS_K_<xxxx> to    */
 /*  select the desired processing mode.                                   */
 /* ---------------------------------------------------------------------- */
-#define PROCESS_K_MODE PROCESS_K_DATAFLOW /* Select dataflow copy         */
+#define PROCESS_K_MODE PROCESS_K_DATAFLOW /* Select dataflow              */
 /* ====================================================================== */
 
 

@@ -208,7 +208,7 @@ static void hist_encode_bte (BitStream64 &bs, Histogram &hist, int r0);
  *          At entry 3, there are  0xe entries left, so need 4 bits to encode 0x2
  *          At entry 4, there are  0xc entries left, so need 4 bits to enocde 0x5
  */
-void Histogram::encode (BitStream64 &bs64, Entry_t table[NBins+1])
+void Histogram::encode (BitStream64 &bs64, Table table[NBins+1])
 {
    #pragma HLS PIPELINE
    #pragma HLS INLINE
@@ -301,7 +301,7 @@ void Histogram::encode (BitStream64 &bs64, Entry_t table[NBins+1])
    for (ibin = 0; ;ibin++)
    {
       #pragma HLS LOOP_TRIPCOUNT min=40 max=64 avg=60
-      #pragma HLS PIPELINE
+      #pragma HLS PIPELINE II=2
       
       if (nbits)
       {

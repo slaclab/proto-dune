@@ -98,6 +98,8 @@ class BitStream64;
 #error HISTOGRAM_K_NBINS is not one of 64 or 128
 #endif
 
+
+
 class Histogram
 {
 public:
@@ -127,7 +129,7 @@ public:
    typedef ap_uint<Histogram::NBins>                        BitMask_t;
    typedef ap_uint<Histogram::NBits>                            Idx_t;
    typedef ap_uint<PACKET_B_ADC  + 1>                        Symbol_t;
-
+   typedef Entry_t                                              Table;
 public:
    Histogram ();
 
@@ -136,7 +138,7 @@ public:
    void         clear              ();
    static void  clear              (Histogram hists[], int nhists);
    void         bump               (Symbol_t sym);
-   void         encode             (BitStream64 &bs64, Entry_t table[NBins+1]);
+   void         encode             (BitStream64 &bs64, Table table[NBins+1]);
 
    uint32_t                   size () const;
    uint32_t     integrate_and_size ();
@@ -197,7 +199,6 @@ public:
 /* ---------------------------------------------------------------------- */
 /* END DEFINITION: Histogram                                              */
 /* ====================================================================== */
-
 
 
 
