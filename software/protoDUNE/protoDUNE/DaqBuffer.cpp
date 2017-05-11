@@ -15,6 +15,8 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2017.05.11 jjr Added code to monitor the WIB packets for errors in the
+//                timestamp and convert counts.
 // 2016.10.28 jjr Added the triggering configuration parameters naccept
 //                and nframe
 // ----------------------------------------------------------------------
@@ -355,12 +357,19 @@ static inline void dump_frame (void const *data, int nbytes)
  *  \param[in]   data The frame data
  *  \param[in] nbytes The number bytes in the data
  *  \param[in]   dest The originating module, 0 or 1
+ *  \param[in] sample The sampling interval. Since not all received 
+ *                    packets are checked, this is used to predict the
+ *                    values of the next packet that will be checked.
  *
 \* ---------------------------------------------------------------------- */
-static void check_frame (uint64_t const *data, int nbytes, unsigned int dest, int sample)
+static void check_frame (uint64_t const *data,
+                         int           nbytes,
+                         unsigned int    dest,
+                         int           sample)
 {
 #  define N64_PER_FRAME 30
-#  define NBYTES (unsigned int)(((1 + N64_PER_FRAME * 1024) + 1) * sizeof (uint64_t))
+#  define NBYTES (unsigned int)(((1 + N64_PER_FRAME * 1024) + 1) \
+                * sizeof (uint64_t))
 
 
    struct History_s
@@ -457,11 +466,11 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest, in
          predicted_cvt_0 = cvt_0;
          predicted_cvt_1 = cvt_1;
       }
-      else if (1 && ((Counter % (1024/sample)) == 0) && ((frame % 256) == 0))
+      else if (1 && ((Counter % (32768/sample)) == 0) && ((frame % 256) == 0))
       {
-         // --------------------------------------
-         // Print reassuring message at about 2 Hz
-         // --------------------------------------
+         // ------------------------------------------
+         // Print reassuring message at about 1/2-1 Hz
+         // ------------------------------------------
          printf ("Spot check @ %2u.%6u.%4u: "
                  "ts: %16.16" PRIx64 " == %16.16" PRIx64 " "
                  "cvt: %4.4" PRIx16 " == %4.4" PRIx16 " "
@@ -484,7 +493,7 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest, in
    }
 
    // -----------------------------------------------
-   // Keep track of the number of time called and
+   // Keep track of the number of times called and
    // the expected sequence number of the next packet
    // for this destination.
    // -----------------------------------------------
@@ -531,7 +540,6 @@ static inline bool post (CommQueue   *rxQueue,
       tempBuffer->setData (index, data, nbytes, rx_sequence);
       bool posted = workQueue->push (tempBuffer);
 
-      printf ("Posted\n");
       return posted;
    }
 
@@ -613,14 +621,16 @@ void DaqBuffer::rxRun () {
    // -------------------------------------------------------
 
 
+#  undef  MONITOR_RATE
+#  define MONITOR_RATE 0 
+#  if     MONITOR_RATE
    struct timeval curTime;
    struct timeval prvTime;
    struct timeval difTime;
    uint32_t     count[3] = {0, 0, 0};
    uint32_t     empty    =  0;
-
    gettimeofday (&prvTime, NULL);
-
+#  endif
 
 
    // Run while enabled
@@ -636,6 +646,9 @@ void DaqBuffer::rxRun () {
       // Attempt to read
       if ((rxSize = dmaReadIndex(_fd,&index,&flags,NULL, &dest)) > 0 )
       {
+         // ------------------------------------------------------------------
+#        if MONITOR_RATE
+         // ------------
          gettimeofday (&curTime, NULL);
          timersub (&curTime, &prvTime, &difTime); 
 
@@ -654,6 +667,8 @@ void DaqBuffer::rxRun () {
             count[1] = 0;
             count[2] = 0;
          }
+#        endif
+         // ------------------------------------------------------------------
 
          lastUser = axisGetLuser(flags);
          uint32_t print_it = ((DumpCounter[dest] & 0xfffff) < 4);
@@ -684,6 +699,10 @@ void DaqBuffer::rxRun () {
 
             _rxSequence += 1;
 
+
+            // -----------------------------------------------
+            // Check every 256 received packets in each stream
+            // -----------------------------------------------
             int check_it = ((DumpCounter[dest] & 0xff) == 0);
             if  (check_it)
             {
@@ -717,16 +736,17 @@ void DaqBuffer::rxRun () {
 
                    naccept = _config._naccept - 1;
                    nwait   = _config._nframes - 1;
-                   printf ("Arming: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
-                           naccept, nwait);
+
+                   //printf ("Arming: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
+                   //        naccept, nwait);
                 }
 
 
                 // Should this frame be accepted
                if (naccept >= 0)
                {
-                  printf ("Posting[%3d]: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
-                         index, naccept, nwait);
+                  //printf ("Posting[%3d]: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
+                  //       index, naccept, nwait);
 
                   posted = post (_rxQueue, 
                                  _workQueue, 
@@ -757,7 +777,9 @@ void DaqBuffer::rxRun () {
       else
       {
          // Placeholder for empty reads
+#        if MONITOR_RATE
          empty += 1;
+#        endif
       }
 
 
