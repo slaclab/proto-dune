@@ -135,7 +135,7 @@
 /*  PROCESS_K_TYPE must be set to one of the above PROCESS_K_<xxxx> to    */
 /*  select the desired processing mode.                                   */
 /* ---------------------------------------------------------------------- */
-#define PROCESS_K_MODE PROCESS_K_DATAFLOW /* Select dataflow copy         */
+#define PROCESS_K_MODE PROCESS_K_DATAFLOW /* Select dataflow              */
 /* ====================================================================== */
 
 
@@ -340,7 +340,7 @@ static void epilogue (AxisOut    &mAxis,
    {
       std::cout << "Outputting @ odx = " << odx << std::endl;
 
-      int   nbytes = sizeof (Header) + odx * sizeof (uint64_t) + sizeof (Trailer);
+      int   nbytes = odx * sizeof (uint64_t) + sizeof (Trailer);
       uint32_t  id = Identifier::identifier (Identifier::FrameType::DATA,
                                              Identifier::DataType::WIB,
                                              nbytes);
@@ -1106,7 +1106,10 @@ static void write_frame (AxisOut           &axis,
 
       d = frame.d[idx];
 
-      if (valid)
+      // --------------------------------------------------------------
+      // Only output the frame if valid and below the 64-bit word limit
+      // --------------------------------------------------------------
+      if (valid && odx < cfg.limit)
       {
          commit (axis, odx, write, d, 0, 0);
       }

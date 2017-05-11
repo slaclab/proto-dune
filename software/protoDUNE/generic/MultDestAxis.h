@@ -35,12 +35,13 @@ using namespace std;
 //! Class to contain PGP communications link
 class MultDestAxis : public MultDest {
 
-      string path_;
+      string   path_;
+      uint32_t dest_;
 
    public:
 
       //! Constructor
-      MultDestAxis (string path);
+      MultDestAxis (string path, uint32_t dest);
 
       //! Deconstructor
       ~MultDestAxis ( );

@@ -15,6 +15,8 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2017.05.11 jjr Added code to monitor the WIB packets for errors in the
+//                timestamp and convert counts.
 // 2016.10.28 jjr Added the triggering configuration parameters naccept
 //                and nframe
 // ----------------------------------------------------------------------
@@ -29,7 +31,7 @@
  
 #include "DaqBuffer.h"
 #include "FrameBuffer.h"
-#include "AxiStreamDma.h"
+#include <AxisDriver.h>
 #include "AxiBufChecker.h"
 
 typedef uint32_t __s32;
@@ -98,8 +100,7 @@ void DaqBuffer::hardReset () {
 // Open a dma interface and start threads
 bool DaqBuffer::open ( string devPath ) {
    struct sched_param txParam;
-
-
+   uint8_t mask[DMA_MASK_SIZE];
 
    puts ("-------------------------\n"
          "JJ's version of rceServer\n"
@@ -107,10 +108,13 @@ bool DaqBuffer::open ( string devPath ) {
 
    this->close();
 
+   fprintf (stderr, "Dma device = %s\n", devPath.c_str ());
 
    // Open device
 #ifndef RTEMS // FIX
-   if ( (_fd = ::open(devPath.c_str(),O_RDWR|O_NONBLOCK)) < 0 ) {
+//   if ( (_fd = ::open(devPath.c_str(),O_RDWR|O_NONBLOCK)) < 0 ) {
+   //if ( (_fd = ::open("/dev/axi_stream_dma_0", O_RDWR|O_NONBLOCK)) < 0 ) {
+   if ( (_fd = ::open("/dev/axi_stream_dma_2", O_RDWR|O_NONBLOCK)) < 0 ) {
       fprintf(stderr,"DaqBuffer::open -> Erroro pening device\n");
       return(false);
    }
@@ -118,16 +122,33 @@ bool DaqBuffer::open ( string devPath ) {
    _fd = -1;
 #endif
 
-#if 1
+   /*
+    | 2017.04.08 -- jjr
+    | -----------------
+    | Adjustmets for the V2 driver
+   */
+   dmaInitMaskBytes(mask);
+   //dmaAddMaskBytes(mask,128); // HLS[0]
+   //dmaAddMaskBytes(mask,129); // HLS[1]
+   dmaAddMaskBytes(mask,0); // HLS[0]
+   dmaAddMaskBytes(mask,1); // HLS[1]
+
+   if  ( dmaSetMaskBytes(_fd,mask) < 0 ) {
+      ::close(_fd);
+      fprintf(stderr,"DaqBuffer::open -> Unable to set mask\n");
+      return(false);
+   }
+
+
    // Get DMA buffers
-   if ( (_sampleData = axisMapUser(_fd,&_bCount,&_bSize)) == NULL ) {
+   if ( (_sampleData = (uint8_t **)dmaMapDma(_fd,&_bCount,&_bSize)) == NULL ) {
       fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
       this->close();
       return(false);
    }
-#endif
 
-
+   _rxCount = dmaGetRxBuffCount (_fd);
+   _txCount = dmaGetTxBuffCount (_fd);
 
    // Create queues
    _workQueue    = new CommQueue(RxFrameCount+5,true);
@@ -165,7 +186,6 @@ bool DaqBuffer::open ( string devPath ) {
 #endif
 
 
-
    
    // Set priority
 #if 1
@@ -186,7 +206,6 @@ bool DaqBuffer::open ( string devPath ) {
 
 
 #endif
-
 
    // Create Work Thread
    _workThreadEn = true;
@@ -234,9 +253,8 @@ bool DaqBuffer::open ( string devPath ) {
    // Init
    resetCounters ();
 
-   fprintf (stderr, "Running with %d buffers\n", _bCount);
-
-   printf("DaqBuffer::open -> Running with %i buffers of %i bytes\n",_bCount,_bSize);
+   printf("DaqBuffer::open -> Running with %i + %i = %i (tx+rx=total) buffers of %i bytes\n",
+          _txCount, _rxCount, _bCount,_bSize);
    return(true);
 }
 
@@ -267,7 +285,7 @@ void DaqBuffer::close () {
    }
 
    // Unmap user space
-   if ( _sampleData != NULL ) axisUnMapUser(_fd,(uint8_t **)_sampleData);
+   if ( _sampleData != NULL ) dmaUnMapDma(_fd,(void **)_sampleData);
    _sampleData = NULL;
 
    // Close the device
@@ -331,27 +349,6 @@ static inline void dump_frame (void const *data, int nbytes)
 
 
 
-/* ---------------------------------------------------------------------- *//*!
- *
- * \brief  Constructs the sequence counter for the bits and pieces of the
- *         first 64-bit word in the frame
- * \return The constructed sequence number
- *
- * \param[in] w The 64-bit word containing the bits and pieces of the 
- *               sequence counter
- *
-\* ---------------------------------------------------------------------- */
-static inline uint64_t get_sequence (uint64_t w)
-{
-   uint64_t seq =  (w >> 32) & 0xffff;
-   seq         |= ((w >>  8) & 0xffffff) << 16;
-
-   return seq;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
 
 /* ---------------------------------------------------------------------- *//*!
  *
@@ -360,20 +357,33 @@ static inline uint64_t get_sequence (uint64_t w)
  *  \param[in]   data The frame data
  *  \param[in] nbytes The number bytes in the data
  *  \param[in]   dest The originating module, 0 or 1
+ *  \param[in] sample The sampling interval. Since not all received 
+ *                    packets are checked, this is used to predict the
+ *                    values of the next packet that will be checked.
  *
 \* ---------------------------------------------------------------------- */
-static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
+static void check_frame (uint64_t const *data,
+                         int           nbytes,
+                         unsigned int    dest,
+                         int           sample)
 {
 #  define N64_PER_FRAME 30
-#  define NBYTES (unsigned int)(((1 + N64_PER_FRAME * 1024) + 1) * sizeof (uint64_t))
+#  define NBYTES (unsigned int)(((1 + N64_PER_FRAME * 1024) + 1) \
+                * sizeof (uint64_t))
 
 
-   static uint64_t History[2] = { 0, 0 };
+   struct History_s
+   {
+      uint64_t  timestamp;
+      uint16_t convert[2];
+   };
 
-   static unsigned int Counter = 0;
-   int                     n64 = nbytes / sizeof (*data) - 2;
+   static struct History_s History[2] = { {0, {0, 0}}, {0, {0,0}} };
+   static unsigned int        Counter = 0;
+   int                            n64 = nbytes / sizeof (*data) - 2;
   
    //uint64_t hdr = data[0];
+   data += 1;
 
 
    // ------------------------------------
@@ -385,21 +395,36 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
               dest, Counter, nbytes, NBYTES);
       return;
    }
+
+   
       
 
    // -------------------------------------------------------------
    // Seed predicted sequence number with either
-   //   1) The sequence number of the previous packet 
-   //   2) The sequence number of the first frame
+   //   1) The GPS timestamp of the previous packet
+   //   2) The GPS timestamp of the first frame
    // -------------------------------------------------------------
-   uint64_t predicted = History[dest] ? History[dest] : get_sequence (data[1]);
-   unsigned int frame = 0;
+   uint16_t   predicted_cvt_0;
+   uint16_t   predicted_cvt_1;
+   uint64_t   predicted_ts = History[dest].timestamp;
+   if (predicted_ts)
+   {
+      predicted_ts    = data[ 1];
+      predicted_cvt_0 = data[ 2] >> 48;
+      predicted_cvt_1 = data[16] >> 48;
+   }
+   else
+   {
+      predicted_cvt_0 = History[dest].convert[0];
+      predicted_cvt_1 = History[dest].convert[1];
+   }
 
 
    // --------------------
    // Loop over each frame
    // --------------------
-   for (int idx = 1; idx < n64; idx += N64_PER_FRAME)
+   unsigned int    frame = 0;
+   for (int idx = 0; idx < n64; idx += N64_PER_FRAME)
    {
       uint64_t d = data[idx];
 
@@ -415,18 +440,45 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
       // -----------------------------------
       // Form and check the sequence counter
       // ----------------------------------
-      uint64_t seq  =  get_sequence (d);
-      if      (seq != predicted)
+      uint64_t timestamp = data[idx+1];
+      uint16_t     cvt_0 = data[idx +  2] >> 48;
+      uint16_t     cvt_1 = data[idx + 16] >> 48;
+
+      int error = ((timestamp != predicted_ts   ) << 0)
+                | ((cvt_0     != predicted_cvt_0) << 1)
+                | ((cvt_1     != predicted_cvt_1) << 2);
+
+      if (error)
       {
-         printf ("Error sequence @ %2u.%6u.%4u: %16.16"
-                  PRIx64 " != %16.16" PRIx64 "\n",
-                 dest, Counter, frame, seq, predicted);
+         printf ("Error  seq @ %2u.%6u.%4u: "
+                 "ts: %16.16" PRIx64 " %c= %16.16" PRIx64 " "
+                 "cvt: %4.4" PRIx16 " %c= %4.4" PRIx16 " "
+                 "cvt: %4.4" PRIx16 " %c= %4.4" PRIx16 "\n",
+                 dest, Counter, frame, 
+                 timestamp, (error&1) ? '!' : '=', predicted_ts,
+                 cvt_0    , (error&2) ? '!' : '=', predicted_cvt_0,
+                 cvt_1    , (error&4) ? '!' : '=', predicted_cvt_1);
+
+         // -----------------------------------------------------
+         // In case of error, resynch the predicted to the actual
+         // -----------------------------------------------------
+         predicted_ts    = timestamp;
+         predicted_cvt_0 = cvt_0;
+         predicted_cvt_1 = cvt_1;
       }
-      else if (0 && ((Counter % 1024) == 0) && ((frame % 256) == 0))
+      else if (1 && ((Counter % (32768/sample)) == 0) && ((frame % 256) == 0))
       {
-         // Print reassuring message at about 2 Hz
-         printf ("Spot check @ %2u.%6u.%4u: %16.16" PRIx64 "  = %16.16" PRIx64 "\n",
-                 dest, Counter, frame, seq, predicted);
+         // ------------------------------------------
+         // Print reassuring message at about 1/2-1 Hz
+         // ------------------------------------------
+         printf ("Spot check @ %2u.%6u.%4u: "
+                 "ts: %16.16" PRIx64 " == %16.16" PRIx64 " "
+                 "cvt: %4.4" PRIx16 " == %4.4" PRIx16 " "
+                 "cvt: %4.4" PRIx16 " == %4.4" PRIx16 "\n",
+                 dest, Counter, frame, 
+                 timestamp, predicted_ts,
+                 cvt_0    , predicted_cvt_0,
+                 cvt_1    , predicted_cvt_1);
       }
 
 
@@ -434,17 +486,21 @@ static void check_frame (uint64_t const *data, int nbytes, unsigned int dest)
       // Advance the predicted sequence number
       // Advance the frame counter
       // -------------------------------------
-      predicted = seq + 1;
-      frame    += 1;
+      predicted_ts     = timestamp + 500;
+      predicted_cvt_0 += 1;
+      predicted_cvt_1 += 1;
+      frame           += 1;
    }
 
    // -----------------------------------------------
-   // Keep track of the number of time called and
+   // Keep track of the number of times called and
    // the expected sequence number of the next packet
    // for this destination.
    // -----------------------------------------------
-   Counter      += 1;
-   History[dest] = predicted;
+   Counter                 += sample;
+   History[dest].timestamp  = predicted_ts    + (sample - 1) * 500;
+   History[dest].convert[0] = predicted_cvt_0 +  sample - 1;
+   History[dest].convert[1] = predicted_cvt_1 +  sample - 1;
 
    return;
 }
@@ -484,7 +540,6 @@ static inline bool post (CommQueue   *rxQueue,
       tempBuffer->setData (index, data, nbytes, rx_sequence);
       bool posted = workQueue->push (tempBuffer);
 
-      printf ("Posted\n");
       return posted;
    }
 
@@ -509,7 +564,7 @@ void DaqBuffer::rxRun () {
    int32_t        rxSize;
    uint32_t       dest;
    uint32_t       lastUser;
-   uint32_t       firstUser;
+   uint32_t       flags;
 
    int32_t       naccept = 0;
    int32_t         nwait = 0;
@@ -518,21 +573,13 @@ void DaqBuffer::rxRun () {
    _rxPend      = 0;   
 
 
-   static uint32_t DumpCounter = 0;
+   static uint32_t DumpCounter[2] = {0, 0};
 
    struct timeval cur;
    gettimeofday (&cur, NULL);
    fprintf (stderr, "Rxrun time = %lu.%06lu\n",
             cur.tv_sec, cur.tv_usec);
       
-#if 0
-   // Get DMA buffers
-   if ( (_sampleData = axisMapUser(_fd,&_bCount,&_bSize)) == NULL ) {
-      fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
-      this->close();
-      return;
-   }
-#endif
 
    char *line __attribute__ ((unused));
 
@@ -546,34 +593,44 @@ void DaqBuffer::rxRun () {
    // !!! KLUDGE !!! CHECK READBILITY OF THE BUFFERS
    // ----------------------------------------------
    uint16_t bad[_bCount];
-   int nbad = AxiBufChecker::check_buffers (bad, _sampleData, _bCount, _bSize);
-   for (int idx = 0; idx < nbad; idx++) 
-   {
-      fprintf (stderr, "Bad = %3d\n", bad[idx]);
-   }
+   AxiBufChecker::check_buffers (bad, _sampleData, _bCount, _bSize);
    // ----------------------------------------------
       
       
-
    // -------------------------------------------------------
    // !!! KLUDGE !!!
    // Get rid of the bad buffers
    // ------------------------------
    int nbufs     =    _bCount;
+   int nrxbufs   =   _rxCount;
    AxiBufChecker abc[_bCount];
+
    for (int idx = 0; idx < 2; idx++)
    {
       int nbad = AxiBufChecker::extreme_vetting (abc 
                                                  ,_fd,
                                                  idx, 
                                                  _sampleData, 
+                                                 nrxbufs,
                                                  nbufs, 
                                                  _bSize);
-      nbufs -= nbad;
+      nrxbufs -= nbad;
    }
 
    fprintf (stderr, "Done\n");
    // -------------------------------------------------------
+
+
+#  undef  MONITOR_RATE
+#  define MONITOR_RATE 0 
+#  if     MONITOR_RATE
+   struct timeval curTime;
+   struct timeval prvTime;
+   struct timeval difTime;
+   uint32_t     count[3] = {0, 0, 0};
+   uint32_t     empty    =  0;
+   gettimeofday (&prvTime, NULL);
+#  endif
 
 
    // Run while enabled
@@ -587,27 +644,52 @@ void DaqBuffer::rxRun () {
       select(_fd+1,&fds,NULL, NULL, &timeout); 
 
       // Attempt to read
-      if ((rxSize = axisReadUser(_fd,&index,&firstUser,&lastUser,&dest)) > 0 ) 
+      if ((rxSize = dmaReadIndex(_fd,&index,&flags,NULL, &dest)) > 0 )
       {
-         uint32_t print_it = ((DumpCounter & 0xfffff) < 4) & 0;
-         DumpCounter += 1;
-         if ( print_it)
+         // ------------------------------------------------------------------
+#        if MONITOR_RATE
+         // ------------
+         gettimeofday (&curTime, NULL);
+         timersub (&curTime, &prvTime, &difTime); 
+
+         uint32_t interval = 1000 * 1000 * difTime.tv_sec 
+                           +               difTime.tv_usec;
+         if      (dest == 0) count[0] += 1;
+         else if (dest == 1) count[1] += 1;
+         else                count[2] += 1;
+         if (interval >= 10* 1000 * 1000)
+         {
+            uint32_t total = count[0] + count[1] + count[2];
+            fprintf (stderr, "Empty = %6u Rate = %6u+%6u+%6u=%6u/%9u\n", 
+                     empty, count[0], count[1], count[2], total, interval);
+            prvTime  = curTime;
+            count[0] = 0;
+            count[1] = 0;
+            count[2] = 0;
+         }
+#        endif
+         // ------------------------------------------------------------------
+
+         lastUser = axisGetLuser(flags);
+         uint32_t print_it = ((DumpCounter[dest] & 0xfffff) < 4);
+         DumpCounter[dest] += 1;
+         if (0 && print_it)
          {
             printf ("Index:%4u  dest: %3u rxSize = %6u\n", index, dest, rxSize);
          }
 
          //////////////////////////////////////////////////////////////////////
          // Check if blowing off the DMA data
-         if ( (_config._blowOffDmaData != 0) || (dest > MAX_DEST) ) {
+         if ( (_config._blowOffDmaData != 0) || ((dest != 0) && (dest != 1)) ) {
             // Return index value 
-            axisPostUser(_fd,index);         
+            dmaRetIndex(_fd,index);         
             
          //////////////////////////////////////////////////////////////////////
          // Check for a external trigger
          } else if ( dest == 8 ) {
             printf ("qWeird dest = %u\n", dest);
             _counters._triggers++;
-            axisPostUser(_fd,index);
+            dmaRetIndex(_fd,index);
             
          //////////////////////////////////////////////////////////////////////
          // Else this is HLS data (dest < MAX_DEST) 
@@ -617,14 +699,20 @@ void DaqBuffer::rxRun () {
 
             _rxSequence += 1;
 
-            if  (print_it)
+
+            // -----------------------------------------------
+            // Check every 256 received packets in each stream
+            // -----------------------------------------------
+            int check_it = ((DumpCounter[dest] & 0xff) == 0);
+            if  (check_it)
             {
                check_frame ((uint64_t const *)_sampleData[index],
                             rxSize,
-                            dest);
+                            dest,
+                            256);
             }
 
-            if (print_it)
+            if (0 & print_it)
             {
                dump_frame (_sampleData[index], rxSize);
             }
@@ -634,7 +722,7 @@ void DaqBuffer::rxRun () {
             // Check if there is error
             if( lastUser & TUserEOFE ){
                _counters._rxErrors++;
-               axisPostUser(_fd,index);
+               dmaRetIndex(_fd,index);
 
             // Try to Move the data
             } else {
@@ -648,16 +736,17 @@ void DaqBuffer::rxRun () {
 
                    naccept = _config._naccept - 1;
                    nwait   = _config._nframes - 1;
-                   printf ("Arming: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
-                           naccept, nwait);
+
+                   //printf ("Arming: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
+                   //        naccept, nwait);
                 }
 
 
                 // Should this frame be accepted
                if (naccept >= 0)
                {
-                  printf ("Posting[%3d]: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
-                         index, naccept, nwait);
+                  //printf ("Posting[%3d]: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
+                  //       index, naccept, nwait);
 
                   posted = post (_rxQueue, 
                                  _workQueue, 
@@ -680,10 +769,17 @@ void DaqBuffer::rxRun () {
                {
                   // We are saturated, drop this frame
                   _counters._dropCount++;            
-                  axisPostUser(_fd,index);
+                  dmaRetIndex(_fd,index);
                }
             }            
          }
+      }
+      else
+      {
+         // Placeholder for empty reads
+#        if MONITOR_RATE
+         empty += 1;
+#        endif
       }
 
 
@@ -697,7 +793,7 @@ void DaqBuffer::rxRun () {
             _rxQueue->push(tempBuffer);
 
             // Return the data buffer
-            axisPostUser(_fd,tempBuffer->index());
+            dmaRetIndex(_fd,tempBuffer->index());
 
             _rxPend--;
          } 
@@ -777,7 +873,6 @@ void DaqBuffer::txRun () {
    // Init iov
    msg_iov[0].iov_base = &header;
    msg_iov[0].iov_len  = sizeof(struct DaqHeader);
-
 
    while ( _txThreadEn ) 
    {

@@ -1,7 +1,7 @@
-export GIT_BYPASS = 1
+export GIT_BYPASS = 0
 
 # define firmware version
-export PRJ_VERSION = 0x0000002C
+export PRJ_VERSION = 0x00000041
 
 # Define target output
 target: bit
@@ -9,16 +9,73 @@ target: bit
 # Define target part
 export PRJ_PART = XC7Z045FFG900-2
 
-# If REMOVE_UNUSED_CODE = 0, all source code is kept after importing to Vivado project
-# If REMOVE_UNUSED_CODE = 1, all unused source code is removed from Vivado project
-export REMOVE_UNUSED_CODE = 1
-
 # Use top level makefile
 include ../../submodules/ruckus/system_vivado.mk
 
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/10 0x00000041 jjr  Believe this Ryan's attempt to correcct a bug
+#                            which resulted in the length of a packet being
+#                            returned 1 byte larger than it should have.
+# 2017/05/09 0x00000040 jjr  Ryan's attemtp to fix the drop packet problem. 
+#                            This correction addresses the handling of the
+#                            cache properties, both on the main DMA data path
+#                            and the descriptor path.
+# 2017/05/05 0x00000039 jjr  Larry simplified the monitoring done by ILA
+#                            (See comment on 0x38.)
+# 2017/05/04 0x00000038 jjr  Much more extensive monitoring added by Ryan
+#                            -- This failed.  Larry believes it had something
+#                            to do with the attempt to monitor both the 125
+#                            and 200 MHz clock domains.
+# 2017/05/04 0x00000037 jjr  Add ILA for both HLS modules
+# 2017/05/04 0x00000036 jjr  Small SsiFifo + ILA 
+# 2017/05/04 0x00000035 jjr  Larry thinks that we need a small SsiFifo between
+#                            the HLS module and the 'large' fifo to filter out
+#                            'garbage' seen at a power cycle.
+# 2017/05/03 0x00000034 jjr  Back to using the SsiFifo. This works as 
+#                            anticipated, being basically back 0x30
+# 2017/05/03 0x00000033 jjr  Back to full output. This was to be an attempt
+#                            to use ILA as a monitor, but that failed when
+#                            the driver would not load.  Rebuild without ILA.
+#                            This also hung the processor. (I did not properly
+#                            label the initial build with ILA, it was versioned
+#                            as 32. But since it did not work, it will never
+#                            be used again.
+# 2017/05/03 0x00000032 jjr  Neuter the output to verify that the back-pressure
+#                            is coming from the output stream not accepting
+#                            data.
+# 2017/05/02 0x00000031 jjr  Next attempt. -- Failed, no obvious difference
+#                            from the 0x30.
+# 2017/05/02 0x00000030 jjr  Using new firmware from Ryan that addresses the
+#                            the dropped WibFrame issue.  I think the idea
+#                            is that there was contention when the 2 FIFO
+#                            that interface directly with the HLS modules
+#                            merged into 1 FIFO that feeds the DMA engine.
+#                            This fix has been tested in a standalone fashion
+#                            by Ryan. 
+#
+#                            NOTE: Did not work. It dropped frames even with
+#                            only one enabled HLS module.  Frames did not
+#                            appear to dropped, but corrupted.  In particular
+#                            the WIB 64-bit timestamp was in error (sometimes
+#                            even 0), but the Convert Counts matched. Had not
+#                            seen the pattern till now.
+# 2017/04/25 0x0000002F jjr  Larry eliminated the cascading FIFO in the DMA
+#                            path.  There was a worry that the way it was
+#                            configured may cause small timescale studders.
+# 2017/04/25 0x0000002E jjr  Increase the number of DMA Channel 2 buffers from
+#                            4 -> 8. This is to see if this cures the sporadic
+#                            dropped WIB frames.  (Currently with both HLS
+#                            modules enabled, the drop rate is ~4-10 /sec.
+#                            Did not bump the PRJ_VERSION, so produced a 
+#                            second version 2E.  It was better, but not a
+#                            complete success
+# 2017/04/21 0x0000002E jjr  Try version of DMA driver with multiple 
+#                            independent FIFO's. This is an attempt to up
+#                            the thru-put.
+# 2017/04/18 0x0000002D jjr  Incorportates Ryan's  V2 rce_stream driver which
+#                            uses the ACP rather than HP as the DMA path 
 # 2017/03/22 0x0000002C llr  Added the first draft of the CERN Timing receiver
 # 2017/03/01 0x0000002B rth  Added register settable cache setting for DMA
 # 2017/01/31 0x0000002A llr  Added 1 second linkUP watchdog resets to WIB links

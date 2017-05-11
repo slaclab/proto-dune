@@ -51,6 +51,7 @@
 
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2016.05.03 jjr Added output limiting register to the configuration
    2015.11.28 jjr Added error counters for Start of Frame, End of Frame on
                   other than the expected words, i.e. first word for SOF
                   and last for EOF
@@ -379,6 +380,9 @@ typedef ap_uint<2> Mode_t;
 struct ModuleConfig {
    uint32_t                            init;  /*!< Initialization flag    */
    uint32_t                            mode;  /*!< Data processing mode   */
+   uint32_t                           limit;  /*!< Limits size of output
+                                                   packet, units = 64bit
+                                                   words                  */
    ChannelConfig    chns[MODULE_K_NCHANNELS]; /*!< Per channel config     */
 };
 /* ---------------------------------------------------------------------- */

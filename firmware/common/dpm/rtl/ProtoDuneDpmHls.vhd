@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHls.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2016-09-15
+-- Last update: 2017-04-25
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -68,8 +68,19 @@ architecture mapping of ProtoDuneDpmHls is
    signal hlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal hlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
+   signal ssiMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
+   signal ssiSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+
    signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+   
+   attribute dont_touch                 : string;
+   attribute dont_touch of ibHlsMasters : signal is "TRUE";
+   attribute dont_touch of ibHlsSlaves  : signal is "TRUE";   
+   attribute dont_touch of obHlsMasters : signal is "TRUE";
+   attribute dont_touch of obHlsSlaves  : signal is "TRUE";   
+   attribute dont_touch of dmaIbMasters : signal is "TRUE";
+   attribute dont_touch of dmaIbSlaves  : signal is "TRUE";   
    
 begin
 
@@ -127,21 +138,20 @@ begin
 
       --------------
       -- FIFO Module
-      --------------              
-      U_Fifo : entity work.SsiFifo
+      --------------    
+      U_Filter : entity work.SsiFifo
          generic map (
             -- General Configurations
             TPD_G               => TPD_G,
+            INT_PIPE_STAGES_G   => 1,
             PIPE_STAGES_G       => 1,
-            EN_FRAME_FILTER_G   => true,
+            SLAVE_READY_EN_G    => true,
             VALID_THOLD_G       => 1,
             -- FIFO configurations
-            BRAM_EN_G           => true,
-            XIL_DEVICE_G        => "7SERIES",
-            USE_BUILT_IN_G      => false,
-            GEN_SYNC_FIFO_G     => false,
-            CASCADE_SIZE_G      => CASCADE_SIZE_G,
-            FIFO_ADDR_WIDTH_G   => 9,
+            BRAM_EN_G           => false,
+            GEN_SYNC_FIFO_G     => true,
+            CASCADE_SIZE_G      => 1,
+            FIFO_ADDR_WIDTH_G   => 4,
             -- AXI Stream Port Configurations
             SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
             MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)            
@@ -151,6 +161,36 @@ begin
             sAxisRst    => axilRst,
             sAxisMaster => hlsMasters(i),
             sAxisSlave  => hlsSlaves(i),
+            -- Master Port
+            mAxisClk    => axilClk,
+            mAxisRst    => axilRst,
+            mAxisMaster => ssiMasters(i),
+            mAxisSlave  => ssiSlaves(i));  
+            
+      U_Fifo : entity work.AxiStreamFifoV2
+         generic map (
+            -- General Configurations
+            TPD_G               => TPD_G,
+            PIPE_STAGES_G       => 0,
+            -- VALID_THOLD_G       => 1,
+            VALID_THOLD_G       => 128,
+            VALID_BURST_MODE_G  => true,
+            -- FIFO configurations
+            BRAM_EN_G           => true,
+            XIL_DEVICE_G        => "7SERIES",
+            USE_BUILT_IN_G      => false,
+            GEN_SYNC_FIFO_G     => false,
+            CASCADE_SIZE_G      => 1,
+            FIFO_ADDR_WIDTH_G   => 12,
+            -- AXI Stream Port Configurations
+            SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
+            MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)            
+         port map (
+            -- Slave Port
+            sAxisClk    => axilClk,
+            sAxisRst    => axilRst,
+            sAxisMaster => ssiMasters(i),
+            sAxisSlave  => ssiSlaves(i),
             -- Master Port
             mAxisClk    => dmaClk,
             mAxisRst    => dmaRst,
@@ -188,9 +228,13 @@ begin
    --------------               
    U_Mux : entity work.AxiStreamMux
       generic map (
-         TPD_G         => TPD_G,
-         PIPE_STAGES_G => 1,
-         NUM_SLAVES_G  => WIB_SIZE_C)
+         TPD_G          => TPD_G,
+         PIPE_STAGES_G  => 1,
+         NUM_SLAVES_G   => WIB_SIZE_C,
+         MODE_G         => "INDEXED",
+         TDEST_LOW_G    => 0,
+         ILEAVE_EN_G    => true,
+         ILEAVE_REARB_G => 0)
       port map (
          -- Clock and reset
          axisClk      => dmaClk,

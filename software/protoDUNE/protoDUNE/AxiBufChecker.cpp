@@ -46,7 +46,7 @@
 #include <stddef.h>
 #include <unistd.h>
 #include "AxiBufChecker.h"
-#include "AxiStreamDma.h"
+#include <AxisDriver.h>
 
 #include <setjmp.h>
 #include <signal.h>
@@ -289,6 +289,11 @@ int AxiBufChecker::check_buffers (uint16_t      *bad,
 {
    AxiBufChecker abc[nbufs];
 
+
+   fprintf (stderr, 
+            "BEGIN: Quick vetting for bad hombre buffers, nbufs = %d\n", 
+             nbufs);
+
    int nbad = 0;
    for (unsigned int ibuf = 0; ibuf < nbufs; ibuf++)
    {
@@ -299,6 +304,10 @@ int AxiBufChecker::check_buffers (uint16_t      *bad,
          nbad     +=    1;
       }
    }
+
+   fprintf (stderr, 
+            "END  : Quick vetting, found %d bad hombre buffers\n", nbad);
+
 
    return nbad;
 }
@@ -311,26 +320,22 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
                                     int             fd,
                                     int          trial,
                                     uint8_t     **bufs,
+                                    int        nrxbufs,
                                     int          nbufs,
                                     int           size)
 {
    int nbad = 0;
    fprintf (stderr, 
-            "BEGIN: Extreme vetting of bad hombre buffers, trial = %d nbufs = %d\n", 
-            trial, nbufs);
-
+            "BEGIN: Extreme vetting for bad hombre buffers, trial = %d nrxbufs = %d\n", 
+            trial, nrxbufs);
 
    // ------------------------------
    // Make a list of the bad buffers
    // ------------------------------
-   for (int idx = 0; idx < nbufs; idx++)
+   for (int idx = 0; idx < nrxbufs; idx++)
    {
       uint32_t       index;
       int32_t        rxSize;
-      uint32_t       dest          __attribute__ ((unused));
-      uint32_t       lastUser      __attribute__ ((unused));
-      uint32_t       firstUser     __attribute__ ((unused));
-
 
       // ---------------------------------------
       // Grab a buffer and check for readability
@@ -340,16 +345,16 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
       maxerrs =  2;
       nerrs   =  0;
       while (1)
-     {
-         rxSize = axisReadUser (fd, &index, &firstUser, &lastUser, &dest);
+      {
+         rxSize = dmaReadIndex(fd, &index, NULL, NULL, NULL);
 
          if (rxSize <= 0)
          {
             if (nerrs <= maxerrs)
             {
                 fprintf (stderr,
-                   "     Read failure[%3d]: rxSize = %8.8x errno = %d\n", 
-                         nerrs, rxSize, errno);
+                   "     Read failure[%4u:%3d]: rxSize = %8.8x errno = %d\n", 
+                         idx, nerrs, rxSize, errno);
                 fflush  (stderr);
             }
             nerrs += 1;
@@ -377,11 +382,8 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          fprintf (stderr, "Encountered a previous bad buffer %d\n", index);
       }
 
-      //fprintf (stderr, "Servicing %d\n", index);
-      //fflush  (stderr);
 
-
-      if (1 || ((index < 107 || index > 111)))
+      if (1)
       {
          // ------------------------
          // Check it for readability
@@ -406,9 +408,18 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
    // All outstanding buffers have been checked
    // Return the good buffers
    // ----------------------------------------
+   int                     first_idx = 0;
+   bool                      need_lf = false;
+   AxiBufChecker::Status last_status = AxiBufChecker::Status::Unknown;
    for (int idx = 0; idx < nbufs; idx++)
    {
       AxiBufChecker::Status status = abc[idx].m_status;
+
+      if ( (status != last_status) && idx != 0)
+      {
+         first_idx = idx;
+         if (need_lf) fputc ('\n', stderr);
+      }
 
       if (status == AxiBufChecker::Bad)
       {
@@ -416,7 +427,10 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          // Bad buffers are not returned
          // They are permanently out of circulation
          // ---------------------------------------
-         fprintf (stderr, "       Buffer %d not returned\n",  idx);
+         fprintf (stderr,
+                  "       \033[1;31mBuffer  %4u      is a bad hombre, deported/not returned\033[0m\n",
+                  idx);
+         need_lf = false;
       }
       else if (status == AxiBufChecker::Good ||
                status == AxiBufChecker::Skipped)
@@ -424,14 +438,20 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          // -----------------------------------
          // Return the good and skipped buffers
          // -----------------------------------
-         int status = axisPostUser (fd, idx);
+         int status = dmaRetIndex (fd, idx);
          if (status)
          {
-            fprintf (stderr, "\naxisPostUser error %d %d\n", status, errno);
+            fprintf (stderr,
+                     "       Buffer  %4u      had dmaRetIndex failure errno=%d\n", 
+                     idx, errno);
+            need_lf   = false;
          }
          else
          {
-            fprintf (stderr, "AxisPostUser success %d\r", idx);
+            fprintf (stderr,
+                     "       Buffers %4u-%4u were successfully returned\r", 
+                     first_idx, idx);
+            need_lf = true;
          }
       }
       else
@@ -441,13 +461,18 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          // The most likely reason is that these buffers 
          // were previously removed from circulation
          // --------------------------------------------
-         fprintf (stderr, "       \nBuffer %d was not catalogued\n", idx);
+         fprintf (stderr, 
+                  "       Buffers %4u-%4u were not catalogued - likely tx's\r",
+                  first_idx, idx);
+         need_lf   = true;
       }
+
+      last_status = status;
    }
 
-
+   if (need_lf) fputc ('\n', stderr);
    fprintf (stderr, 
-            "END  : Extreme vetting of bad hombre buffers, trial = %d\n",
+            "END  : Extreme vetting for bad hombre buffers, trial = %d\n",
             trial);
 
    return nbad;
