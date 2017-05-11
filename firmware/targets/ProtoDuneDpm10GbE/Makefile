@@ -1,7 +1,7 @@
-export GIT_BYPASS = 1
+export GIT_BYPASS = 0
 
 # define firmware version
-export PRJ_VERSION = 0x00000040
+export PRJ_VERSION = 0x00000041
 
 # Define target output
 target: bit
@@ -15,6 +15,9 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/10 0x00000041 jjr  Believe this Ryan's attempt to correcct a bug
+#                            which resulted in the length of a packet being
+#                            returned 1 byte larger than it should have.
 # 2017/05/09 0x00000040 jjr  Ryan's attemtp to fix the drop packet problem. 
 #                            This correction addresses the handling of the
 #                            cache properties, both on the main DMA data path
