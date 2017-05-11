@@ -1,7 +1,7 @@
 export GIT_BYPASS = 0
 
 # define firmware version
-export PRJ_VERSION = 0x00000041
+export PRJ_VERSION = 0x00000042
 
 # Define target output
 target: bit
@@ -15,6 +15,7 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/11 0x00000042 llr  Added the timing stream to the inbound DMA
 # 2017/05/10 0x00000041 jjr  Believe this Ryan's attempt to correcct a bug
 #                            which resulted in the length of a packet being
 #                            returned 1 byte larger than it should have.
