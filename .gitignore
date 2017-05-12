@@ -4,4 +4,4 @@
 *.pyc
 *.bit
 *.mcs
-
+software/protoDUNE/python/arm/*

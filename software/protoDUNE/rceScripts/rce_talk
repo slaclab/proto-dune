@@ -275,15 +275,15 @@ class LbneAliasMap:
             ###################
             # SLAC Defined RCEs
             ###################
-            ( '192.168.1.254' ):'SLAC-SM',
+            ( '192.168.1.254' ):'SM-SLAC',
             ( '192.168.2.110' ):'SLAC-100',
             ( '192.168.2.111' ):'SLAC-102',
             ( '192.168.2.112' ):'SLAC-110',
             ( '192.168.2.113' ):'SLAC-112',
             ( '192.168.2.114' ):'SLAC-120',
             ( '192.168.2.115' ):'SLAC-122',
-            ( '192.168.2.116' ):'SLAC-130',
-            ( '192.168.2.117' ):'SLAC-132',
+            #( '192.168.2.116' ):'SLAC-130',
+            #( '192.168.2.117' ):'SLAC-132',
             ( '192.168.2.210' ):'SLAC-DTM1',
             # ( '192.168.3.110' ):'SLAC-200',
             # ( '192.168.3.111' ):'SLAC-202',
@@ -297,7 +297,7 @@ class LbneAliasMap:
             ###################
             # FNAL Defined RCEs
             ###################
-            ( '192.168.100.180' ):'FNAL-SM',
+            ( '192.168.100.180' ):'SM-FNAL',
             ( '10.0.1.181' ):'FNAL-200',
             ( '10.0.1.182' ):'FNAL-202',
             ( '10.0.1.183' ):'FNAL-210',
@@ -319,7 +319,7 @@ class LbneAliasMap:
             ###################
             # CERN Defined RCEs
             ###################
-            ( '192.168.1.2' ):'CERN-SM',
+            ( '192.168.1.2' ):'SM-CERN',
             ( '10.193.160.31' ):'CERN-100',
             ( '10.193.160.32' ):'CERN-102',
             ( '10.193.160.33' ):'CERN-110',
@@ -563,7 +563,7 @@ def main(argv):
     elif (cmd=="check_host" and argc==0):
         ssh_cmd  = "uname -r; "
         ssh_cmd += "uptime; "
-#        ssh_cmd += "/mnt/host/protoDUNE/rceData/dtm_src/bin/firmware_version; "
+#        ssh_cmd += "/mnt/host/proto-dune/software/protoDUNE/rceData/dtm_src/bin/firmware_version; "
         ssh_cmd += "sysinfo|grep 'bitfile'; "
         ssh_cmd += "ps auxww | grep rceServer | grep -v grep;"
         ssh_cmd += "df -h ."
@@ -597,22 +597,22 @@ def main(argv):
         binCmd = locPath + 'bin/statusGui ' + ipList
         os.system(binCmd)     
     elif (cmd=="restart_rce_software" and argc==0):
-        ssh_cmd  = "cd /mnt/host/protoDUNE; "
+        ssh_cmd  = "cd /mnt/host/proto-dune/software/protoDUNE; "
         ssh_cmd += "killall -q rceServer; "
         ssh_cmd += "source setup_cob.csh; "
         ssh_cmd += "/bin/axistreamdma.sh"
         g.action("ssh_cmd",ssh_cmd)
     elif (cmd=="build_rce_software" and argc==0):
-        ssh_cmd  = "cd /mnt/host/protoDUNE; "
+        ssh_cmd  = "cd /mnt/host/proto-dune/software/protoDUNE; "
         ssh_cmd += "killall -q rceServer; "
         ssh_cmd += "source setup_cob.csh; "
         ssh_cmd += "make; "
-        ssh_cmd += "nohup /mnt/host/protoDUNE/rceScripts/start_server.csh"
+        ssh_cmd += "nohup /mnt/host/proto-dune/software/protoDUNE/rceScripts/start_server.csh"
         g.action("ssh_cmd",ssh_cmd)
     elif (cmd=="start_pgp_slave" and argc==1):
         ssh_cmd  = "killall -q pgp_slave; "
         ssh_cmd += "sleep 1; "
-        ssh_cmd += "nohup /mnt/host/protoDUNE/diagnostics/pgp_slave "
+        ssh_cmd += "nohup /mnt/host/proto-dune/software/protoDUNE/diagnostics/pgp_slave "
         ssh_cmd += argv[2]
         ssh_cmd += " 1 > /dev/null &"
         g.action("ssh_cmd",ssh_cmd)

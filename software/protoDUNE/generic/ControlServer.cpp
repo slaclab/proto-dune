@@ -170,11 +170,11 @@ void ControlServer::receive ( uint32_t selectPeriod, uint32_t pollPeriod, bool *
    else  pollCycles = (pollPeriod/selectPeriod);
    pollCount = 0;
 
-   fprintf (stderr, 
+   /*fprintf (stderr, 
             "pollPeriod = %8" PRIu32 " selectPeriod = %8" PRIu32 " pollCycles = %8" PRIu32 "\n",
             pollPeriod,
             selectPeriod,
-            pollCycles);
+            pollCycles);*/
 
    do {
 

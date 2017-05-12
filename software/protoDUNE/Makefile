@@ -56,6 +56,7 @@ all: dir $(GEN_OBJ) $(DEV_OBJ) $(LOC_OBJ) $(UTL_BIN) pylibs $(EXT_TARS)
 
 # Object directory
 dir:
+	test -d bin    || mkdir bin
 	test -d $(OBJ) || mkdir $(OBJ)
 
 # Clean
