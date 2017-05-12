@@ -14,4 +14,3 @@
 [submodule "firmware/submodules/timing-board-firmware"]
 	path = firmware/submodules/timing-board-firmware
 	url = https://gitlab.cern.ch/protoDUNE-SP-DAQ/timing-board-firmware/
-	proxy = http://localhost:8888
