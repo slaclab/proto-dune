@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTimingReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-09-26
--- Last update: 2017-03-22
+-- Last update: 2017-05-11
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -22,6 +22,7 @@ use ieee.std_logic_arith.all;
 
 use work.StdRtlPkg.all;
 use work.AxiLitePkg.all;
+use work.ProtoDuneDpmPkg.all;
 
 entity ProtoDuneDpmTimingReg is
    generic (
@@ -38,10 +39,12 @@ entity ProtoDuneDpmTimingReg is
       cdrRst          : in  sl;
       cdrEdgeSel      : out sl;
       cdrDataInv      : out sl;
-      timingLinkUp    : in  sl;
       cdrLocked       : in  sl;
-      timingStat      : in  slv(3 downto 0);
       freqMeasured    : in  slv(31 downto 0);
+      timingBus       : in  ProtoDuneDpmTimingType;
+      timingMsgDrop   : in  sl;
+      timingRunEnable : in  sl;
+      triggerDet      : in  sl;
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
       axilRst         : in  sl;
@@ -53,7 +56,7 @@ end ProtoDuneDpmTimingReg;
 
 architecture rtl of ProtoDuneDpmTimingReg is
 
-   constant STATUS_SIZE_C : positive := 2;
+   constant STATUS_SIZE_C : positive := 5;
 
    type RegType is record
       cdrEdgeSel     : sl;
@@ -82,15 +85,19 @@ architecture rtl of ProtoDuneDpmTimingReg is
    signal statusOut : slv(STATUS_SIZE_C-1 downto 0);
    signal statusCnt : SlVectorArray(STATUS_SIZE_C-1 downto 0, 31 downto 0);
 
-   signal linkUp : sl;   
-   
+   signal timingStat   : slv(3 downto 0);
+   signal eventCnt     : slv(31 downto 0);
+   signal trigRate     : slv(31 downto 0);
+   signal trigRateSync : slv(31 downto 0);
+
    -- attribute dont_touch               : string;
    -- attribute dont_touch of r          : signal is "TRUE";
 
 begin
 
-   comb : process (axilReadMaster, axilRst, axilWriteMaster, freqMeasured, r,
-                   statusCnt, statusOut, timingStat) is
+   comb : process (axilReadMaster, axilRst, axilWriteMaster, eventCnt,
+                   freqMeasured, r, statusCnt, statusOut, timingStat,
+                   trigRateSync) is
       variable v      : RegType;
       variable regCon : AxiLiteEndPointType;
    begin
@@ -117,6 +124,8 @@ begin
       axiSlaveRegisterR(regCon, x"400", 0, statusOut);
       axiSlaveRegisterR(regCon, x"404", 0, freqMeasured);
       axiSlaveRegisterR(regCon, x"408", 0, timingStat);
+      axiSlaveRegisterR(regCon, x"40C", 0, eventCnt);
+      axiSlaveRegisterR(regCon, x"410", 0, trigRateSync);
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.swFlush);
@@ -142,6 +151,8 @@ begin
       -- Outputs
       axilWriteSlave <= r.axilWriteSlave;
       axilReadSlave  <= r.axilReadSlave;
+      cdrEdgeSel     <= r.cdrEdgeSel;
+      cdrDataInv     <= r.cdrDataInv;
 
    end process comb;
 
@@ -152,27 +163,68 @@ begin
       end if;
    end process seq;
 
-   U_SyncVec : entity work.SynchronizerVector
+   U_SyncOutVec : entity work.SynchronizerVector
       generic map (
          TPD_G   => TPD_G,
-         WIDTH_G => 2)
+         WIDTH_G => 1)
       port map (
          clk        => wibClk,
          dataIn(0)  => r.swFlush,
-         dataIn(1)  => timingLinkUp,
-         dataOut(0) => swFlush,
-         dataOut(1) => linkUp);
+         dataOut(0) => swFlush);
 
-   U_CdrSync : entity work.SynchronizerVector
+   U_Stat : entity work.SynchronizerFifo
       generic map (
-         TPD_G   => TPD_G,
-         WIDTH_G => 2)
+         TPD_G        => TPD_G,
+         DATA_WIDTH_G => 4)
       port map (
-         clk        => cdrClk,
-         dataIn(0)  => r.cdrEdgeSel,
-         dataIn(1)  => r.cdrDataInv,
-         dataOut(0) => cdrEdgeSel,
-         dataOut(1) => cdrDataInv);
+         rst    => cdrRst,
+         -- Write Ports (wr_clk domain)
+         wr_clk => cdrClk,
+         din    => timingBus.stat,
+         -- Read Ports (rd_clk domain)
+         rd_clk => axilClk,
+         dout   => timingStat);
+
+   U_EventCnt : entity work.SynchronizerFifo
+      generic map (
+         TPD_G        => TPD_G,
+         DATA_WIDTH_G => 32)
+      port map (
+         rst    => cdrRst,
+         -- Write Ports (wr_clk domain)
+         wr_clk => cdrClk,
+         din    => timingBus.eventCnt,
+         -- Read Ports (rd_clk domain)
+         rd_clk => axilClk,
+         dout   => eventCnt);
+
+   U_TrigRate : entity work.SyncTrigRate
+      generic map (
+         TPD_G          => TPD_G,
+         REF_CLK_FREQ_G => 125.0E+6,
+         CNT_WIDTH_G    => 32)
+      port map (
+         -- Trigger Input (locClk domain)
+         trigIn      => triggerDet,
+         -- Trigger Rate Output (locClk domain)
+         trigRateOut => trigRate,
+         -- Clocks
+         locClk      => cdrClk,
+         locRst      => cdrRst,
+         refClk      => axilClk);
+
+   U_TrigRateSync : entity work.SynchronizerFifo
+      generic map (
+         TPD_G        => TPD_G,
+         DATA_WIDTH_G => 32)
+      port map (
+         rst    => cdrRst,
+         -- Write Ports (wr_clk domain)
+         wr_clk => cdrClk,
+         din    => trigRate,
+         -- Read Ports (rd_clk domain)
+         rd_clk => axilClk,
+         dout   => trigRateSync);
 
    U_SyncStatusVector : entity work.SyncStatusVector
       generic map (
@@ -183,8 +235,11 @@ begin
          WIDTH_G        => STATUS_SIZE_C)
       port map (
          -- Input Status bit Signals (wrClk domain)
-         statusIn(1)  => linkUp,
-         statusIn(0)  => runEnable,
+         statusIn(4)  => triggerDet,
+         statusIn(3)  => timingMsgDrop,
+         statusIn(2)  => cdrLocked,
+         statusIn(1)  => timingBus.rdy,
+         statusIn(0)  => timingRunEnable,
          -- Output Status bit Signals (rdClk domain)  
          statusOut    => statusOut,
          -- Status Bit Counters Signals (rdClk domain) 
@@ -192,7 +247,7 @@ begin
          rollOverEnIn => r.rollOverEn,
          cntOut       => statusCnt,
          -- Clocks and Reset Ports
-         wrClk        => wibClk,
+         wrClk        => cdrClk,
          rdClk        => axilClk);
 
 end rtl;

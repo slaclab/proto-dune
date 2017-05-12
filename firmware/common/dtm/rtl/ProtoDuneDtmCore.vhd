@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-03-22
+-- Last update: 2017-05-11
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -218,7 +218,7 @@ begin
          cdr_lol => recLol,
          clk     => cdrClk,
          rst     => cdrRst,
-         rdy     => status.timing.linkUp,
+         rdy     => status.timing.rdy,
          sync    => status.timing.syncCmd,  -- Sync command output (clk domain)
          sync_v  => status.timing.syncValid,  -- Sync command valid flag (clk domain)
          tstamp  => status.timing.timestamp,  -- Timestamp out

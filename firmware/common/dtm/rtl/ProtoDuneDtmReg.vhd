@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-03-22
+-- Last update: 2017-05-11
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ architecture rtl of ProtoDuneDtmReg is
    signal statusOut : slv(STATUS_SIZE_C-1 downto 0);
    signal statusCnt : SlVectorArray(STATUS_SIZE_C-1 downto 0, 31 downto 0);
 
-   signal linkUp : sl;
+   signal rdy : sl;
 
    -- attribute dont_touch               : string;
    -- attribute dont_touch of r          : signal is "TRUE";
@@ -102,10 +102,10 @@ begin
       axiSlaveRegister(regCon, x"804", 0, v.config.forceBusy);
       axiSlaveRegister(regCon, x"808", 0, v.config.cdrEdgeSel);
       axiSlaveRegister(regCon, x"80C", 0, v.config.cdrDataInv);
-      
+
       axiSlaveRegister(regCon, x"900", 0, v.config.emuTimingSel);
       axiSlaveRegister(regCon, x"904", 0, v.config.emuClkSel);
-      
+
       axiSlaveRegister(regCon, x"FF0", 0, v.config.softRst);
       axiSlaveRegister(regCon, x"FF4", 0, v.config.hardRst);
       axiSlaveRegister(regCon, x"FF8", 0, v.rollOverEn);
@@ -136,13 +136,13 @@ begin
       end if;
    end process seq;
 
-   U_linkUp : entity work.Synchronizer
+   U_rdy : entity work.Synchronizer
       generic map (
          TPD_G => TPD_G)
       port map (
          clk     => axilClk,
-         dataIn  => status.timing.linkUp,
-         dataOut => linkUp);
+         dataIn  => status.timing.rdy,
+         dataOut => rdy);
 
    U_SyncStatusVector : entity work.SyncStatusVector
       generic map (
@@ -153,7 +153,7 @@ begin
          WIDTH_G        => STATUS_SIZE_C)
       port map (
          -- Input Status bit Signals (wrClk domain)
-         statusIn(10)         => linkUp,
+         statusIn(10)         => rdy,
          statusIn(9)          => status.cdrLocked,
          statusIn(8)          => status.busyOut,
          statusIn(7 downto 0) => status.busyVec,

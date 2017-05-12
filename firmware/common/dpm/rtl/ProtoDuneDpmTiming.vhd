@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTiming.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-03-22
+-- Last update: 2017-05-11
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -23,6 +23,7 @@ use ieee.std_logic_arith.all;
 use work.StdRtlPkg.all;
 use work.AxiLitePkg.all;
 use work.AxiStreamPkg.all;
+use work.ProtoDuneDpmPkg.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -33,8 +34,8 @@ entity ProtoDuneDpmTiming is
       CASCADE_SIZE_G   : positive         := 1;
       AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
-    port (
-      
+   port (
+
       -- Timing Interface (wibClk domain)
       wibClk          : in  sl;
       wibRst          : in  sl;
@@ -54,8 +55,8 @@ entity ProtoDuneDpmTiming is
       dmaIbMaster     : out AxiStreamMasterType;
       dmaIbSlave      : in  AxiStreamSlaveType;
       -- Reference 200 MHz clock
-      refClk200       : in    sl;
-      refRst200       : in    sl;      
+      refClk200       : in  sl;
+      refRst200       : in  sl;
       -- DTM Interface
       dtmRefClkP      : in  sl;
       dtmRefClkN      : in  sl;
@@ -67,25 +68,26 @@ end ProtoDuneDpmTiming;
 
 architecture mapping of ProtoDuneDpmTiming is
 
-   signal timingRunEnable : sl;
-   signal runEn           : sl;
-   signal busy            : sl;
+   signal runEn : sl;
+   signal busy  : sl;
 
-   signal clock        : sl;
+   signal clock           : sl;
    signal recClk          : sl;
-   signal data         : sl;
-   signal Q1           : sl;
-   signal Q2           : sl;
-   signal recData      : sl;
-   signal freqMeasured : slv(31 downto 0);
-   signal cdrLocked    : sl;
-   signal recLol       : sl;
-   signal cdrClk       : sl;
-   signal cdrRst       : sl;
-   signal timingStat   : slv(3 downto 0);
-   signal timingLinkUp : sl;
-   signal cdrDataInv : sl;
-   signal cdrEdgeSel : sl;
+   signal data            : sl;
+   signal Q1              : sl;
+   signal Q2              : sl;
+   signal recData         : sl;
+   signal freqMeasured    : slv(31 downto 0);
+   signal cdrLocked       : sl;
+   signal recLol          : sl;
+   signal cdrClk          : sl;
+   signal cdrRst          : sl;
+   signal cdrDataInv      : sl;
+   signal cdrEdgeSel      : sl;
+   signal timingBus       : ProtoDuneDpmTimingType;
+   signal timingMsgDrop   : sl;
+   signal timingRunEnable : sl;
+   signal triggerDet      : sl;
 
 begin
 
@@ -124,7 +126,7 @@ begin
          SRTYPE       => "SYNC")        -- Set/Reset type: "SYNC" or "ASYNC" 
       port map (
          D  => data,                    -- 1-bit DDR data input
-         C  => recClk,                     -- 1-bit clock input
+         C  => recClk,                  -- 1-bit clock input
          CE => '1',                     -- 1-bit clock enable input
          R  => '0',                     -- 1-bit reset
          S  => '0',                     -- 1-bit set
@@ -176,7 +178,7 @@ begin
          srst    => axilRst,            -- System reset (sclk domain)
          addr    => x"00",  -- "Any address except 0x01 is acceptable for this test" from Dave Newbold (20MARCH2017)
          tgrp    => "00",  -- "Any tgrp is acceptable - 0x0 will do" from Dave Newbold (20MARCH2017)
-         stat    => timingStat,  -- The status signal (stat) that indicates the internal state of the endpoint
+         stat    => timingBus.stat,  -- The status signal (stat) that indicates the internal state of the endpoint
          rec_clk => recClk,
          rec_d   => recData,
          sfp_los => '0',
@@ -184,11 +186,11 @@ begin
          cdr_lol => recLol,
          clk     => cdrClk,
          rst     => cdrRst,
-         rdy     => timingLinkUp,
-         sync    => open,               -- Sync command output (clk domain)
-         sync_v  => open,               -- Sync command valid flag (clk domain)
-         tstamp  => open,               -- Timestamp out
-         evtctr  => open);              -- Event counter out
+         rdy     => timingBus.rdy,
+         sync    => timingBus.syncCmd,  -- Sync command output (clk domain)
+         sync_v  => timingBus.syncValid,  -- Sync command valid flag (clk domain)
+         tstamp  => timingBus.timestamp,  -- Timestamp out
+         evtctr  => timingBus.eventCnt);  -- Event counter out
 
    --------------------------
    -- Timing Register Control
@@ -203,15 +205,17 @@ begin
          wibRst          => wibRst,
          runEnable       => runEn,
          swFlush         => swFlush,
-         -- Timing RX Interface (clk domain)
+         -- Timing RX Interface (cdrClk domain)
          cdrClk          => cdrClk,
          cdrRst          => cdrRst,
          cdrEdgeSel      => cdrEdgeSel,
          cdrDataInv      => cdrDataInv,
-         timingLinkUp    => timingLinkUp,
          cdrLocked       => cdrLocked,
-         timingStat      => timingStat,
          freqMeasured    => freqMeasured,
+         timingBus       => timingBus,
+         timingMsgDrop   => timingMsgDrop,
+         timingRunEnable => timingRunEnable,
+         triggerDet      => triggerDet,
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
          axilRst         => axilRst,
@@ -220,14 +224,34 @@ begin
          axilWriteMaster => axilWriteMaster,
          axilWriteSlave  => axilWriteSlave);
 
-   runEnable <= runEn;
-   runEn     <= timingRunEnable or emuEnable;
+   process(wibClk)
+   begin
+      if rising_edge(wibClk) then
+         runEnable <= runEn                        after TPD_G;
+         runEn     <= timingRunEnable or emuEnable after TPD_G;
+      end if;
+   end process;
+
+   U_Msg : entity work.ProtoDuneDpmTimingMsg
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         -- Timing Interface (cdrClk domain)
+         cdrClk          => cdrClk,
+         cdrRst          => cdrRst,
+         timingBus       => timingBus,
+         timingMsgDrop   => timingMsgDrop,
+         timingRunEnable => timingRunEnable,
+         triggerDet      => triggerDet,
+         -- AXI Stream Interface (dmaClk domain)
+         dmaClk          => dmaClk,
+         dmaRst          => dmaRst,
+         dmaIbMaster     => dmaIbMaster,
+         dmaIbSlave      => dmaIbSlave);
 
    -------------------------------
    -- Place holder for future code
    -------------------------------
-   timingRunEnable <= '0';
-   busy            <= '0';
-   dmaIbMaster     <= AXI_STREAM_MASTER_INIT_C;
+   busy <= '0';
 
 end mapping;

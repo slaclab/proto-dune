@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmPkg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2016-11-01
+-- Last update: 2017-05-11
 -------------------------------------------------------------------------------
 -- Description:
 -------------------------------------------------------------------------------
@@ -39,7 +39,7 @@ package ProtoDuneDpmPkg is
       TID_BITS_C    => RCEG3_AXIS_DMA_CONFIG_C.TID_BITS_C,
       TKEEP_MODE_C  => RCEG3_AXIS_DMA_CONFIG_C.TKEEP_MODE_C,
       TUSER_BITS_C  => RCEG3_AXIS_DMA_CONFIG_C.TUSER_BITS_C,
-      TUSER_MODE_C  => RCEG3_AXIS_DMA_CONFIG_C.TUSER_MODE_C);   
+      TUSER_MODE_C  => RCEG3_AXIS_DMA_CONFIG_C.TUSER_MODE_C);
 
    -- First AXIS word side-band indexes
    constant WIB_SOF_C    : integer := 1;  -- Driven every frame
@@ -67,7 +67,7 @@ package ProtoDuneDpmPkg is
       softRst      => '0',
       hardRst      => '0',
       debugStart   => '0',
-      debugStop    => '0');      
+      debugStop    => '0');
 
    type ProtoDuneDpmStatusType is record
       streaming     : sl;
@@ -80,5 +80,21 @@ package ProtoDuneDpmPkg is
       extTrig       => '0',
       timeStamp     => (others => '0'),
       trigTimeStamp => (others => '0'));
+
+   type ProtoDuneDpmTimingType is record
+      stat      : slv(3 downto 0);
+      rdy       : sl;
+      syncCmd   : slv(3 downto 0);
+      syncValid : sl;
+      timestamp : slv(63 downto 0);
+      eventCnt  : slv(31 downto 0);
+   end record;
+   constant PROTO_DUNE_DPM_TIMING_INIT_C : ProtoDuneDpmTimingType := (
+      stat      => (others => '0'),
+      rdy       => '0',
+      syncCmd   => (others => '0'),
+      syncValid => '0',
+      timestamp => (others => '0'),
+      eventCnt  => (others => '0'));
 
 end ProtoDuneDpmPkg;

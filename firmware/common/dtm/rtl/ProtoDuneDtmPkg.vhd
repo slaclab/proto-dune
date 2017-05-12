@@ -44,7 +44,7 @@ package ProtoDuneDtmPkg is
 
    type ProtoDuneDtmTimingType is record
       stat      : slv(3 downto 0);
-      linkUp    : sl;
+      rdy       : sl;
       syncCmd   : slv(3 downto 0);
       syncValid : sl;
       timestamp : slv(63 downto 0);
@@ -52,7 +52,7 @@ package ProtoDuneDtmPkg is
    end record;
    constant PROTO_DUNE_DTM_TIMING_INIT_C : ProtoDuneDtmTimingType := (
       stat      => (others => '0'),
-      linkUp    => '0',
+      rdy       => '0',
       syncCmd   => (others => '0'),
       syncValid => '0',
       timestamp => (others => '0'),
