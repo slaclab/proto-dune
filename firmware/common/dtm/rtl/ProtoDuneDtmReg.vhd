@@ -68,7 +68,8 @@ architecture rtl of ProtoDuneDtmReg is
    signal statusOut : slv(STATUS_SIZE_C-1 downto 0);
    signal statusCnt : SlVectorArray(STATUS_SIZE_C-1 downto 0, 31 downto 0);
 
-   signal rdy : sl;
+   signal rdy        : sl;
+   signal timingStat : slv(3 downto 0);
 
    -- attribute dont_touch               : string;
    -- attribute dont_touch of r          : signal is "TRUE";
@@ -76,7 +77,7 @@ architecture rtl of ProtoDuneDtmReg is
 begin
 
    comb : process (axilReadMaster, axilRst, axilWriteMaster, r, status,
-                   statusCnt, statusOut) is
+                   statusCnt, statusOut, timingStat) is
       variable v      : RegType;
       variable regCon : AxiLiteEndPointType;
    begin
@@ -95,7 +96,7 @@ begin
       end loop;
       axiSlaveRegisterR(regCon, x"400", 0, statusOut);
       axiSlaveRegisterR(regCon, x"404", 0, status.freqMeasured);
-      axiSlaveRegisterR(regCon, x"408", 0, status.timing.stat);
+      axiSlaveRegisterR(regCon, x"408", 0, timingStat);
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.config.busyMask);
@@ -143,6 +144,19 @@ begin
          clk     => axilClk,
          dataIn  => status.timing.rdy,
          dataOut => rdy);
+
+   U_Stat : entity work.SynchronizerFifo
+      generic map (
+         TPD_G        => TPD_G,
+         DATA_WIDTH_G => 4)
+      port map (
+         rst    => cdrRst,
+         -- Write Ports (wr_clk domain)
+         wr_clk => cdrClk,
+         din    => status.timing.stat,
+         -- Read Ports (rd_clk domain)
+         rd_clk => axilClk,
+         dout   => timingStat);
 
    U_SyncStatusVector : entity work.SyncStatusVector
       generic map (

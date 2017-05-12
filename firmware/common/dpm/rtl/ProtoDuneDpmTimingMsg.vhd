@@ -105,6 +105,7 @@ begin
                v.txMaster.tData(103 downto 100) := timingBus.stat;
                v.txMaster.tLast                 := '1';
                v.txMaster.tKeep                 := (others => '1');
+               v.txMaster.tDest                 := x"FF";
                ssiSetUserSof(AXIS_CONFIG_C, v.txMaster, '1');
             else
                -- Set the flag

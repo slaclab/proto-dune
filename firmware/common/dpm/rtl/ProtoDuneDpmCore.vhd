@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-03-22
+-- Last update: 2017-05-11
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -60,8 +60,8 @@ entity ProtoDuneDpmCore is
       dtmFbP          : out sl;
       dtmFbN          : out sl;
       -- Reference 200 MHz clock
-      refClk200       : in    sl;
-      refRst200       : in    sl;      
+      refClk200       : in  sl;
+      refRst200       : in  sl;
       -- User ETH interface (userEthClk domain)
       ethClk          : in  sl;
       ethRst          : in  sl;
@@ -115,6 +115,9 @@ architecture mapping of ProtoDuneDpmCore is
    signal rssiMaster : AxiStreamMasterType;
    signal rssiSlave  : AxiStreamSlaveType;
 
+   signal timingMsgMaster : AxiStreamMasterType;
+   signal timingMsgSlave  : AxiStreamSlaveType;
+
 begin
 
    --------------------
@@ -164,11 +167,11 @@ begin
          -- AXI Stream Interface (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,
-         dmaIbMaster     => open,
-         dmaIbSlave      => AXI_STREAM_SLAVE_FORCE_C,   
+         dmaIbMaster     => timingMsgMaster,
+         dmaIbSlave      => timingMsgslave,
          -- Reference 200 MHz clock
          refClk200       => refClk200,
-         refRst200       => refRst200,            
+         refRst200       => refRst200,
          -- DTM Interface
          dtmRefClkP      => dtmRefClkP,
          dtmRefClkN      => dtmRefClkN,
@@ -270,6 +273,8 @@ begin
          -- AXI Stream Interface (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,
+         timingMsgMaster => timingMsgMaster,
+         timingMsgslave  => timingMsgslave,
          dmaIbMaster     => dmaIbMaster,
          dmaIbSlave      => dmaIbSlave);
 
