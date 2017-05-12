@@ -1,5 +1,8 @@
 # Setup 
 
+#### Pre-requirements before cloning
+https://confluence.slac.stanford.edu/display/ppareg/Proto-DUNE%3A+How+to+setup+a+temporary+tunnel+for+github
+
 #### Checkout the GIT reposotiry from github 
 $ git clone --recursive git@github.com:slaclab/proto-dune
 
