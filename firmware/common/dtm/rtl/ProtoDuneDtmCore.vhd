@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-05-11
+-- Last update: 2017-05-12
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -76,11 +76,13 @@ architecture rtl of ProtoDuneDtmCore is
    signal dpmBusy : slv(7 downto 0);
    signal cdrClk  : sl;
    signal cdrRst  : sl;
+   signal busyOut : sl;
 
 begin
 
    qsfpRst <= axilRst or config.hardRst;
    recLol  <= not(status.cdrLocked);
+   busyOut <= status.busyOut or not(status.timing.rdy);
 
    ----------------
    -- RTM Interface
@@ -93,9 +95,9 @@ begin
          cdrEdgeSel  => config.cdrEdgeSel,
          cdrDataInv  => config.cdrDataInv,
          qsfpRst     => qsfpRst,
-         busyOut     => status.busyOut,
+         busyOut     => busyOut,
          sfpTxDis    => '0',
-         sfpTx       => '0',
+         sfpTx       => recData,
          -- CDR Interface
          recClk      => recClk,
          recData     => recData,
