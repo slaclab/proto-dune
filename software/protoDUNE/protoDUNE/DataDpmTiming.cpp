@@ -50,19 +50,71 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
    rl->getVariable()->setDescription("RunEnable Status Counter");
 	rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);
- 
-   addRegisterLink(rl = new RegisterLink("StatusRegister", baseAddress_ + 0x400, 1, 1,
-                                         "RunEnable",      Variable::Status, 0, 0x1));// 0                              
 
+   addRegisterLink(rl = new RegisterLink("TimingRdyCnt", baseAddress_ + 0x004, Variable::Status));
+   rl->getVariable()->setDescription("TimingRdy Status Counter");
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
+   addRegisterLink(rl = new RegisterLink("CdrLockedCnt", baseAddress_ + 0x008, Variable::Status));
+   rl->getVariable()->setDescription("CdrLocked Status Counter");
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
+   addRegisterLink(rl = new RegisterLink("TimingMsgDropCnt", baseAddress_ + 0x00C, Variable::Status));
+   rl->getVariable()->setDescription("TimingMsgDrop Status Counter");
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
+   addRegisterLink(rl = new RegisterLink("TriggerDetCnt", baseAddress_ + 0x00C, Variable::Status));
+   rl->getVariable()->setDescription("TriggerDet Status Counter");
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
+
+   addRegisterLink(rl = new RegisterLink("StatusRegister", baseAddress_ + 0x400, 1, 5,
+                                         "RunEnable",     Variable::Status, 0, 0x1, // 0                              
+                                         "TimingRdy",     Variable::Status, 1, 0x1,  // 1                              
+                                         "CdrLocked",     Variable::Status, 2, 0x1,  // 2 
+                                         "TimingMsgDrop", Variable::Status, 3, 0x1,  // 3                              
+                                         "TriggerDet",    Variable::Status, 4, 0x1));// 4                             
    rl->setPollEnable(true);  
-   for(i=0;i<1;i++) {
+   for(i=0;i<5;i++) {
       rl->getVariable(i)->setTrueFalse();  
    }
    
+   addRegisterLink(rl = new RegisterLink("CdrFreqHz", baseAddress_ + 0x404, Variable::Status));
+   rl->getVariable()->setDescription("CDR's clock frequency (in units of Hz)");
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
+   addRegisterLink(rl = new RegisterLink("TimingRxStatus", baseAddress_ + 0x408, Variable::Status,0,0xF));
+   rl->getVariable()->setDescription("Timing Receiver's status vector");
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
+   addRegisterLink(rl = new RegisterLink("TimingRxEventCnt", baseAddress_ + 0x40C, Variable::Status));
+   rl->getVariable()->setDescription("Timing Receiver's Event Counter");
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
+   addRegisterLink(rl = new RegisterLink("TimingTrigRate", baseAddress_ + 0x410, Variable::Status));
+   rl->getVariable()->setDescription("Timing Trigger Rate (in units of Hz)");
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);
+
    addRegisterLink(rl = new RegisterLink("SwFlush",  baseAddress_ + 0x800, Variable::Configuration,0,0x1));
    rl->getVariable()->setDescription("true = forces the WIB receiver to generate flush frames, false = run mode");     
    rl->getVariable()->setTrueFalse(); 
    
+//   addRegisterLink(rl = new RegisterLink("CdrEdgeSel",  0x804, Variable::Configuration,0,0x1));
+//   rl->getVariable()->setTrueFalse();
+//   rl->getVariable()->setDescription("false = using IDDR's rising edge sample, true = using IDDR's falling edge sample");
+
+//   addRegisterLink(rl = new RegisterLink("CdrDataInv",  0x808, Variable::Configuration,0,0x1));
+//   rl->getVariable()->setTrueFalse();
+//   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
+
    addRegister(new Register("CounterReset", baseAddress_ + 0xFF4));
    addRegister(new Register("HardReset",    baseAddress_ + 0xFFC));
    

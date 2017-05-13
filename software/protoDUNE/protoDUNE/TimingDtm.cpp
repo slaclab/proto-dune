@@ -92,7 +92,7 @@ TimingDtm::TimingDtm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);
 
-   addRegisterLink(rl = new RegisterLink("TimingLinkUpCnt", 0xA0000028, Variable::Status));
+   addRegisterLink(rl = new RegisterLink("TimingRdyCnt", 0xA0000028, Variable::Status));
    rl->getVariable()->setDescription("TimingLinkUp Status Counter");
    rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);
@@ -101,7 +101,7 @@ TimingDtm::TimingDtm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
                                          "DpmBusyIn",    Variable::Status,  0, 0xFF, // 0                              
                                          "RtmBusyOut",   Variable::Status,  8, 0x1,  // 1                              
                                          "CdrLocked",    Variable::Status,  9, 0x1,  // 2                              
-                                         "TimingLinkUp", Variable::Status, 10, 0x1));// 3
+                                         "TimingRdy", Variable::Status, 10, 0x1));// 3
    rl->setPollEnable(true);
 
    addRegisterLink(rl = new RegisterLink("CdrFreqHz", 0xA0000404, Variable::Status));
@@ -121,13 +121,13 @@ TimingDtm::TimingDtm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    rl->getVariable()->setTrueFalse();
    rl->getVariable()->setDescription("true = forces RTM Busy out to 0x0, false = normal mode");     
    
-   addRegisterLink(rl = new RegisterLink("CdrEdgeSel",  0xA0000808, Variable::Configuration,0,0x1));
-   rl->getVariable()->setTrueFalse();
-   rl->getVariable()->setDescription("false = using IDDR's rising edge sample, true = using IDDR's falling edge sample");
+//   addRegisterLink(rl = new RegisterLink("CdrEdgeSel",  0xA0000808, Variable::Configuration,0,0x1));
+//   rl->getVariable()->setTrueFalse();
+//   rl->getVariable()->setDescription("false = using IDDR's rising edge sample, true = using IDDR's falling edge sample");
 
-   addRegisterLink(rl = new RegisterLink("CdrDataInv",  0xA000080C, Variable::Configuration,0,0x1));
-   rl->getVariable()->setTrueFalse();
-   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
+//   addRegisterLink(rl = new RegisterLink("CdrDataInv",  0xA000080C, Variable::Configuration,0,0x1));
+//   rl->getVariable()->setTrueFalse();
+//   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
 
    addRegister(new Register("SoftReset",    0xA0000FF0));
    addRegister(new Register("HardReset",    0xA0000FF4));
