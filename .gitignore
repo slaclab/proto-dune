@@ -3,5 +3,8 @@
 *.so
 *.pyc
 *.bit
+*.bit.gz
 *.mcs
+*.mcs.gz
+*.tar.gz
 software/protoDUNE/python/arm/*
