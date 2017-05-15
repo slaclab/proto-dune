@@ -1,6 +1,6 @@
 # Weed out make products
 
-bin/
-build/
-python/lib
-cntrlGui/x86_64-linux
+bin/*
+build/*
+python/*
+cntrlGui/*

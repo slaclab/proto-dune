@@ -4,7 +4,7 @@ set kernel=`uname -r`
 @ length = ( `expr index $kernel "-"` - 1 )
 set version=`expr substr $kernel 1 $length`
 set driver_version=${version}.arm
-set driver_dir=/mnt/host/proto-dune/software/aes-stream-drivers/install/${driver_version}
+set driver_dir=/mnt/host/aes-stream-drivers/install/${driver_version}
 set driver=${driver_dir}/rcestream.ko
 
 echo kernel         = $kernel

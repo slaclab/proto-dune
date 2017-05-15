@@ -15,7 +15,7 @@
          <DataBuffer>
             <BlowOffDmaData>False</BlowOffDmaData>
             <BlowOffTxEth>False</BlowOffTxEth>
-            <DaqHost>10.193.160.40</DaqHost>
+            <DaqHost>10.193.160.31</DaqHost>
             <DaqPort>7991</DaqPort>
             <Enabled>True</Enabled>
             <RunMode>Idle</RunMode>
@@ -355,7 +355,7 @@
       <DataDpm index="0">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.40</DaqHost>
+            <DaqHost>10.193.160.31</DaqHost>
             <DaqPort>7991</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
@@ -363,7 +363,7 @@
       <DataDpm index="1">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.40</DaqHost>
+            <DaqHost>10.193.160.32</DaqHost>
             <DaqPort>7992</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
@@ -371,7 +371,7 @@
       <DataDpm index="2">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.40</DaqHost>
+            <DaqHost>10.193.160.33</DaqHost>
             <DaqPort>7993</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
@@ -379,7 +379,7 @@
       <DataDpm index="3">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.40</DaqHost>
+            <DaqHost>10.193.160.34</DaqHost>
             <DaqPort>7994</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
@@ -387,7 +387,7 @@
       <DataDpm index="4">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.41</DaqHost>
+            <DaqHost>10.193.160.35</DaqHost>
             <DaqPort>7995</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
@@ -395,7 +395,7 @@
       <DataDpm index="5">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.41</DaqHost>
+            <DaqHost>10.193.160.36</DaqHost>
             <DaqPort>7996</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
@@ -403,7 +403,7 @@
   <DataDpm index="6">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.41</DaqHost>
+            <DaqHost>10.193.160.37</DaqHost>
             <DaqPort>7997</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
@@ -411,7 +411,7 @@
   <DataDpm index="7">
          <Enabled>True</Enabled>
          <DataBuffer index="0">
-            <DaqHost>10.193.160.41</DaqHost>
+            <DaqHost>10.193.160.38</DaqHost>
             <DaqPort>7998</DaqPort>
             <Enabled>True</Enabled>
          </DataBuffer>
