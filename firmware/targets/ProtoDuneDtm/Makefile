@@ -1,7 +1,7 @@
 export GIT_BYPASS = 0
 
 # define firmware version
-export PRJ_VERSION = 0x00000005
+export PRJ_VERSION = 0x00000006
 
 # Define target output
 target: bit

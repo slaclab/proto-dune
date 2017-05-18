@@ -15,6 +15,7 @@ include ../../submodules/ruckus/system_vivado.mk
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/18 0x00000043 llr  Updating to CERN timing receiver V3C
 # 2017/05/11 0x00000042 llr  Added the timing stream to the inbound DMA
 # 2017/05/10 0x00000041 jjr  Believe this Ryan's attempt to correcct a bug
 #                            which resulted in the length of a packet being
