@@ -155,6 +155,7 @@ begin
       generic map (
          -- General Configurations
          TPD_G               => TPD_G,
+         INT_PIPE_STAGES_G   => 1,
          PIPE_STAGES_G       => 1,
          EN_FRAME_FILTER_G   => false,
          VALID_THOLD_G       => 1,
