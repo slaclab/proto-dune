@@ -66,7 +66,7 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
 	rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);
 
-   addRegisterLink(rl = new RegisterLink("TriggerDetCnt", baseAddress_ + 0x00C, Variable::Status));
+   addRegisterLink(rl = new RegisterLink("TriggerDetCnt", baseAddress_ + 0x010, Variable::Status));
    rl->getVariable()->setDescription("TriggerDet Status Counter");
 	rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);

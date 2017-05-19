@@ -686,7 +686,7 @@ void DaqBuffer::rxRun () {
             
          //////////////////////////////////////////////////////////////////////
          // Check for a external trigger
-         } else if ( dest == 8 ) {
+         } else if ( dest == 2 ) {
             printf ("qWeird dest = %u\n", dest);
             _counters._triggers++;
             dmaRetIndex(_fd,index);
