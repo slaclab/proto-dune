@@ -287,6 +287,14 @@ void DataBuffer::statusPoll () {
 /* ---------------------------------------------------------------------- */
 
 
+// Method to read status registers and update variables
+void DataBuffer::readStatus ( ) {
+   struct BufferStatus status;
+
+   daqBuffer_->getStatus (&status);
+   sv_.set               ( status);
+}
+
 
 /* ---------------------------------------------------------------------- *//*!
  *

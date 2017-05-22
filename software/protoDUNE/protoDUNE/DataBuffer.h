@@ -137,6 +137,8 @@ public:
       // Poll State
       void statusPoll();
 
+    void readStatus ( );
+
 private:
       // DAQ Handlers
       DaqBuffer       *daqBuffer_;
