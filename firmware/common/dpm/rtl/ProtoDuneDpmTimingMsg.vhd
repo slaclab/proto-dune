@@ -111,16 +111,18 @@ begin
                -- Set the flag
                v.timingMsgDrop := '1';
             end if;
-            -- Check for spill_start command
-            if (timingBus.syncCmd = 0) then
-               -- Set the flag
-               v.timingRunEnable := '1';
-            end if;
-            -- Check for spill_end command
-            if (timingBus.syncCmd = 1) then
-               -- Set the flag
-               v.timingRunEnable := '0';
-            end if;
+
+--            -- Check for run_start command
+--            if (timingBus.syncCmd = ???) then
+--               -- Set the flag
+--               v.timingRunEnable := '1';
+--            end if;
+--            -- Check for run_end command
+--            if (timingBus.syncCmd = ???) then
+--               -- Set the flag
+--               v.timingRunEnable := '0';
+--            end if;
+
             -- Check for trigger
             if (timingBus.syncCmd = 3) then
                -- Set the flag

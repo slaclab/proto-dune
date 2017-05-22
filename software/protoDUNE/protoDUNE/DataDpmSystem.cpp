@@ -89,7 +89,9 @@ DataDpmSystem::DataDpmSystem (string defaults, uint32_t idx ) : System("DataDpmS
 
    set("HideRunControl","True");
    set("HideDataControl","True");
-   getVariable("PollPeriod")->setInt(1);
+   
+   // Disable poll rate by default 
+   getVariable("PollPeriod")->setInt(0);
 
    addDevice(new DataDpm(0x00000000,idx,this));
 }

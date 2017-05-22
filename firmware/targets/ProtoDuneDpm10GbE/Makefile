@@ -1,20 +1,17 @@
 export GIT_BYPASS = 0
 
-# define firmware version
-export PRJ_VERSION = 0x00000043
-
 # Define target output
 target: bit
 
 # Define target part
 export PRJ_PART = XC7Z045FFG900-2
 
-# Use top level makefile
-include ../../submodules/ruckus/system_vivado.mk
-
+# define firmware version
+export PRJ_VERSION = 0x00000044
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/05/22 0x00000044 llr  Bug fix in ProtoDuneDpmTimingMsg.vhd
 # 2017/05/18 0x00000043 llr  Updating to CERN timing receiver V3C
 # 2017/05/11 0x00000042 llr  Added the timing stream to the inbound DMA
 # 2017/05/10 0x00000041 jjr  Believe this Ryan's attempt to correcct a bug
@@ -201,3 +198,6 @@ include ../../submodules/ruckus/system_vivado.mk
 # 2016/09/01 0x00000002 llr  Added ProtoDuneDpmHlsMon
 # 07/22/2016 0x00000001 llr  Initial Version
 #
+
+# Use top level makefile
+include ../../submodules/ruckus/system_vivado.mk

@@ -73,14 +73,14 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    addDevice(d = new DataDpmHlsMon(  0x00000002, 0xA0020000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataDpmWib(     0x00000002, 0xA1000000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataDpmWib(     0x00000002, 0xA1010000, 1, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmWibDbg(  0x00000002, 0xA1020000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmWibDbg(  0x00000002, 0xA1030000, 1, this, 4));d->pollEnable(true);   
+   //addDevice(d = new DataDpmWibDbg(  0x00000002, 0xA1020000, 0, this, 4));d->pollEnable(true);
+   //addDevice(d = new DataDpmWibDbg(  0x00000002, 0xA1030000, 1, this, 4));d->pollEnable(true);   
    addDevice(d = new DataDpmEmu(     0x00000002, 0xA2000000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataDpmTiming(  0x00000002, 0xA3000000, 0, this, 4));d->pollEnable(true);
-   addDevice(d = new UdpReg(         0x00000002, 0xA4000000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-   addDevice(d = new RssiReg(        0x00000002, 0xA4010000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-   addDevice(d = new PrbsTx(         0x00000002, 0xA4020000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
-   addDevice(d = new PrbsRx(         0x00000002, 0xA4030000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
+   addDevice(d = new UdpReg(         0x00000002, 0xA4000000, 0, this, 4));d->pollEnable(false); d->hideAllVariables(); d->hideAllCommands();
+   addDevice(d = new RssiReg(        0x00000002, 0xA4010000, 0, this, 4));d->pollEnable(false); d->hideAllVariables(); d->hideAllCommands();
+   //addDevice(d = new PrbsTx(         0x00000002, 0xA4020000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
+   //addDevice(d = new PrbsRx(         0x00000002, 0xA4030000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
 }
 
 // Deconstructor
