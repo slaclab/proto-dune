@@ -8,3 +8,5 @@
 *.mcs.gz
 *.tar.gz
 software/protoDUNE/python/arm/*
+*.orig
+*.save

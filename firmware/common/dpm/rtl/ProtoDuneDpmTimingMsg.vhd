@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTimingMsg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2017-05-11
--- Last update: 2017-05-11
+-- Last update: 2017-05-24
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -103,6 +103,7 @@ begin
                v.txMaster.tData(95 downto 64)   := timingBus.eventCnt;
                v.txMaster.tData(99 downto 96)   := timingBus.syncCmd;
                v.txMaster.tData(103 downto 100) := timingBus.stat;
+               v.txMaster.tValid                := '1';
                v.txMaster.tLast                 := '1';
                v.txMaster.tKeep                 := (others => '1');
                v.txMaster.tDest                 := x"FF";
@@ -153,14 +154,14 @@ begin
       end if;
    end process seq;
 
-   U_Fifo : entity work.SsiFifo
+   U_Fifo : entity work.AxiStreamFifoV2
       generic map (
          -- General Configurations
          TPD_G               => TPD_G,
-         INT_PIPE_STAGES_G   => 1,
-         PIPE_STAGES_G       => 1,
-         EN_FRAME_FILTER_G   => false,
-         VALID_THOLD_G       => 1,
+         PIPE_STAGES_G       => 0,
+         -- VALID_THOLD_G       => 1,
+         VALID_THOLD_G       => 128,
+         VALID_BURST_MODE_G  => true,
          -- FIFO configurations
          BRAM_EN_G           => true,
          XIL_DEVICE_G        => "7SERIES",
