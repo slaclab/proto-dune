@@ -63,7 +63,7 @@ void MultDestAxis::open ( uint32_t idx, uint32_t maxRxTx ) {
 
    if ( fd_ < 0 ) {
       tmp.str("");
-      tmp << "MultDestPgp::open -> Could Not Open AXIS path " << path_;
+      tmp << "MultDestAxis::open -> Could Not Open AXIS path " << path_;
       throw tmp.str();
    }
 
@@ -73,12 +73,12 @@ void MultDestAxis::open ( uint32_t idx, uint32_t maxRxTx ) {
    if  ( dmaSetMaskBytes(fd_,mask) < 0 ) {
       ::close(fd_);
       tmp.str("");
-      tmp << "MultDestPgp::open -> Could open dest " << dec << dest_;
+      tmp << "MultDestAxis::open -> Could open dest " << dec << dest_;
       throw tmp.str();
    }
 
    if ( debug_ ) 
-      cout << "MultDestPgp::open -> Opened AXIS device " << path_
+      cout << "MultDestAxis::open -> Opened AXIS device " << path_
            << ", Fd=" << dec << fd_ << endl;
 
    MultDest::open(idx,maxRxTx);
@@ -168,8 +168,8 @@ int32_t MultDestAxis::transmit ( MultType type, void *ptr, uint32_t size, uint32
          // avoid this issue.
          //
          // NOTE:
-         // A similar construct appears in MultDestPgp.cpp and 
-         // MULTDestPgpG3.cpp with the same problem.
+         // A similar construct appears in MultDestAxis.cpp and 
+         // MultDestAxis.cpp with the same problem.
          // -----------------------------------------------------------
          return -1;
 
