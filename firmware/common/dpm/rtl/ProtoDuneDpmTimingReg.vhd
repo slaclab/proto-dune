@@ -56,7 +56,7 @@ end ProtoDuneDpmTimingReg;
 
 architecture rtl of ProtoDuneDpmTimingReg is
 
-   constant STATUS_SIZE_C : positive := 5;
+   constant STATUS_SIZE_C : positive := 6;
 
    type RegType is record
       cdrEdgeSel     : sl;
@@ -235,6 +235,7 @@ begin
          WIDTH_G        => STATUS_SIZE_C)
       port map (
          -- Input Status bit Signals (wrClk domain)
+         statusIn(5)  => cdrRst,
          statusIn(4)  => triggerDet,
          statusIn(3)  => timingMsgDrop,
          statusIn(2)  => cdrLocked,

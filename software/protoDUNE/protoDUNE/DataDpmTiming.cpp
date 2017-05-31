@@ -70,16 +70,23 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
    rl->getVariable()->setDescription("TriggerDet Status Counter");
 	rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);
+   
+
+   addRegisterLink(rl = new RegisterLink("TimingRstCnt", baseAddress_ + 0x014, Variable::Status));
+   rl->getVariable()->setDescription("TimingRst Status Counter");
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);   
 
 
-   addRegisterLink(rl = new RegisterLink("StatusRegister", baseAddress_ + 0x400, 1, 5,
-                                         "RunEnable",     Variable::Status, 0, 0x1, // 0                              
+   addRegisterLink(rl = new RegisterLink("StatusRegister", baseAddress_ + 0x400, 1, 6,
+                                         "RunEnable",     Variable::Status, 0, 0x1,  // 0                              
                                          "TimingRdy",     Variable::Status, 1, 0x1,  // 1                              
                                          "CdrLocked",     Variable::Status, 2, 0x1,  // 2 
                                          "TimingMsgDrop", Variable::Status, 3, 0x1,  // 3                              
-                                         "TriggerDet",    Variable::Status, 4, 0x1));// 4                             
+                                         "TriggerDet",    Variable::Status, 4, 0x1,  // 4                             
+                                         "TimingRst",     Variable::Status, 5, 0x1));// 5                             
    rl->setPollEnable(true);  
-   for(i=0;i<5;i++) {
+   for(i=0;i<6;i++) {
       rl->getVariable(i)->setTrueFalse();  
    }
    
