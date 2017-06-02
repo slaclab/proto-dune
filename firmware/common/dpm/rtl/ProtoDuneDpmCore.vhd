@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-05-11
+-- Last update: 2017-06-02
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -45,6 +45,8 @@ entity ProtoDuneDpmCore is
       dmaIbSlave      : in  AxiStreamSlaveType;
       dmaObMaster     : in  AxiStreamMasterType;
       dmaObSlave      : out AxiStreamSlaveType;
+      timingMsgMaster : out AxiStreamMasterType;
+      timingMsgSlave  : in  AxiStreamSlaveType;
       -- RTM Interface
       ref250ClkP      : in  sl;
       ref250ClkN      : in  sl;
@@ -114,9 +116,6 @@ architecture mapping of ProtoDuneDpmCore is
 
    signal rssiMaster : AxiStreamMasterType;
    signal rssiSlave  : AxiStreamSlaveType;
-
-   signal timingMsgMaster : AxiStreamMasterType;
-   signal timingMsgSlave  : AxiStreamSlaveType;
 
 begin
 
@@ -273,8 +272,6 @@ begin
          -- AXI Stream Interface (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,
-         timingMsgMaster => timingMsgMaster,
-         timingMsgslave  => timingMsgslave,
          dmaIbMaster     => dmaIbMaster,
          dmaIbSlave      => dmaIbSlave);
 

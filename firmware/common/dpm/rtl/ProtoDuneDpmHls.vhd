@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHls.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-05-11
+-- Last update: 2017-06-02
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -48,8 +48,6 @@ entity ProtoDuneDpmHls is
       -- AXI Stream Interface (dmaClk domain)
       dmaClk          : in  sl;
       dmaRst          : in  sl;
-      timingMsgMaster : in  AxiStreamMasterType;
-      timingMsgslave  : out AxiStreamSlaveType;
       dmaIbMaster     : out AxiStreamMasterType;
       dmaIbSlave      : in  AxiStreamSlaveType);
 end ProtoDuneDpmHls;
@@ -73,8 +71,8 @@ architecture mapping of ProtoDuneDpmHls is
    signal ssiMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal ssiSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
-   signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C downto 0);
-   signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C downto 0);
+   signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
+   signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
    -- attribute dont_touch                 : string;
    -- attribute dont_touch of ibHlsMasters : signal is "TRUE";
@@ -85,9 +83,6 @@ architecture mapping of ProtoDuneDpmHls is
    -- attribute dont_touch of dmaIbSlaves  : signal is "TRUE";
 
 begin
-
-   dmaIbMasters(WIB_SIZE_C) <= timingMsgMaster;
-   timingMsgslave           <= dmaIbSlaves(WIB_SIZE_C);
 
    --------------------
    -- AXI-Lite Crossbar
@@ -235,7 +230,7 @@ begin
       generic map (
          TPD_G          => TPD_G,
          PIPE_STAGES_G  => 1,
-         NUM_SLAVES_G   => (WIB_SIZE_C+1),
+         NUM_SLAVES_G   => (WIB_SIZE_C),
          MODE_G         => "INDEXED",
          TDEST_LOW_G    => 0,
          ILEAVE_EN_G    => true,

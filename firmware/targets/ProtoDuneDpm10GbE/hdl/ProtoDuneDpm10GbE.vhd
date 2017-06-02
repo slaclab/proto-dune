@@ -5,7 +5,7 @@
 -- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-04-25
+-- Last update: 2017-06-02
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -103,6 +103,9 @@ architecture TOP_LEVEL of ProtoDuneDpm10GbE is
    signal obMacMaster : AxiStreamMasterType;
    signal obMacSlave  : AxiStreamSlaveType;
 
+   signal timingMsgMaster : AxiStreamMasterType;
+   signal timingMsgSlave  : AxiStreamSlaveType;
+
 begin
 
    led <= "00";
@@ -115,7 +118,7 @@ begin
          TPD_G              => TPD_G,
          BUILD_INFO_G       => BUILD_INFO_G,
          -- RCE_DMA_MODE_G     => RCE_DMA_AXIS_C,-- AXIS V1 Driver
-         RCE_DMA_MODE_G     => RCE_DMA_AXISV2_C,-- AXIS V2 Driver
+         RCE_DMA_MODE_G     => RCE_DMA_AXISV2_C,  -- AXIS V2 Driver
          ETH_10G_EN_G       => true,
          UDP_SERVER_EN_G    => true,
          UDP_SERVER_SIZE_G  => 1,
@@ -167,10 +170,10 @@ begin
    -- DMA Channel = 0
    ------------------
    -- Loop Back
-   dmaClk(0)      <= axilClk;
-   dmaClkRst(0)   <= axilRst;
-   dmaIbMaster(0) <= dmaObMaster(0);
-   dmaObSlave(0)  <= dmaIbSlave(0);
+   dmaClk(0)      <= ref200Clk;
+   dmaClkRst(0)   <= ref200Rst;
+   dmaIbMaster(0) <= timingMsgMaster;
+   timingMsgSlave <= dmaIbSlave(0);
 
    ------------------
    -- DMA Channel = 1
@@ -228,6 +231,8 @@ begin
          dmaIbSlave      => dmaIbSlave(2),
          dmaObMaster     => dmaObMaster(2),
          dmaObSlave      => dmaObSlave(2),
+         timingMsgMaster => timingMsgMaster,
+         timingMsgSlave  => timingMsgSlave,
          -- RTM Interface
          ref250ClkP      => locRefClkP,
          ref250ClkN      => locRefClkM,
@@ -244,7 +249,7 @@ begin
          dtmFbN          => dtmFbM,
          -- Reference 200 MHz clock
          refClk200       => ref200Clk,
-         refRst200       => ref200Rst,            
+         refRst200       => ref200Rst,
          -- User ETH interface (ethClk domain)
          ethClk          => ethClk,
          ethRst          => ethRst,

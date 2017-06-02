@@ -7,10 +7,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000045
+export PRJ_VERSION = 0x00000046
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/06/02 0x00000046 llr  Moved TimingMsg from DMA[CH=2] to DMA[CH=0]
 # 2017/05/31 0x00000045 llr  Added TimingRstCnt register
 # 2017/05/22 0x00000044 llr  Bug fix in ProtoDuneDpmTimingMsg.vhd
 # 2017/05/18 0x00000043 llr  Updating to CERN timing receiver V3C
