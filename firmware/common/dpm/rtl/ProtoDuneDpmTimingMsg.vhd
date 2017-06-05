@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTimingMsg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2017-05-11
--- Last update: 2017-05-24
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -158,7 +158,8 @@ begin
       generic map (
          -- General Configurations
          TPD_G               => TPD_G,
-         PIPE_STAGES_G       => 0,
+         INT_PIPE_STAGES_G   => 1,
+         PIPE_STAGES_G       => 1,
          -- VALID_THOLD_G       => 1,
          VALID_THOLD_G       => 128,
          VALID_BURST_MODE_G  => true,
