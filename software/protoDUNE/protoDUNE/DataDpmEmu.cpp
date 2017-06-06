@@ -64,9 +64,9 @@ DataDpmEmu::DataDpmEmu(uint32_t linkConfig, uint32_t baseAddress, uint32_t index
    rl->getVariable()->setComp(0,1,0,"");
    rl->getVariable()->setDescription("Sets the number of common mode noise bits in the emulation adc data");   
    
-   addRegisterLink(rl = new RegisterLink("TrigRate",  baseAddress_ + 0xC10, Variable::Configuration,0,0xFFFFFFFF));
-   rl->getVariable()->setComp(0,1,0,"");
-   rl->getVariable()->setDescription("trigger rate = 125MHz/(TrigRate+1)");   
+   // addRegisterLink(rl = new RegisterLink("TrigRate",  baseAddress_ + 0xC10, Variable::Configuration,0,0xFFFFFFFF));
+   // rl->getVariable()->setComp(0,1,0,"");
+   // rl->getVariable()->setDescription("trigger rate = 125MHz/(TrigRate+1)");   
 
    addRegisterLink(rl = new RegisterLink("TxPreCursor",  baseAddress_ + 0xC14, Variable::Configuration,0,0x1F));
    rl->getVariable()->setComp(0,1,0,"");

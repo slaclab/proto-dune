@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmDpmIntf.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2017-03-20
--- Last update: 2017-03-20
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
-         clkIn   => '0',                -- Unused
+         clkIn   => recClk,
          clkOutP => dpmClkP(0),
          clkOutN => dpmClkN(0));
 

@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEmuReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-08
--- Last update: 2017-01-19
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -41,7 +41,6 @@ entity ProtoDuneDpmEmuReg is
       cmNoiseCgf      : out slv(2 downto 0);
       chNoiseCgf      : out Slv3Array(127 downto 0);
       chDlyCfg        : out EmuDlyCfg;
-      trigRate        : out slv(31 downto 0);
       txPreCursor     : out slv(4 downto 0);
       txPostCursor    : out slv(4 downto 0);
       txDiffCtrl      : out slv(3 downto 0);
@@ -65,7 +64,6 @@ architecture rtl of ProtoDuneDpmEmuReg is
       loopback       : sl;
       cmNoiseCgf     : slv(2 downto 0);
       chNoiseCgf     : Slv3Array(127 downto 0);
-      trigRate       : slv(31 downto 0);
       chDlyCfg       : EmuDlyCfg;
       txPreCursor    : slv(4 downto 0);
       txPostCursor   : slv(4 downto 0);
@@ -84,7 +82,6 @@ architecture rtl of ProtoDuneDpmEmuReg is
       loopback       => '0',
       cmNoiseCgf     => "000",
       chNoiseCgf     => (others => (others => '0')),
-      trigRate       => x"0EE6B27F",
       chDlyCfg       => (others => (others => '0')),
       txPreCursor    => "00000",
       txPostCursor   => "01111",
@@ -141,7 +138,7 @@ begin
       axiSlaveRegister(regCon, x"C04", 0, v.enableTrig);
       axiSlaveRegister(regCon, x"C08", 0, v.loopback);
       axiSlaveRegister(regCon, x"C0C", 0, v.cmNoiseCgf);
-      axiSlaveRegister(regCon, x"C10", 0, v.trigRate);
+      -- axiSlaveRegister(regCon, x"C10", 0, v.trigRate);
       axiSlaveRegister(regCon, x"C14", 0, v.txPreCursor);
       axiSlaveRegister(regCon, x"C18", 0, v.txPostCursor);
       axiSlaveRegister(regCon, x"C1C", 0, v.txDiffCtrl);
@@ -188,16 +185,6 @@ begin
          dataOut(1) => enableTrig,
          dataOut(2) => sendCnt,
          dataOut(3) => loopback);
-
-   U_trigRate : entity work.SynchronizerFifo
-      generic map (
-         TPD_G        => TPD_G,
-         DATA_WIDTH_G => 32)
-      port map (
-         wr_clk => axilClk,
-         din    => r.trigRate,
-         rd_clk => clk,
-         dout   => trigRate);
 
    -- Since these configurations won't change 
    -- during a run,not using a SYNC module to 

@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-02
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -97,6 +97,11 @@ architecture mapping of ProtoDuneDpmCore is
    signal runEnable : sl;
    signal swFlush   : sl;
 
+   signal timingClk  : sl;
+   signal timingRst  : sl;
+   signal timingTrig : sl;
+   signal timingTs   : slv(63 downto 0);
+
    signal emuLoopback : sl;
    signal emuEnable   : sl;
    signal emuData     : slv(15 downto 0);
@@ -156,6 +161,10 @@ begin
          emuEnable       => emuEnable,
          runEnable       => runEnable,
          swFlush         => swFlush,
+         timingClk       => timingClk,
+         timingRst       => timingRst,
+         timingTrig      => timingTrig,
+         timingTs        => timingTs,
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
          axilRst         => axilRst,
@@ -172,8 +181,6 @@ begin
          refClk200       => refClk200,
          refRst200       => refRst200,
          -- DTM Interface
-         dtmRefClkP      => dtmRefClkP,
-         dtmRefClkN      => dtmRefClkN,
          dtmClkP         => dtmClkP,
          dtmClkN         => dtmClkN,
          dtmFbP          => dtmFbP,
@@ -196,8 +203,10 @@ begin
          axilWriteMaster => axilWriteMasters(EMU_INDEX_C),
          axilWriteSlave  => axilWriteSlaves(EMU_INDEX_C),
          -- TX EMU Interface
-         clk             => clk,
-         rst             => rst,
+         clk             => timingClk,
+         rst             => timingRst,
+         timingTrig      => timingTrig,
+         timingTs        => timingTs,
          emuLoopback     => emuLoopback,
          emuEnable       => emuEnable,
          emuData         => emuData,
@@ -228,8 +237,10 @@ begin
          axilWriteMaster => axilWriteMasters(WIB_INDEX_C),
          axilWriteSlave  => axilWriteSlaves(WIB_INDEX_C),
          -- RTM Interface
-         ref250ClkP      => ref250ClkP,
-         ref250ClkN      => ref250ClkN,
+         ref250ClkP      => dtmRefClkP,
+         ref250ClkN      => dtmRefClkN,         
+         -- ref250ClkP      => ref250ClkP,
+         -- ref250ClkN      => ref250ClkN,
          dpmToRtmHsP     => dpmToRtmHsP,
          dpmToRtmHsN     => dpmToRtmHsN,
          rtmToDpmHsP     => rtmToDpmHsP,
@@ -237,7 +248,9 @@ begin
          -- Timing Interface (clk domain)
          swFlush         => swFlush,
          runEnable       => runEnable,
-         -- TX EMU Interface (clk domain)
+         -- TX EMU Interface (emuClk domain)
+         emuClk          => timingClk,
+         emuRst          => timingRst,
          emuLoopback     => emuLoopback,
          emuData         => emuData,
          emuDataK        => emuDataK,

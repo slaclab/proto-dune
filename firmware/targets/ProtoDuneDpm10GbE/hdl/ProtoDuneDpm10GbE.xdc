@@ -11,7 +11,8 @@
 set_property DIFF_TERM true [get_ports {dtmClkP[*]}]
 set_property DIFF_TERM true [get_ports {dtmClkM[*]}]
 
-create_clock -name wibRefClk -period  4.000 [get_ports {locRefClkP}]
+# create_clock -name wibRefClk -period  4.000 [get_ports {locRefClkP}]
+create_clock -name wibRefClk -period  4.000 [get_ports {dtmRefClkP}]
 
 create_generated_clock -name wibRefClkDiv2 [get_pins  {U_App/U_Wib/U_IBUFDS_GTE2/ODIV2}]
 create_generated_clock -name wibClk        [get_pins  {U_App/U_Wib/U_MMCM/MmcmGen.U_Mmcm/CLKOUT0}]

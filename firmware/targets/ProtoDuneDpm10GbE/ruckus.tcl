@@ -15,3 +15,6 @@ remove_files [get_files {pdts_endpoint_dummy.vhd}]
 # Load local Source Code and constraints
 loadSource -dir       "$::DIR_PATH/hdl/"
 loadConstraints -dir  "$::DIR_PATH/hdl/"
+
+# Place and Route strategies 
+set_property strategy Performance_Explore [get_runs impl_1]

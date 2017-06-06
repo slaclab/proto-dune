@@ -2,7 +2,7 @@
 -- File       : DuneDpmReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-01-18
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -42,6 +42,8 @@ entity ProtoDuneDpmEmu is
       -- TX EMU Interface (clk domain)
       clk             : in  sl;
       rst             : in  sl;
+      timingTrig      : in  sl;
+      timingTs        : in  slv(63 downto 0);
       emuLoopback     : out sl;
       emuEnable       : out sl;
       emuData         : out slv(15 downto 0);
@@ -90,7 +92,6 @@ begin
          cmNoiseCgf      => cmNoiseCgf,
          chNoiseCgf      => chNoiseCgf,
          chDlyCfg        => chDlyCfg,
-         trigRate        => trigRate,
          txPreCursor     => txPreCursor,
          txPostCursor    => txPostCursor,
          txDiffCtrl      => txDiffCtrl,
@@ -118,7 +119,7 @@ begin
          convt      => convt,
          cmNoiseCgf => cmNoiseCgf,
          chNoiseCgf => chNoiseCgf,
-         trigRate   => trigRate,
+         timingTrig => timingTrig,
          cmNoise    => cmNoise,
          adcData    => adcData);
 
@@ -161,15 +162,16 @@ begin
          TPD_G => TPD_G)
       port map (
          -- Clock and Reset
-         clk     => clk,
-         rst     => rst,
+         clk      => clk,
+         rst      => rst,
          -- EMU Data Interface
-         enable  => enableTx,
-         sendCnt => sendCnt,
-         adcData => adcDataDlyCM,
-         convt   => convt,
+         enable   => enableTx,
+         sendCnt  => sendCnt,
+         adcData  => adcDataDlyCM,
+         convt    => convt,
+         timingTs => timingTs,
          -- TX Data Interface
-         txData  => emuData,
-         txdataK => emuDataK);
+         txData   => emuData,
+         txdataK  => emuDataK);
 
 end mapping;

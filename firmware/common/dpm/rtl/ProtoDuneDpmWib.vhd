@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmWib.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2016-12-04
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -57,6 +57,8 @@ entity ProtoDuneDpmWib is
       swFlush         : in  sl;
       runEnable       : in  sl;
       -- TX EMU Interface (emuClk domain)
+      emuClk          : in  sl;
+      emuRst          : in  sl;
       emuLoopback     : in  sl;
       emuData         : in  slv(15 downto 0);
       emuDataK        : in  slv(1 downto 0);
@@ -65,7 +67,7 @@ entity ProtoDuneDpmWib is
       txDiffCtrl      : in  slv(3 downto 0) := "1111";
       -- WIB Interface (axilClk domain)
       wibMasters      : out AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-      wibSlaves       : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0));   
+      wibSlaves       : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0));
 end ProtoDuneDpmWib;
 
 architecture mapping of ProtoDuneDpmWib is
@@ -98,7 +100,7 @@ architecture mapping of ProtoDuneDpmWib is
    signal mmcmRst    : sl;
    signal clock      : sl;
    signal reset      : sl;
-   
+
 begin
 
    clk <= clock;
@@ -113,19 +115,19 @@ begin
          IB    => ref250ClkN,
          CEB   => '0',
          ODIV2 => refClkDiv2,
-         O     => refClk);    
+         O     => refClk);
 
    U_BUFG : BUFG
       port map (
          I => refClkDiv2,
-         O => mmcmClk);           
+         O => mmcmClk);
 
    U_PwrUpRst : entity work.PwrUpRst
       generic map(
-         TPD_G => TPD_G)   
+         TPD_G => TPD_G)
       port map (
          clk    => mmcmClk,
-         rstOut => mmcmRst);      
+         rstOut => mmcmRst);
 
    U_MMCM : entity work.ClockManager7
       generic map(
@@ -145,7 +147,7 @@ begin
          clkIn     => mmcmClk,
          rstIn     => mmcmRst,
          clkOut(0) => clock,
-         rstOut(0) => reset);                   
+         rstOut(0) => reset);
 
    --------------------
    -- AXI-Lite Crossbar
@@ -167,7 +169,7 @@ begin
          mAxiWriteMasters    => axilWriteMasters,
          mAxiWriteSlaves     => axilWriteSlaves,
          mAxiReadMasters     => axilReadMasters,
-         mAxiReadSlaves      => axilReadSlaves);          
+         mAxiReadSlaves      => axilReadSlaves);
 
    WIB_LINK :
    for i in WIB_SIZE_C-1 downto 0 generate
@@ -178,7 +180,7 @@ begin
       U_GTX : entity work.ProtoDuneDpmGtx7
          generic map (
             TPD_G     => TPD_G,
-            PWR_DWN_G => false)         
+            PWR_DWN_G => false)
          port map (
             -- Clock and Reset
             refClk       => refClk,
@@ -199,6 +201,8 @@ begin
             rtmToDpmHsP  => rtmToDpmHsP(i),
             rtmToDpmHsN  => rtmToDpmHsN(i),
             -- TX EMU Interface
+            emuClk       => emuClk,
+            emuRst       => emuRst,
             emuLoopback  => emuLoopback,
             emuData      => emuData,
             emuDataK     => emuDataK,
@@ -207,7 +211,7 @@ begin
             rxData       => rxData(i),
             rxdataK      => rxdataK(i),
             rxDecErr     => rxDecErr(i),
-            rxDispErr    => rxDispErr(i)); 
+            rxDispErr    => rxDispErr(i));
 
       ------------------------  
       -- Frame Receiver Module
@@ -217,7 +221,7 @@ begin
             TPD_G            => TPD_G,
             AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
             AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
-            CASCADE_SIZE_G   => CASCADE_SIZE_G)         
+            CASCADE_SIZE_G   => CASCADE_SIZE_G)
          port map (
             -- AXI-Lite Port (axilClk domain)
             axilClk         => axilClk,
@@ -273,7 +277,7 @@ begin
             axilReadMaster  => axilReadMasters(i+WIB_SIZE_C),
             axilReadSlave   => axilReadSlaves(i+WIB_SIZE_C),
             axilWriteMaster => axilWriteMasters(i+WIB_SIZE_C),
-            axilWriteSlave  => axilWriteSlaves(i+WIB_SIZE_C));    
+            axilWriteSlave  => axilWriteSlaves(i+WIB_SIZE_C));
 
       process(clock)
       begin
@@ -298,7 +302,7 @@ begin
             waveform(i)(15 downto 0)  <= rxData(i);
          end if;
       end process;
-      
+
    end generate WIB_LINK;
 
    ---------------------  
@@ -307,7 +311,7 @@ begin
    U_UnusedGTX : entity work.ProtoDuneDpmGtx7
       generic map (
          TPD_G     => TPD_G,
-         PWR_DWN_G => true)         
+         PWR_DWN_G => true)
       port map (
          -- Clock and Reset
          refClk      => refClk,
@@ -319,8 +323,10 @@ begin
          rtmToDpmHsP => rtmToDpmHsP(2),
          rtmToDpmHsN => rtmToDpmHsN(2),
          -- TX EMU Interface
+         emuClk      => emuClk,
+         emuRst      => emuRst,
          emuLoopback => emuLoopback,
          emuData     => emuData,
-         emuDataK    => emuDataK);    
+         emuDataK    => emuDataK);
 
 end mapping;

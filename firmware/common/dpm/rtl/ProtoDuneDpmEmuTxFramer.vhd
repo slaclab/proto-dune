@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEmuTxFramer.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-03-16
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -28,22 +28,22 @@ entity ProtoDuneDpmEmuTxFramer is
       TPD_G : time := 1 ns);
    port (
       -- Clock and Reset
-      clk     : in  sl;
-      rst     : in  sl;
+      clk      : in  sl;
+      rst      : in  sl;
       -- EMU Data Interface
-      enable  : in  sl;
-      sendCnt : in  sl;
-      adcData : in  Slv12Array(127 downto 0);
-      convt   : out sl;
+      enable   : in  sl;
+      sendCnt  : in  sl;
+      adcData  : in  Slv12Array(127 downto 0);
+      convt    : out sl;
+      timingTs : in  slv(63 downto 0);
       -- TX Data Interface
-      txData  : out slv(15 downto 0);
-      txdataK : out slv(1 downto 0));
+      txData   : out slv(15 downto 0);
+      txdataK  : out slv(1 downto 0));
 end ProtoDuneDpmEmuTxFramer;
 
 architecture rtl of ProtoDuneDpmEmuTxFramer is
 
-   constant DLY_C     : positive         := 3;
-   constant TS_INCR_C : slv(63 downto 0) := toSlv(500, 64);  -- timestamp's LSB is 1ns 
+   constant DLY_C : positive := 3;
 
    type RegType is record
       convt      : sl;
@@ -80,7 +80,7 @@ architecture rtl of ProtoDuneDpmEmuTxFramer is
 
 begin
 
-   comb : process (adcData, crcResult, enable, r, rst, sendCnt) is
+   comb : process (adcData, crcResult, enable, r, rst, sendCnt, timingTs) is
       variable v         : RegType;
       variable i         : natural;
       variable coldData1 : slv((64*12)-1 downto 0);
@@ -119,6 +119,7 @@ begin
       case r.cnt is
          ----------------------------------------------------------------------
          when 1 =>
+            v.timestamp := timingTs;
             -- Check the enable
             if enable = '1' then
                -- Send Start of Frame pattern
@@ -130,7 +131,6 @@ begin
                v.crcRst                 := '0';
             else
                -- Reset the time stamp
-               v.timestamp  := (others => '0');
                v.convertCnt := (others => '0');
                -- Send IDLE pattern
                v.txdataK(0) := "11";
@@ -217,7 +217,6 @@ begin
             -- Reset the CRC module
             v.crcRst         := '1';
             -- Increment the counters
-            v.timestamp      := r.timestamp + TS_INCR_C;
             v.convertCnt     := r.convertCnt + 1;
          ----------------------------------------------------------------------
          when others =>

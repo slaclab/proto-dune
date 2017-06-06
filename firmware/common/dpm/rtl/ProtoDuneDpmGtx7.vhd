@@ -49,6 +49,8 @@ entity ProtoDuneDpmGtx7 is
       rtmToDpmHsP  : in  sl;
       rtmToDpmHsN  : in  sl;
       -- TX EMU Interface
+      emuClk       : in  sl;
+      emuRst       : in  sl;
       emuLoopback  : in  sl;
       emuData      : in  slv(15 downto 0);
       emuDataK     : in  slv(1 downto 0);
@@ -266,12 +268,12 @@ begin
          rxChBondIn       => "00000",
          rxChBondOut      => open,
          txOutClkOut      => open,
-         txUsrClkIn       => ite(PWR_DWN_G, '1', clk),
-         txUsrClk2In      => ite(PWR_DWN_G, '1', clk),
+         txUsrClkIn       => ite(PWR_DWN_G, '1', emuClk),
+         txUsrClk2In      => ite(PWR_DWN_G, '1', emuClk),
          txUserRdyOut     => open,
          txMmcmResetOut   => open,
          txMmcmLockedIn   => '1',
-         txUserResetIn    => ite(PWR_DWN_G, '1', rst),
+         txUserResetIn    => ite(PWR_DWN_G, '1', emuRst),
          txResetDoneOut   => open,
          txDataIn         => ite(PWR_DWN_G, x"0000", emuData),
          txCharIsKIn      => ite(PWR_DWN_G, "00", emuDataK),

@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEmuData.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-08
--- Last update: 2016-08-30
+-- Last update: 2017-06-05
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ entity ProtoDuneDpmEmuData is
       convt      : in  sl;
       cmNoiseCgf : in  slv(2 downto 0);
       chNoiseCgf : in  Slv3Array(127 downto 0);
-      trigRate   : in  slv(31 downto 0);
+      timingTrig : in  sl;
       cmNoise    : out slv(11 downto 0);
       adcData    : out Slv12Array(127 downto 0));
 end ProtoDuneDpmEmuData;
@@ -85,33 +85,30 @@ architecture rtl of ProtoDuneDpmEmuData is
       9  => x"100",
       10 => x"300",
       11 => x"500",
-      12 => x"800"); 
+      12 => x"800");
 
    type RegType is record
-      trigRate : slv(31 downto 0);
-      timer    : slv(31 downto 0);
-      cnt      : natural range 0 to CNT_SIZE_C;
-      cmPbrs   : slv(31 downto 0);
-      chPbrs   : Slv32Array(127 downto 0);
-      adcData  : Slv12Array(127 downto 0);
+      cnt     : natural range 0 to CNT_SIZE_C;
+      cmPbrs  : slv(31 downto 0);
+      chPbrs  : Slv32Array(127 downto 0);
+      adcData : Slv12Array(127 downto 0);
    end record RegType;
    constant REG_INIT_C : RegType := (
-      trigRate => (others => '0'),
-      timer    => (others => '0'),
-      cnt      => CNT_SIZE_C,
-      cmPbrs   => CM_RND_SEED_C,
-      chPbrs   => CH_RND_SEED_C,
-      adcData  => (others => x"800"));
+      cnt     => CNT_SIZE_C,
+      cmPbrs  => CM_RND_SEED_C,
+      chPbrs  => CH_RND_SEED_C,
+      adcData => (others => x"800"));
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
 
    -- attribute dont_touch             : string;
    -- attribute dont_touch of r        : signal is "TRUE";   
-   
+
 begin
 
-   comb : process (chNoiseCgf, cmNoiseCgf, convt, enableTrig, enableTx, r, rst, trigRate) is
+   comb : process (chNoiseCgf, cmNoiseCgf, convt, enableTrig, enableTx, r, rst,
+                   timingTrig) is
       variable v           : RegType;
       variable i           : natural;
       variable j           : natural;
@@ -139,26 +136,9 @@ begin
       end loop;
 
       -- Check if trigger enabled
-      if enableTrig = '1' then
-         -- Increment the counter
-         v.timer := r.timer + 1;
-         -- Check for timeout
-         if r.timer = trigRate then
-            -- Reset the timer
-            v.timer := (others => '0');
-            -- Check if LUT pattern completed
-            if r.cnt = CNT_SIZE_C then
-               -- Reset the counter
-               v.cnt := 0;
-            end if;
-         end if;
-         -- Make local copy of configuration
-         v.trigRate := trigRate;
-         -- Check for change in configuration
-         if trigRate /= r.trigRate then
-            -- Reset the timer
-            v.timer := (others => '0');
-         end if;
+      if (enableTrig = '1') and (timingTrig = '1') then
+         -- Reset the counter
+         v.cnt := 0;
       end if;
 
       -- Check if TX engine is enabled
@@ -205,7 +185,7 @@ begin
       -- Outputs
       adcData <= r.adcData;
       cmNoise <= commonNoise;
-      
+
    end process comb;
 
    seq : process (clk) is
