@@ -154,15 +154,15 @@ int AxiBufChecker::check_buffer  (uint8_t       *buf,
    // ------------------------
    // Establish signal handler
    // ------------------------
-   struct sigaction sa;
+   struct sigaction  sa;
+   struct sigaction prv;
 
    memset (&sa, 0, sizeof (sa));
    sigemptyset(&sa.sa_mask);
 
    sa.sa_flags     = SA_NODEFER;
    sa.sa_sigaction = handler;
-
-   sigaction (SIGSEGV, &sa, NULL);
+   sigaction (SIGSEGV, &sa, &prv);
 
    if (sigsetjmp (point, 1) == 0)
    {
@@ -260,10 +260,12 @@ int AxiBufChecker::check_buffer  (uint8_t       *buf,
       m_status = AxiBufChecker::Good;
    }
 
-
+   
    // ------------------------------------------
+   // Reestablish the original handler and
    // Return the number of bad bytes encountered
    // ------------------------------------------
+   sigaction (SIGSEGV, &prv, NULL);
    return nbad * sizeof (*ptr);
 }
 /* ---------------------------------------------------------------------- */

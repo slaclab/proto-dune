@@ -54,22 +54,31 @@ void FrameBuffer::setData (uint32_t       index,
     _rx_sequence = rx_sequence;
 }
 
+void FrameBuffer::setIndex      (uint32_t       index) { _index = index; }
+void FrameBuffer::setData       (uint8_t        *data) { _data  =  data; }
+void FrameBuffer::setSize       (uint32_t        size) { _size  =  size; } 
+void FrameBuffer::setRxSequence (uint32_t rx_sequence) 
+{ 
+   _rx_sequence = rx_sequence; 
+}
+
+
 // Return index
-int32_t FrameBuffer::index() {
+int32_t FrameBuffer::index() const {
    return(_index);
 }
 
 // Return pointer to Frame data base address
-uint8_t * FrameBuffer::baseAddr () {
+uint8_t * FrameBuffer::baseAddr () const {
    return (_data);
 }
 
 // Return total size
-uint32_t FrameBuffer::size () {
+uint32_t FrameBuffer::size () const {
    return(_size);
 }
 
 // Return the received sequence number
-uint32_t FrameBuffer::rx_sequence () {
+uint32_t FrameBuffer::rx_sequence () const {
    return _rx_sequence;
 }

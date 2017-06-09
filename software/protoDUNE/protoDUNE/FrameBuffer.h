@@ -20,6 +20,7 @@
 //
 //       DATE WHO WHAT 
 // ---------- --- ------------------------------------------------------------
+// 2017.05.27 jjr Added setData to set fields separately.  
 // 2016.11.05 jjr Added receive frame sequence number
 //
 //
@@ -37,6 +38,9 @@ class FrameBuffer {
       int32_t    _index;
       uint32_t   _size;
       uint32_t   _rx_sequence;
+
+public:
+      uint64_t   _ts_range[2];
    public:
       FrameBuffer  ();
      ~FrameBuffer  ();
@@ -44,12 +48,22 @@ class FrameBuffer {
       void        setData (uint32_t        index, 
                            uint8_t         *data, 
                            uint32_t         size, 
-                           uint32_t  rx_sequence); 
+                           uint32_t  rx_sequence);
 
-      int32_t  index       ();
-      uint8_t *baseAddr    ();
-      uint32_t size        ();
-      uint32_t rx_sequence ();
+      void        setIndex (uint32_t       index);
+      void        setData  (uint8_t        *data);
+      void        setSize  (uint32_t        size);
+      void   setRxSequence (uint32_t rx_sequence);
+      void    setTimeRange (uint64_t beg, uint64_t end)
+      {
+         _ts_range[0] = beg;
+         _ts_range[1] = end;
+      }
+
+      int32_t  index       () const;
+      uint8_t *baseAddr    () const;
+      uint32_t size        () const;
+      uint32_t rx_sequence () const;
 };
 
 #endif

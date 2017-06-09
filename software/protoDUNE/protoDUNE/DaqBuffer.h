@@ -29,6 +29,7 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2017.05.26  jjr  Added checkBuffer method to check for unreadable DMA buffers
 // 2017.04.05  jjr  Added rx and tx DMA buffer counts.  The new DMA driver
 //                  lumps these buffers together. 
 // 2016.11.05  jjr  Added receive sequence number
@@ -109,7 +110,7 @@ struct DaqHeader
 \* ---------------------------------------------------------------------- */ 
 class DaqBuffer {
 
-
+public:
    /* ------------------------------------------------------------------ *//*!
     *
     * \struct Config
@@ -164,6 +165,7 @@ class DaqBuffer {
    };
    /* ------------------------------------------------------------------ */
 
+private:
 
    // Statistics Counters
    class Counters
@@ -223,8 +225,10 @@ class DaqBuffer {
       uint32_t    _txPend;
 
       // Config
+public:
       Config volatile _config;
 
+private:
       uint32_t _rxSize;
       uint32_t _txSize;
 
@@ -282,6 +286,8 @@ class DaqBuffer {
             uint32_t blowOffTxEth,
             uint32_t naccept,
             uint32_t nframes);
+
+      void vetDmaBuffers();
 
       // Set run mode
       void setRunMode ( RunMode mode );
