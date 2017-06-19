@@ -1,0 +1,278 @@
+-------------------------------------------------------------------------------
+-- File       : WibTb.vhd
+-- Company    : SLAC National Accelerator Laboratory
+-- Created    : 2016-08-23
+-- Last update: 2017-06-15
+-------------------------------------------------------------------------------
+-- Description: Simulation Testbed for testing the WIB Receiver module
+-------------------------------------------------------------------------------
+-- This file is part of 'DUNE Development Firmware'.
+-- It is subject to the license terms in the LICENSE.txt file found in the 
+-- top-level directory of this distribution and at: 
+--    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+-- No part of 'DUNE Development Firmware', including this file, 
+-- may be copied, modified, propagated, or distributed except according to 
+-- the terms contained in the LICENSE.txt file.
+-------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+use ieee.std_logic_arith.all;
+
+use work.StdRtlPkg.all;
+use work.AxiLitePkg.all;
+use work.AxiStreamPkg.all;
+use work.SsiPkg.all;
+use work.ProtoDuneDpmPkg.all;
+
+entity WibTb is end WibTb;
+
+architecture testbed of WibTb is
+
+   constant CLK_PERIOD_C : time := 4 ns;
+   constant TPD_G        : time := CLK_PERIOD_C/4;
+
+   signal clk : sl := '0';
+   signal rst : sl := '0';
+
+   signal linkP : sl := '0';
+   signal linkN : sl := '1';
+
+   signal txData  : slv(15 downto 0) := (others => '0');
+   signal txdataK : slv(1 downto 0)  := (others => '0');
+
+   signal rxValid     : sl               := '1';
+   signal rxData      : slv(15 downto 0) := (others => '0');
+   signal rxdataK     : slv(1 downto 0)  := (others => '0');
+   signal rxDecErr    : slv(1 downto 0)  := (others => '0');
+   signal rxDispErr   : slv(1 downto 0)  := (others => '0');
+   signal rxBufStatus : slv(2 downto 0)  := (others => '0');
+   signal cPllLock    : sl               := '1';
+   signal emuConvt    : sl               := '0';
+
+   type StateType is (
+      SOF_S,
+      MOVE_S,
+      WAIT_S);
+
+   type RegType is record
+      error    : sl;
+      errorDly : sl;
+      wrd      : Slv16Array(3 downto 0);
+      cnt      : natural range 0 to 255;
+      ts       : slv(63 downto 0);
+      wibSlave : AxiStreamSlaveType;
+      state    : StateType;
+   end record RegType;
+   constant REG_INIT_C : RegType := (
+      error    => '0',
+      errorDly => '0',
+      wrd      => (others => x"FFFF"),
+      cnt      => 0,
+      ts       => (others => '0'),
+      wibSlave => AXI_STREAM_SLAVE_INIT_C,
+      state    => SOF_S);
+
+   signal r   : RegType := REG_INIT_C;
+   signal rin : RegType;
+
+   signal wibMaster : AxiStreamMasterType;
+   signal wibSlave  : AxiStreamSlaveType;
+
+begin
+
+   -----------------------------
+   -- Generate clocks and resets
+   -----------------------------
+   U_ClkRst : entity work.ClkRst
+      generic map (
+         CLK_PERIOD_G      => CLK_PERIOD_C,
+         RST_START_DELAY_G => 0 ns,  -- Wait this long into simulation before asserting reset
+         RST_HOLD_TIME_G   => 1000 ns)  -- Hold reset for this long)
+      port map (
+         clkP => clk,
+         rst  => rst);
+
+   ---------------------------           
+   -- Frame Transmitter Module
+   ---------------------------   
+   U_Emu : entity work.ProtoDuneDpmEmu
+      generic map (
+         TPD_G         => TPD_G,
+         SIM_START_G   => '1',
+         DEFAULT_CNT_G => '1')
+      port map (
+         -- AXI-Lite Interface (axilClk domain)
+         axilClk         => clk,
+         axilRst         => rst,
+         axilReadMaster  => AXI_LITE_READ_MASTER_INIT_C,
+         axilWriteMaster => AXI_LITE_WRITE_MASTER_INIT_C,
+         -- TX EMU Interface
+         clk             => clk,
+         rst             => rst,
+         timingTrig      => '0',
+         timingTs        => r.ts,
+         emuConvt        => emuConvt,
+         emuData         => txData,
+         emuDataK        => txDataK);
+
+   -- -------------
+   -- -- GTX Module
+   -- -------------  
+   -- U_GTX : entity work.ProtoDuneDpmGtx7
+   -- generic map (
+   -- TPD_G                 => TPD_G,
+   -- SIM_GTRESET_SPEEDUP_G => "TRUE",
+   -- SIMULATION_G          => true)
+   -- port map (
+   -- -- Clock and Reset
+   -- refClk      => clk,
+   -- clk         => clk,
+   -- rst         => rst,
+   -- -- Debug Interface   
+   -- cPllLock    => cPllLock,
+   -- rxPolarity  => '0',
+   -- rxBufStatus => rxBufStatus,
+   -- -- RTM Interface
+   -- dpmToRtmHsP => linkP,
+   -- dpmToRtmHsN => linkN,
+   -- rtmToDpmHsP => linkP,
+   -- rtmToDpmHsN => linkN,
+   -- -- TX EMU Interface
+   -- emuLoopback => '0',
+   -- emuData     => txData,
+   -- emuDataK    => txDataK,
+   -- -- RX Data Interface (clk domain)
+   -- rxValid     => rxValid,
+   -- rxData      => rxData,
+   -- rxdataK     => rxdataK,
+   -- rxDecErr    => rxDecErr,
+   -- rxDispErr   => rxDispErr);
+
+   rxData  <= txData;
+   rxdataK <= txDataK;
+
+   ------------------------  
+   -- Frame Receiver Module
+   ------------------------  
+   U_RX : entity work.ProtoDuneDpmWibRxFramer
+      generic map (
+         TPD_G          => TPD_G,
+         CASCADE_SIZE_G => 8)
+      port map (
+         -- AXI-Lite Port (axilClk domain)
+         axilClk         => clk,
+         axilRst         => rst,
+         axilReadMaster  => AXI_LITE_READ_MASTER_INIT_C,
+         axilReadSlave   => open,
+         axilWriteMaster => AXI_LITE_WRITE_MASTER_INIT_C,
+         axilWriteSlave  => open,
+         -- RX Data Interface (clk domain)
+         clk             => clk,
+         rst             => rst,
+         rxValid         => rxValid,
+         rxData          => rxData,
+         rxdataK         => rxdataK,
+         rxDecErr        => rxDecErr,
+         rxDispErr       => rxDispErr,
+         rxBufStatus     => rxBufStatus,
+         cPllLock        => cPllLock,
+         -- Timing Interface (clk domain)
+         swFlush         => '0',
+         runEnable       => '1',
+         -- WIB Interface (axilClk domain)
+         wibMaster       => wibMaster,
+         wibSlave        => wibSlave);
+
+   comb : process (emuConvt, r, rst, wibMaster) is
+      variable v          : RegType;
+      variable cntPattern : slv(63 downto 0);
+   begin
+      -- Latch the current value
+      v := r;
+
+      v.wibSlave := AXI_STREAM_SLAVE_INIT_C;
+      v.errorDly := r.error;
+      cntPattern := r.wrd(3) & r.wrd(2) & r.wrd(1) & r.wrd(0);
+      if (emuConvt = '1') then
+         v.ts := r.ts + 1;
+      end if;
+
+      -- State Machine
+      case r.state is
+         ----------------------------------------------------------------------
+         when SOF_S =>
+            if (wibMaster.tValid = '1') then
+               v.wibSlave.tReady := '1';
+               if (wibMaster.tData(63 downto 0) /= x"0003_0002_0001_00BC") then
+                  v.error := '1';
+               end if;
+               v.wrd(3) := x"0007";
+               v.wrd(2) := x"0006";
+               v.wrd(1) := x"0005";
+               v.wrd(0) := x"0004";
+               v.state  := MOVE_S;
+            end if;
+         ----------------------------------------------------------------------
+         when MOVE_S =>
+            if (wibMaster.tValid = '1') then
+               v.wibSlave.tReady := '1';
+               if (wibMaster.tData(63 downto 0) /= cntPattern) then
+                  v.error := '1';
+               end if;
+               v.wrd(3) := r.wrd(3) + 4;
+               v.wrd(2) := r.wrd(2) + 4;
+               v.wrd(1) := r.wrd(1) + 4;
+               v.wrd(0) := r.wrd(0) + 4;
+               v.cnt    := r.cnt + 1;
+               if r.cnt = 28 then
+                  if (wibMaster.tLast = '0') then
+                     v.error := '1';
+                  end if;
+                  v.cnt    := 0;
+                  v.state := WAIT_S;
+               elsif (wibMaster.tLast = '1') then
+                  v.error := '1';
+               end if;
+            end if;
+         ----------------------------------------------------------------------
+         when WAIT_S =>
+            if (r.cnt = 255) then
+               v.cnt    := 0;
+               v.state := SOF_S;            
+            else
+               v.cnt    := r.cnt + 1;
+            end if;
+      ----------------------------------------------------------------------
+      end case;
+
+      -- Synchronous Reset
+      if (rst = '1') then
+         v := REG_INIT_C;
+      end if;
+
+      -- Register the variable for next clock cycle
+      rin <= v;
+
+      -- Outputs        
+      wibSlave <= v.wibSlave;
+
+   end process comb;
+
+   seq : process (clk) is
+   begin
+      if (rising_edge(clk)) then
+         r <= rin after TPD_G;
+      end if;
+   end process seq;
+
+   process(r)
+   begin
+      if r.errorDly = '1' then
+         assert false
+            report "Simulation Failed!" severity failure;
+      end if;
+   end process;
+
+end testbed;

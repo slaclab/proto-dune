@@ -45,6 +45,7 @@ entity ProtoDuneDpmEmu is
       timingTrig      : in  sl;
       timingTs        : in  slv(63 downto 0);
       emuLoopback     : out sl;
+      emuConvt        : out sl;
       emuEnable       : out sl;
       emuData         : out slv(15 downto 0);
       emuDataK        : out slv(1 downto 0);
@@ -71,6 +72,7 @@ architecture mapping of ProtoDuneDpmEmu is
 begin
 
    emuEnable <= enableTx;
+   emuConvt <= convt;
 
    ---------------------
    -- AXI-Lite Registers
