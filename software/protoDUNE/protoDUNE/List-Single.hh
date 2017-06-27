@@ -55,18 +55,22 @@ public:
       Body       m_body;
    };
 
-   void  init         ();
-   bool  is_empty     ();
-   Node *insert_head  (Node  *node);
-   Node *insert_tail  (Node  *node);
-   Node *remove_head  ();
-   Node *remove_tail  ();
+   void        init         ();
+   bool        is_empty     ()                 const;
+   bool        no_more      (Node const *node) const;
+   Node const *terminal     ()                 const;
+   Node        *insert_head  (Node       *node);
+   Node        *insert_tail  (Node       *node);
+   Node        *remove_head  ();
+   Node        *remove_tail  ();
 
    void append           (List<Body> *list);
    void prepend          (List<Body> *list);
 
    void split            (List<Body>       *list, 
                           List<Body>::Node *node);
+
+   void transfer        (List<Body>       *list);
 
 public:
   Node *m_flnk;
@@ -297,6 +301,23 @@ void List<Body>::prepend (List<Body> *src)
 /* ---------------------------------------------------------------------- */
 
 
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Returns the terminal node
+  \return  The terminal node.
+
+   The terminal node is not a real node, so should not be accessed as
+   such.  It is used to test whether a node in a scan has reached the
+   end of the list.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+template<typename Body>
+typename List<Body>::Node const *List<Body>::terminal () const
+{
+   return reinterpret_cast<Node const *>(this);
+}
+/* ---------------------------------------------------------------------- */
+
 
 /* ---------------------------------------------------------------------- *//*!
 
@@ -306,9 +327,28 @@ void List<Body>::prepend (List<Body> *src)
                                                                           */
 /* ---------------------------------------------------------------------- */
 template<typename Body>
-bool List<Body>::is_empty ()
+bool List<Body>::is_empty () const
 {
-   return (m_flnk == (Node *)this);
+   return (m_flnk == reinterpret_cast<decltype (m_flnk)>(this));
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief       Test that this node is the terminal node
+  \retval      true,  is the terminal node
+  \retval      false, is not the terminal node
+
+   The terminal node is not a real node, so should not be accessed as
+   such.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+template<typename Body>
+bool List<Body>::no_more (Node const *node) const
+{
+   return (node == reinterpret_cast<decltype (node)>(this));
 }
 /* ---------------------------------------------------------------------- */
 
@@ -454,5 +494,24 @@ inline  void List<Body>::split (List<Body>       *list,
    return;
 }
 /* ---------------------------------------------------------------------- */
-  
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Transfer the input list 
+
+  \param[in] list The list to transfer
+
+   The input list will be empty after this method
+                                                                          */
+/* ---------------------------------------------------------------------- */
+template<typename Body>
+inline  void List<Body>::transfer (List<Body> *list)
+{
+   *this = *list;
+   this->m_blnk->m_flnk = reinterpret_cast<List<Body>::Node *>(this);
+   list->init ();
+   return;
+}
+/* ---------------------------------------------------------------------- */
 #endif

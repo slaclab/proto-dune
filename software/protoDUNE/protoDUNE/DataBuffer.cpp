@@ -25,6 +25,7 @@
 //
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2017.06.19 jjr Updated to use new definition of RunMode
 // 2016.10.28 jjr Added the triggering configuration parameters naccept
 //                and nframe
 //                Creation date, unknown
@@ -123,13 +124,13 @@ void DataBuffer::hardReset ()
    Variable *v;
    v = getVariable("BlowOffDmaData"); v->set("False");
    v = getVariable("BlowOffTxEth");   v->set("False");
-   v = getVariable("TrgAcceptCnt");   v->setInt(10);
-   v = getVariable("TrgFrameCnt");    v->setInt(2048);
+   v = getVariable("PreTrigger");     v->setInt(2500);
+   v = getVariable("Duration");       v->setInt(5000);
    v = getVariable("DaqHost");        v->set("");
    v = getVariable("DaqPort");        v->set("");
    v = getVariable("RunMode");        v->set("Idle"); 
 
-   daqBuffer_->setRunMode   ( IDLE );
+   daqBuffer_->setRunMode   (RunMode::IDLE);
    daqBuffer_->hardReset    ();
    daqBuffer_->disableTx    ();
    daqBuffer_->resetCounters();
@@ -177,7 +178,7 @@ void DataBuffer::countReset ()
 \* ---------------------------------------------------------------------- */
 void DataBuffer::disableRun() 
 {
-   daqBuffer_->setRunMode ( IDLE );
+   daqBuffer_->setRunMode (RunMode::IDLE);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -306,11 +307,16 @@ void DataBuffer::writeConfig ( bool )
    uint32_t blowOffDmaData = cv_.v[ConfigurationVariables::BlowOffDmaData]->getInt ();
    uint32_t blowOffTxData  = cv_.v[ConfigurationVariables::BlowOffTxEth  ]->getInt ();
 
-   uint32_t naccept        = cv_.v[ConfigurationVariables::TrgAcceptCnt]->getInt();
-   uint32_t nframe         = cv_.v[ConfigurationVariables::TrgFrameCnt ]->getInt();
+   uint32_t pretrigger     = cv_.v[ConfigurationVariables::PreTrigger]->getInt();
+   uint32_t duration       = cv_.v[ConfigurationVariables::Duration  ]->getInt();
+   uint32_t period         = cv_.v[ConfigurationVariables::Period    ]->getInt();
 
 
-   daqBuffer_->setConfig (blowOffDmaData, blowOffTxData, naccept, nframe);
+   daqBuffer_->setConfig (blowOffDmaData, 
+                          blowOffTxData, 
+                          pretrigger, 
+                          duration,
+                          period);
 
   return;
 }
@@ -444,13 +450,15 @@ DataBuffer::ConfigurationVariables::ConfigurationVariables (Device *device)
    static const string sRunMode        ("RunMode");
    static const string sBlowOffDmaData ("BlowOffDmaData");
    static const string sBlowOffTxEth   ("BlowOffTxEth");   
-   static const string sTrgAcceptCnt   ("TrgAcceptCnt");
-   static const string sTrgFrameCnt    ("TrgFrameCnt");
+   static const string sPreTrigger     ("PreTrigger");
+   static const string sDuration       ("Duration");
+   static const string sPeriod         ("Period");
    static const string sDaqHost        ("DaqHost");
    static const string sDaqPort        ("DaqPort");
 
-   static const string 
-          sTriggerDsc  ("Trigger: TrgAcceptCnt frames are taken every TrgFrameCnt");
+   static const string sPreTriggerDsc  ("Event: Begins usecs before the trigger");
+   static const string sDurationDsc    ("Event: Duration in usecs");
+   static const string sPeriodDsc      ("Software trigger period in usecs");
 
 
    Variable *var;
@@ -468,16 +476,27 @@ DataBuffer::ConfigurationVariables::ConfigurationVariables (Device *device)
    v[BlowOffTxEth] = var;
 
 
-   device->addVariable(var = new Variable (sTrgAcceptCnt, Variable::Configuration));
-   var->setDescription (sTriggerDsc);
-   var->setInt         (10);
-   v[TrgAcceptCnt] = var;
+   // Default event window to 2.5msecs before trigger
+   device->addVariable(var = new Variable (sPreTrigger, Variable::Configuration));
+   var->setDescription (sPreTriggerDsc);
+   var->setBase10      ();
+   var->setInt         (2500);
+   v[PreTrigger] = var;
 
 
-   device->addVariable(var = new Variable (sTrgFrameCnt, Variable::Configuration));
-   var->setDescription (sTriggerDsc);
-   var->setInt         (2048);
-   v[TrgFrameCnt] = var;
+   // Default event window duration to 5.0msecs
+   device->addVariable(var = new Variable (sDuration, Variable::Configuration));
+   var->setDescription (sDurationDsc);
+   var->setBase10      ();
+   var->setInt         (5000);
+   v[Duration] = var;
+
+   // Default software trigger period to 1 sec
+   device->addVariable(var = new Variable (sPeriod, Variable::Configuration));
+   var->setDescription (sPeriodDsc);
+   var->setBase10      ();
+   var->setInt         (1000*1000);
+   v[Period] = var;
 
  
    device->addVariable(var = new Variable (sDaqPort, Variable::Configuration));  
@@ -495,7 +514,7 @@ DataBuffer::ConfigurationVariables::ConfigurationVariables (Device *device)
    device->addVariable(var = new Variable (sRunMode, Variable::Configuration));  
    var->setDescription("Run Mode");
 
-   static char const *RunModeStates[4] = { "Idle", "Scope", "Burst", "Trigger" };
+   static char const *RunModeStates[3] = {"Idle", "External", "Software"};
    static const vector<string> states (RunModeStates, 
                                        RunModeStates 
                                      + sizeof ( RunModeStates) 

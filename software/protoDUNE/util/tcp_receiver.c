@@ -143,276 +143,6 @@ static void rcvProfile_print (RcvProfile const *profile, char const *title)
 
 
 
-/* ---------------------------------------------------------------------- */
-
-typedef struct TraceInfo_s
-{
-   int          err;   /*!< Does this have an error or not                */
-   int     nretries;   /*!< The number rcv retries                        */
-   uint32_t wrds[4];   /*!< The information                               */
-}
-TraceInfo;
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- */
-typedef struct Trace_s
-{
-    int              idx;  /*!< Current index       */
-    int              edx;  /*!< Last erroring index */
-    TraceInfo   info[32];  /*!< Trace information   */
-}
-Trace;
-/* ---------------------------------------------------------------------- */
-        
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief  Returns the count of elements in the trace buffer
-  \return The count of elements in the trace buffer
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline int trace_count ()
-{
-    int cnt = ((sizeof (((Trace *)(0))->info) 
-            /   sizeof (((Trace *)(0))->info[0])));
-
-    return cnt;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief   Increment a trace buffer index
-  \return  The incremented trace buffer index
-
-  \param[in] idx  The index to increment
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline int trace_increment (int idx)
-{
-    idx = (idx + 1) & (trace_count () - 1);
-    return idx;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief  Reduce the index, \a idx, to a valid trace index
-  \return The reduced index
-
-  \param[in] idx  The index to limit
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline int trace_limit (int idx)
-{
-    idx &= (trace_count () - 1);
-    return idx;
-}
-/* ---------------------------------------------------------------------- */
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief Commit the data to the next available slot in thetrace buffer
-
-  \param[out]       trace  The trace buffer
-  \param[ int         err  The error status of the header check
-  \param[ in]        data  The received data
-  \param[ in]       ndata  The number of bytes to commit
-  \param[ in]    nretries  The number of retries on the rcv
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline void trace_commit (Trace        *trace, 
-                                 int             err,
-                                 uint8_t const *data,
-                                 int           ndata,
-                                 int        nretries)
-{
-    int idx = trace->idx;
-
-
-    /* Set the erroring index */
-    if (err) 
-    {
-       trace->edx = idx;
-    }
-
-    if (ndata > sizeof (trace->info) / sizeof (trace->info[0]) )
-    {
-       ndata = sizeof (trace->info) / sizeof (trace->info[0]);
-    }
-
-
-    trace->info[idx].err      = err;
-    trace->info[idx].nretries = nretries;
-    memcpy (trace->info[idx].wrds, data, ndata);
-    trace->idx = trace_increment (idx);
-    return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief  Check if the trace buffer is full from the previous error, if 
-          any
-  \retval True,  if it is full
-  \retval False, if it is not yet full
-
-  \param[in]  trace The trace buffer to check
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline char trace_full (Trace const *trace)
-{
-    int edx = trace->edx;
-    int idx = trace->idx;
-
-
-    return (edx >= 0) && (trace_limit (idx - edx) == trace_count ()/2);
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief  Clear the last trace buffer error
-
-  \param[in]  trace  The trace buffer
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline void trace_reset (Trace *trace)
-{
-    trace->edx = -1;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief Prints the trace buffer
-
-  \param[in] trace The trace buffer to print
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline void trace_print (Trace const *trace, uint32_t const *history)
-{
-    int cnt = trace_count ();
-    int edx = trace->edx;
-    int jdx = trace_limit (edx - cnt/2 - 1);
-
-    printf ("Dumping at %d\n", trace->idx);
-
-    int idx;
-    for (idx = 0; idx < cnt; idx++, jdx = trace_increment (jdx))
-    {
-        uint32_t const *wrds = trace->info[jdx].wrds;
-
-
-        printf ("%2u: %c %8.8x %4d "
-                "%8.8" PRIx32 " %8.8" PRIx32 " %8.8" PRIx32 " %8.8" PRIx32,
-                jdx,
-                jdx == edx ? '*' : ' ',
-                trace->info[jdx].err,
-                trace->info[jdx].nretries,
-                wrds[0], wrds[1], wrds[2], wrds[3]);
-
-        if (jdx == edx)
-        {
-           int idy;
-           uint32_t sidx;
-           for (idy = 0; ; idy++)
-           {
-              sidx = (wrds[idy] >> 8) & 0xff;
-              if ( ((wrds[idy] >> 24) & 0xff) == sidx) 
-              {
-                 printf (" %8.8" PRIx32 "\n", history[sidx]);
-                 break;
-              }
-
-              if (idx == 6) 
-              {
-                 putchar ('\n');
-                 break;
-              }
-           }
-        }
-        else
-        {
-           putchar ('\n');
-        }
-
-    }
-
-    return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- */
-static inline void trace_init (Trace *trace)
-{
-    trace->idx  = 0;
-    trace->edx = -1;
-    memset (trace->info, 0, sizeof (trace->info));
-
-
-    return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- */
-static void trace_test () __attribute ((unused));
-/* ---------------------------------------------------------------------- */
-static void trace_test ()
-{
-    Trace trace;
-    static uint32_t history[256] = {0};
-    int     cnt = trace_count ();
-
-    trace_init (&trace);
-
-    int idx;
-    for (idx = 0; idx < cnt + 100;  idx++)
-    {
-        uint32_t buf[7];
-        int         jdx;
-        for (jdx = 0; jdx < 7; jdx++) buf[jdx] = idx + jdx;
-
-        if (trace_full (&trace))
-        {
-           trace_print (&trace, history);
-           trace_reset (&trace);
-        }
-
-
-        trace_commit (&trace, 
-                      idx == cnt/2, 
-                      (uint8_t const *)buf, 
-                      sizeof (buf),
-                      0);
-
-
-    }
-
-    return;
-}
-/* ---------------------------------------------------------------------- */
-
-
 
 /* ---------------------------------------------------------------------- *//*!
 
@@ -598,9 +328,9 @@ static inline void init_ctx (Ctx *ctx)
   \param[in] data  The data stream
                                                                           */
 /* ---------------------------------------------------------------------- */
-static inline uint32_t get_word (uint8_t const *data)
+static inline uint64_t get_w64 (uint8_t const *data)
 {
-   uint32_t w = *(uint32_t const *)data;
+   uint64_t w = *(uint64_t const *)data;
    return w;
 }
 /* ---------------------------------------------------------------------- */
@@ -624,39 +354,13 @@ static inline unsigned int checkHeader (Ctx            *ctx,
 {
    unsigned int reason = 0;
 
-   uint32_t datSiz = get_word (data + 0);
-   uint32_t seqNum = get_word (data + 4);
+   uint64_t header = get_w64 (data);
+
+   printf ("Headerx= %16.16" PRIx64 "\n", header);
    
    ctx->stats.hdrCnt += 1;
    ctx->stats.hdrSiz += ndata;
 
-
-   if ((seqNum != ctx->seqNum + 1) && (ctx->seqNum != 0xffffffff))
-   {
-      reason           |= ERR_M_SEQNUM;
-      ctx->errs.seqNum += 1;
-      ctx->seqNum       = 0xffffffff;
-   }
-   else
-   {
-      ctx->seqNum = seqNum;
-   }
-
-   if (datSiz > ctx->datMax)
-   {
-      ctx->errs.datSiz += 1;
-      reason           |= ERR_M_DATSIZ;
-   }
-
-   /*
-   if (datSiz != 0x1c)
-   {
-      uint32_t const *w = (uint32_t const *)data;
-      printf ("Header: %8.8"PRIx32" %8.8"PRIx32" %8.8"PRIx32
-              " %8.8"PRIx32" %8.8"PRIx32" %8.8"PRIx32" %8.8"PRIx32"\n",
-              w[0], w[1], w[2], w[3], w[4], w[5], w[6]);
-   }
-   */
 
    return reason;
 }
@@ -903,7 +607,8 @@ static int     reconnect_client  (ssize_t      nread,
 
 static void    print_socketopts  (int             fd);
 
-static void            print_hdr (uint8_t const *data);
+static void            print_hdr (uint64_t        data);
+static void            print_id  (uint64_t const *data);
 
 static ssize_t read_data        (int              fd,
                                  uint8_t       *data,
@@ -927,25 +632,19 @@ static char    if_newline       (char        need_lf);
 /* ---------------------------------------------------------------------- */
 int main(int argc, char *const argv[])
 {
-    uint32_t              headerSize = 4 * sizeof (uint32_t);  //bytes
-    uint32_t		    maxBytes = headerSize
-                                     + sizeof (uint64_t)
-                                     + 1024 * 30 * sizeof (uint64_t) 
-                                     + sizeof (uint64_t);
+    uint32_t              headerSize = sizeof (uint64_t);
+    uint32_t		    maxBytes = 8*1024*1024;
 
 
-    uint8_t  rxData[maxBytes]; 
+    uint8_t  *rxData = malloc (maxBytes); 
     uint32_t       eject = 60;
     char         need_lf =  0;
 
     Prms      prms;
     getPrms (&prms, argc, argv);
 
-    Trace trace;
-    trace_init (&trace);
 
-
-    bzero (rxData, sizeof (rxData));
+    bzero (rxData, maxBytes);
     Ctx           ctx;
     Ctx           prv;
     init_ctx   (&ctx);
@@ -971,12 +670,6 @@ int main(int argc, char *const argv[])
        RcvProfile datRcv;
 
 
-       /* Check for errors */
-       if (trace_full (&trace))
-       {
-          trace_print (&trace, ctx.history);
-          trace_reset (&trace);
-       }
 
        /* 
         | Obtain the header, the hdrRcv keeps track of how many
@@ -1013,9 +706,9 @@ int main(int argc, char *const argv[])
           exit (-1);
        }
 
-
        uint32_t failures = checkHeader (&ctx, rxData, headerSize);
-       trace_commit (&trace, failures, rxData, headerSize, hdrRcv.cnt);
+       print_hdr (get_w64 (rxData));
+
 
        if (failures)
        {
@@ -1024,10 +717,6 @@ int main(int argc, char *const argv[])
           {
              need_lf = if_newline (need_lf);
              printf ("Failure = %8.8"PRIx32"\n", failures);
-             rcvProfile_print (&hdrRcv, "Hdr");
-             trace_print (&trace, ctx.history);
-             trace_reset (&trace);
-             print_hdr (rxData);
           }
        }
       
@@ -1035,12 +724,14 @@ int main(int argc, char *const argv[])
        if (failures == 0)
        {
           ssize_t  received = nread;
-          uint32_t dataSize = get_word (rxData + 0);
+          uint64_t header   = get_w64 (rxData);
+          uint32_t dataSize = (header >> 8) & 0xffffff;
+
 
           /* Ensure that the buffer can handle the data volume */
-          if (dataSize > sizeof (rxData))
+          if (dataSize > maxBytes)
           {
-             printf ("Packet too large  %u > %zu\n", dataSize, sizeof (rxData));
+             printf ("Packet too large  %x > %" PRIx32 "\n", dataSize, maxBytes);
           }
           
           if (received < dataSize)
@@ -1067,11 +758,12 @@ int main(int argc, char *const argv[])
              {
                 need_lf = if_newline (need_lf);
                 printf ("Error reading %u bytes\n", ndata);
-                print_hdr (rxData);
+                printf ("\n");
+                print_hdr (get_w64 (rxData));
+                printf ("\n");
                 rcvProfile_print (&hdrRcv, "Hdr");
                 rcvProfile_print (&datRcv, "Dat");
                 print_statistics (&ctx, &prv, '\n'); 
-                trace_print (&trace, ctx.history);
                 rcvFd = reconnect_client (nread,
                                           rcvFd,
                                           srvFd,
@@ -1080,6 +772,11 @@ int main(int argc, char *const argv[])
                 invalidate_ctx (&ctx);
                 continue;
              }
+
+             print_id ((uint64_t const *)data);
+             putchar ('\n');
+
+             printf ("prms.chkData = %d\n", prms.chkData);
 
              if (prms.chkData) 
              {
@@ -1104,7 +801,7 @@ int main(int argc, char *const argv[])
        */
        time_t prvTime = ctx.timestamp;
        time (&ctx.timestamp);
-       if (ctx.timestamp != prvTime)
+       if (0 && ctx.timestamp != prvTime)
        {
           /*
           printf ("Cur:Prv %u:%u\n", 
@@ -1337,17 +1034,62 @@ static void print_socketopts (int fd)
   \param[in]  data   The header data
                                                                           */
 /* ---------------------------------------------------------------------- */
-static void print_hdr (uint8_t const *data)
+static void print_hdr (uint64_t header)
 {
-   printf ("Hdr: %8.8" PRIx32 " %8.8" PRIx32 " %8.8"  PRIx32 " %8.8" PRIx32 "\n",
-           get_word (data +  0),
-           get_word (data +  4),
-           get_word (data +  8),
-           get_word (data + 12));
+   unsigned format    = (header >>  0) & 0xf;
+   unsigned type      = (header >>  4) & 0xf;
+   unsigned length    = (header >>  8) & 0xffffff;
+   unsigned specific0 = (header >> 32) & 0xf;
+   unsigned naux64    = (header >> 36) & 0xf;
+   unsigned specific1 = (header >> 40) & 0xffffff;
+
+
+   printf ("Header0    format = %1.1x  type   = %1.1x length = %6.6x\n"
+           "           spec0  = %1.1x  naux64 = %1.1x  spec1 = %6.6x\n",
+            format,
+            type,
+            length,
+            specific0,
+            naux64,
+            specific1);
+
    return;
 }
 /* ---------------------------------------------------------------------- */
 
+
+
+static void  print_id (uint64_t const *data)
+{
+   uint64_t       w64 = data[0];
+   uint64_t timestamp = data[1];
+   printf ("Identifier: %16.16" PRIx64 " %16.16" PRIx64 "\n",
+           w64, timestamp);
+
+   unsigned format   = (w64 >>  0) & 0xf;
+   unsigned src0     = (w64 >>  4) & 0xfff;
+   unsigned type     = (w64 >> 16) & 0xf;
+   unsigned src1     = (w64 >> 20) & 0xfff;
+   unsigned sequence = (w64 >> 32) & 0xffffffff;
+
+   unsigned c0 = (src0 >> 6) & 0x1f;
+   unsigned s0 = (src0 >> 3) & 0x7;
+   unsigned f0 = (src0 >> 0) & 0x7;
+
+   unsigned c1 = (src1 >> 6) & 0x1f;
+   unsigned s1 = (src1 >> 3) & 0x7;
+   unsigned f1 = (src1 >> 0) & 0x7;
+
+
+   printf ("          Format.Type = %1.1x.%1.1x Srcs = %1x.%1x.%1x : %1x.%1x.%1x\n"
+           "          Timestamp   = %16.16" PRIx64 " Sequence = %8.8" PRIx32 "\n",
+           format, type, c0, s0, f0, c1, s1, f1,
+           timestamp, sequence);
+
+   return;
+}
+           
+   
 
 
 /* ---------------------------------------------------------------------- */

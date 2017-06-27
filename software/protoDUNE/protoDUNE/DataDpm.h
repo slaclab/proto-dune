@@ -27,6 +27,9 @@
 
 using namespace std;
 
+class  RceCommon;
+class DataBuffer;
+
 //! Class to contain DataDpm
 class DataDpm : public Device {
 
@@ -43,6 +46,9 @@ class DataDpm : public Device {
       //! Deconstructor
       ~DataDpm ( );
 
+public:
+      RceCommon  *m_rceCommon;
+      DataBuffer *m_dataBuffer;
 };
 
 #endif

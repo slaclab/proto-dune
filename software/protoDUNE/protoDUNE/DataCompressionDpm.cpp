@@ -16,9 +16,18 @@
 // the terms contained in the LICENSE.txt file.
 // Proprietary and confidential to SLAC.
 //-----------------------------------------------------------------------------
-// Modification history :
-// 06/19/2014: created
-//-----------------------------------------------------------------------------
+
+
+
+// ----------------------------------------------------------------------
+// 
+// HISTORY
+// 
+//       DATE WHO WHAT
+// ---------- --- -------------------------------------------------------
+// 2017.06.20 jjr Removed extraneous reference to RceCommon.h
+// 2014.06.19     Created
+// ----------------------------------------------------------------------
 
 #include <sstream>
 #include <iostream>
@@ -33,8 +42,6 @@
 #include <Command.h>
 
 #include <DataCompressionDpm.h>
-
-#include <RceCommon.h>
 #include <DataCompression.h>
 
 using namespace std;

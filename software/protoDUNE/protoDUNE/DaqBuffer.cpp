@@ -1,4 +1,4 @@
-//////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 // This file is part of 'DUNE Development Software'.
 // It is subject to the license terms in the LICENSE.txt file found in the 
 // top-level directory of this distribution and at: 
@@ -28,11 +28,12 @@
 // ----------------------------------------------------------------------
 #define   __STDC_FORMAT_MACROS
 
- 
+
 #include "DaqBuffer.h"
 #include "FrameBuffer.h"
 #include <AxisDriver.h>
 #include "AxiBufChecker.h"
+#include "Header.hh"
 
 #include "List-Single.hh"
 
@@ -47,9 +48,9 @@ typedef uint32_t __u32;
 #include <inttypes.h>
 #include <errno.h>
 
-#ifdef RTEMS
-#include <rtems/libio.h>
-#endif
+#  undef  MONITOR_RATE
+#  define MONITOR_RATE 0
+
 
 using namespace std;
 
@@ -60,8 +61,46 @@ public:
 };
 
 
+class TimingClockTicks
+{
+public:
+   enum Constants
+   {
+      CLOCK_PERIOD  = 20,   /*!< Number of nanoseconds per clock tick      */
+      PER_SAMPLE    = 25,   /* Number of clock ticks between ADC samples   */
+      SAMPLE_PERIOD = CLOCK_PERIOD * PER_SAMPLE, 
+                            /*!< Number of nanoseconds between ADC samples */
+   };
+
+
+   /* ------------------------------------------------------------------- *//*!
+
+      \brief  Convert the period in micro seconds to period in clock ticks.
+      \return The period in clock ticks.
+
+      \param[in] period  The period, in usecs, to convert
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   constexpr static inline uint32_t from_usecs (uint32_t period) 
+   { 
+      return (1000 * period + CLOCK_PERIOD/2) / CLOCK_PERIOD; 
+   }
+   /* ------------------------------------------------------------------- */
+};
+
+
 #define MAX_DEST 2
 
+
+
+/* ====================================================================== */
+/* BEGIN: TimingMsg                                                       */
+/* ---------------------------------------------------------------------- *//*!
+
+  \class TiminMsg
+  \brief Map the contents of a message from the hardware timing/trigger
+         system.
+                                                                          */
 /* ---------------------------------------------------------------------- */
 class TimingMsg
 {
@@ -69,34 +108,49 @@ public:
    TimingMsg () { return; }
 
 public:
+   /* ------------------------------------------------------------------- *//*!
+
+     \enum  Type
+     \brief Enumerate the message types
+                                                                          */
+   /* ------------------------------------------------------------------- */
    enum Type
    {
-      SpillStart = 0,  /*!< Start of spill                               */
-      SpillEnd   = 1,  /*!< End   of spill                               */
-      Calib      = 2,  /*!< Calibration trigger                          */
-      Trigger    = 3,  /*!< Physics trigger                              */
-      TimeSync   = 4   /*!< Timing resynchonization request              */
+      SpillStart = 0,  /*!< Start of spill                                */
+      SpillEnd   = 1,  /*!< End   of spill                                */
+      Calib      = 2,  /*!< Calibration trigger                           */
+      Trigger    = 3,  /*!< Physics trigger                               */
+      TimeSync   = 4   /*!< Timing resynchonization request               */
    };
+   /* ------------------------------------------------------------------- */
 
-public:
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \enum  State
+     \brief Enumerates the state the link with the timing/trigger system
+                                                                          */
+   /* ------------------------------------------------------------------- */
    enum State
    {
-      Reset         = 0x0 , /*!< W_RST, -- Starting state after reset    */
+      Reset         = 0x0 , /*!< W_RST, -- Starting state after reset     */
       WaitingSfpLos = 0x1,  /*!< when W_SFP, -- Waiting for SFP LOS 
-                                 to go low                               */
-      WaitingCdrLock= 0x2,  /*!< when W_CDR, -- Waiting for CDR lock     */
+                                 to go low                                */
+      WaitingCdrLock= 0x2,  /*!< when W_CDR, -- Waiting for CDR lock      */
       WaitingAlign  = 0x3,  /*!< when W_ALIGN, -- Waiting for comma 
-                                  alignment, stable 50MHz phase          */
+                                  alignment, stable 50MHz phase           */
       WaitingFreq   = 0x4,  /*!< W_FREQ, -- Waiting for good frequency 
-                                 check                                   */
+                                 check                                    */
       WaitingLock   = 0x5,  /*!< when W_LOCK, -- Waiting for 8b10 decoder
-                                 good packet                             */
+                                 good packet                              */
       WaitingGpsTs  = 0x6,  /*!< when W_RDY, -- Waiting for time stamp
-                                 initialisation                          */
-      Running       = 0x8,  /*!< when RUN, -- Good to go                 */
-      ErrRx         = 0xc,  /*!< when ERR_R, -- Error in rx              */
-      ErrGpsTs      = 0xd,  /*!< when ERR_T; -- Error in time stamp check*/
+                                 initialisation                           */
+      Running       = 0x8,  /*!< when RUN, -- Good to go                  */
+      ErrRx         = 0xc,  /*!< when ERR_R, -- Error in rx               */
+      ErrGpsTs      = 0xd,  /*!< when ERR_T; -- Error in time stamp check */
    };
+   /* ------------------------------------------------------------------- */
+
  
 
 public:
@@ -109,15 +163,36 @@ public:
       return (m_tsw & 0xff) == ((Running << 4) | Trigger);
    };
 
+
+   static TimingMsg *from (void *p) { return reinterpret_cast<TimingMsg *>(p); }
+   static TimingMsg const *from (void const *p) { return reinterpret_cast<TimingMsg const *>(p); }
+
+
+
 public:
    uint64_t m_timestamp;  /*!< 64-bit GPS timestamp                       */
    uint32_t  m_sequence;  /*!< Messaage sequence number                   */
    uint32_t       m_tsw;  /*!< Type and state word                        */
 };
 /* ---------------------------------------------------------------------- */
+/* END: TimingMsg                                                         */
+/* ====================================================================== */
 
 
 
+
+
+/* ====================================================================== */
+/* BEGIN: Latency List                                                    */
+/* ---------------------------------------------------------------------- *//*!
+
+  \class LatencyList
+  \brief Captures a list of previous data frames.
+
+  \par
+   This list allows the event builder to reach back to promote data prior
+   to the trigger.
+                                                                          */
 /* ---------------------------------------------------------------------- */
 class LatencyList : public List<FrameBuffer>
 {
@@ -137,19 +212,50 @@ public:
       }
 
 public:
+   /* ------------------------------------------------------------------- *//*!
+
+      \brief Initialize the latency list to an empty list
+
+      \par
+      This is generally done after some sort of error. Otherwise this is
+      really just for completeness of functionality.
+                                                                          */
+   /* ------------------------------------------------------------------- */
    void init ()
    {
       List<FrameBuffer>::init ();
       m_remaining = Depth;
    }
+   /* ------------------------------------------------------------------- */
 
 
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief Resets to the latency list to empty.
+
+     \par
+      The list is assumed to have been emptied by removing all its 
+      elements. All this does is reset the count of elements to capture
+      to the maximum.
+                                                                          */
+   /* ------------------------------------------------------------------- */
    void resetToEmpty ()
    {
        m_remaining = Depth;
        return;
    }
+   /* ------------------------------------------------------------------- */
 
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief Replaces the oldest node of the latency list with the 
+            specified \a node.  The oldest node is freed.
+
+     \param[in] node The new node.
+     \param[in]   fd The file descriptor used to free the oldest node
+                                                                          */
+   /* ------------------------------------------------------------------- */
    void replace (List<FrameBuffer>::Node *node, int fd)
    {
       // Add this node
@@ -162,8 +268,25 @@ public:
          // Depth exceeded, remove the oldest node and free it
          node = remove_head ();
 
-         if (Debug) fprintf (stderr, "  Returning[%3d] %p\n", node->m_body.index (), node);
-         dmaRetIndex (fd, node->m_body.index());
+         int index = node->m_body.index ();
+
+         if (Debug)
+         {
+            fprintf (stderr,
+                     "  Returning[%3d] %p\n", index, node);
+         }
+         else if (index > 900)
+         {
+            fprintf (stderr,
+                     " Error returning index:%d\n", index);
+         }
+
+         ssize_t iss = dmaRetIndex (fd, index);
+         if (iss)
+         {
+            fprintf (stderr,
+                     " Status of return = %zd\n", iss);
+         }
       }
       else
       {
@@ -174,14 +297,31 @@ public:
 
       return;
    }
+   /* ------------------------------------------------------------------- */
 
 public:
-   int  m_remaining;  /*!< The current number of nodes                        */
+   int  m_remaining;  /*!< The current number of nodes                    */
 };
 /* ---------------------------------------------------------------------- */
+/* END: Latency List                                                      */
+/* ====================================================================== */
 
 
 
+
+/* ====================================================================== */
+/* BEGIN: Event                                                           */
+/* ---------------------------------------------------------------------- *//*!
+
+  \class Event
+  \brief Class to build and capture a complete event
+
+  \par
+   An event consists of
+      -# A number of packets before and after the trigger. This is time
+         window is determined at trigger time
+      -# The packets specified above from all the contributor (sources)
+                                                                          */
 /* ---------------------------------------------------------------------- */
 class Event
 {
@@ -199,56 +339,142 @@ public:
    typedef List<FrameBuffer>::Node Contribution; 
 
 public:
+   /* ------------------------------------------------------------------- *//*!
+
+     \class TimestampLimits
+     \brief Captures the lower and upper limits of the data time to 
+            include in the event.
+                                                                          */
+   /* ------------------------------------------------------------------- */
    class TimestampLimits
    {
    public:
 
+      /* ---------------------------------------------------------------- *//*!
+
+        \brief  Constructor to the timestamp limits.  These are 
+                arbitrarily set to 0.  
+
+        \par
+         The values are irrelevant since these will be set when an event
+         is triggered.  A constructor of some sort is necessary since 
+         an array of these is initialized at process start-up
+                                                                          */
+      /* ---------------------------------------------------------------- */
       TimestampLimits () : 
          m_beg (0),
          m_end (0)
       {
          return;
       }
+      /* ---------------------------------------------------------------- */
 
+
+
+      /* ---------------------------------------------------------------- *//*!
+
+        \brief  Constructor to set the timestamp limits
+
+        \param[in]  beg  The beginning time of the data for this event.
+        \param[in]  end  The ending    time of the data for this event.
+                                                                          */
+      /* ---------------------------------------------------------------- */
       TimestampLimits (uint64_t beg, uint64_t end) :
          m_beg (beg),
          m_end (end)
       {
          return;
       }
+      /* ---------------------------------------------------------------- */
 
+
+      /* ---------------------------------------------------------------- *//*!
+
+        \brief  Sets the timestamp limits
+
+        \param[in]  beg  The beginning time of the data for this event.
+        \param[in]  end  The ending    time of the data for this event.
+                                                                          */
+      /* ---------------------------------------------------------------- */
       void set (uint64_t beg, uint64_t end)
       {
          m_beg = beg;
          m_end = end;
          return;
       }
+      /* ---------------------------------------------------------------- */
 
    public:
-      uint64_t m_beg;
-      uint64_t m_end;
+      uint64_t  m_beg; /*!< The beginning time of the data for this event */
+      uint64_t  m_end; /*!< The ending    time of the data for this event */
    };
+   /* ------------------------------------------------------------------- */
 
 
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief Initializes the static information of an event
+
+     \param[in] index The DMA data frame index to associate with this 
+                       event. 
+
+     \par
+      In order to avoid any need for interlocked allocation and 
+      deallocation, each event is associated with a DMA data frame. This
+      buffer index can be any frame that is a member of this event. The
+      only requirement is that this buffer must be the last buffer freed.
+      This assures that the event associated with this DMA data frame 
+      cannot be reused until the DMA data frame is reused, which must be
+      after that buffer index has been free. Ergo, it is safe to use
+      this event again. 
+                                                                          */
+   /* ------------------------------------------------------------------- */
    void init (int index)
    {
       m_list[0].init ();
       m_list[1].init ();
       m_index = index;
       m_ctb   = 0;
-   }      
+   }
+   /* ------------------------------------------------------------------- */
 
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief  Set the beginning and ending time of the data to include in
+             this event.
+
+     \param[in]  beg  The beginning time of the data for this event.
+     \param[in]  end  The ending    time of the data for this event.
+                                                                         */
+   /* ------------------------------------------------------------------ */
    void setWindow (uint64_t beg, uint64_t end)
    {
+      /*
       fprintf (stderr,
-               "Trigger Window %16.16" PRIx64 " -> %16.16" PRIx64 "\n", beg, end);
+               "Trigger Window %16.16" PRIx64 " -> %16.16" PRIx64 "\n",
+               beg, end);
+      */
       m_limits.set (beg, end);
       return;
    }
-   /* ---------------------------------------------------------------------- */
+   /* ------------------------------------------------------------------- */
 
 
-   /* ---------------------------------------------------------------------- */
+   /* ------------------------------------------------------------------  *//*!
+
+     \brief Scans the latency list for the first data frame that is 
+            included in this event.  All packets before this first frame
+            are freed and the list of all packets, including this first
+            frame, is transferred to the event.
+
+     \param[in]  lists  The array of latency lists for all the contributors
+     \param[in]     fd  The fd used to return the unused packets
+
+     \par
+      This process leaves the latency list empty.
+                                                                          */
+   /* ------------------------------------------------------------------- */
    bool seedAndDrain (LatencyList *lists, int fd)
    {
       bool found = false;
@@ -262,27 +488,33 @@ public:
          LatencyList             *list =  &lists[idx];
          List<FrameBuffer>::Node *flnk = list->m_flnk;
 
+         /*
          fprintf (stderr,
                   "SeedAndDrain[%d] list = %p : %p:%p (check empty)\n", 
                   idx,
                   list,
                   flnk,
                   list->m_blnk);
+         */
 
 
          // If the latency list is empty, need to initialize the event list
          if (flnk == reinterpret_cast<decltype (flnk)>(list))
          {
             m_list[idx].init ();
+            /*
             fprintf (stderr,
-                     "SeedAndDrain[%d] list = %p : %p (empty)\n", 
+                     "SeedAndDrain[%d] list = %p : %p (is empty)\n", 
                      idx,
                      m_list[idx].m_flnk,
                      m_list[idx].m_blnk);
+            */
 
             continue;
          }
 
+         uint64_t winBeg = m_limits.m_beg;
+         uint64_t winEnd = m_limits.m_end;
 
          // ----------------------------------------------------------------
          // Find the first node that has a 
@@ -295,22 +527,40 @@ public:
          // ---------------------------------------------------------------
          while (1)
          {
-            // Is the beginning timestamp of this packet > lower limit of event window
-            uint64_t begTime = flnk->m_body._ts_range[0];
-            if (begTime >= m_limits.m_beg)
+
+            // -------------------------------------------------
+            // Check if an portion of the event windos is within
+            // this packet
+            // ------------------------------------------------
+            uint64_t pktBeg = flnk->m_body._ts_range[0];
+            uint64_t pktEnd = flnk->m_body._ts_range[1];
+
+
+            if ( (pktEnd  >  winBeg && pktEnd <  winEnd) ||
+                 (pktBeg  >= winBeg && pktBeg <= winEnd)  )
             {
-               m_list[idx] = *list;
+               // ----------------------------------------
+               // This transfers all the remaining nodes 
+               // in 'list' and set it to empty.
+               // ----------------------------------------
+               //m_list[idx] = *list;
+               //list->init ();
+               m_list[idx].transfer (list);
+
+               /*
                fprintf (stderr,
-                        "SeedAndDrain[%d] list = %p : %p\n", 
+                        "SeedAndDrain[%d] list = %p : %p  list %p : %p\n", 
                         idx,
                         m_list[idx].m_flnk,
-                        m_list[idx].m_blnk);
+                        m_list[idx].m_blnk,
+                       &m_list[idx],
+                        m_list[idx].m_flnk->m_flnk);
+               */
 
                // ------------------------------------------
                // Since triggers are not allowed to overlap, 
                // the latency list must be reset to empty
                // ------------------------------------------
-               list->init ();
                found  = true;
                break;
             }
@@ -318,17 +568,25 @@ public:
             {
                // This packet occurred before the trigger window opened
                int index = flnk->m_body.index ();
+
+               /*
+               fprintf (stderr,
+                        "Discarding[%1d] node = %p {%16.16" PRIx64 " -> "
+                        "%16.16" PRIx64 "\n",
+                        idx, flnk, 
+                        flnk->m_body._ts_range[0],
+                        flnk->m_body._ts_range[1]);
+               */
+               
+
+               // Remove and free the node we were working on
+               list->remove_head ();
+               dmaRetIndex (fd, index);
+
             
                // Get the next node
                flnk = flnk->m_flnk;
 
-               fprintf (stderr,
-                        "Discarding[%1d] node = %p beg: %16.16" PRIx64 "\n",
-                        idx, flnk, flnk->m_body._ts_range[0]);
-               
-               // Remove and free the node we were working on
-               list->remove_head ();
-               dmaRetIndex (fd, index);
 
                // -------------------------------------------
                // Check if the latency list is exhausted.
@@ -349,24 +607,61 @@ public:
                // -------------------------------------------
                if (flnk == reinterpret_cast<decltype (flnk)>(list))
                {
+                  static int Exhausted = 0;
+                  fprintf (stderr, "Latency[%d] exhausted %d\n", 
+                           idx, Exhausted++);
+                  list->resetToEmpty ();
                   break;
                }
+
+
             }
          }
       }
 
       return found;
    }
-   /* ---------------------------------------------------------------------- */
+   /* ------------------------------------------------------------------- */
 
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \enum   Fate
+     \brief  Enumerates the fate of the node
+                                                                          */
+   /* ------------------------------------------------------------------- */
    enum Fate 
    {
-      Rejected  = -1,
-      Added     =  0,
-      Completed =  1,
-      Overrun   =  2
-   };
+      TooEarly  = -2,  /*!< Data node was before the lower windom         */
+      TooLate   = -1,  /*!< Data node was after  the upper window         */
+      Added     =  0,  /*!< Data node was added to the event              */
+      Completed =  1,  /*!< Data node completed the event, \e i.e. post it*/
+      Overrun   =  2,  /*!< Data node was well past the ending time, 
+                            this likely means some contributor is very
+                            late. Action is usually to reject this node
+                            and complete the event. This is effectively
+                            a sort of timeout on building this event      */
+      CompletedOverrun = 3,  
+                      /*!< Beginning of packet packet outside of window
+                           If the timestamp is correct, the packet will
+                           be within the window.  What this means is that
+                           the timestamp jumped forward beyond the
+                           window                                         */
 
+   };
+   /* ------------------------------------------------------------------- */
+
+
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief  Attempt to add this node to the event
+     \return The fate of this node/event. \sa enum Fate.
+
+     \param[in]  node The node to add
+     \param[in]  dest The contributor index
+                                                                          */
+   /* ------------------------------------------------------------------- */
    Fate add (List<FrameBuffer>::Node *node, int dest)
    {
       static int Count[2] = {0, 0};
@@ -383,10 +678,31 @@ public:
          uint64_t  begTime = node->m_body._ts_range[0];
          uint64_t  endTime = node->m_body._ts_range[1];
 
+         // --------------------------------------------
+         // Is this packet end before the trigger window
+         // This show be very rare.  This means the data
+         // packets are arriving much later in real time
+         // than the trigger.
+         // --------------------------------------------
+         if (endTime < m_limits.m_beg)
+         {
+            /*
+            fprintf (stderr,
+                     "Adding node[%1d.%3d] %p evtEnd < winBeg %16.16" PRIx64 "<"
+                     " %16.16" PRIx64 " early\n",
+                     dest, Count[dest]++,
+                     node,
+                     endTime, m_limits.m_beg);
+            */
+            return TooEarly;
+         }
+            
+
          // Is this within the trigger window
          if (begTime <= m_limits.m_end)
          {
             // Yes, add to the list 
+            /*
             fprintf (stderr, 
                      "Adding node[%1d.%3d] %p flnk:%p blnk:%p end: %16.16" PRIx64 " -> "
                      "%16.16" PRIx64 "\n",
@@ -397,6 +713,7 @@ public:
                      m_list[dest].m_blnk,
                      begTime,
                      endTime);
+            */
             m_list[dest].insert_tail (node);
 
 
@@ -431,12 +748,19 @@ public:
             // If all is in sequence, the previous should have
             // completed this contributor.
             // ------------------------------------------------
-            return Rejected;
+            static int DumpCount = 10;
+            if (DumpCount >= 0)
+            {
+               DumpCount -= 1;
+               fprintf (stderr, "Rejecting packet begTime > window endTime "
+                        "%16.16" PRIx64 " > %16.16" PRIx64 "\n",
+                        begTime, m_limits.m_end);
+            }
+
+            m_ctb &= ~ctb_mask;
+            if (m_ctb == 0) { Count[0] = Count[1] = 0; return CompletedOverrun; }
+            return TooLate;
          }
-
-
-
-
       }
       else
       {
@@ -447,7 +771,7 @@ public:
          if (true)
          {
             // If have waited too long, then declare this event complete
-            fprintf (stderr, "Overrun\n");
+            ///fprintf (stderr, "Overrun\n");
             Count[0] = 0;
             Count[1] = 0;
             return Overrun;
@@ -457,16 +781,33 @@ public:
             // --------------------
             // Willing to wait more
             // --------------------
-            return Rejected;
+            return TooLate;
          }
       }
    }
+   /* ------------------------------------------------------------------- */
 
 
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief Frees all the data nodes associated with this event; 
+            effectively the destructor
+
+     \param[in]  fd The fd used to free the data nodes.
+
+     \par
+      This is usually called after the event has been posted
+                                                                          */
+   /* ------------------------------------------------------------------- */
    void free (int fd)
    {
-      int dest;
-      int  cnt;
+      static int Count = 0;
+
+      int dest __attribute__ ((unused));
+      int  cnt __attribute__ ((unused));
+      int  max = 0;
+
 
       // Return the frames
       for (int idx = 0; idx < MAX_DEST; idx++)
@@ -478,14 +819,20 @@ public:
          int count = 0;
          while (node != end)
          {
+
             // Return the underlying DMA buffer
             int index = node->m_body.index ();
 
             if ((unsigned int)index > 900)
             {
-               fprintf (stderr, "Bad [%d.%d] index on free %8.8x\n", 
-                        idx, count++, index);
-               break;
+
+               fprintf (stderr, "Bad [%d.%d] index on free %p 0x%8.8x %d ******\n", 
+                        idx, count++, node, index, index);
+
+               Count++;
+               exit (-1);
+               if (max++ > 10) break;
+               continue;
             }
 
 
@@ -493,7 +840,15 @@ public:
             // must be the last to be freed
             if (index != m_index)
             {
-               fprintf (stderr, "Node[%d.%d] freeing index %d\n", idx, count++, index);
+               /*
+               fprintf (stderr, "Node[%2d.%2d] freeing index %d\n", 
+                        idx, count++, index);
+               */
+               if (count > 40) 
+               {
+                  fprintf (stderr, "Free error: too many nodes\n");
+                  break;
+               }
                dmaRetIndex (fd, index);
             }
             else
@@ -502,54 +857,89 @@ public:
                cnt  = count++;
             }
 
-            if (count > 32) break;
-
             node = node->m_flnk;
          }
       }
 
-      fprintf (stderr, "Node[%d.%d] freeing index %d \n", dest, cnt, m_index);
+      /*
+      fprintf (stderr, "Node[%2d.%2d] freeing index %d bad = %d\n",
+               dest, cnt, m_index, Count);
+      */
       dmaRetIndex (fd, m_index);
 
    }
+   /* ------------------------------------------------------------------- */
 
 
+
+   /* ------------------------------------------------------------------- *//*!
+
+      \class Trigger
+      \brief Captures the triggering information for this event
+                                                                          */
+   /* ------------------------------------------------------------------- */
    class Trigger
    {
    public:
       Trigger () { return; }
 
-      enum Type
+      /* ---------------------------------------------------------------- *//*!
+
+         \enum  Source
+         \brief Enumerate the trigger sources
+                                                                          */
+      /* ---------------------------------------------------------------- */
+      enum Source
       {
-         Software = 0,  /*!< Software trigger */
-         Hardware = 1   /*!< Hardware trigger */
+         Software = 0,  /*!< Software trigger                             */
+         Hardware = 1   /*!< Hardware trigger                             */
       };
 
    public:
+
+      /* ---------------------------------------------------------------- *//*!
+
+         \brief Initializes the trigger information for a software trigger
+
+         \param[in] timestamp The 64-bit trigger timestamp
+         \param[in]  sequence The 32-bit trigger sequence number
+         \param[in]    opaque A 32-bit opaque value
+                                                                          */
+      /* ---------------------------------------------------------------- */
       void init (uint64_t timestamp, uint32_t sequence, uint32_t opaque)
       {
          m_timestamp = timestamp;
          m_sequence  = sequence;
          m_opaque    = opaque;
-         m_type      = Software;
+         m_source    = Software;
          return;
       }
+      /* ---------------------------------------------------------------- */
 
+
+      /* ---------------------------------------------------------------- *//*!
+
+        \brief Initializes the trigger information for a hardware trigger
+
+        \param[in] msg  The trigger/timing message
+                                                                          */
+      /* ---------------------------------------------------------------- */
       void init (TimingMsg const *msg)
       {
          m_timestamp = msg->m_timestamp;
          m_sequence  = msg->m_sequence;
          m_opaque    = msg->m_tsw;
-         m_type      = Hardware;
+         m_source    = Hardware;
       }
+      /* ---------------------------------------------------------------- */
 
    public:
       uint64_t m_timestamp;  /*!< The trigger timestamp                   */
       uint32_t  m_sequence;  /*!< The trigger sequence number             */
       uint32_t    m_opaque;  /*!< An 32-bit value that is type dependent  */
-      enum Type     m_type;  /*!< The trigger type                        */
+      enum Source m_source;  /*!< The trigger source                      */
    };
-
+   /* ------------------------------------------------------------------- */
       
       
 public:
@@ -557,359 +947,167 @@ public:
    Trigger           m_trigger;  /*!< Event triggering information        */
    List<FrameBuffer> m_list[2];  /*!< List of the contributors            */
    uint32_t              m_ctb;  /*!< Bit mask of incomplete contributors */
-   uint16_t            m_index;  /*!< Associated frame buffer index       */
+   uint16_t         m_ctdid[2];  /*!< The WIB crate.slot.fiber id         */
+   uint16_t            m_index;  /*!< Associated dma frame buffer index   */
 };
 /* ---------------------------------------------------------------------- */
-
-#define DEBUG_PRINT 0
-
-// Class create
-DaqBuffer::DaqBuffer () {
-   _rxThreadEn     = false;
-   _workThreadEn   = false;
-   _txThreadEn     = false;
-   _rxPend         = 0;
-   _rxQueue        = NULL;
-   _relQueue       = NULL;
-   _txReqQueue     = NULL;
-   _txAckQueue     = NULL;
-   _txPend         = 0;
-
-   hardReset();
-
-   _fd             = -1;
-   _bSize          = 0;
-   _bCount         = 0;
-   _sampleData     = NULL;
-
-   _txFd       = -1;
-   _txSequence = 0;
-
-   resetCounters ();
-}
+/* END: Event                                                             */
+/* ====================================================================== */
 
 
 
-// Class destroy
-DaqBuffer::~DaqBuffer () {
-   this->disableTx();
-   this->close();
-}
 
 
+/* ====================================================================== */
+/* BEGIN: SoftTrigger                                                     */
 /* ---------------------------------------------------------------------- */
 class SoftTrigger
 {
 public:
-   SoftTrigger () : m_naccept (0), m_nwait (0) { return; }
+   static const uint32_t SoftTriggerPeriod = 1000 * 1000;
 
-   void configure (int32_t naccept, int32_t nwait)
+   SoftTrigger ()                : 
+      m_period (TimingClockTicks::from_usecs (1000 * 1000)) { return; }
+   SoftTrigger (uint32_t period) : 
+      m_period (TimingClockTicks::from_usecs (period))      { return; }
+
+
+   /* ------------------------------------------------------------------- *//*!
+
+      \brief  Configure the software trigger to trigger every period usecs.
+
+      \param[in]  period The triggering period in usecs.
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   void configure (uint32_t period)
    {
-      m_naccept = naccept;
-      m_nwait   =   nwait;
+      m_period = TimingClockTicks::from_usecs (period);
+   }
+   /* ------------------------------------------------------------------- */
+
+
+   bool check (uint64_t timestamp[2]) const
+   {
+      return check (timestamp, m_period);
    }
 
-   bool check (uint64_t timestamp[2], volatile DaqBuffer::Config &config)
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief  Check if this time range contains a software trigger
+     \retval >= 0,  the trigger time
+     \retval <  0,  no trigger
+
+     \param[in]  timestamp  The beginning and ending time range to check
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   static int64_t check (uint64_t timestamp[2], uint32_t period)
    {
-      uint32_t beg = timestamp[0] % (1024 * 1000 * 1000);
-      uint32_t end = timestamp[1] % (1024 * 1000 * 1000);
+      /* Hardwire trigger rate to 1 sec */
+      uint32_t beg = timestamp[0] % period;
+      uint32_t end = timestamp[1] % period;
 
       // If the end phase < beg phase, then phase went through 0
       if (end < beg) 
       {
+         /*
          uint64_t delta = timestamp[1] - timestamp[0];
          fprintf (stderr,
                   "Check %16.16" PRIx64 ":%8.8" PRIx32 ":"
                   "%16.16" PRIx64 ":%8.8" PRIx32 " trigger -> yes  %16.16" PRIx64 "\n",
                   timestamp[0], beg, timestamp[1], end, delta);
-         //fprintf (stderr, " -> yes\n");
-         return true;
+         */
+         return timestamp[1] - end;
       }
       else 
       {
          //fprintf (stderr, " -> no\n");
-         return false;
+         return -1;
       }
    }
-      
+   /* ------------------------------------------------------------------- */
 
 
-   bool declare (volatile DaqBuffer::Config &config)
+private:
+   int32_t  m_period;
+};
+/* ---------------------------------------------------------------------- */
+/* END: SoftTrigger                                                       */
+/* ====================================================================== */
+
+
+/* ====================================================================== */
+#  if     MONITOR_RATE
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief A debugging aid only.  It should be disable in production 
+         releases.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+class MonitorRate
+{
+public:
+   MonitorRate ()
    {
-      // Check if the wait period has expired
-      if (m_nwait-- <= 0)
-      {
-         // Rearm
-         m_naccept = config._naccept - 1;
-         m_nwait   = config._nframes - 1;
-
-         //printf ("Arming: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
-         //        m_naccept, m_nwait);
-      }
-
-      if (m_naccept >= 0)
-      {
-         //printf ("Posting[%3d]: naccept/nwait = %4" PRId32 "/%4" PRId32 "\n",
-         //       index, m_naccept, m_nwait);
-         return true;
-      }
-      else
-      {
-         return false;
-      }
+      gettimeofday (&m_begTime, NULL);
+      memset (m_count, 0, sizeof (m_count));
    }
 
-   void reduce ()
+
+   void monitor (int dest)
    {
-      m_naccept -= 1;
+      struct timeval   difTime;
+      struct timeval   curTime;
+      gettimeofday (&curTime, NULL);
+      timersub     (&curTime, &m_begTime, &difTime); 
+
+      uint32_t interval = 1000 * 1000 * difTime.tv_sec + difTime.tv_usec;
+
+      int idx = (dest <= MAX_DEST) ? dest+1 : 1+MAX_DEST+1;
+      m_count[idx] += 1;
+
+      if (interval >= 10* 1000 * 1000)
+      {
+         if ( (m_total & 0x1f) == 0)
+         {
+            fprintf (stderr,
+                     " Empty + Dest=0 + Dest=1 + Dest=2 + Unknown = "
+                     " Total/    usecs\n");
+         }
+
+         m_total       += 1;
+         uint32_t total = m_count[0] + m_count[1] 
+                        + m_count[2] + m_count[3] + m_count[4];
+         fprintf (stderr, "%6u + %6u + %6u + %6u +  %6u = %6u/%9u\n", 
+                  m_count[0], m_count[1], m_count[2], m_count[3], m_count[4],
+                  total, interval);
+
+         // Reset for next batch 
+         m_begTime = curTime;
+         memset (m_count, 0, sizeof (m_count));
+      }
    }
    
 
 private:
-   int32_t  m_naccept;
-   int32_t    m_nwait;
+   struct timeval     m_begTime; /*!< Begin time of this sample           */
+   uint32_t             m_total; /*!< Total number of calls               */
+   uint32_t m_count[MAX_DEST+3]; /*!< Count of dest types                 */
 };
+
+/* ---------------------------------------------------------------------- */
+# else
 /* ---------------------------------------------------------------------- */
 
+class MonitorRate
+{
+public:
+   MonitorRate  ()         { return; }
+   void monitor (int dest) { return; }
+};
 
-
-
-// Method to reset configurations to default values
-void DaqBuffer::hardReset () {
-   _config._runMode         = IDLE;
-   _config._blowOffDmaData  = 0;
-   _config._blowOffTxEth    = 0;
-   _config._naccept         = 10;
-   _config._nframes         = 2048;
-}
-
-// Open a dma interface and start threads
-bool DaqBuffer::open ( string devPath ) {
-   struct sched_param txParam;
-   uint8_t mask[DMA_MASK_SIZE];
-
-   puts ("-------------------------\n"
-         "JJ's version of rceServer\n"
-         "-------------------------\n");
-
-   this->close();
-
-   fprintf (stderr, "Dma device = %s\n", devPath.c_str ());
-
-   // Open device
-#ifndef RTEMS // FIX
-//   if ( (_fd = ::open(devPath.c_str(),O_RDWR|O_NONBLOCK)) < 0 ) {
-   //if ( (_fd = ::open("/dev/axi_stream_dma_0", O_RDWR|O_NONBLOCK)) < 0 ) {
-   if ( (_fd = ::open("/dev/axi_stream_dma_2", O_RDWR|O_NONBLOCK)) < 0 ) {
-      fprintf(stderr,"DaqBuffer::open -> Erroro pening device\n");
-      return(false);
-   }
-#else
-   _fd = -1;
-#endif
-
-   /*
-    | 2017.04.08 -- jjr
-    | -----------------
-    | Adjustments for the V2 driver
-   */
-   dmaInitMaskBytes(mask);
-   //dmaAddMaskBytes(mask,128); // HLS[0]
-   //dmaAddMaskBytes(mask,129); // HLS[1]
-
-   fprintf (stderr, "Setting masks for 0,1,2\n");
-   dmaAddMaskBytes(mask,0); // HLS[0]
-   dmaAddMaskBytes(mask,1); // HLS[1]
-   dmaAddMaskBytes(mask,2); // trigger ??
-
-   if  ( dmaSetMaskBytes(_fd,mask) < 0 ) {
-      ::close(_fd);
-      fprintf(stderr,"DaqBuffer::open -> Unable to set mask\n");
-      return(false);
-   }
-
-
-   // Get DMA buffers
-   if ( (_sampleData = (uint8_t **)dmaMapDma(_fd,&_bCount,&_bSize)) == NULL ) {
-      fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
-      this->close();
-      return(false);
-   }
-
-   _rxCount = dmaGetRxBuffCount (_fd);
-   _txCount = dmaGetTxBuffCount (_fd);
-
-   // Create queues
-   _workQueue    = new CommQueue(RxFrameCount+5,true);
-   _relQueue     = new CommQueue(RxFrameCount+5,true);
-   _rxQueue      = new CommQueue(RxFrameCount+5,false);
-   _txReqQueue   = new CommQueue(TxFrameCount+5,true);
-   _txAckQueue   = new CommQueue(TxFrameCount+5,true);
-
-
-   // Create and populate the RX Queue Entries
-   FrameBuffer *frames = new FrameBuffer[RxFrameCount];
-   if ( frames == NULL ) {
-      fprintf(stderr,"DaqBuffer::open -> Failed to allocate FrameBuffers\n");
-      this->close();
-      return(false);
-   }
-
-   for ( uint32_t x=0; x < RxFrameCount; x++ ) {
-      _rxQueue->push (&frames[x]);
-   }
-
-
-   // Create RX thread
-   _rxThreadEn = true;
-   if ( pthread_create(&_rxThread,NULL,rxRunRaw,(void *)this) ) {
-      fprintf(stderr,"DaqBuffer::open -> Failed to create rxThread\n");
-      _rxThreadEn = false;
-      this->close();
-      return(false);
-   }
-
-
-#ifdef ARM
-   else pthread_setname_np(_rxThread,"buffRxThread");
-#endif
-
-
-   
-   // Set priority
-#if 1
-   struct sched_param rxParam;
-   int policy;
-   struct timeval cur;
-   gettimeofday (&cur, NULL);
-   pthread_getschedparam (_rxThread, &policy, &rxParam);
-   fprintf (stderr, "Policy = %d priority = %d time = %lu.%06lu\n", 
-            policy, rxParam.sched_priority, cur.tv_sec, cur.tv_usec);
-
-   //rxParam.sched_priority = 3;
-   //policy                 = SCHED_FIFO;
-   //pthread_setschedparam(_rxThread, policy, &rxParam);
-   //pthread_getschedparam (_rxThread, &policy, &rxParam);
-   //fprintf (stderr, "Policy = %d priority = %d\n", 
-   //         policy, rxParam.sched_priority);
-
-
-#endif
-
-   // Create Work Thread
-   _workThreadEn = true;
-   if ( pthread_create(&_workThread,NULL,workRunRaw,(void *)this) ) {
-      fprintf(stderr,"DaqBuffer::open -> Failed to create workThread\n");
-      _workThreadEn = false;
-      this->close();
-      return(false);
-   } 
-
-
-#ifdef ARM
-   else pthread_setname_np(_workThread,"buffWorkThread");
-#endif
-
-
-
-
-   // Set priority
-#if 0
-   struct sched_param workParam;
-   workParam.sched_priority = 2;
-   pthread_setschedparam(_workThread, SCHED_FIFO, &workParam);
-#endif
-
-
-
-   // Create TX thread
-   _txThreadEn = true;
-   if ( pthread_create(&_txThread,NULL,txRunRaw,(void *)this) ) {
-      fprintf(stderr,"DaqBuffer::open -> Failed to create txThread\n");
-      _txThreadEn = false;
-      this->close();
-      return(false);
-   } 
-
-#ifdef ARM
-   else pthread_setname_np(_txThread,"buffTxThread");
-#endif
-
-   // Set priority
-   txParam.sched_priority = 1;
-   pthread_setschedparam(_txThread, SCHED_FIFO, &txParam);
-
-   // Init
-   resetCounters ();
-
-   printf("DaqBuffer::open -> Running with %i + %i = %i (tx+rx=total) buffers of %i bytes\n",
-          _txCount, _rxCount, _bCount,_bSize);
-   return(true);
-}
-
-
-// Close and stop threads
-void DaqBuffer::close () {
-   FrameBuffer *tempBuffer;
-
-   // Disable transmit
-   disableTx();
-
-   // Stop tx thread
-   if ( _txThreadEn ) {
-      _txThreadEn = false;
-      pthread_join(_txThread, NULL);
-   }
-
-   // Stop work thread
-   if ( _workThreadEn ) {
-      _workThreadEn = false;
-      pthread_join(_workThread, NULL);
-   }
-
-   // Stop rx thread
-   if ( _rxThreadEn ) {
-      _rxThreadEn = false;
-      pthread_join(_rxThread, NULL);
-   }
-
-   // Unmap user space
-   if ( _sampleData != NULL ) dmaUnMapDma(_fd,(void **)_sampleData);
-   _sampleData = NULL;
-
-   // Close the device
-   if ( _fd >= 0 ) ::close(_fd);
-   _fd = -1;
-
-   // Delete Frame Queue Entries
-   if ( _rxQueue   != NULL ) {
-      while ( (tempBuffer = (FrameBuffer *)_rxQueue->pop()) != NULL )
-         delete (tempBuffer);
-      delete _rxQueue;
-   }
-   _rxQueue   = NULL;
-
-   // Delete queues
-   if ( _workQueue    != NULL ) delete _workQueue;
-   if ( _relQueue     != NULL ) delete _relQueue;
-   if ( _txReqQueue   != NULL ) delete _txReqQueue;
-   if ( _txAckQueue   != NULL ) delete _txAckQueue;
-   _workQueue    = NULL;
-   _relQueue     = NULL;
-   _txReqQueue   = NULL;
-   _txAckQueue   = NULL;
-}
-
-// Static raw rx thread run
-void * DaqBuffer::rxRunRaw ( void *p ) {
-   DaqBuffer *buff = (DaqBuffer *)p;
-   buff->rxRun();
-   pthread_exit(NULL);
-   return(NULL);
-}
 /* ---------------------------------------------------------------------- */
-
-
+#  endif
+/* ====================================================================== */
 
 
 /* ====================================================================== */
@@ -922,32 +1120,42 @@ void * DaqBuffer::rxRunRaw ( void *p ) {
 class FrameDiagnostics
 {
 public:
-   FrameDiagnostics (uint32_t   freqReceived, 
-                     uint32_t freqTimingDump,
-                     uint32_t   freqDataDump,
-                     uint32_t  freqDataCheck);
+   FrameDiagnostics      (uint32_t   freqReceived, 
+                          uint32_t freqTimingDump,
+                          uint32_t   freqDataDump,
+                          uint32_t  freqDataCheck);
 
-   void dump_received    (int           index,
-                          int            dest,
-                          int          rxSize);
+   void dump_received    (int               index,
+                          int                dest,
+                          int              rxSize);
 
-   void dump_timingFrame (void const     *data,
-                          int           nbytes);
+   void dump_timingFrame (void const        *data,
+                          int              nbytes);
 
-   void dump_dataFrame   (void const     *data,
-                          int           nbytes,
-                          int             dest);
+   void dump_dataFrame   (void const        *data,
+                          int              nbytes,
+                          int                dest);
 
-   void check_dataFrame  (uint64_t const *data,
-                          int           nbytes,
-                          unsigned int    dest,
-                          int           sample);
+   void check_dataFrame  (uint64_t const    *data,
+                          int              nbytes,
+                          unsigned int       dest,
+                          int              sample);
 public:
-   struct Activator
+
+   /* ------------------------------------------------------------------- *//*!
+
+      \class Activator
+      \brief Helper class to determine whether to activate a particular
+             diagnostic.
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   class Activator
    {
+   public:
       uint32_t  m_freq;
       uint32_t  m_count;
 
+   public:
       void init (uint32_t freq)
       {
          m_freq  = freq;
@@ -1034,7 +1242,7 @@ FrameDiagnostics::FrameDiagnostics (uint32_t freqReceived,
 
    \param[in]  index  The frame index
    \param[in]   dest  The destination stream
-   \param[in  rxSize  The received size
+   \param[in] rxSize  The received size
                                                                           */
 /* ---------------------------------------------------------------------- */
 inline void FrameDiagnostics::dump_received (int index, int dest, int rxSize)
@@ -1115,9 +1323,10 @@ inline void FrameDiagnostics::dump_dataFrame (void const *data,
    uint16_t const *s = (uint16_t const *)data;
    int            ns = nbytes / sizeof (*s);
 
+   ns = 16; /// !!! KLUDGE
    for (int idx = 0; idx < ns; idx++)
    {
-      if ((idx%16) == 0) printf ("d[%3d]:", idx);
+      if ((idx%16) == 0) printf ("d[%1d.%3d]:", dest, idx);
       printf (" %4.4" PRIx16, s[idx]);
       if ((idx%16) == 15) putchar ('\n');
    }
@@ -1265,7 +1474,7 @@ inline void FrameDiagnostics::check_dataFrame (uint64_t const *data,
       // Advance the predicted sequence number
       // Advance the frame counter
       // -------------------------------------
-      predicted_ts     = timestamp + 500;
+      predicted_ts     = timestamp + TimingClockTicks::PER_SAMPLE;
       predicted_cvt_0 += 1;
       predicted_cvt_1 += 1;
       frame           += 1;
@@ -1277,7 +1486,8 @@ inline void FrameDiagnostics::check_dataFrame (uint64_t const *data,
    // for this destination.
    // -----------------------------------------------
    Counter                 += sample;
-   History[dest].timestamp  = predicted_ts    + (sample - 1) * 500;
+   History[dest].timestamp  = predicted_ts    + (sample - 1) 
+                                              * TimingClockTicks::PER_SAMPLE;
    History[dest].convert[0] = predicted_cvt_0 +  sample - 1;
    History[dest].convert[1] = predicted_cvt_1 +  sample - 1;
 
@@ -1288,131 +1498,365 @@ inline void FrameDiagnostics::check_dataFrame (uint64_t const *data,
 /* ====================================================================== */
 
 
+pdd::Fragment::Originator Origin;
 
-/* ---------------------------------------------------------------------- *//*!
- *
- * \brief   Post the data to an output queue
- * \return  True, if successful, else false
- *
- *
- * \param[in:out]    rxQueue  The source of frame buffers
- * \param[in:out]  workQueue  The destination queue
- * \param[in]           data  The data to be posted
- * \param[in]          index  The sample index
- * \param[in]         nbytes  The number of bytes in the data to be posted
- * \param[in]    rx_sequence  The received sequence number     
- *
-\* ---------------------------------------------------------------------- */
-static inline bool post (Event          event,
-                         CommQueue   *rxQueue,
-                         CommQueue *workQueue,
-                         uint8_t        *data,
-                         uint32_t       index,
-                         uint32_t      nbytes,
-                         uint32_t rx_sequence)
-{
-   // Attempt to allocate a frame buffer
-   FrameBuffer  *tempBuffer = (FrameBuffer *)rxQueue->pop();
 
-   // Check if allocation was successful
-   if (tempBuffer)
+// Class create
+DaqBuffer::DaqBuffer () {
+   _rxThreadEn     = false;
+   _workThreadEn   = false;
+   _txThreadEn     = false;
+   _rxPend         = 0;
+   _rxQueue        = NULL;
+   _relQueue       = NULL;
+   _txReqQueue     = NULL;
+   _txAckQueue     = NULL;
+   _txPend         = 0;
+
+   hardReset();
+
+   _txFd       = -1;
+   _txSequence = 0;
+
+
+   RceInfo rceInfo;
+   rceInfo.open  ();
+   rceInfo.read  ();
+   rceInfo.print ();
+   rceInfo.close ();
+
+   int nbytes = Origin.construct (rceInfo.m_firmware.m_fpgaVersion,
+                                  SoftwareVersion,
+                                  rceInfo.m_clusterElement.m_rptSwTag,
+                                  strlen (rceInfo.m_clusterElement.m_rptSwTag),
+                                  rceInfo.m_clusterIpmc.m_serialNumber,
+                                  rceInfo.m_clusterIpmc.m_address,
+                                  rceInfo.m_clusterIpmc.m_groupName,
+                                  strlen (rceInfo.m_clusterIpmc.m_groupName));
+
+   fprintf (stderr, "Origin\n");
+   uint32_t const *p = reinterpret_cast<decltype(p)>(&Origin);
+   for (int idx = 0; idx < (nbytes + 3) / 4;  idx++)
    {
-      // Successfully allocated a buffer, try to prompt the data
-      tempBuffer->setData (index, data, nbytes, rx_sequence);
-      bool posted = workQueue->push (tempBuffer);
-
-      return posted;
+      fprintf (stderr, "origin[%2d] = %8.8" PRIx32 "\n", idx, p[idx]);
    }
 
-
-   return false;
+   resetCounters ();
 }
-/* ---------------------------------------------------------------------- */
-      
+
+
+
+// Class destroy
+DaqBuffer::~DaqBuffer () {
+   this->disableTx();
+   this->close();
+}
 
 
 
 
+// Method to reset configurations to default values
+void DaqBuffer::hardReset () {
+   _config._runMode         = RunMode::IDLE;
+   _config._blowOffDmaData  =     0;
+   _config._blowOffTxEth    =     0;
+   _config._pretrigger      =  5000;
+   _config._posttrigger     =  5000;
+   _config._period          = 1000 * 1000;
+}
 
 
-#  undef  MONITOR_RATE
-#  define MONITOR_RATE 0
-
-
-/* ====================================================================== */
-#  if     MONITOR_RATE
 /* ---------------------------------------------------------------------- *//*!
 
-  \brief A debugging aid only.  It should be disable in production 
-         releases.
+   \brief  Helper method to construct a AXI dma channel
+   \retval true,  successful construction
+   \retval false, successful construction
+
+   \param[in]     dma  The dma channel to construct
+   \param[in] devname  The device name
+   \param[in]    name  A descriptive name used in the error messages,
+   \param[in]   dests  The array of destinations to enable
+   \param[in]  ndests  The number destinations to enable
                                                                           */
 /* ---------------------------------------------------------------------- */
-class MonitorRate
+static bool construct (DaqDmaDevice     &dma, 
+                       char    const*devname, 
+                       char    const   *name,
+                       uint8_t const  *dests, 
+                       int            ndests)
 {
-public:
-   MonitorRate ()
+   // Open the device
+   int status = dma.open (devname);
+   if (status < 0)
    {
-      gettimeofday (&m_begTime, NULL);
-      memset (m_count, 0, sizeof (m_count));
+      fprintf(stderr,
+              "DaqBuffer::open -> Error opening %s dma device\n",
+              name);
+      return false;
+   }
+
+   // Enable the destinations
+   status = dma.enable (dests, ndests);
+   if (status < 0)
+   {
+      fprintf(stderr,
+              "DaqBuffer::open -> Unable to set %s dma mask\n", 
+              name);
+      return false;
    }
 
 
-   void monitor (int dest)
+   // Create the index -> virtual address map
+   status = dma.map ();
+   if (status < 0)
    {
-      struct timeval   difTime;
-      struct timeval   curTime;
-      gettimeofday (&curTime, NULL);
-      timersub     (&curTime, &m_begTime, &difTime); 
+      fprintf(stderr,
+              "DaqBuffer::open -> Failed to map %s dma buffers\n",
+              name);
+      return false;
+   }
 
-      uint32_t interval = 1000 * 1000 * difTime.tv_sec + difTime.tv_usec;
 
-      int idx = (dest <= MAX_DEST) ? dest+1 : 1+MAX_DEST+1;
-      m_count[idx] += 1;
+   // Report the parameters 
+   fprintf(stderr, 
+           "DaqBuffer::open -> %s dma, running with %i + %i = %i (tx+rx=total)"
+           " buffers of %i bytes\n",
+           name,
+           dma._txCount, dma._rxCount, dma._bCount, dma._bSize);
 
-      if (interval >= 10* 1000 * 1000)
+
+   return true;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Constructs the DaqBuffer class
+
+  \par
+   The DMA interfaces are established and the various threads started.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+bool DaqBuffer::open (string devPath) 
+{
+   struct sched_param txParam;
+
+   puts ("-------------------------\n"
+         "JJ's version of rceServer\n"
+         "-------------------------\n");
+
+   this->close();
+
+
+   // --------------------------------
+   // Establish the Data DMA interface
+   // --------------------------------
+   {
+      static const uint8_t DataDests[2] = {0, 1};
+      bool success = construct (_dataDma, 
+                                "/dev/axi_stream_dma_2",
+                                "Data",
+                                DataDests, 
+                                sizeof (DataDests) / sizeof (*DataDests));
+      if (!success)
       {
-         if ( (m_total & 0x1f) == 0)
-         {
-            fprintf (stderr,
-                     " Empty + Dest=0 + Dest=1 + Dest=2 + Unknown = "
-                     " Total/    usecs\n");
-         }
-
-         m_total       += 1;
-         uint32_t total = m_count[0] + m_count[1] 
-                        + m_count[2] + m_count[3] + m_count[4];
-         fprintf (stderr, "%6u + %6u + %6u + %6u +  %6u = %6u/%9u\n", 
-                  m_count[0], m_count[1], m_count[2], m_count[3], m_count[4],
-                  total, interval);
-
-         // Reset for next batch 
-         m_begTime = curTime;
-         memset (m_count, 0, sizeof (m_count));
+         this->close ();
+         return false;
       }
    }
+
+
+   // ------------------------------------------
+   // Establish the TIming/Trigger DMA interface
+   // ------------------------------------------
+   {
+      static const uint8_t TimingDests[1] = {0xff};
+      bool success = construct (_timingDma, 
+                                "/dev/axi_stream_dma_0",
+                                "Timing",
+                                TimingDests,
+                                sizeof (TimingDests) / sizeof (*TimingDests));
+      if (!success)
+      {
+         this->close ();
+         return false;
+      }
+   }
+
+
+   // -----------------------------------------------
+   // Create queues 
+   // -- None of these 4 queues are currently.  
+   //    They are vestigial and should be eliminated
+   // ----------------------------------------------
+   _workQueue    = new CommQueue(RxFrameCount+5,true);
+   _relQueue     = new CommQueue(RxFrameCount+5,true);
+   _rxQueue      = new CommQueue(RxFrameCount+5,false);
+   _txAckQueue   = new CommQueue(TxFrameCount+5,true);
+
+   // ------------------------------------------------------------------
+   // Making this queue as large as the total number of DMA data receive
+   // buffers guarantees that a push onto it will never fail 
+   _txReqQueue   = new CommQueue(_dataDma._rxCount,true);
+   // -----------------------------------------------------------------
+
+
+
+
+   // Create and populate the RX Queue Entries
+   FrameBuffer *frames = new FrameBuffer[RxFrameCount];
+   if ( frames == NULL ) {
+      fprintf(stderr,"DaqBuffer::open -> Failed to allocate FrameBuffers\n");
+      this->close();
+      return(false);
+   }
+
+   for ( uint32_t x=0; x < RxFrameCount; x++ ) {
+      _rxQueue->push (&frames[x]);
+   }
+
+
+   // Create RX thread
+   _rxThreadEn = true;
+   if ( pthread_create(&_rxThread,NULL,rxRunRaw,(void *)this) ) {
+      fprintf(stderr,"DaqBuffer::open -> Failed to create rxThread\n");
+      _rxThreadEn = false;
+      this->close();
+      return(false);
+   }
+
    
+   // Set priority
+#if 1
+   struct sched_param rxParam;
+   int                 policy;
+   struct timeval         cur;
 
-private:
-   struct timeval     m_begTime; /*!< Begin time of this sample           */
-   uint32_t             m_total; /*!< Total number of calls               */
-   uint32_t m_count[MAX_DEST+3]; /*!< Count of dest types                 */
-};
+   gettimeofday (&cur, NULL);
+   pthread_getschedparam (_rxThread, &policy, &rxParam);
+   fprintf (stderr, "Policy = %d priority = %d time = %lu.%06lu\n", 
+            policy, rxParam.sched_priority, cur.tv_sec, cur.tv_usec);
 
+   //rxParam.sched_priority = 3;
+   //policy                 = SCHED_FIFO;
+   //pthread_setschedparam(_rxThread, policy, &rxParam);
+   //pthread_getschedparam (_rxThread, &policy, &rxParam);
+   //fprintf (stderr, "Policy = %d priority = %d\n", 
+   //         policy, rxParam.sched_priority);
+
+
+#endif
+
+   // Create Work Thread
+   _workThreadEn = true;
+   if ( pthread_create(&_workThread,NULL,workRunRaw,(void *)this) ) {
+      fprintf(stderr,"DaqBuffer::open -> Failed to create workThread\n");
+      _workThreadEn = false;
+      this->close();
+      return(false);
+   } 
+
+
+
+   // Create TX thread
+   _txThreadEn = true;
+   if ( pthread_create(&_txThread,NULL,txRunRaw,(void *)this) ) {
+      fprintf(stderr,"DaqBuffer::open -> Failed to create txThread\n");
+      _txThreadEn = false;
+      this->close();
+      return(false);
+   } 
+
+
+   // Set priority
+   txParam.sched_priority = 1;
+   pthread_setschedparam(_txThread, SCHED_FIFO, &txParam);
+
+   // Init
+   resetCounters ();
+
+   return(true);
+}
 /* ---------------------------------------------------------------------- */
-# else
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+   \brief Close and stop threads
+                                                                          */
+/* ---------------------------------------------------------------------- */
+void DaqBuffer::close () {
+   FrameBuffer *tempBuffer;
+
+   // Disable transmit
+   disableTx();
+
+   // Stop tx thread
+   if ( _txThreadEn ) {
+      _txThreadEn = false;
+      pthread_join(_txThread, NULL);
+   }
+
+   // Stop work thread
+   if ( _workThreadEn ) {
+      _workThreadEn = false;
+      pthread_join(_workThread, NULL);
+   }
+
+   // Stop rx thread
+   if ( _rxThreadEn ) {
+      _rxThreadEn = false;
+      pthread_join(_rxThread, NULL);
+   }
+
+   // Unmap user space
+   _dataDma  .unmap ();
+   _timingDma.unmap ();
+
+   // Close the device
+   _dataDma.close ();
+   _timingDma.close ();
+
+
+   // Delete Frame Queue Entries
+   if ( _rxQueue   != NULL ) {
+      while ( (tempBuffer = (FrameBuffer *)_rxQueue->pop()) != NULL )
+         delete (tempBuffer);
+      delete _rxQueue;
+   }
+   _rxQueue   = NULL;
+
+   // Delete queues
+   if ( _workQueue    != NULL ) delete _workQueue;
+   if ( _relQueue     != NULL ) delete _relQueue;
+   if ( _txReqQueue   != NULL ) delete _txReqQueue;
+   if ( _txAckQueue   != NULL ) delete _txAckQueue;
+   _workQueue    = NULL;
+   _relQueue     = NULL;
+   _txReqQueue   = NULL;
+   _txAckQueue   = NULL;
+}
 /* ---------------------------------------------------------------------- */
 
-class MonitorRate
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Run the receive thread
+                                                                          */
+/* ---------------------------------------------------------------------- */
+void * DaqBuffer::rxRunRaw (void *p) 
 {
-public:
-   MonitorRate  ()         { return; }
-   void monitor (int dest) { return; }
-};
-
+   DaqBuffer *buff = reinterpret_cast<decltype (buff)>(p);
+   buff->rxRun  ();
+   pthread_exit (NULL);
+   return NULL;
+}
 /* ---------------------------------------------------------------------- */
-#  endif
-/* ====================================================================== */
-
 
 
 
@@ -1427,13 +1871,13 @@ public:
    Until then, this method will remove any such buffers from circulation
                                                                           */
 /* ---------------------------------------------------------------------- */
-void DaqBuffer::vetDmaBuffers ()
+void DaqDmaDevice::vet ()
 {
    // ----------------------------------------------
-   // !!! KLUDGE !!! CHECK READBILITY OF THE BUFFERS
+   // !!! KUDGE !!! CHECK READBILITY OF THE BUFFERS
    // ----------------------------------------------
    uint16_t bad[_bCount];
-   AxiBufChecker::check_buffers (bad, _sampleData, _bCount, _bSize);
+   AxiBufChecker::check_buffers (bad, _map, _bCount, _bSize);
    // ----------------------------------------------
       
       
@@ -1450,7 +1894,7 @@ void DaqBuffer::vetDmaBuffers ()
       int nbad = AxiBufChecker::extreme_vetting (abc, 
                                                  _fd,
                                                  idx, 
-                                                 _sampleData, 
+                                                 _map, 
                                                  nrxbufs,
                                                  nbufs, 
                                                  _bSize);
@@ -1481,20 +1925,18 @@ static inline void getTimestampRange (uint64_t range[2],
 {
    uint64_t const *d64 =   reinterpret_cast<uint64_t const *>(data);
 
-
-
    // Skip header
    d64 += 1;
    uint64_t  begin = d64[1];
 
 
    d64 += nbytes/sizeof (uint64_t) - 1 - 30 - 1;
-   uint64_t end = d64[1] + 1024 * 500;
+   uint64_t end = d64[1] + TimingClockTicks::PER_SAMPLE;
 
-   //  fprintf (stderr, 
-   //         "Beg %16.16" PRIx64 " End %16.16" PRIx64 " %16.16" PRIx64 
-   //         " %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
-   //           begin, end, d64[-1], d64[0], d64[1], d64[2]);
+   //fprintf (stderr,
+   //        "Beg %16.16" PRIx64 " End %16.16" PRIx64 " %16.16" PRIx64 
+   //        " %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
+   //         begin, end, d64[-1], d64[0], d64[1], d64[2]);
 
    range[0] = begin;
    range[1] =   end;
@@ -1505,19 +1947,103 @@ static inline void getTimestampRange (uint64_t range[2],
 
 
 
+/* ---------------------------------------------------------------------- */
+static bool process (Event::Trigger    &trigger,
+                     DaqDmaDevice    &timingDma,
+                     int                blowOff,
+                     enum RunMode       runMode,
+                     bool              isActive,
+                     volatile uint32_t  &trgCnt,
+                     MonitorRate          &rate,
+                     FrameDiagnostics     &diag)
+{
+   uint32_t rxSize;
+   uint32_t  index;
+   uint32_t  flags;
+   uint32_t   dest;
+   bool  trgActive = false;
+
+   rxSize = dmaReadIndex (timingDma._fd, &index, &flags, NULL, &dest);
+
+   rate.monitor       (2);
+   diag.dump_received (index, 2, rxSize);
 
 
+   // ------------------------------------
+   // Check if should process this message
+   // ------------------------------------
+   if ( (!blowOff                    ) &&
+        (runMode == RunMode::EXTERNAL) &&
+        (dest    == 0xff)            )
+   {
+      TimingMsg *tmsg = TimingMsg::from (timingDma._map[index]);
+      diag.dump_timingFrame ((uint64_t const *)timingDma._map[index], 
+                             rxSize);
+
+      // Count external triggers
+      trgCnt += 1;
+               
+      // Is this a trigger message?
+      if (tmsg->is_trigger ())
+      {
+         if (!isActive)
+         {
+            trigger.init (tmsg);
+            trgActive = true;
+         }
+         else
+         {
+            fprintf (stderr, "Discarding trigger\n");
+         }
+      }
+   }
+
+   // Always free the trigger message
+   timingDma.free (index);
+
+   return trgActive;
+}
+/* ---------------------------------------------------------------------- */ 
+
+
+/* ---------------------------------------------------------------------- */ 
+static inline uint64_t subtimeofday (struct timeval const *cur, 
+                                     struct timeval const *prv)
+{
+   uint64_t  sec = cur->tv_sec  - prv->tv_sec;
+   int32_t  usec = cur->tv_usec - prv->tv_usec;
+
+   if (usec < 0)
+   {
+      usec += 1000 * 1000;
+      sec  -= 1;
+   }
+
+   return sec * (1000 * 1000) + usec;
+}
+/* ---------------------------------------------------------------------- */ 
+
+
+#include <limits.h>
 
 // Class method for rx thread running
 void DaqBuffer::rxRun ()
 {
-
+   // --------------------------------------------------------
    // Check for bad DMA buffers
-   vetDmaBuffers ();
+   // This cannot be done in the initialization thread because
+   // it blocks if the dma channel has not been setup to have 
+   // data flowing. Of course, the thread that fields command
+   // to enable data flowing is also blocked, so deadlock.
+   // --------------------------------------------------------
+   _dataDma.vet ();
 
-   const uint64_t WindowSize = 5 * 1000 * 1000;
+
+
+   // Hardwire trigger window to 5 msecs and convet to equivalent 
+   // number of clock ticks
    fd_set                    fds;
-   bool        trgActive __attribute__ ((unused));
+   bool                trgActive;
 
    trgActive = false;
    FD_ZERO (&fds);
@@ -1525,13 +2051,10 @@ void DaqBuffer::rxRun ()
    LatencyList latency[MAX_DEST];
 
 
-   // Init 
-   SoftTrigger      softTrigger;
    uint32_t      softTriggerCnt;
 
-   //FrameDiagnostics diag (-1, 1, 16, 256);
+   FrameDiagnostics diag (-1, -1, -1, -1);
    _rxPend = 0;   
-
 
 
    // -------------------------------------------------------------------
@@ -1543,16 +2066,16 @@ void DaqBuffer::rxRun ()
    // one event buffer will be allocated for every front-end frame buffer
    // -------------------------------------------------------------------
    Event *events = 
-      reinterpret_cast<decltype(events)>(malloc (_bCount * sizeof (*events)));
+      reinterpret_cast<decltype(events)>(malloc (_dataDma._bCount * sizeof (*events)));
 
 
    // Allocate enough frame buffer nodes to capture an all possible events
    List<FrameBuffer >::Node *fbs = 
-      reinterpret_cast<decltype (fbs)>(malloc (_bCount * sizeof (*fbs)));
-   for (decltype(_bCount)(idx) = 0; idx < _bCount; idx++)
+      reinterpret_cast<decltype (fbs)>(malloc (_dataDma._bCount * sizeof (*fbs)));
+   for (decltype(_dataDma._bCount)(idx) = 0; idx < _dataDma._bCount; idx++)
    {
       // Initialize the one time only fields
-      fbs[idx].m_body.setData  (_sampleData[idx]);
+      fbs[idx].m_body.setData  (_dataDma._map[idx]);
       fbs[idx].m_body.setIndex (idx);
       events[idx].init (idx);
    }
@@ -1560,263 +2083,333 @@ void DaqBuffer::rxRun ()
    fprintf (stderr, "Starting\n");
 
    // Debugging aid for monitoring the rates of various dest DMA buffers
-   MonitorRate rate;
+   MonitorRate       rate;
+   Event::Trigger trigger;
+   Event           *event = NULL;
 
    FD_ZERO (&fds);
 
-   Event::Trigger trigger;
-   Event           *event = NULL;
+
+   int32_t fdMax = ((_dataDma._fd > _timingDma._fd)
+                 ?   _dataDma._fd 
+                 :   _timingDma._fd) 
+                 + 1;
+
+
+   
+
+   fprintf (stderr, "Maximum fd = %d (%d,%d)\n",
+            fdMax, _dataDma._fd, _timingDma._fd);
 
    // Run while enabled
    while (_rxThreadEn) 
    {
 
-      struct timeval timeout;   
-      uint32_t         index;
-      uint32_t         flags;
-      uint32_t          dest;
-      int32_t         rxSize;
+      //struct timeval timeout;   
+      //timeout.tv_sec  = 0;
+      //timeout.tv_usec = WaitTime;
 
+      int timingFd = _timingDma._fd;
+      int   dataFd =   _dataDma._fd;
 
-      timeout.tv_sec  = 0;
-      timeout.tv_usec = WaitTime;
-      FD_SET  (_fd, &fds);
+      FD_SET  (  dataFd, &fds);
+      FD_SET  (timingFd, &fds);
 
-
-      // Wait for data or timeout and attempt to readout
-      int nfds = select (_fd+1, &fds, NULL, NULL, &timeout); 
+      // ---------------------------------------------------
+      // With the event being freed in the destination queue
+      // there is no reason anymore for a timeout.
+      // ---------------------------------------------------
+      int nfds = select (fdMax, &fds, NULL, NULL, NULL); 
       if (nfds > 0)
       {
-         rxSize = dmaReadIndex (_fd, &index, &flags, NULL, &dest);
-      }
-      else
-      {
-         rxSize = 0;
-      }
+         // --------------------------------------------
+         // Give priority to the timing/trigger messages
+         // --------------------------------------------
+         if (FD_ISSET (timingFd, &fds))
+         {
+            trgActive = process (trigger, 
+                                 _timingDma,
+                                 _config._blowOffDmaData,
+                                 _config._runMode,
+                                 trgActive,
+                                 _counters._triggers,
+                                 rate,
+                                 diag);
+         }
 
 
-      // Was this anything but a timeout
-      if (rxSize > 0)
-      {
-         rate.monitor (dest);
+         // ----------------------
+         // Check on incoming data
+         // ----------------------
+         if (FD_ISSET (dataFd, &fds))
+         {
+            uint32_t         index;
+            uint32_t         flags;
+            uint32_t          dest;
+            int32_t         rxSize;
 
-         uint32_t lastUser = axisGetLuser(flags);
+            rxSize = dmaReadIndex (dataFd, &index, &flags, NULL, &dest);
 
+#if         0
+            static int      Count = 0;
+            static struct timeval prv;
+            struct timeval        cur;
 
-         //diag.dump_received (index, dest, rxSize);
-
-         //////////////////////////////////////////////////////////////////////
-         // Check if blowing off the DMA data or unrecognized packet
-         if ((_config._blowOffDmaData != 0) || (dest > MAX_DEST) ) {
-
-            // Return index value 
-            dmaRetIndex(_fd, index);         
-            
-         //////////////////////////////////////////////////////////////////////
-         // Check for an external trigger message
-         } else if ( dest == 2 ) {
-
-            // Count external triggers
-            _counters._triggers++;
-            //diag.dump_timingFrame ((uint64_t const *)_sampleData[index], rxSize);
-
-            if (_config._runMode == TRIG)
+            gettimeofday (&cur, NULL);
+            int64_t elapsed = subtimeofday (&cur, &prv);
+            Count++;
+            if (elapsed > 1 * 1000)
             {
-               // Allocate a buffer
-               TimingMsg const *tmsg = reinterpret_cast<decltype (tmsg)>
-                                                      (&_sampleData[index]);
 
-               // Is this a trigger message?
-               if (tmsg->is_trigger ())
+               static int64_t Largest = 0;
+               static bool      First = true;
+               fprintf (stderr,
+                        "Large elapsed time[%6u] = %10" PRId64 "  %10" PRId64 "\n", 
+                        Count, elapsed, Largest);
+               if (elapsed > Largest) 
                {
-                  if (!trgActive)
+                  if (!First)
                   {
-                     trigger.init (tmsg);
-                     event     = NULL;
-                     trgActive = true;
+                     Largest = elapsed;
                   }
 
-                  // Return the trigger message frame
-                  dmaRetIndex (_fd, index);
+                  First = false;
                }
+
+
             }
-            else
+            prv = cur;
+#endif
+
+            rate.monitor       (dest);
+            diag.dump_received (index, dest, rxSize);
+
+
+            if (_config._blowOffDmaData || dest > (MAX_DEST - 1))
             {
-               // External trigger not active
-               dmaRetIndex(_fd, index);
+               _dataDma.free (index);
+               continue;
             }
-            
-         //////////////////////////////////////////////////////////////////////
-         // Else this is HLS data (dest < MAX_DEST) 
-         } else {
-            _counters._rxCount++;
+
+
+            _counters._rxCount += 1;
             _counters._rxTotal += rxSize;
+            _rxSequence        += 1;
+            _rxSize             = rxSize; 
 
-
-            _rxSequence += 1;
 
             // -----------------------------------------------
             // Check every 256 received packets in each stream
             // -----------------------------------------------
-            //diag.check_dataFrame ((uint64_t const *)_sampleData[index],
-            //                      rxSize,
-            //                      dest,
-            //                      256);
+            diag.check_dataFrame ((uint64_t const *)_dataDma._map[index],
+                                  rxSize,
+                                  dest,
+                                  256);
 
-            //diag.dump_dataFrame (_sampleData[index], rxSize, dest);
+            diag.dump_dataFrame (_dataDma._map[index], rxSize, dest);
 
-            _rxSize = rxSize; 
+            {
+               static uint64_t NextTimestamp[2] = { 0, 0 };
+
+               uint64_t  exp  = NextTimestamp[dest];
+               uint64_t *data = reinterpret_cast<decltype(data)>
+                                           (_dataDma._map[index]);
+               uint64_t  got = data[2];
+               uint64_t diff = got - exp;
+
+               if (diff != 0)
+               {
+                  static int ErrorCnt[2] = { 0, 0};
+                  if (got != exp && exp != 0)
+                  {
+                     fprintf (stderr, 
+                              "Error[%1d.%4u] = %16.16" PRIx64 " != "
+                              "%16.16" PRIx64 " diff = %10" PRId64 ""
+                              " ------------ *\n",
+                              dest, ErrorCnt[dest]++, got, exp, diff);
+                     ///if (ErrorCnt[dest] > 1) exit (-1);
+                  }
+               }
+
+               NextTimestamp[dest] = got + 1024 * 25;
+            }
+
+
+               
 
 
             // Check if there is error
-            if( lastUser & TUserEOFE )
+            uint32_t lastUser = axisGetLuser (flags);
+
+            /// !!! KLUDGE !!!
+            if (lastUser & TUserEOFE)
             {
                _counters._rxErrors++;
-               dmaRetIndex(_fd,index);
+               _dataDma.free (index);
+               continue;
 
             // Try to Move the data
             } else {
 
-               uint8_t  *data = _sampleData[index];
+               uint8_t  *data = _dataDma._map[index];
                uint64_t *dbeg = reinterpret_cast<decltype(dbeg)>(data);
                uint64_t *dend = reinterpret_cast<decltype(dbeg)>(data +
-                                                              + rxSize - sizeof (*dend));
+                                                              + rxSize
+                                                              - sizeof (*dend));
 
-               uint32_t tlrSize = *reinterpret_cast<uint32_t const *>(dend) & 0xffffff;
+               uint32_t tlrSize = *reinterpret_cast<uint32_t const *>(dend) 
+                                & 0xffffff;
+
                if (tlrSize != _rxSize)
                {
                   fprintf (stderr, 
-                           "Error Frame %16.16" PRIx64 " -> " "%16.16" PRIx64 " %8.8x" PRIx32 "\n", 
-                     *dbeg, *dend, _rxSize);
+                           "Error Frame %16.16" PRIx64 " -> " 
+                           "%16.16" PRIx64 " %8.8x" PRIx32 "\n", 
+                           *dbeg, *dend, _rxSize);
 
                   _counters._rxErrors++;
-                  dmaRetIndex(_fd,index);
-                  goto RELEASE;
+                  _dataDma.free (index);
+                  continue;
                }
 
                // Patch in the length
                dbeg[0] |= rxSize; 
 
                uint64_t timestampRange[2];
-               getTimestampRange (timestampRange, _sampleData[index], rxSize);
-               fbs[index].m_body.setTimeRange (timestampRange[0],
-                                               timestampRange[1]);
-               fbs[index].m_body.setSize (rxSize);
-               fbs[index].m_body.setRxSequence (_rxSequence++);
+               auto fb = &fbs[index];
+               getTimestampRange (timestampRange, _dataDma._map[index], rxSize);
+               fb->m_body.setTimeRange  (timestampRange[0],
+                                         timestampRange[1]);
+               fb->m_body.setSize       (rxSize);
+               fb->m_body.setRxSequence (_rxSequence++);
             
                                   
-
-               // If using software BURST mode and no trigger active
-               static int Last = -5;
-
-               if (_config._runMode != Last)
-               {
-                  fprintf (stderr, "RunMode = %d\n", _config._runMode);
-                  Last = _config._runMode;
-               }
-               if (_config._runMode == BURST && !trgActive)
+               if (_config._runMode == RunMode::SOFTWARE && 
+                   trgActive        == false)
                {
                   // Check if this is a soft trigger
-                  bool accepted = softTrigger.check (timestampRange, _config);
+                  int64_t triggerTime = SoftTrigger::check (timestampRange, 
+                                                            _config._period);
+
+                  //fprintf (stderr, "Software trigger active = %d\n", accepted);
                   
-                  if (accepted) 
+                  if (triggerTime >= 0)
                   {
                      event = &events[index];
-                     event->m_trigger.init (timestampRange[0], softTriggerCnt++, 0); 
-                     event->setWindow (timestampRange[0] - WindowSize/2, 
-                                       timestampRange[0] + WindowSize/2);
-                     event->seedAndDrain (latency, _fd);
+                     event->m_trigger.init (triggerTime,
+                                            softTriggerCnt++, 0); 
+                     event->setWindow (triggerTime - _config._pretrigger,
+                                       triggerTime + _config._posttrigger);
+                     event->seedAndDrain (latency, dataFd);
                      trgActive = true;
                   }
                }
-               else if (_config._runMode == TRIG && trgActive && event == NULL)
+               else if (_config._runMode == RunMode::EXTERNAL && 
+                        trgActive                             &&
+                        event == NULL)
                {
                   event            = &events[index];
                   event->m_trigger = trigger;
-                  event->setWindow (trigger.m_timestamp - WindowSize/2, 
-                                    trigger.m_timestamp + WindowSize/2);
-                  event->seedAndDrain (latency, _fd);
+                  event->setWindow (trigger.m_timestamp - _config._pretrigger,
+                                    trigger.m_timestamp + _config._posttrigger);
+                  bool found = event->seedAndDrain (latency, dataFd);
+
+                  static int64_t MaxLatency = LLONG_MIN;
+                  static int64_t MinLatency = LLONG_MAX;
+                  int64_t diff = trigger.m_timestamp - fb->m_body._ts_range[0];
+                  if (diff > MaxLatency) MaxLatency = diff;
+                  if (diff < MinLatency) MinLatency = diff;
+                  fprintf (stderr,
+                           "Latency [%16" PRId64 ":%16" PRId64 "] time = "
+                           " %16.16" PRIx64 "found = %d\n",
+                           MinLatency, MaxLatency, fb->m_body._ts_range[0], 
+                           found);
+
+
+
+                  // ------------------------------------------------------
+                  // The latency queue had no members in the trigger window
+                  // Place this frame on the latency queue and wait.
+                  // ------------------------------------------------------
+                  if (found == false)
+                  {
+                     fprintf (stderr, "Waiting for frame within time window\n");
+                     event = NULL;
+                     latency[dest].replace (fb, dataFd);
+                     fprintf (stderr, "Remaining = %d\n", 
+                              latency[dest].m_remaining);
+                     continue;
+                  }
                }
 
-
-               ////fprintf (stderr, "Trigger active %d\n", trgActive);
-
-
+               bool replace = true;
                if (trgActive)
                {
-                  Event::Fate fate = event->add (&fbs[index], dest);
+                  Event::Fate fate = event->add (fb, dest);
+
                   if (fate == Event::Added)
                   {
-                     // Do nothing
+                     continue;
+                  }
+                  else if (fate == Event::TooEarly)
+                  {
+                     _dataDma.free (index);
+                     continue;
                   }
                   else if (fate > 0)
                   {
-                     // -------------------------------------------------------------
-                     // This was an accepted event either
-                     //      Completed -- All contributions present and accounted for
-                     //      Overrun   -- The time of at least one contributor was
-                     //                   already completed.  Basicall the other
-                     //                   contribution failed to show up.
-                     // -------------------------------------------------------------
+                     static int CoCnt[3] = { 0, 0, 0};
+
+                     // -------------------------------------------------------
+                     // This was an accepted event because either
+                     //   Completed -- All contributions present and 
+                     //                accounted for
+                     //   Overrun   -- The time of at least one contributor was
+                     //                already completed.  Basically the other
+                     //                contribution failed to show up.
+                     //   CompleteOverrun
+                     //             -- The event completed because an existing
+                     //                contributor did not cleanly complete
+                     //                the event.  The event is declared 
+                     //                completed, and this packet pitched.
+                     //                This is same action as the Overrun,
+                     //                but is catagorized differently for
+                     //                accounting and reporting purposes.
+                     // -------------------------------------------------------
+                     _txReqQueue->push (event);
                      trgActive   = false;
-                      _workQueue->push (event);
+                     event       = NULL;
+
                      
-                     latency[dest].resetToEmpty ();
-
-
-                     if (fate == Event::Overrun)
-                     {
-                        latency[dest].replace (&fbs[index], _fd);
-                     }
-                  }
-                  else 
-                  {
-                     latency[dest].replace (&fbs[index], _fd);
+                    latency[dest].resetToEmpty ();
+                    if (fate == Event::Completed) 
+                    { 
+                       CoCnt[0]++; 
+                       replace = false;
+                    }
+                    else if (fate == Event::CompletedOverrun) 
+                    { 
+                       CoCnt[2]++;
+                    }
+                    else
+                    {
+                       CoCnt[1]++;
+                    }
+                    
+                    ///fprintf (stderr, "Completed %d:%5d:%5d\n",
+                    ///         CoCnt[0], CoCnt[1], CoCnt[2]);
                   }
                }
-               else
+
+               if (replace)
                {
-                  //fprintf (stderr, "Latency[%d] @ %p fbs[%d] @ %p\n", 
-                  //           dest, &latency[dest], index, &fbs[index]);
-                  latency[dest].replace (&fbs[index], _fd);
+                  ///fprintf (stderr, "Latency[%d] @ %p fbs[%d] @ %p\n", 
+                  ///           dest, &latency[dest], index, fb);
+                  latency[dest].replace (fb, dataFd);
                }
-
-                  
-               // --------------------------------------------------
-               // If couldn't post the data, return it and count the 
-               // number of dropped packets.
-               // --------------------------------------------------
-               //if (!posted)
-               //{
-                  // We are saturated, drop this frame
-                  //   _counters._dropCount++;            
-                  //dmaRetIndex(_fd,index);
-                  //}
             }
          }
       }
-      else
-      {
-         // Placeholder for empty reads
-         rate.monitor (-1);
-      }
-
-
-      // Process TX release queue
-   RELEASE:
-      {
-         FrameBuffer *tempBuffer;
-         while ( (tempBuffer = (FrameBuffer *)_relQueue->pop()) != NULL ) {
-
-            // Return the descriptor
-            _rxQueue->push(tempBuffer);
-
-            // Return the data buffer
-            dmaRetIndex(_fd,tempBuffer->index());
-
-            _rxPend--;
-         } 
-      }     
    }
 
    return;
@@ -1869,30 +2462,233 @@ void * DaqBuffer::txRunRaw ( void *p ) {
 }
 
 
+template<int MAX_ENTRIES>
+class TocData
+{
+public:
+   pdd::Fragment::Toc<MAX_ENTRIES> &toc ()
+   {
+      return m_toc;
+   }
 
-// Transmit thread
-void DaqBuffer::txRun () {
+   pdd::Header1 &data (int size)
+   {
+      return reinterpret_cast<pdd::Header1 &>
+          (*(reinterpret_cast<char *>(&m_toc) + size));
+   }
+
+
+public:
+   pdd::Fragment::Toc<MAX_ENTRIES> m_toc;
+   uint64_t                      m_spare;
+};
+
+
+
+#if DUMPS
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Dump the contents of a generic Header0 
+
+  \param[in]  header0  The header0 structure to dump
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static void header0_dump (pdd::Header0 const & header0)
+{
+   using namespace pdd;
+   static const char *TypeNames[] =
+   {
+      [(int)Fragment::Type::Reserved_0   ] = "Reserved_0",
+      [(int)Fragment::Type::Control      ] = "Control",
+      [(int)Fragment::Type::Data         ] = "Data",
+      [(int)Fragment::Type::MonitorSync  ] = "MonitorSync",
+      [(int)Fragment::Type::MonitorUnSync] = "MonitorUnSync"
+   };
+
+   static const char *RecType[] =
+   {
+    [(int)Fragment::Header<Fragment::Type::Data>::RecType::Reserved_0] = "Reserved_0",
+    [(int)Fragment::Header<Fragment::Type::Data>::RecType::TpcData   ] = "TpcData",
+    [(int)Fragment::Header<Fragment::Type::Data>::RecType::Originator] = "Originator",
+    [(int)Fragment::Header<Fragment::Type::Data>::RecType::Toc       ] = "Toc"
+   };
+
+
+
+   uint64_t  w64 = header0.m_w64;
+   unsigned int    format = header0.format    (w64);
+   unsigned int      type = header0.type      (w64);
+   unsigned int    length = header0.length    (w64);
+   unsigned int specific0 = header0.specific0 (w64);
+   unsigned int    naux64 = header0.naux64    (w64);
+   unsigned int specific1 = header0.specific1 (w64);
+
+   char const *typeName = type < sizeof (TypeNames) / sizeof (TypeNames[0])
+                        ? TypeNames[type]
+                        : (char const *)"Unknown Type";
+
+   char const *recName;
+   if (type == (int)Fragment::Type::Data)
+   {
+      recName  = (specific0 < sizeof (RecType) / sizeof (RecType[0]))
+               ? RecType[specific0] 
+               : "UnknownDataType";
+   }
+   else
+   {
+      recName = "NotDefinedYet";
+   }
+               
+
+   fprintf (stderr, "Header0: %16s.%16s\n"
+                    "        format=%1.1x  type=%1.1x length:%6.6x\n"
+                    "        spec0 =%1.1x  naux64=%1.x spec1:%6.6x\n",
+            typeName,
+            recName,
+            format,
+            type,
+            length,
+            specific0,
+            naux64,
+            specific1);
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Dump the contents of an Originator structure
+
+  \param[in] originator originator
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static void originator_dump (pdd::Fragment::Originator const &originator)
+{
+   using namespace pdd;
+
+
+
+   {
+      Header1  const &header = originator;
+      uint32_t     m_w32   = header.m_w32;
+      unsigned int type    = header.type    (m_w32);
+      unsigned int version = header.version (m_w32);
+      unsigned int nbytes  = header.nbytes  (m_w32);
+
+      fprintf (stderr, "Origin: type=%1.1x version=%1.1x nbytes=%6.6x\n",
+               type,
+               version,
+               nbytes);
+   }
+
+
+   {
+      Fragment::OriginatorBody const &body   = originator.m_body;
+      
+      Fragment::Version const &version = body.version   ();
+      char const             *rptSwTag = body.rptSwTag  ();
+      uint64_t            serialNumber = body.serialNumber ();
+      uint32_t                location = body.location     ();
+      char const            *groupName = body.groupName ();
+      unsigned                    slot = (location >> 16) & 0xff;
+      unsigned                     bay = (location >>  8) & 0xff;
+      unsigned                 element = (location >>  0) & 0xff;
+
+      uint32_t software = version.software ();
+      uint8_t     major = (software >> 24) & 0xff;
+      uint8_t     minor = (software >> 16) & 0xff;
+      uint8_t     patch = (software >>  8) & 0xff;
+      uint8_t   release = (software >>  0) & 0xff;
+
+      fprintf (stderr,
+               "        Software ="
+               " %2.2" PRIx8 ".%2.2" PRIx8 ".%2.2" PRIx8 ".%2.2" PRIx8 ""
+               " Firmware = %8.8" PRIx32 "\n"
+               "        RptTag   = %s\n"
+               "        Serial # = %16.16" PRIx64 "\n"
+               "        Location = %s/%u/%u/%u\n",
+               major, minor, patch, release,
+               version.firmware (),
+               rptSwTag,
+               serialNumber,
+               groupName, slot, bay, element);
+   }
+
+   
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+#else
+/* ---------------------------------------------------------------------- */
+#define header0_dump(_header0)
+#define originator_dump (__originator)
+/* ---------------------------------------------------------------------- */
+#endif
+/* ---------------------------------------------------------------------- */
+
+
+ 
+
+/* ---------------------------------------------------------------------- *//*!
+
+   \brief  Waits on incoming data to be transmitted to a client machine
+
+                                                                          */
+/* ---------------------------------------------------------------------- */
+void DaqBuffer::txRun () 
+{
    struct msghdr       msg;
    struct iovec        msg_iov[32];
-   struct DaqHeader    header;
 
+   using namespace pdd;
+
+   #define MAX_ENTRIES 40
+   TocData<MAX_ENTRIES>                     tocData;
+   Fragment::Header<Fragment::Type::Data>    header;
+   Fragment::Toc<MAX_ENTRIES> &toc = tocData.toc ();
+   
+
+   // --------------------
    // Setup message header
+   // --------------------
    msg.msg_name       = &_txServerAddr;
    msg.msg_namelen    = sizeof(struct sockaddr_in);
    msg.msg_iov        = msg_iov;
-   msg.msg_iovlen     = 1;
+   msg.msg_iovlen     = 3;
    msg.msg_control    = NULL;
    msg.msg_controllen = 0;
    msg.msg_flags      = 0;
 
 
-   // Init iov
+   // ------------------------------------
+   // Initialization the static records in
+   // their respective iov's
+   // ------------------------------------
+
+   // -------------------------
+   // -- Fragment header
+   // -------------------------
    msg_iov[0].iov_base = &header;
-   msg_iov[0].iov_len  = sizeof(struct DaqHeader);
+   msg_iov[0].iov_len  = sizeof(header);
 
 
+   // -------------------------
+   // -- Data Origination block
+   // -------------------------
+   msg_iov[1].iov_base = &Origin;
+   msg_iov[1].iov_len  =  Origin.nbytes ();
+   
+
+   // ---------------------------
+   // Wait on the incoming frames
+   // ---------------------------
    while ( _txThreadEn ) 
    {
+      static int DataVersionNumber = 1;
+
       // Wait for data in the pend buffer
       Event *event = reinterpret_cast<decltype (event)>(_txReqQueue->pop(WaitTime));
 
@@ -1901,75 +2697,235 @@ void DaqBuffer::txRun () {
          continue;
       }
 
-      msg.msg_iovlen = 1;
+      // --------------------------
+      // The TocData start at iov 3
+      // --------------------------
+      msg.msg_iovlen  = 3;
+      uint32_t ndata  = 0;
 
-      // Init header
-      header.frame_size  = sizeof(struct DaqHeader);
-      header.rx_sequence = 0; ////tempBuffer->rx_sequence (); there are many rxsequences
-      header.tx_sequence = _txSequence++;
-      header.type_id     = SoftwareVersion & 0xffff;
+      uint16_t    srcs[2];
+      int     toc_idx = 0;
+      uint32_t counts = 0;
+      int             idx;
 
+      ///fprintf (stderr, "Got Event %p\n", event);
 
-      fprintf (stderr, "Got Event %p\n", event);
-      for (int idx = 0; idx < MAX_DEST; idx++)
+      // ------------------------------------------------
+      // Capture the frames from each incoming HLS source
+      // ------------------------------------------------
+      for (idx = 0; idx < MAX_DEST; idx++)
       {
-         List<FrameBuffer>::Node *node = event->m_list[idx].m_flnk;
-         List<FrameBuffer>::Node *end  = reinterpret_cast<decltype(end)>
-                                                          (&event->m_list[idx]);
+         List<FrameBuffer> *list = &event->m_list[idx];
+         List<FrameBuffer>::Node           *node = list->m_flnk;
+         List<FrameBuffer>::Node const *terminal = list->terminal();
 
-         int count = 0;
-         while (node != end)
+         // ----------------------
+         // Test for an empty list
+         // ----------------------
+         if (node == terminal) 
          {
-            uint32_t txSize    = node->m_body.size  ();
-            void    *ptr       = node->m_body.baseAddr ();
+            srcs[idx] = 0;
+            break;
+         }
 
+         // ---------------------------------------------
+         // Get the crate.slot.fiber for this contributor
+         // ---------------------------------------------
+         srcs[idx] = node->m_body.getCsf ();
+                                
+
+         int       count = 0;
+         do
+         {
+            uint32_t      nbytes = node->m_body.size  ();
+            void            *ptr = node->m_body.baseAddr ();
+            uint64_t const  *p64 = reinterpret_cast<decltype(p64)>(ptr);
+
+            uint64_t  dataHeader = p64[0];
+            int       dataFormat = (dataHeader >> 24) & 0xf;
+
+            /*
             fprintf (stderr, 
-                     "Node[%1d.%1d] %p flnk:%p blnk:%p end: %16.16" 
+                     "Node[%2d.%2d] %p flnk:%p blnk:%p end: %16.16" 
                      PRIx64 " -> %16.16" PRIx64 " index: %3d size: %8.8x\n",
                      idx,
-                     count++,
+                     count,
                      node, 
-                     event->m_list[idx].m_flnk,
-                     event->m_list[idx].m_blnk,
+                     list->m_flnk,
+                     list->m_blnk,
                      node->m_body._ts_range[0],
                      node->m_body._ts_range[1],
                      node->m_body.index (),
-                     txSize);
+                     nbytes);
+            */
+            count += 1;
 
-            node = node->m_flnk;
+            // Accumulate the total data size sans the trailer
+            nbytes -= sizeof (uint64_t);
 
-            // Accumulate the total size
-            header.frame_size  += txSize;
 
 
             // Setup buffer pointers if valid payload
             msg_iov[msg.msg_iovlen].iov_base = ptr;
-            msg_iov[msg.msg_iovlen].iov_len  = txSize;
+            msg_iov[msg.msg_iovlen].iov_len  = nbytes;
             msg.msg_iovlen++;
+
+            toc.m_body.add (toc_idx++, dataFormat, 0, idx, ndata/sizeof (uint64_t));
+            ndata  += nbytes;
+            ///fprintf (stderr, "Ndata[%2d] = %8.8" PRIx32 "\n", toc_idx-1, ndata);
   
             if (count > 15) break;
 
-            // Return the underlying DMA buffer
-            //int index = node->m_body.index ();
-            //dmaRetIndex (_fd, index);
+            node = node->m_flnk;
+         }
+         while (node != terminal);
+
+         counts = toc.m_body.m_master.add (counts, count);
+      }
+
+
+
+      // -------------------------------------
+      // Add the terminating index so the 
+      // length of the frame can be determined
+      // -------------------------------------
+      toc.m_body.m_master.construct (counts);
+      toc.m_body.add  (toc_idx++, 0, 0, idx, ndata/sizeof (uint64_t));
+
+      srcs[0] = (0x1 << 6) | (0x2 << 3) | (0x3 << 0);
+      srcs[1] = (0xa << 5) | (0x6 << 3) | (0x7 << 0);
+
+      ///fprintf (stderr, "Srcs %4.4" PRIx16 " %4.4" PRIx16 " %8.8" PRIx32 "\n", 
+      ///         srcs[0], srcs[1], ndata);
+
+
+      // -------------------------------
+      // Construct the table of contents
+      // -------------------------------
+      uint32_t toc_nbytes = toc.nbytes (toc_idx);
+
+      // ------------------------------------------------
+      // Check if have an integral number of 64-bit words
+      // ------------------------------------------------
+      if ((toc_nbytes & 0x7))
+      {
+         // No, add a padding word and round up 
+         toc.m_body.add (toc_idx, 0, 0,   0,     0);
+         toc_nbytes +=  7;
+         toc_nbytes &= ~7;
+      }
+
+      toc.construct (toc_nbytes);
+      msg_iov[2].iov_base = &toc;
+      msg_iov[2].iov_len  =  toc_nbytes;
+
+#if   0
+      {
+         uint32_t const *p = (uint32_t const *)&toc;
+         for (unsigned i = 0; i < toc_nbytes / 4; i++)
+         {
+            fprintf (stderr,
+                     "toc[%2u] = %8.8" PRIx32 "\n", i, p[i]);
          }
       }
+#endif
 
 
+      // -------------------------
+      // Construct the data header
+      // ------------------------
+      static int DataType  = static_cast<decltype (DataType)>
+                          (Fragment::Header<Fragment::Type::Data>::RecType::TpcData);
+      Header1 *dataHeader = &tocData.data (toc_nbytes);
+      dataHeader->construct (DataType,
+                             DataVersionNumber,
+                             ndata);
+
+
+ 
+      // -----------------------------------------------------
+      // Add the size of the table of contents and the trailer
+      // to the transmitted count.
+      // -----------------------------------------------------
+      uint32_t txSize = sizeof (header)
+                      + Origin.nbytes ()
+                      + toc_nbytes 
+                      + ndata
+                      + sizeof (Trailer);
+      /*
+     fprintf (stderr,
+               "Header  %8.8x\n"
+               "Origin  %8.8x\n"
+               "Toc     %8.8x\n"
+               "DataH   %8.8x\n"
+               "Data    %8.8x\n"
+               "Trailer %8.8x\n"
+               "Total   %8.8x\n",
+               (unsigned)sizeof (header),
+               (unsigned)Origin.nbytes (),
+               (unsigned)toc_nbytes,
+               (unsigned)sizeof (*dataHeader),
+               (unsigned)ndata,
+               (unsigned)sizeof (Trailer),
+               txSize);
+      */
+
+
+
+      // -----------------------------------
+      // Construct the event fragment header
+      // -----------------------------------
+      header.construct (Fragment::Header<Fragment::Type::Data>::RecType::TpcData,
+                        srcs[0], 
+                        srcs[1],
+                        event->m_trigger.m_source,
+                        event->m_trigger.m_sequence,
+                        event->m_trigger.m_timestamp,
+                        txSize);
+
+      ///uint64_t *p = (uint64_t *)&header;
+      ///fprintf (stderr, 
+      ///         "Header = %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
+      ///         p[0],
+      ///         p[1],
+      ///         p[2]);
+      ///header0_dump    (header);
+      ///originator_dump (Origin);
+
+      fprintf (stderr, "Header.m_64 %16.16" PRIx64 " "
+                  "Identifier.m_64 = %16.16" PRIx64 " ts = %16.16" PRIx64 "\n",
+               header.m_w64,
+               header.m_identifier.m_w64,
+               header.m_identifier.m_timestamp);
+
+
+
+      // ---------------------------------------
+      // Construct the event fragment trailer
+      // The last 64-bit word, containing the
+      // firmware trailer is repurposed for this
+      // ---------------------------------------
+      Trailer *trailer = static_cast<decltype(trailer)>
+                         (msg_iov[msg.msg_iovlen-1].iov_base);
+      trailer->construct (header.retrieve ());
+      msg_iov[msg.msg_iovlen - 1].iov_len += sizeof (*trailer);
+
+                                                  
+#     if 1
+      unsigned tot = 0;
       for (unsigned int idx = 0; idx < msg.msg_iovlen; idx++)
       {
-         void *ptr = msg_iov[idx].iov_base;
+
          int   len = msg_iov[idx].iov_len;
 
+         tot += len;
+         /*
+         void *ptr = msg_iov[idx].iov_base;
          fprintf (stderr,
-                  "msg[%2d] %p:%8.8x\n", idx, ptr, len);
-      }
-      
-      fprintf (stderr, "Header             %8.8x %8d:%d %8.8x\n",
-               header.frame_size,
-               header.rx_sequence,
-               header.tx_sequence,
-               header.type_id);
+                  "msg[%2d] %p:%8.8x %8.8x\n", idx, ptr, len, tot);
+         */
+      }      
+#     endif
 
                            
 
@@ -1978,7 +2934,7 @@ void DaqBuffer::txRun () {
       {
          ssize_t ret;
          if ( (_txFd < 0)  || 
-              (ret = sendmsg(_txFd,&msg,0) != (int32_t)header.frame_size )) 
+              (ret = sendmsg(_txFd,&msg,0) != (int32_t)txSize)) 
          {
             if (_txFd >= 0)
             {
@@ -1991,14 +2947,12 @@ void DaqBuffer::txRun () {
 
                fprintf (stderr, 
                         "sendmsg: %zu errno: %d\n"
-                        "Header; %8.8" PRIx32 " %8.8" PRIx32
-                               " %8.8" PRIx32 " %8.8" PRIx32 "\n"
+                        "Header; %8.8" PRIx32 "\n"
                         "msg_iovlen = %2zu\n"
                         "0. iov_base: %p  iov_len: %zu\n"
                         "1. iov_base: %p  iov_len: %zu\n",
                         ret, errno,
-                        header.frame_size,  header.tx_sequence, 
-                        header.rx_sequence, header.type_id,
+                        txSize, 
                         msg.msg_iovlen,
                         msg_iov[0].iov_base, msg_iov[0].iov_len, 
                         msg_iov[1].iov_base, msg_iov[1].iov_len);
@@ -2013,15 +2967,23 @@ void DaqBuffer::txRun () {
          else
          {
             _counters._txCount++;
-            _txSize             = header.frame_size;
-            _counters._txTotal += header.frame_size;
+            _txSize             = txSize;
+            _counters._txTotal += txSize;
          }
       }
 
-      event->free (_fd);
+
+      // ------------------------------------------------------------------
+      // Free all the nodes of this event
+      // Note: 
+      // There is no 'free' of the event structure itself.  This structure
+      // is directly tied one of the nodes, so until that node is freed
+      // this event structure cannot be reused.
+      // ------------------------------------------------------------------
+      event->free (_dataDma._fd);
 
       // Return entry
-      _txAckQueue->push (event);
+      //_txAckQueue->push (event);
    }
 }
 
@@ -2062,7 +3024,7 @@ void DaqBuffer::getStatus(struct BufferStatus *status) {
 
 
    // These variables are static or updated every received packets
-   status->buffCount    = _bCount;
+   status->buffCount    = _dataDma._bCount;
    status->rxSize       = _rxSize;
    status->rxPend       = _rxPend;
    status->txSize       = _txSize;
@@ -2150,17 +3112,40 @@ void DaqBuffer::disableTx () {
    }
 }
 
-// Set config
-void DaqBuffer::setConfig ( 
-            uint32_t blowOffDmaData,
-            uint32_t blowOffTxEth,
-            uint32_t naccept,
-            uint32_t nframes) {
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Sets the data taking parameters configuration
+
+   \param[in]  blowOffDmaData A flag indicating to return the data dma 
+                              buffers immediately after reception.
+   \param[in]  blowOffTxEth   A flag indicating to return the event
+                              immediately after reception in the transmit
+                              task.
+   \param[in]  pretrigger     The number of usecs before the trigger to
+                              open the event window
+   \param[in]  duration       The duration, in usecs, of the event window
+   \param[in]  period         The software triggering period, in usecs.
+
+    The two blow off parameters are primarly used in debugging and
+    checkout phases.  These allow one to monitor the reception and 
+    disposition of data by dumping the data at various places along
+    the acquisition pipeline.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+void DaqBuffer::setConfig (uint32_t blowOffDmaData,
+                           uint32_t   blowOffTxEth,
+                           uint32_t     pretrigger,
+                           uint32_t       duration,
+                           uint32_t         period)
+{
    _config._blowOffDmaData  = blowOffDmaData;
    _config._blowOffTxEth    = blowOffTxEth;
-   _config._naccept         = naccept;
-   _config._nframes         = nframes;
+   _config._pretrigger      = TimingClockTicks::from_usecs (pretrigger);
+   _config._posttrigger     = TimingClockTicks::from_usecs (duration - pretrigger);
+   _config._period          = TimingClockTicks::from_usecs (period);
 }
+/* ---------------------------------------------------------------------- */
 
 // Set run mode
 void DaqBuffer::setRunMode ( RunMode mode ) {

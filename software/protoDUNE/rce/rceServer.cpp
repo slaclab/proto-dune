@@ -91,7 +91,9 @@ int main (int argc, char **argv) {
    uint           slot;
    uint           bay;
    uint           element;
-   System       * system;
+   DataDpmSystem   *dataDpmSystem;
+   TimingDtmSystem *timingDtmSystem;
+   System          *system;
 
 
    // -----------------------------------------------------------------------
@@ -102,7 +104,8 @@ int main (int argc, char **argv) {
    // I believe this is because the code in the try region may throw a string
    // exception leaving system unitialized.
    // -----------------------------------------------------------------------
-   system = 0;
+   dataDpmSystem   = 0;
+   timingDtmSystem = 0;
 
    // Catch signals
    signal (SIGINT,&sigTerm);
@@ -115,7 +118,7 @@ int main (int argc, char **argv) {
       if ( bay == 4 ) {
          idx = slot - 1;
          cout << "Detected trigger DTM idx " << idx << endl;
-         system = new TimingDtmSystem(defFile,idx);
+         system = timingDtmSystem = new TimingDtmSystem(defFile,idx);
       }
 
       // DPM
@@ -123,7 +126,7 @@ int main (int argc, char **argv) {
          idx = ((slot-1) * 8) + bay * 2;
          idx += (element==2)?1:0;
          cout << "Detected data DPM index " << dec << idx << endl;
-         system = new DataDpmSystem(defFile,idx);
+         system = dataDpmSystem = new DataDpmSystem(defFile,idx);
       }
 
       // Setup control server
@@ -143,7 +146,8 @@ int main (int argc, char **argv) {
 
    cout << "Stopped server" << endl;
    cntrlServer.stopListen();
-   if (system) delete system;
+   if      (  dataDpmSystem) delete   dataDpmSystem;
+   else if (timingDtmSystem) delete timingDtmSystem;
 }
 
 

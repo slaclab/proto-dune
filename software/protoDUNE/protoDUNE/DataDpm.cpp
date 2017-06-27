@@ -49,6 +49,7 @@
 
 using namespace std;
 
+class RceCommon;
 
 // Constructor
 DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) : 
@@ -59,13 +60,17 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    // Description
    desc_ = "Data DPM.";
 
+
    v = getVariable("Enabled");
    v->set("True");
    v->setHidden(true);
 
    // Software Devices 
-   addDevice(d = new DataBuffer(linkConfig, 0, this));d->pollEnable(true);
-   addDevice(d = new RceCommon (linkConfig, 0, this));d->pollEnable(false);
+   addDevice(m_dataBuffer  = new DataBuffer(linkConfig, 0, this));
+   m_dataBuffer->pollEnable(true);
+
+   addDevice(m_rceCommon = new RceCommon (linkConfig, 0, this));
+   m_rceCommon->pollEnable(false);
 
    // RCE Firmware Devices
    addDevice(d = new DataCompression(0x00000002, 0xA0000000, 0, this, 4));d->pollEnable(true);

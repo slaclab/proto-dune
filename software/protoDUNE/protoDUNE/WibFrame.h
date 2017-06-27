@@ -581,7 +581,6 @@ inline uint64_t WibFrame::ColdData::s1 (WibFrame::ColdData::ErrReg errReg,
    return w;
 }
 /* ---------------------------------------------------------------------- */
-#endif  /* WIBFRAME_COMPOSE */
 
 #endif
    

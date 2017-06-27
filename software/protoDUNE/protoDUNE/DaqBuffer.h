@@ -29,6 +29,7 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2017.06.19  jjr  Replaced naccept/nframes with pretrigger and dureation times
 // 2017.05.26  jjr  Added checkBuffer method to check for unreadable DMA buffers
 // 2017.04.05  jjr  Added rx and tx DMA buffer counts.  The new DMA driver
 //                  lumps these buffers together. 
@@ -41,6 +42,8 @@
 //-----------------------------------------------------------------------------
 #ifndef __ART_DAQ_BUFFER_H__
 #define __ART_DAQ_BUFFER_H__
+
+#include <AxisDriver.h>
 
 #include <stdint.h>
 #include <string>
@@ -101,6 +104,424 @@ struct DaqHeader
 /*---------------------------------------------------------------------- */
 
 
+/* ---------------------------------------------------------------------- *//*!
+
+   \class DaqDmaDevice
+   \brief Capture the context of a AXI dma device
+                                                                          */
+/* ---------------------------------------------------------------------- */
+class DaqDmaDevice
+{
+public:
+   DaqDmaDevice ();
+   int     open    (char const *name);
+   int     enable  (uint8_t const *dests, int ndests);
+   int     map     ();
+   ssize_t free    (int index);
+   void    vet     ();
+   int     unmap   ();
+   int     close   ();
+
+   int32_t             _fd;   /*!< File descriptor of DMA driver          */
+   uint32_t         _bSize;   /*!< Size, in bytes, of the DMA buffers     */
+   uint32_t        _bCount;   /*!< Total count of DMA buffers (tx + rx)   */
+   uint32_t       _rxCount;   /*!< Count of DMA receive  buffers          */
+   uint32_t       _txCount;   /*!< Count of DMA transmit buffers          */
+   uint8_t          **_map;   /*!< Index -> virtual address DMA map       */
+};
+/* ---------------------------------------------------------------------- */
+
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Constructor for a AXI dma device
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline DaqDmaDevice::DaqDmaDevice () :
+   _fd (-1)
+{
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Opens the AXI dma device
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline int DaqDmaDevice::open (char const *name)
+{
+   _fd = ::open (name, O_RDWR | O_NONBLOCK);
+   return _fd;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Enables the specified destinations
+
+  \param[in]  dests  The array of destinations to enable
+  \param[in] ndests  The number of destinations
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline int DaqDmaDevice::enable (uint8_t const *dests, int ndests)
+{
+   uint8_t mask[DMA_MASK_SIZE];
+
+   dmaInitMaskBytes(mask);
+
+   for (int idx = 0; idx < ndests; idx++)
+   {
+      uint8_t dest = dests[idx];
+
+      fprintf (stderr, "Setting masks for %u\n", dest);
+      dmaAddMaskBytes(mask, dest);
+   }
+
+   if  (dmaSetMaskBytes(_fd, mask) < 0) 
+   {
+      this->close();
+      return -1;
+   }
+
+   return 0;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+   \brief Create the index -> virtual address map
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline int DaqDmaDevice::map ()
+{
+   if ( (_map = (uint8_t **)dmaMapDma(_fd,&_bCount,&_bSize)) == NULL ) 
+   {
+      fprintf(stderr,"DaqBuffer::open -> Failed to map to dma buffers\n");
+      this->close();
+      return -1;
+   }
+   else
+   {
+      // Retrieve the number of receive and transmit buffers
+      _rxCount = dmaGetRxBuffCount (_fd);
+      _txCount = dmaGetTxBuffCount (_fd);
+
+      return 0;
+   }
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+   \brief Free the buffer associated with the specified \a index
+
+   \param[in] index The index of the buffer to return;
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline ssize_t DaqDmaDevice::free (int index)
+{
+   ssize_t status = dmaRetIndex (_fd, index);
+   return  status;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Unmaps the dma buffers from this processes virtual address space.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline int DaqDmaDevice::unmap   ()
+{
+   if ( _map != NULL ) dmaUnMapDma (_fd, (void **)_map);
+   _map = NULL;
+   return 0;
+}
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Close the device
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline int DaqDmaDevice::close ()
+{
+   if (_fd >= 0) 
+   {
+      int status = ::close (_fd);
+      _fd = -1;
+      return status;
+   }
+   else
+   {
+      return 0;
+   }
+}
+/* ---------------------------------------------------------------------- */
+
+
+#include "MappedMemory.h"
+#include "inttypes.h"
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \class RceInfo
+  \brief Captures the static configuration of the host RCE. 
+
+  \par
+   This information for the most part only changes with a physical action
+   or a reload or reboot.  The one exception to this is the ethernet mode.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+class RceInfo
+{
+public:
+   static const uint32_t Base0 = 0x80000000;
+   static const uint32_t Size0 = 0x2000;
+
+   static const uint32_t Base1 = 0x84000000;
+   static const uint32_t Size1 = 0x1000;
+
+   /* ------------------------------------------------------------------- *//*!
+   
+     \brief Minimalistic constructor
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   RceInfo (): m_mem0 (0), m_mem1 (0) { return; }
+   /* ------------------------------------------------------------------- */
+
+
+   void open  ()
+   {
+      m_mem0 = new MappedMemory (1, Base0, Size0);
+      m_mem0->open ();
+
+      m_mem1 = new MappedMemory (1, Base1, Size1);
+      m_mem1->open ();
+
+      return;
+   }
+
+   uint32_t read32  (MappedMemory *mem, uint32_t addr)
+   {
+      bool err;
+      uint32_t u32 = mem->read (addr, &err);
+      return   u32;
+   }
+
+   uint64_t read64 (MappedMemory *mem, uint32_t addr)
+   {
+      uint64_t u64 = read32 (mem, addr + 4);
+      u64 <<= 32;
+      u64  |= read32 (mem, addr);
+      return u64;
+   }
+
+   void readN (MappedMemory *mem, char *str, uint32_t addr, int n8s)
+   {
+      uint32_t   *s = reinterpret_cast<uint32_t *>(str);
+
+      int n32s = n8s/4;
+
+      for (int idx = 0; idx < n32s; idx++)
+      {
+         uint32_t c4 = read32 (mem, addr);
+         *s++  = c4;
+
+         // Quit if found null-termination
+         if (((c4 >> 0x00) & 0xff) == 0) return;
+         if (((c4 >> 0x08) & 0xff) == 0) return;
+         if (((c4 >> 0x10) & 0xff) == 0) return;
+         if (((c4 >> 0x18) & 0xff) == 0) return;
+
+         addr += 4;
+      }
+
+      // Ensure null-termination
+      str[n32s - 1] &= 0x00ffffff;
+      
+      return;
+   }
+
+       
+   void close ()
+   {
+      m_mem0->close ();
+      m_mem0 = NULL;
+
+      m_mem1->close ();
+      m_mem1 = NULL;
+   }
+
+   void read ()
+   {
+      /* ------------------------------------------------------------------ */
+      /* Firmware values                                                    */
+      /*                                                                    */
+      m_firmware.m_fpgaVersion     = read32 (m_mem0, Base0 | 0x0000);
+      m_firmware.m_rceVersion      = read32 (m_mem0, Base0 | 0x0008);
+      m_firmware.m_ethMode         = read32 (m_mem0, Base0 | 0x0034);
+      readN (m_mem0, m_firmware.m_buildString,       Base0 | 0x1000, 
+             sizeof (m_firmware.m_buildString));
+      /*                                                                    */
+      /* ------------------------------------------------------------------ */
+
+
+
+      /* ------------------------------------------------------------------ */
+      /* Cluster Element values                                             */
+      /*                                                                    */
+      m_clusterElement.m_bsiVersion     = read32 (m_mem1, Base1 | 0x0000 * 4);
+      m_clusterElement.m_networkPhyType = read32 (m_mem1, Base1 | 0x0001 * 4);
+      m_clusterElement.m_macAddress     = read64 (m_mem1, Base1 | 0x0002 * 4);
+      m_clusterElement.m_interconnect   = read32 (m_mem1, Base1 | 0x0004 * 4);
+      readN (m_mem1, m_clusterElement.m_uBootVersion,     Base1 | 0x0005 * 4,
+             sizeof (m_clusterElement.m_uBootVersion));
+      readN (m_mem1, m_clusterElement.m_rptSwTag,         Base1 | 0x000D * 4,
+             sizeof (m_clusterElement.m_rptSwTag));
+      m_clusterElement.m_deviceDna     = read64 (m_mem1,  Base1 | 0x0015 * 4);
+      m_clusterElement.m_efFuseValue   = read32 (m_mem1,  Base1 | 0x0017 * 4);
+      /*                                                                    */
+      /* ------------------------------------------------------------------ */
+
+
+
+      /* ------------------------------------------------------------------ */
+      /* Cluster Ipmc values                                                */
+      /*                                                                    */      
+      m_clusterIpmc.m_serialNumber    = read64 (m_mem1, Base1 | 0x0050 * 4);
+      m_clusterIpmc.m_address         = read32 (m_mem1, Base1 | 0x0052 * 4);
+      readN    (m_mem1, m_clusterIpmc.m_groupName,      Base1 | 0x0053 * 4, 
+                sizeof (m_clusterIpmc.m_groupName));
+      m_clusterIpmc.m_extInterconnect = read32 (m_mem1, Base1 | 0x005B * 4);
+      /*                                                                    */
+      /* ------------------------------------------------------------------ */
+   }
+
+
+public:
+   void print_firmware ()
+   {
+      Firmware *fw = &m_firmware;
+      fprintf (stderr, "  Fpga  version = %8.8" PRIx32 "\n",  fw->m_fpgaVersion);
+      fprintf (stderr, "  Rce   version = %8.8" PRIx32 "\n",   fw->m_rceVersion);
+      fprintf (stderr, "  Ethernet Mode = %8.8" PRIx32 "\n",      fw->m_ethMode);
+      fprintf (stderr, "  Build  string = %s\n",              fw->m_buildString);
+
+      return;
+   }
+
+   void print_clusterElement ()
+   {
+      ClusterElement *ce = &m_clusterElement;
+
+      fprintf (stderr, "  Bsi   version = %8.8"   PRIx32 "\n",     ce->m_bsiVersion);
+      fprintf (stderr, "  Network  Type = %8.8"   PRIx32 "\n", ce->m_networkPhyType);
+      fprintf (stderr, "  Mac   address = %16.16" PRIx64 "\n",     ce->m_macAddress);
+      fprintf (stderr, "  Interconnect  = %8.8"   PRIx32 "\n",   ce->m_interconnect);
+      fprintf (stderr, "  UBoot version = %s\n",                 ce->m_uBootVersion);
+      fprintf (stderr, "  RPT SW   tag = %s\n",                     ce->m_rptSwTag);
+      fprintf (stderr, "  Device    Dna = %16.16" PRIx64 "\n",      ce->m_deviceDna);
+      fprintf (stderr, "  Fuse    value = %8.8"   PRIx32 "\n",    ce->m_efFuseValue);
+
+      return;
+
+
+   }
+
+
+   void print_clusterIpmc ()
+   {
+      ClusterIpmc  *ci = &m_clusterIpmc;
+      uint32_t address = ci->m_address;
+      uint8_t     slot = (address >> 16) & 0xff;
+      uint8_t      bay = (address >>  8) & 0xff;
+      uint8_t  element = (address >>  0) & 0xff;
+
+      
+      fprintf (stderr, "  Serial Number = %16.16" PRIx64 "\n",  ci->m_serialNumber);
+      fprintf (stderr, "  Slot.Bay.Elem = %2.2x/%2.2x/%2.2x\n", slot,
+                                                              bay,
+                                                             element);
+      fprintf (stderr, "  Group    Name = %s\n",               ci->m_groupName);
+      fprintf (stderr, "  Rtm      Type = %8.8"   PRIx32 "\n", ci->m_extInterconnect);
+
+      return;
+   }
+
+   void print ()
+   {
+      fprintf (stderr, "Firmware:\n");
+      print_firmware       ();
+
+      fprintf (stderr, "\nCluster Element values:\n");
+      print_clusterElement ();
+
+      fprintf (stderr, "\nCluster Ipmc values:\n");
+      print_clusterIpmc    ();
+
+      return;
+   }
+   /* ------------------------------------------------------------------- */
+
+private:
+   /* ------------------------------------------------------------------- */
+   /* These memory accessors are only in use during the filling           */
+   /* After filling, they are closed                                      */
+   /* ------------------------------------------------------------------- */
+   MappedMemory         *m_mem0;   /*!< Memory access for segment 0       */
+   MappedMemory         *m_mem1;   /*!< Memory access for segment 1       */
+   /* ------------------------------------------------------------------- */
+
+public:
+   struct Firmware
+   {
+      uint32_t       m_fpgaVersion; /*!< The FPGA firmware version number */
+      uint32_t        m_rceVersion; /*!< The RCE build version            */
+      uint32_t           m_ethMode; /*!< The ethernet mode, hangeable     */
+      char      m_buildString[256]; /*!< The build data, by whom, etc     */
+   };
+
+
+   struct ClusterElement
+   {
+      uint32_t        m_bsiVersion; /*!< The cluster's BSI version        */
+      uint32_t    m_networkPhyType; /*!< The network type                 */
+      uint64_t        m_macAddress; /*!< The MAC address                  */
+      uint32_t      m_interconnect; /*!< ???                              */
+      char      m_uBootVersion[32]; /*!< The UBoot version                */
+      char          m_rptSwTag[32]; /*!< The RPT's software tag           */
+      uint64_t         m_deviceDna; /*!< The ZYNQ's unique identifier     */
+      uint32_t       m_efFuseValue; /*!< The value burned into ZYNQ fuse  */
+   };
+
+
+   struct ClusterIpmc
+   {
+      uint64_t     m_serialNumber; /*!< The serial number of the DPM      */
+      uint32_t          m_address; /*!< The version/slot/bay/element      */
+      char        m_groupName[32]; /*!< The cluster group name            */
+      uint32_t  m_extInterconnect; /*!< The external interconnect         */
+   };
+
+   Firmware             m_firmware;
+   ClusterElement m_clusterElement;
+   ClusterIpmc       m_clusterIpmc;
+      
+};
+/* ---------------------------------------------------------------------- */
+
+
 
 /*---------------------------------------------------------------------- *//*!
  *
@@ -120,7 +541,7 @@ public:
     *  These parameters control the
     *    -# RunMode
     *    -# Whether to pitch the incoming DMA into the bit bucker
-    *    -# Whthher to transmit or pitch the accepted data to the host
+    *    -# Whether to transmit or pitch the accepted data to the host
     *    -# Control which frames are accepted
     *
     * Since not all frames can be promoted to the host (way too much
@@ -160,8 +581,9 @@ public:
       RunMode         _runMode;  /*!< The run mode                       */      
       uint32_t _blowOffDmaData;  /*!< If non-zero, pitch incoming data   */
       uint32_t   _blowOffTxEth;  /*!< If non-zero, do not transmit       */
-      uint32_t        _naccept;  /*!< # of consecutive frames to accetp  */
-      uint32_t        _nframes;  /*!< # the accept frame duty cycle      */
+      int32_t      _pretrigger;  /*!< Pretrigger time (usecs)            */
+      int32_t     _posttrigger;  /*!< Postrigger time (usecs)            */
+      uint32_t         _period;  /*!< Software trigger period            */ 
    };
    /* ------------------------------------------------------------------ */
 
@@ -195,7 +617,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x1;
+      static const uint32_t SoftwareVersion = 0x01000000;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;      
@@ -239,15 +661,11 @@ private:
       uint32_t _rxSequence;
 
       struct timeval _lastTime;
- 
-      // Device interfaces
-      int32_t             _fd;   /*!< File descriptor of DMA driver          */
-      uint32_t         _bSize;   /*!< Size, in bytes, of the DMA buffers     */
-      uint32_t        _bCount;   /*!< Total count of DMA buffers (tx + rx)   */
-      uint32_t       _rxCount;   /*!< Count of DMA receive  buffers          */
-      uint32_t       _txCount;   /*!< Count of DMA transmit buffers          */
-      uint8_t  ** _sampleData;   /*!< Index -> virtual address DMA 
-                                      buffer mapping                         */
+
+      DaqDmaDevice    _dataDma;
+      DaqDmaDevice  _timingDma;
+
+      
       // Static methods for threads
       static void * rxRunRaw   ( void *p );
       static void * workRunRaw ( void *p );
@@ -284,8 +702,9 @@ private:
       void setConfig ( 
             uint32_t blowOffDmaData,
             uint32_t blowOffTxEth,
-            uint32_t naccept,
-            uint32_t nframes);
+            uint32_t pretrigger,
+            uint32_t duration,
+            uint32_t period);
 
       void vetDmaBuffers();
 

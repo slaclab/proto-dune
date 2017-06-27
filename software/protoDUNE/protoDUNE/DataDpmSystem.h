@@ -61,7 +61,7 @@ class DataDpmSystem : public System {
       //! Return local state, specific to each implementation
       string localState();
 
-private:
+public:
       DataBuffer *dataBuffer ();
 };
 #endif

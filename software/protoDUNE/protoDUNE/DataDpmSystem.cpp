@@ -136,6 +136,7 @@ void DataDpmSystem::hardReset ( ) {
 }
 
 
+
 /* ---------------------------------------------------------------------- *//*!
  *                                                                             
  *  \brief  Local method to retrieve the data buffer
@@ -148,6 +149,7 @@ inline DataBuffer *DataDpmSystem::dataBuffer ()
    return buff;
 }
 /* ---------------------------------------------------------------------- */
+
 
 
 //! Method to set run state

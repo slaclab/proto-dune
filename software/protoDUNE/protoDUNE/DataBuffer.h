@@ -81,12 +81,13 @@ public:
          RunMode          = 0,
          BlowOffDmaData   = 1,
          BlowOffTxEth     = 2,
-         TrgAcceptCnt     = 3,
-         TrgFrameCnt      = 4,
-         DaqPort          = 5,
-         DaqHost          = 6,
+         PreTrigger       = 3,
+         Duration         = 4,
+         Period           = 5,
+         DaqPort          = 6,
+         DaqHost          = 7,
 
-         ConfigurationCnt = 7
+         ConfigurationCnt = 8
       };
 
       Variable *v[ConfigurationCnt];

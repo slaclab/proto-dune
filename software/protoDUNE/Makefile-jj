@@ -68,6 +68,7 @@ ifeq ($(TARGET), arm_CA9-linux)
 
 include $(MAKEUTILS_DIR)/xml_import.mk
 
+
 # -------------------------------------------------------------------------
 #
 # CONSITUTENT: generic.ro
@@ -210,7 +211,7 @@ protoDune_CXXFLAGS    :=  $(XML_CFLAGS)
 protoDune_INCPATHS    :=  $(protoDune_SRCDIR)       \
                           $(generic_SRCDIR)         \
                           $(deviceLib_SRCDIR)       \
-								  $(PRJROOT)/../aes-stream-drivers/include
+			  $(PRJROOT)/../aes-stream-drivers/include
 protoDune_ALIAS       := protoDUNE.ro
 
 protoDune_RO          := $(protoDune_OBJDIR)/protoDUNE.ro
@@ -281,6 +282,10 @@ tcp_receiver_ALIAS      := tcp_receiver
 
 tcp_receiver_EXE        := $(BINDIR)/tcp_receiver
 EXECUTABLES             += tcp_receiver
+
+
+# -----------------------------------------------------------------
+
 
 # ------------------------------------------------------------------
 

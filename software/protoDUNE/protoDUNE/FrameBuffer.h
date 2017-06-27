@@ -60,6 +60,20 @@ public:
          _ts_range[1] = end;
       }
 
+      uint16_t getCsf () const
+      {
+         // Need to swap slot and crate
+         // Id = slot.3 | crate.5 | fiber.3
+         uint64_t const *p64 = reinterpret_cast<decltype(p64)>(_data);
+         uint16_t    id = (p64[1] >> 13) & 0xfff;
+         uint16_t crate = (id     >>  3) &  0x1f;
+         uint16_t  slot = (id     >>  8) &  0x07;
+         uint16_t fiber = (id     >>  0) &  0x03;
+
+         id = (crate << 6) | (slot << 3) | fiber;
+         return id;
+      }
+
       int32_t  index       () const;
       uint8_t *baseAddr    () const;
       uint32_t size        () const;
