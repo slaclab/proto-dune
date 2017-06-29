@@ -45,16 +45,22 @@ DataDpmSystem::DataDpmSystem (string defaults, uint32_t idx ) : System("DataDpmS
    stringstream tmp;
    MultLink   *link;
 
-   dest_[0] = new MultDestMapped (8, 
+   dest_[0] = new MultDestMapped (15, 
       0x80000000,0x2000,  // Core registers
       0x84000000,0x1000,  // BSI registers
-      0xA0000000,0x1000,  // HLS[0] registers
-      0xA0010000,0x1000,  // HLS[1] registers
-      0xA1000000,0x1000,  // WIB[0] registers
-      0xA1010000,0x1000,  // WIB[1] registers
-      0xA2000000,0x1000,  // EMU registers
-      0xA3000000,0x1000); // Timing registers
-
+      0xA0000000,0x1000,  // DataCompression[0]
+      0xA0010000,0x1000,  // DataCompression[1]
+      0xA0020000,0x1000,  // DataDpmHlsMon
+      0xA1000000,0x1000,  // DataDpmWib[0]
+      0xA1010000,0x1000,  // DataDpmWib[1]
+      0xA1020000,0x1000,  // DataDpmWibDbg[0]
+      0xA1030000,0x1000,  // DataDpmWibDbg[1]
+      0xA2000000,0x1000,  // DataDpmEmu
+      0xA3000000,0x1000,  // DataDpmTiming
+      0xA4000000,0x1000,  // UdpReg
+      0xA4010000,0x1000,  // RssiReg
+      0xA4020000,0x1000,  // PrbsTx
+      0xA4030000,0x1000); // PrbsRx
 
    //dest_[0]->setDebug(true);      
 
