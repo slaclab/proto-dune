@@ -136,6 +136,7 @@ int AxiBufChecker::check_buffer  (uint8_t       *buf,
    int       n64 = nsize / sizeof (uint64_t);
    uint64_t *ptr = (uint64_t *)buf;
 
+
    // -----------------------------------------------------------------
    // These variables capture the context when an exception occurs
    // The compiler has no idea that the flow can return through
@@ -348,7 +349,8 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
       nerrs   =  0;
       while (1)
       {
-         rxSize = dmaReadIndex(fd, &index, NULL, NULL, NULL);
+         uint32_t dest;
+         rxSize = dmaReadIndex (fd, &index, NULL, NULL, &dest);
 
          if (rxSize <= 0)
          {
@@ -358,8 +360,9 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
                    "     Read failure[%4u:%3d]: rxSize = %8.8x errno = %d\n", 
                          idx, nerrs, rxSize, errno);
                 fflush  (stderr);
+                nerrs += 1;
             }
-            nerrs += 1;
+
          }
          else
          {
@@ -368,6 +371,8 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
                fprintf (stderr, "Read sucesss @ %d failures = %d trial = %d\n",
                         index, nerrs, trial);
             }
+
+            ///fprintf (stderr, "%4d) Buf[%1d.%4d] accquired\n",  idx, (int)dest, index);
 
             break;
          }
@@ -430,7 +435,8 @@ int AxiBufChecker::extreme_vetting (AxiBufChecker *abc,
          // They are permanently out of circulation
          // ---------------------------------------
          fprintf (stderr,
-                  "       \033[1;31mBuffer  %4u      is a bad hombre, deported/not returned\033[0m\n",
+                  "       \033[1;31mBuffer  %4u      is a bad hombre, "
+                  "deported/not returned\033[0m\n",
                   idx);
          need_lf = false;
       }
