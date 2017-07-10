@@ -258,7 +258,9 @@ inline uint64_t Header0::compose (int          type,
 /* ---------------------------------------------------------------------- */
 class Header1
 {
-   static const int VersionNumber = 1;public:
+   static const int VersionNumber = 1;
+
+public:
    Header1 () { return; }
 
 
@@ -729,11 +731,13 @@ public:
 
    static uint64_t compose (uint32_t firmware, uint32_t software)
    {
-      uint64_t version = firmware;
+      uint64_t version = software;
       version <<= 32;
-      version  |= software;
+      version  |= firmware;
 
-      fprintf (stderr, "Version %16.16" PRIx64 "\n", version);
+      //fprintf (stderr, "Version %16.16" PRIx64 "\n", version);
+
+
       return version;
    }
 
@@ -743,8 +747,8 @@ public:
       return;
    }
 
-   static uint32_t software (uint64_t m_64) { return m_64 >>  0; }
-   static uint32_t firmware (uint64_t m_64) { return m_64 >> 32; }
+   static uint32_t firmware (uint64_t m_64) { return m_64 >>  0; }
+   static uint32_t software (uint64_t m_64) { return m_64 >> 32; }
 
    uint32_t software () const { return software (m_w64); }
    uint32_t firmware () const { return firmware (m_w64); }
@@ -822,7 +826,7 @@ public:
                   char const   *groupName,
                   uint8_t      ngroupName)
    {
-      fprintf (stderr, "Fw/Sw = %8.8" PRIx32 " %8.8" PRIx32 "\n", fw_version, sw_version);
+      //fprintf (stderr, "Fw/Sw = %8.8" PRIx32 " %8.8" PRIx32 "\n", fw_version, sw_version);
       int size = m_body.construct (fw_version,
                                    sw_version,
                                    rptSwTag,
@@ -1002,6 +1006,7 @@ public:
       enum class Size: int
       {
          Format    =  4, /*!< Size of the format field                    */
+         Type      =  4, /*!< Size fo the type field                      */  
          Version   =  4, /*!< Size of the record/frame version field      */
          Offset64  = 24, /*!< Size of the offset field                    */
       };
@@ -1042,7 +1047,6 @@ public:
       /* --------------------------------------------------------------- */
 
    public:
-
       /* --------------------------------------------------------------- *//*!
 
         \brief Method to compose a generic Header1

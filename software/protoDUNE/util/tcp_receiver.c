@@ -356,7 +356,7 @@ static inline unsigned int checkHeader (Ctx            *ctx,
 
    uint64_t header = get_w64 (data);
 
-   printf ("Headerx= %16.16" PRIx64 "\n", header);
+   printf ("Headerx =  %16.16" PRIx64 "\n", header);
    
    ctx->stats.hdrCnt += 1;
    ctx->stats.hdrSiz += ndata;
@@ -607,8 +607,11 @@ static int     reconnect_client  (ssize_t      nread,
 
 static void    print_socketopts  (int             fd);
 
+static int                 rnd64 (unsigned int  nbytes);
 static void            print_hdr (uint64_t        data);
-static void            print_id  (uint64_t const *data);
+static void             print_id (uint64_t const *data);
+static void         print_origin (uint64_t const *data);
+static void            print_toc (uint64_t const *data);
 
 static ssize_t read_data        (int              fd,
                                  uint8_t       *data,
@@ -619,6 +622,21 @@ static char    if_newline       (char        need_lf);
 /* ---------------------------------------------------------------------- */
 
 
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Round the specified number of bytes up to the next 64-bit value
+  \return The rounded value
+
+  \param[in] nbytes  The value to round up
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static inline int rnd64 (unsigned int  nbytes)
+{
+   int n64 = (nbytes + (sizeof (uint64_t) - 1)) / sizeof (uint64_t);
+   return n64;
+}
+/* ---------------------------------------------------------------------- */
 
 
 
@@ -660,6 +678,8 @@ int main(int argc, char *const argv[])
                                       prms.rcvSize, 
                                       prms.nodelay,
                                       &srvFd);
+
+    uint8_t *dataStatic = rxData + headerSize;
 
     print_socketopts  (rcvFd);
     print_statistics_title ();
@@ -741,6 +761,12 @@ int main(int argc, char *const argv[])
              uint32_t ndata = dataSize - headerSize;
              nread          = read_data (rcvFd, data, ndata, &datRcv);
 
+             if (data != dataStatic)
+             {
+                printf ("Error data pointer %p != %p\n",
+                        data, dataStatic);
+             }
+
              if (received != headerSize)
              {
                 Count += 1;
@@ -751,7 +777,14 @@ int main(int argc, char *const argv[])
               | in an attempt to see if this at all correlates 
               | with the failures.
              */
-             retries[datRcv.cnt] += 1;
+             {
+                int cnt = datRcv.cnt;
+                if (cnt > sizeof (retries) / sizeof (retries[0]))
+                {
+                   cnt = sizeof (retries) / sizeof (retries[0]) - 1;
+                }
+                retries[cnt] += 1;
+             }
 
              /* Check if had error or disconnect */
              if (nread <= 0)
@@ -774,9 +807,29 @@ int main(int argc, char *const argv[])
              }
 
              print_id ((uint64_t const *)data);
+
+             uint64_t const *origin = (uint64_t const *)(data) + 2; 
+             int          n64origin = rnd64 ((origin[0] >> 12) & 0xfffff);
+             print_origin (origin);
+
+             uint64_t const *toc    = (origin + n64origin);
+             int          n64toc    = rnd64 ((toc[0]    >> 12) & 0xfffff);
+             print_toc    (toc);
              putchar ('\n');
 
-             printf ("prms.chkData = %d\n", prms.chkData);
+
+             uint64_t const *frames = (toc + n64toc);
+             for (int idx = 0; idx < 5; idx++)
+             {
+                int len = frames[0] & 0xffffff;
+                int n64 = rnd64 (len);
+                printf ("Frames = %16.16" PRIx64 "nbytes:n64 %8.8x:%8.8x\n", 
+                        *frames,
+                        len,
+                        n64);
+
+                frames += rnd64 (len);
+             }
 
              if (prms.chkData) 
              {
@@ -1044,8 +1097,8 @@ static void print_hdr (uint64_t header)
    unsigned specific1 = (header >> 40) & 0xffffff;
 
 
-   printf ("Header0    format = %1.1x  type   = %1.1x length = %6.6x\n"
-           "           spec0  = %1.1x  naux64 = %1.1x  spec1 = %6.6x\n",
+   printf ("Header:     Format.Type = %1.1x.%1.1x length = %6.6x\n"
+           "            spec0       = %1.1x    naux64 = %1.1x  spec1 = %6.6x\n",
             format,
             type,
             length,
@@ -1059,6 +1112,14 @@ static void print_hdr (uint64_t header)
 
 
 
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Prints the Identifier Block
+
+  \param[in]  data The data for the identifier block
+                                                                          */
+/* ---------------------------------------------------------------------- */
 static void  print_id (uint64_t const *data)
 {
    uint64_t       w64 = data[0];
@@ -1081,14 +1142,127 @@ static void  print_id (uint64_t const *data)
    unsigned f1 = (src1 >> 0) & 0x7;
 
 
-   printf ("          Format.Type = %1.1x.%1.1x Srcs = %1x.%1x.%1x : %1x.%1x.%1x\n"
-           "          Timestamp   = %16.16" PRIx64 " Sequence = %8.8" PRIx32 "\n",
+   printf ("            Format.Type = %1.1x.%1.1x Srcs = %1x.%1x.%1x : %1x.%1x.%1x\n"
+           "            Timestamp   = %16.16" PRIx64 " Sequence = %8.8" PRIx32 "\n",
            format, type, c0, s0, f0, c1, s1, f1,
            timestamp, sequence);
 
    return;
 }
-           
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Prints the field format = 1 header
+
+  \param[in]  hdr  The format = 1 header
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static void print_header1 (char const *dsc, uint32_t hdr)
+{
+   unsigned int  format = (hdr >>  0) &     0xf;
+   unsigned int    type = (hdr >>  4) &     0xf;
+   unsigned int version = (hdr >>  8) &     0xf;
+   unsigned int  length = (hdr >> 12) & 0xfffff;
+   
+   printf ("%-10.10s: Format.Type = %1.1x.%1.1x Version = %1.1x Length = %5.5x\n",
+           dsc,
+           format,
+           type,
+           version,
+           length);
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+static void print_origin (uint64_t const *data)
+{
+   uint32_t hdr = data[0];
+
+   print_header1 ("Origin", hdr);
+
+   uint32_t      location = data[0] >> 32;
+   uint64_t  serialNumber = data[1];
+   uint64_t      versions = data[2];
+   uint32_t      software = versions >> 32;
+   uint32_t      firmware = versions;
+   char const   *rptSwTag = (char const *)(data + 3);
+   char const  *groupName = rptSwTag + strlen (rptSwTag) + 1;
+
+   unsigned          slot = (location >> 16) & 0xff;
+   unsigned           bay = (location >>  8) & 0xff;
+   unsigned       element = (location >>  0) & 0xff;
+
+   uint8_t          major = (software >> 24) & 0xff;
+   uint8_t          minor = (software >> 16) & 0xff;
+   uint8_t          patch = (software >>  8) & 0xff;
+   uint8_t        release = (software >>  0) & 0xff;
+
+   printf ("            Software    ="
+           " %2.2" PRIx8 ".%2.2" PRIx8 ".%2.2" PRIx8 ".%2.2" PRIx8 ""
+           " Firmware     = %8.8" PRIx32 "\n"
+           "            RptTag      = %s\n"
+           "            Serial #    = %16.16" PRIx64 "\n"
+           "            Location    = %s/%u/%u/%u\n",
+           major, minor, patch, release,
+           firmware,
+           rptSwTag,
+           serialNumber,
+           groupName, slot, bay, element);
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Prints the table of contents
+
+  \param[in]  data  The table of contents data
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static void print_toc (uint64_t const *data)
+{
+   uint32_t hdr     = data[0];
+   uint32_t master  = data[0] >> 32;
+
+   print_header1 ("Toc", hdr);
+   
+   unsigned format = (master >>  0) & 0xf;
+   unsigned type   = (master >>  4) & 0xf;
+   unsigned ntoc   = (master >>  8) & 0xffffff;
+
+   printf ("            Master: Format.Type = %1.1x.%1.1x count = %3d\n",
+           format,
+           type,
+           ntoc);
+
+   uint32_t const *tocs = (uint32_t const *)(&data[1]);
+   puts ("            Format.Type Offset64");
+   for (unsigned idx = 0; idx < ntoc; idx++)
+   {
+      uint32_t      toc = tocs[idx];
+      unsigned   format = (toc >> 0) & 0xf;
+      unsigned     type = (toc >> 4) & 0xf;
+      unsigned offset64 = (toc >> 8) & 0xffffff;
+      printf ("           %2d. %1.x.%1.1x %6.6x\n", 
+              idx, 
+              format,
+              type,
+              offset64);
+   }
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
    
 
 
