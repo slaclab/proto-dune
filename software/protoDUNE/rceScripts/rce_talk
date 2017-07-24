@@ -634,6 +634,11 @@ def main(argv):
         
         # SYNC the SD memory card
         g.action("ssh_cmd","sync; sync; sync")
+        
+        # Reboot with the /mnt/boot/fpga.bit
+        # Refer https://confluence.slac.stanford.edu/x/CrufD
+        g.action("ssh_cmd","reboot_rce -b 1")
+        
     else:
         print usage()
         return (-1)
