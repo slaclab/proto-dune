@@ -629,7 +629,7 @@ def main(argv):
         g.action("ssh_cmd","pacman -U --noconfirm /opt/RCE_SDK/tgt/linux/packages/extra/*.xz")
         
         # NFS and account setup
-        g.action("ssh_cmd","mkdir -P /mnt/host")
+        g.action("ssh_cmd","mkdir -p /mnt/host")
         g.action("ssh_cmd","chsh --shell /bin/tcsh")
         
         # SYNC the SD memory card
