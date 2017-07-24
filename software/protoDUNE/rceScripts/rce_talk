@@ -285,15 +285,15 @@ class LbneAliasMap:
             #( '192.168.2.116' ):'SLAC-130',
             #( '192.168.2.117' ):'SLAC-132',
             ( '192.168.2.210' ):'SLAC-DTM1',
-            # ( '192.168.3.110' ):'SLAC-200',
-            # ( '192.168.3.111' ):'SLAC-202',
-            # ( '192.168.3.112' ):'SLAC-210',
-            # ( '192.168.3.113' ):'SLAC-212',
-            # ( '192.168.3.114' ):'SLAC-220',
-            # ( '192.168.3.115' ):'SLAC-222',
-            # ( '192.168.3.116' ):'SLAC-230',
-            # ( '192.168.3.117' ):'SLAC-232',
-            # ( '192.168.3.210' ):'SLAC-DTM2',
+            ( '192.168.2.120' ):'SLAC-200',
+            ( '192.168.2.121' ):'SLAC-202',
+            ( '192.168.2.122' ):'SLAC-210',
+            ( '192.168.2.123' ):'SLAC-212',
+            ( '192.168.2.124' ):'SLAC-220',
+            ( '192.168.2.125' ):'SLAC-222',
+            ( '192.168.2.126' ):'SLAC-230',
+            ( '192.168.2.127' ):'SLAC-232',
+            ( '192.168.2.220' ):'SLAC-DTM2',
             ###################
             # FNAL Defined RCEs
             ###################
@@ -430,6 +430,7 @@ def usage():
     print "guess_os                  get current OS running"
     print "reboot                    restart the current OS"    
     print "setup_ssh_keys            setup up the ssh authorized keys"
+    print "setup_linux TARGET        Setup the Linux environment"
     print "ssh                       start a ssh session (only for one RCE element)"
     print "ssh_cmd CMDARG            CMDARG through ssh"
     print "scp_put [-r] SRC DEST     from SRC to RCE DEST, -r for recursive copy"
@@ -608,45 +609,31 @@ def main(argv):
         ssh_cmd += "nohup /mnt/host/protoDUNE/rceScripts/start_server.csh"
         g.action("ssh_cmd",ssh_cmd)
     elif (cmd=="setup_linux" and argc==1):
-        # Prevent use of this function from going further       
-        return 1
-
-        # Setup ssh tokens
-        #g.action("setup_ssh_keys")
-
-        # Devicetree, rc.local and cshrc update
-        if(argv[2]=="SLAC"):
-            g.action("scp_put",(locPath+"rceData/rc.local.slac"),   "/etc/rc.local")
-            g.action("scp_put",(locPath+"rceData/resolv.conf.slac"),"/etc/resolv.conf")
+        
+        if (argv[2] == 'slac'):
+            pass
+        elif (argv[2] == 'cern'):
+            pass
         else:
-            g.action("scp_put",(locPath+"rceData/rce_start.sh.fermi"),"/usr/lib/systemd/scripts/rce_start.sh")
-            g.action("scp_put",(locPath+"rceData/rce_start.service"), "/usr/lib/systemd/system/rce_start.service")
-            g.action("ssh_cmd","chmod a+rx /usr/lib/systemd/scripts/rce_start.sh")
-            g.action("ssh_cmd","systemctl enable rce_start")
-            g.action("ssh_cmd","rm -f /etc/rc.local")
-            g.action("ssh_cmd","rm -f /etc/resolv.conf")
-            g.action("ssh_cmd","sync; sync; sync")
-
-        # Prevent use of this function from going further
-        return 1
-
-        # Devicetree and Kernel update
-        g.action("scp_put",(locPath+"rceData/devicetree.dtb"),"/mnt/linux/devicetree.dtb")
-        g.action("scp_put",(locPath+"rceData/uImage"),        "/mnt/linux/uImage")
-        g.action("scp_put",(locPath+"rceData/3.17.0-xilinx"), "/lib/modules/",True)
-     
-        # Package Update With Proxy
-        g.action("ssh_cmd","setenv http_proxy http://192.168.208.10:8089; pacman -Syu --noconfirm")
-        g.action("ssh_cmd","setenv http_proxy http://192.168.208.10:8089; pacman --noconfirm -S make nfs-utils libxml2 tcsh mariadb python2 initscripts")
-
-        # Package Update No Proxy
-        g.action("ssh_cmd","route add default gw 192.168.1.1")
-        g.action("ssh_cmd","pacman -Syu --noconfirm")
-        g.action("ssh_cmd","pacman --noconfirm -S make nfs-utils libxml2 tcsh mariadb python2 initscripts")
-
+            print usage()
+            return (-1)
+        
+        # Setup rce_start.service
+        g.action("scp_put",(locPath+"rceData/axistreamdma.sh."+argv[2]), "/bin/axistreamdma.sh")
+        g.action("scp_put",(locPath+"rceData/axistreamdma.service"), "/usr/lib/systemd/system/axistreamdma.service")
+        g.action("ssh_cmd","systemctl enable axistreamdma")
+        g.action("ssh_cmd","rm -f /etc/rc.local")
+        g.action("ssh_cmd","rm -f /etc/resolv.conf")
+        
+        # Package Update
+        g.action("ssh_cmd","pacman -U --noconfirm /opt/RCE_SDK/tgt/linux/packages/extra/*.xz")
+        
         # NFS and account setup
         g.action("ssh_cmd","mkdir -P /mnt/host")
         g.action("ssh_cmd","chsh --shell /bin/tcsh")
+        
+        # SYNC the SD memory card
+        g.action("ssh_cmd","sync; sync; sync")
     else:
         print usage()
         return (-1)
