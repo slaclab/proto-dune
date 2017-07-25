@@ -620,6 +620,7 @@ def main(argv):
         
         # Setup rce_start.service
         g.action("scp_put",(locPath+"rceData/axistreamdma.sh."+argv[2]), "/bin/axistreamdma.sh")
+        g.action("ssh_cmd","chmod +x /bin/axistreamdma.sh")
         g.action("scp_put",(locPath+"rceData/axistreamdma.service"), "/usr/lib/systemd/system/axistreamdma.service")
         g.action("ssh_cmd","systemctl enable axistreamdma")
         g.action("ssh_cmd","rm -f /etc/rc.local")
