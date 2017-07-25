@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmGtx7.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-01-31
+-- Last update: 2017-07-24
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -82,12 +82,14 @@ architecture mapping of ProtoDuneDpmGtx7 is
    signal wdtRstOneShot : sl               := '0';
    signal wdtReset      : sl               := '0';
    signal wdtRst        : sl               := '0';
+   signal cPllLocked    : sl               := '0';
 
 begin
 
    loopback      <= '0' & emuLoopback & '0';
    txPolarityFix <= '0' when(SIMULATION_G) else not(emuLoopback);  -- Correcting HW polarity swap
 
+   cPllLock    <= cPllLocked;
    rxValid     <= linkUp;
    rxData      <= data  when(linkUp = '1') else (others => '0');
    rxDataK     <= dataK when(linkUp = '1') else (others => '0');
@@ -98,7 +100,7 @@ begin
    begin
       if rising_edge(clk) then
          rxRst <= rst or gtRst or wdtRst after TPD_G;
-         if (rst = '1') or (rxRstDone = '0') or (dataValid = '0') or (rxBuff(2) = '1') then
+         if (rst = '1') or (rxRstDone = '0') or (dataValid = '0') or (rxBuff(2) = '1') or (cPllLocked = '0') then
             cnt    <= (others => '0') after TPD_G;
             linkUp <= '0'             after TPD_G;
          else
@@ -238,7 +240,7 @@ begin
       port map (
          stableClkIn      => clk,
          cPllRefClkIn     => refClk,
-         cPllLockOut      => cPllLock,
+         cPllLockOut      => cPllLocked,
          qPllRefClkIn     => '0',
          qPllClkIn        => '0',
          qPllLockIn       => '1',

@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmDpmIntf.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2017-03-20
--- Last update: 2017-06-05
+-- Last update: 2017-07-24
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -28,22 +28,52 @@ entity ProtoDuneDtmDpmIntf is
       TPD_G : time := 1 ns);
    port (
       -- Busy Interface
-      dpmBusy : out slv(7 downto 0);
+      dpmBusy    : out slv(7 downto 0);
       -- CDR Interface
-      recClk  : in  sl;
-      recData : in  sl;
+      recClk     : in  sl;
+      recData    : in  sl;
+      cdrLocked  : in  sl;
+      -- Reference 250 Clock
+      refClk250P : in  sl;
+      refClk250N : in  sl;
       -- DPM Ports
-      dpmClkP : out slv(2 downto 0);
-      dpmClkN : out slv(2 downto 0);
-      dpmFbP  : in  slv(7 downto 0);
-      dpmFbN  : in  slv(7 downto 0));
+      dpmClkP    : out slv(2 downto 0);
+      dpmClkN    : out slv(2 downto 0);
+      dpmFbP     : in  slv(7 downto 0);
+      dpmFbN     : in  slv(7 downto 0));
 end ProtoDuneDtmDpmIntf;
 
 architecture mapping of ProtoDuneDtmDpmIntf is
 
-   signal recDataDdr : sl;
+   signal recDataDdr   : sl;
+   signal cdrLockedL   : sl;
+   signal stableClock  : sl;
+   signal stableClk    : sl;
+   signal dpmMgtRefClk : sl;
 
 begin
+
+   cdrLockedL <= not(cdrLocked);
+
+   U_IBUFDS_GTE2 : IBUFDS_GTE2
+      port map (
+         I     => refClk250P,
+         IB    => refClk250N,
+         CEB   => '0',
+         ODIV2 => open,
+         O     => stableClock);
+
+   U_BUFG : BUFG
+      port map (
+         I => stableClock,
+         O => stableClk);
+
+   U_BUFGMUX : BUFGMUX
+      port map (
+         O  => dpmMgtRefClk,            -- 1-bit output: Clock output
+         I0 => stableClk,               -- 1-bit input: Clock input (S=0)
+         I1 => recClk,                  -- 1-bit input: Clock input (S=1)
+         S  => cdrLocked);    -- 1-bit input: Clock select                
 
    ----------------
    -- DPM Interface
@@ -64,16 +94,18 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
-         clkIn   => recClk,
+         clkIn   => dpmMgtRefClk,
          clkOutP => dpmClkP(0),
          clkOutN => dpmClkN(0));
 
    -- DPM's FPGA Clock
    DPM_FPGA_CLK : entity work.ClkOutBufDiff
       generic map (
-         TPD_G    => TPD_G,
-         INVERT_G => false)
+         TPD_G          => TPD_G,
+         RST_POLARITY_G => '1',
+         INVERT_G       => false)
       port map (
+         rstIn   => cdrLockedL,
          clkIn   => recClk,
          clkOutP => dpmClkP(1),         --DPM_CLK1_P
          clkOutN => dpmClkN(1));        --DPM_CLK1_M   
@@ -90,7 +122,7 @@ begin
          Q  => recDataDdr,              -- 1-bit DDR output
          C  => recClk,                  -- 1-bit clock input
          CE => '1',                     -- 1-bit clock enable input
-         R  => '0',                     -- 1-bit reset
+         R  => cdrLockedL,              -- 1-bit reset
          S  => '0');                    -- 1-bit set
 
    DPM_FPGA_DATA : OBUFDS

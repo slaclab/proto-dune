@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTiming.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-05
+-- Last update: 2017-07-24
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -74,6 +74,7 @@ architecture mapping of ProtoDuneDpmTiming is
 
    signal clock           : sl;
    signal recClk          : sl;
+   signal timingClock     : sl;
    signal data            : sl;
    signal Q1              : sl;
    signal Q2              : sl;
@@ -83,6 +84,7 @@ architecture mapping of ProtoDuneDpmTiming is
    signal recLol          : sl;
    signal cdrClk          : sl;
    signal cdrRst          : sl;
+   signal cdrReset        : sl;
    signal cdrDataInv      : sl;
    signal cdrEdgeSel      : sl;
    signal timingBus       : ProtoDuneDpmTimingType;
@@ -114,6 +116,23 @@ begin
       port map (
          I => clock,
          O => recClk);
+
+   timingClk <= timingClock;
+   U_BUFGMUX : BUFGMUX
+      port map (
+         O  => timingClock,             -- 1-bit output: Clock output
+         I0 => wibClk,                  -- 1-bit input: Clock input (S=0)
+         I1 => recClk,                  -- 1-bit input: Clock input (S=1)
+         S  => cdrLocked);              -- 1-bit input: Clock select           
+
+   cdrReset <= wibRst when(cdrLocked = '0') else cdrRst;
+   U_Rst : entity work.RstSync
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         clk      => timingClock,
+         asyncRst => cdrReset,
+         syncRst  => timingRst);
 
    U_CDR_DATA : IBUFDS
       generic map (
@@ -254,15 +273,6 @@ begin
          dmaIbMaster     => dmaIbMaster,
          dmaIbSlave      => dmaIbSlave);
 
-   timingClk <= recClk;
-   U_Rst : entity work.RstSync
-      generic map (
-         TPD_G => TPD_G)
-      port map (
-         clk      => recClk,
-         asyncRst => cdrRst,
-         syncRst  => timingRst);
-
    U_timingTs : entity work.SynchronizerFifo
       generic map (
          TPD_G        => TPD_G,
@@ -271,7 +281,7 @@ begin
          rst    => cdrRst,
          wr_clk => cdrClk,
          din    => timingBus.timestamp,
-         rd_clk => recClk,
+         rd_clk => timingClock,
          dout   => timingTs);
 
    U_timingTrig : entity work.SynchronizerFifo
@@ -283,7 +293,7 @@ begin
          wr_clk => cdrClk,
          din(0) => '0',
          wr_en  => triggerDet,
-         rd_clk => recClk,
+         rd_clk => timingClock,
          valid  => timingTrig,
          dout   => open);
 

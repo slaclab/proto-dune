@@ -28,6 +28,7 @@ set_property DIFF_TERM true [get_ports {dpmFbM[*]}]
 #########################
 
 create_clock -name recClk -period  4.000 [get_ports {dtmToRtmLsP[0]}]
+create_clock -name emuClk -period  4.000 [get_pins {U_App/U_DPM_INTF/U_BUFGMUX/O}]
 
 create_generated_clock -name cdrClk [get_pins  {U_App/U_Timing/clkgen/mmcm/CLKOUT0}] 
 
@@ -35,3 +36,5 @@ set_clock_groups -asynchronous -group [get_clocks {sysClk125}] -group [get_clock
 set_clock_groups -asynchronous -group [get_clocks {sysClk125}] -group [get_clocks {cdrClk}] 
 set_clock_groups -asynchronous -group [get_clocks {sysClk200}] -group [get_clocks {recClk}] 
 set_clock_groups -asynchronous -group [get_clocks {sysClk200}] -group [get_clocks {cdrClk}] 
+
+set_case_analysis 1 [get_pins {U_App/U_DPM_INTF/U_BUFGMUX/S}]

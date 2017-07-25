@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-05-12
+-- Last update: 2017-07-24
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -44,6 +44,9 @@ entity ProtoDuneDtmCore is
       -- Reference 200 MHz clock
       refClk200       : in    sl;
       refRst200       : in    sl;
+      -- Reference 250 Clock
+      refClk250P      : in    sl;
+      refClk250N      : in    sl;
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in    sl;
       axilRst         : in    sl;
@@ -113,15 +116,19 @@ begin
          TPD_G => TPD_G)
       port map (
          -- Busy Interface
-         dpmBusy => dpmBusy,
+         dpmBusy    => dpmBusy,
          -- CDR Interface
-         recClk  => recClk,
-         recData => recData,
+         recClk     => recClk,
+         recData    => recData,
+         cdrLocked  => status.cdrLocked,
+         -- Reference 250 Clock
+         refClk250P => refClk250P,
+         refClk250N => refClk250N,
          -- DPM Ports
-         dpmClkP => dpmClkP,
-         dpmClkN => dpmClkN,
-         dpmFbP  => dpmFbP,
-         dpmFbN  => dpmFbN);
+         dpmClkP    => dpmClkP,
+         dpmClkN    => dpmClkN,
+         dpmFbP     => dpmFbP,
+         dpmFbN     => dpmFbN);
 
    ---------------------------------------------------------
    -- Measure the CDR clock frequency and determine 
