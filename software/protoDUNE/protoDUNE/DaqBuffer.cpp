@@ -2054,6 +2054,8 @@ static bool process (Event::Trigger    &trigger,
                      enum RunMode       runMode,
                      bool              isActive,
                      volatile uint32_t  &trgCnt,
+                     volatile uint32_t  &trgMsgCnt,
+                     volatile uint32_t  &disTrgCnt,
                      MonitorRate          &rate,
                      FrameDiagnostics     &diag)
 {
@@ -2086,15 +2088,27 @@ static bool process (Event::Trigger    &trigger,
       // Is this a trigger message?
       if (tmsg->is_trigger ())
       {
+         trgMsgCnt += 1;
+         fprintf (stderr, "Trigger msg ts = %16.16" PRIx64 " [discard=%d]\n",
+                 tmsg->timestamp(), isActive);
+
+
+         float dt = float(tmsg->timestamp() - trigger.m_timestamp);
+         dt *= 1.e3 / 250.e6;
+         fprintf(stderr, "Last accepted trigger ts = %16.16" PRIx64
+                 ", dt = %.1f ms \n",
+                 trigger.m_timestamp, dt);
+
          if (!isActive)
          {
             trigger.init (tmsg);
-            trgActive = true;
          }
          else
          {
             fputs ("Discarding trigger\n", stderr);
+	          disTrgCnt += 1;
          }
+         trgActive = true;
       }
    }
 
@@ -2226,6 +2240,8 @@ void DaqBuffer::rxRun ()
                                  _config._runMode,
                                  trgActive,
                                  _counters._triggers,
+                                 _counters._trgMsgCnt,
+                                 _counters._disTrgCnt,
                                  rate,
                                  diag);
          }
@@ -3264,6 +3280,13 @@ void DaqBuffer::txRun ()
          }
          else
          {
+	    size_t currSeqId = event->m_trigger.m_sequence;
+            size_t deltaSeqId = currSeqId - _txSeqId;
+            if (_counters._txCount > 0 && deltaSeqId > 1) {
+		_counters._dropSeqCnt += deltaSeqId - 1;
+	    }
+	    _txSeqId = currSeqId;
+
             _counters._txCount++;
             _txSize             = txSize;
             _counters._txTotal += txSize;
@@ -3337,7 +3360,8 @@ void DaqBuffer::getStatus(struct BufferStatus *status) {
    status->triggers     = _counters._triggers;
    status->txCount      = _counters._txCount;
    status->txErrors     = _counters._txErrors;
-
+   status->disTrgCnt    = _counters._disTrgCnt;
+   status->dropSeqCnt   = _counters._dropSeqCnt;
 
    // These are derived rates
    status->triggerRate  = triggerRate;
@@ -3398,6 +3422,7 @@ void DaqBuffer::resetCounters() {
 
    _rxSize        = 0;
    _txSize        = 0;
+   _txSeqId       = 0;
 
    gettimeofday (&_lastTime, NULL);
 }

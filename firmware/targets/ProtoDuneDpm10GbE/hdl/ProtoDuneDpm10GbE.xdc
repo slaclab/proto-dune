@@ -20,6 +20,7 @@ create_generated_clock -name wibClk        [get_pins  {U_App/U_Wib/U_MMCM/MmcmGe
 set_clock_groups -asynchronous -group [get_clocks {wibRefClk}] -group [get_clocks {wibClk}] -group [get_clocks {sysClk125}]
 
 create_clock -name recClk -period  4.000 [get_ports {dtmClkP[0]}]
+create_clock -name emuClk -period  4.000 [get_pins {U_App/U_Timing/U_BUFGMUX/O}]
 
 create_generated_clock -name cdrClk [get_pins  {U_App/U_Timing/U_Timing/clkgen/mmcm/CLKOUT0}] 
 
@@ -30,3 +31,8 @@ set_clock_groups -asynchronous -group [get_clocks {sysClk200}] -group [get_clock
 
 set_clock_groups -asynchronous -group [get_clocks {wibClk}] -group [get_clocks {recClk}] 
 set_clock_groups -asynchronous -group [get_clocks {wibClk}] -group [get_clocks {cdrClk}] 
+
+set_clock_groups -asynchronous -group [get_clocks {emuClk}] -group [get_clocks {wibClk}] 
+set_clock_groups -asynchronous -group [get_clocks {emuClk}] -group [get_clocks {cdrClk}] 
+
+set_case_analysis 1 [get_pins {U_App/U_Timing/U_BUFGMUX/S}]

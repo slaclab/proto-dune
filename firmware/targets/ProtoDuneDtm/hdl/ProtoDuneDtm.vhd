@@ -5,7 +5,7 @@
 -- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-03-20
+-- Last update: 2017-07-24
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -188,7 +188,7 @@ begin
       generic map (
          TPD_G            => TPD_G,
          AXI_ERROR_RESP_G => AXI_RESP_OK_C)
-      port map (    
+      port map (
          -- RTM Low Speed
          dtmToRtmLsP     => dtmToRtmLsP,
          dtmToRtmLsN     => dtmToRtmLsM,
@@ -200,6 +200,9 @@ begin
          -- Reference 200 MHz clock
          refClk200       => sysClk200,
          refRst200       => sysClk200Rst,
+         -- Reference 250 Clock
+         refClk250P      => locRefClkP,
+         refClk250N      => locRefClkM,
          -- AXI-Lite Interface
          axilClk         => axiClk,
          axilRst         => axiClkRst,

@@ -1,4 +1,4 @@
-export GIT_BYPASS = 1
+export GIT_BYPASS = 0
 
 # Define target output
 target: bit
@@ -7,10 +7,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000047
+export PRJ_VERSION = 0x00000048
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2017/07/24 0x00000048 llr  Preventing the timingRst from locking up the CPLL
 # 2017/06/05 0x00000047 llr  Integrated timing receiver into data emulator
 #                            Now the data emulator will send the actual timestamp
 # 2017/06/02 0x00000046 llr  Moved TimingMsg from DMA[CH=2] to DMA[CH=0]
