@@ -61,7 +61,10 @@ public:
          TxBw        = 13,
          TxRate      = 14,
          TxPend      = 15,
-         StatusCnt   = 16
+         DisTrgCnt   = 16,
+         DropSeqCnt  = 17,
+         TrgMsgCnt   = 18,
+         StatusCnt   = 19 
       };
 
       Variable *v[StatusCnt];

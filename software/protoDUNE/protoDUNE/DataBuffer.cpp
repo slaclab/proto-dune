@@ -377,7 +377,10 @@ DataBuffer::StatusVariables::StatusVariables (Device *device)
       [TxSize]      = { "TxSize",      "Transmit Size",              "Bytes"},
       [TxBw]        = { "TxBw",        "Transmit Bandwidth",          "Mbps"},
       [TxRate]      = { "TxRate",      "Transmit Rate",                 "Hz"},
-      [TxPend]      = { "TxPend",      "Transmit Pend",                   0 }
+      [TxPend]      = { "TxPend",      "Transmit Pend",                   0 },
+      [DisTrgCnt]   = { "DisTrgCnt",   "Discarded Trigger Count",         0 },
+      [DropSeqCnt]  = { "DropSeqCnt",  "Drop Sequnece Count",             0 },
+      [TrgMsgCnt]   = { "TrgMsgCng",   "Trigger Message Count",           0 },
    };
 
 
@@ -430,6 +433,9 @@ void DataBuffer::StatusVariables::set (BufferStatus const &status)
    v[TxPend     ]->setInt   (status.txPend);
    v[TxBw       ]->setFloat (status.txBw,   Format_1f);
    v[TxRate     ]->setFloat (status.txRate, Format_1f);
+   v[DisTrgCnt  ]->setInt   (status.disTrgCnt);
+   v[DropSeqCnt ]->setInt   (status.dropSeqCnt);
+   v[TrgMsgCnt  ]->setInt   (status.trgMsgCnt);
 }
 /* ---------------------------------------------------------------------- */
 /* DataBuffer::StatusVariables                                            */

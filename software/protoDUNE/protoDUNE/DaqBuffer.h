@@ -74,6 +74,9 @@ struct BufferStatus {
    uint32_t rxSize;
    uint32_t dropCount;
    uint32_t triggers;
+   uint32_t trgMsgCnt;
+   uint32_t disTrgCnt;
+   uint32_t dropSeqCnt;
 
    uint32_t txErrors;
    uint32_t txSize;
@@ -85,6 +88,7 @@ struct BufferStatus {
    float    rxRate;
    float    txBw;
    float    txRate;
+
 };
 
 
@@ -612,6 +616,10 @@ private:
       uint32_t _txCount;
       uint32_t _txTotal;
       uint32_t _txErrors;
+      
+      uint32_t _disTrgCnt;
+      uint32_t _dropSeqCnt;
+      uint32_t _trgMsgCnt;
    };
 
 
@@ -653,6 +661,7 @@ public:
 private:
       uint32_t _rxSize;
       uint32_t _txSize;
+      uint32_t _txSeqId;
 
       // Status Counters
       Counters volatile      _counters;
