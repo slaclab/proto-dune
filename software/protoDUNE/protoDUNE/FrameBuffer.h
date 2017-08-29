@@ -20,6 +20,8 @@
 //
 //       DATE WHO WHAT 
 // ---------- --- ------------------------------------------------------------
+// 2017.07.11 jjr Moved many methods from .cpp file to be inlined
+//                Added method to get the frame address as a 64 bit number
 // 2017.05.27 jjr Added setData to set fields separately.  
 // 2016.11.05 jjr Added receive frame sequence number
 //
@@ -74,11 +76,133 @@ public:
          return id;
       }
 
-      int32_t  index       () const;
-      uint8_t *baseAddr    () const;
-      uint32_t size        () const;
-      uint32_t rx_sequence () const;
+      int32_t   index       () const;
+      uint8_t  *baseAddr    () const;
+      uint64_t *baseAddr64  () const;
+      uint32_t  size        () const;
+      uint32_t  rx_sequence () const;
 };
+
+
+
+
+
+/* ====================================================================== */
+/* BEGIN: IMPLEMENTATION                                                  */
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Set the basic parameters of an incoming frame
+  
+  \param[in]       index  The DMA buffer index of the frame
+  \param[in]        data  The virtual address  of the frame
+  \param[in]        size  The size, in bytes,  of the frame
+  \param[in] rx_sequence  The received sequence number of the frame
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void FrameBuffer::setData (uint32_t       index, 
+                                  uint8_t        *data,
+                                  uint32_t        size,
+                                  uint32_t rx_sequence)
+{
+    _index       = static_cast<int32_t>(index);
+    _data        = data;
+    _size        = size;
+    _rx_sequence = rx_sequence;
+}
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief     Sets the DMA frame buffer index
+  \param[in] index  The DMA buffer index of the frame
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void FrameBuffer::setIndex (uint32_t index) { _index = index; }
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief     Sets the DMA frame buffer virtual address
+  \param[in] data  The virtual address  of the frame
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void FrameBuffer::setData (uint8_t *data) { _data  =  data; }
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief     Sets the size, in bytes, of the frame buffer
+  \param[in] size  The size, in bytes, of the frame buffer
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void FrameBuffer::setSize (uint32_t size) { _size  =  size; } 
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- */
+inline void FrameBuffer::setRxSequence (uint32_t rx_sequence) 
+{
+   _rx_sequence = rx_sequence; 
+}
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Return the frame buffer's DMA index
+  \return  The frame buffer's DMA index
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline int32_t FrameBuffer::index() const { return(_index); }
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Return the base address of the frame buffer as an 8-bit pointer
+  \return  The base address of the frame as a 8-bit pointer
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint8_t *FrameBuffer::baseAddr () const { return (_data); }
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Return the frame buffer size, in bytes
+  \return The frame buffer size, in bytes
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint32_t FrameBuffer::size () const { return(_size); }
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Return the frame buffer's received sequence number
+  \return The frame buffer's received sequence number
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint32_t FrameBuffer::rx_sequence () const { return _rx_sequence; }
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Return the base address of the frame as a 64-bit pointer
+  \return  The base address of the frame as a 64-bit pointer
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint64_t *FrameBuffer::baseAddr64 () const 
+{
+   return reinterpret_cast<uint64_t *>(_data);
+}
+/* ---------------------------------------------------------------------- */
+/* END: IMPLEMENTATION                                                    */
+/* ====================================================================== */
 
 #endif
 

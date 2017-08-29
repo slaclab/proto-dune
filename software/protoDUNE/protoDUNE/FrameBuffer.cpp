@@ -20,6 +20,7 @@
 //
 //       DATE WHO WHAT 
 // ---------- --- ------------------------------------------------------------
+// 2017.07.11 jjr Moved many methods to be inlines in the .h files
 // 2016.11.05 jjr Added receive frame sequence number
 //
 // 09/18/2014: created
@@ -42,43 +43,3 @@ FrameBuffer::FrameBuffer () {
 FrameBuffer::~FrameBuffer () {
 }
 
-// Set data and index pointers
-void FrameBuffer::setData (uint32_t       index, 
-                           uint8_t        *data,
-                           uint32_t        size,
-                           uint32_t rx_sequence)
- {
-    _index       = static_cast<int32_t>(index);
-    _data        = data;
-    _size        = size;
-    _rx_sequence = rx_sequence;
-}
-
-void FrameBuffer::setIndex      (uint32_t       index) { _index = index; }
-void FrameBuffer::setData       (uint8_t        *data) { _data  =  data; }
-void FrameBuffer::setSize       (uint32_t        size) { _size  =  size; } 
-void FrameBuffer::setRxSequence (uint32_t rx_sequence) 
-{ 
-   _rx_sequence = rx_sequence; 
-}
-
-
-// Return index
-int32_t FrameBuffer::index() const {
-   return(_index);
-}
-
-// Return pointer to Frame data base address
-uint8_t * FrameBuffer::baseAddr () const {
-   return (_data);
-}
-
-// Return total size
-uint32_t FrameBuffer::size () const {
-   return(_size);
-}
-
-// Return the received sequence number
-uint32_t FrameBuffer::rx_sequence () const {
-   return _rx_sequence;
-}

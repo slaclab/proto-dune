@@ -7,6 +7,8 @@
 #include <time.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
@@ -14,8 +16,7 @@
 #include <netinet/tcp.h>
 #include <inttypes.h>
 #include <getopt.h>
-
-
+#include <errno.h>
 
 
 /* ---------------------------------------------------------------------- *//*!
@@ -29,12 +30,13 @@
 /* ---------------------------------------------------------------------- */
 struct _Prms
 {
-   int portNumber;   /*!< The port to connect on the RCE side            */
-   int    rcvSize;   /*!< Size of the receiver buffer in bytes           */
-   int       data;   /*!< The number of data words to print              */
-   int    nodelay;   /*!< Value of the TCP_NODELAY parameter             */
-   int  nfailures;  /*!< Maximum number of failure messages              */
-   char   chkData;   /*!< Perform the data check                         */
+   int        portNumber;   /*!< The port to connect on the RCE side      */
+   int           rcvSize;   /*!< Size of the receiver buffer in bytes     */
+   int              data;   /*!< The number of data words to print        */
+   int           nodelay;   /*!< Value of the TCP_NODELAY parameter       */
+   int         nfailures;   /*!< Maximum number of failure messages       */
+   char          chkData;   /*!< Perform the data check                   */
+   char const *ofilename;   /*!< Output file name                         */
 };
 /* ---------------------------------------------------------------------- */
 typedef struct _Prms Prms;
@@ -51,21 +53,23 @@ typedef struct _Prms Prms;
 static void getPrms (Prms *prms, int argc, char *const argv[])
 {
     int c;
-    int  portNumber =       8991;
-    int  rcvSize    = 128 * 1024;
-    int  data       =          0;
-    char chkData    =          0;
-    int  nodelay    =          0;
-    int  nfailures  =         25;
+    int         portNumber =       8991;
+    int         rcvSize    = 128 * 1024;
+    int         data       =          0;
+    char        chkData    =          0;
+    int         nodelay    =          0;
+    int         nfailures  =         25;
+    char const *ofilename  =       NULL;
 
 
-    while ( (c = getopt (argc, argv, "f:p:r:xd:n:")) != EOF)
+    while ( (c = getopt (argc, argv, "o:f:p:r:xd:n:")) != EOF)
     {
        if       (c == 'f') nfailures = strtoul (optarg, NULL, 0);
-       else if  (c == 'p') portNumber = strtoul (optarg, NULL, 0);
-       else if  (c == 'r') rcvSize    = strtoul (optarg, NULL, 0);
        else if  (c == 'd') data       = strtoul (optarg, NULL, 0);
+       else if  (c == 'p') portNumber = strtoul (optarg, NULL, 0);
        else if  (c == 'n') nodelay    = strtoul (optarg, NULL, 0);
+       else if  (c == 'o') ofilename  = optarg;
+       else if  (c == 'r') rcvSize    = strtoul (optarg, NULL, 0);
        else if  (c == 'x') chkData    = 1;
     }
 
@@ -75,6 +79,7 @@ static void getPrms (Prms *prms, int argc, char *const argv[])
     prms->data       = data;
     prms->chkData    = chkData;
     prms->nfailures  = nfailures;
+    prms->ofilename  = ofilename;
     prms->nodelay    = nodelay != 0;
 
     return;
@@ -611,6 +616,7 @@ static int                 rnd64 (unsigned int  nbytes);
 static void            print_hdr (uint64_t        data);
 static void             print_id (uint64_t const *data);
 static void         print_origin (uint64_t const *data);
+static void     print_tpcRecords (uint64_t const *data);
 static void            print_toc (uint64_t const *data);
 
 static ssize_t read_data        (int              fd,
@@ -668,6 +674,24 @@ int main(int argc, char *const argv[])
     init_ctx   (&ctx);
     init_ctx   (&prv);
 
+    int fd = -1;
+    if (prms.ofilename)
+    {
+       fd = creat (prms.ofilename,  S_IRUSR | S_IWUSR | S_IXUSR
+                                  | S_IRGRP | S_IWGRP | S_IXGRP
+                                  | S_IROTH);
+       if (fd >= 0)
+       {
+          fprintf (stderr, "Output file is: %s\n", prms.ofilename);
+       }
+       else
+       {
+          fprintf (stderr, "Error opening output file: %s err = %d\n",
+                   prms.ofilename, errno);
+          return -1;
+       }
+    }
+
 
     unsigned int retries[128];
     memset (retries, 0, sizeof (retries));
@@ -688,8 +712,6 @@ int main(int argc, char *const argv[])
     {
        RcvProfile hdrRcv;
        RcvProfile datRcv;
-
-
 
        /* 
         | Obtain the header, the hdrRcv keeps track of how many
@@ -745,7 +767,7 @@ int main(int argc, char *const argv[])
        {
           ssize_t  received = nread;
           uint64_t header   = get_w64 (rxData);
-          uint32_t dataSize = (header >> 8) & 0xffffff;
+          uint32_t dataSize = ((header >> 8) & 0xffffff) * sizeof (uint64_t);
 
 
           /* Ensure that the buffer can handle the data volume */
@@ -808,28 +830,29 @@ int main(int argc, char *const argv[])
 
              print_id ((uint64_t const *)data);
 
-             uint64_t const *origin = (uint64_t const *)(data) + 2; 
-             int          n64origin = rnd64 ((origin[0] >> 12) & 0xfffff);
+             if (fd >= 0)
+             {
+                ssize_t nwrite = headerSize + nread;
+                ssize_t nwrote = write (fd, rxData, nwrite);
+                if (nwrote != nwrite)
+                {
+                   fprintf (
+                      stderr,
+                      "Error %d writing output %zd != %zd bytes to write\n",
+                      errno,
+                      nwrite, nwrote);
+                   exit (-1);
+                }
+             }
+
+
+             uint64_t const     *origin = (uint64_t const *)(data) + 2; 
+             int              n64origin = (origin[0] >> 8) & 0xfff;
              print_origin (origin);
 
-             uint64_t const *toc    = (origin + n64origin);
-             int          n64toc    = rnd64 ((toc[0]    >> 12) & 0xfffff);
-             print_toc    (toc);
-             putchar ('\n');
+             uint64_t const *tpcRecords = (origin + n64origin);
+             print_tpcRecords (tpcRecords);
 
-
-             uint64_t const *frames = (toc + n64toc);
-             for (int idx = 0; idx < 5; idx++)
-             {
-                int len = frames[0] & 0xffffff;
-                int n64 = rnd64 (len);
-                printf ("Frames = %16.16" PRIx64 "nbytes:n64 %8.8x:%8.8x\n", 
-                        *frames,
-                        len,
-                        n64);
-
-                frames += rnd64 (len);
-             }
 
              if (prms.chkData) 
              {
@@ -843,6 +866,9 @@ int main(int argc, char *const argv[])
 
              ctx.stats.datCnt += 1;
              ctx.stats.datSiz += ndata;
+
+             uint64_t trailer = *(uint64_t const *)(data + ndata - sizeof (trailer));
+             printf ("Trailer: %16.16" PRIx64 "\n", trailer);
 
           }
        }
@@ -1092,19 +1118,19 @@ static void print_hdr (uint64_t header)
    unsigned format    = (header >>  0) & 0xf;
    unsigned type      = (header >>  4) & 0xf;
    unsigned length    = (header >>  8) & 0xffffff;
-   unsigned specific0 = (header >> 32) & 0xf;
-   unsigned naux64    = (header >> 36) & 0xf;
-   unsigned specific1 = (header >> 40) & 0xffffff;
+   unsigned naux64    = (header >> 32) & 0xf;
+   unsigned subtype   = (header >> 36) & 0xf;
+   unsigned specific  = (header >> 40) & 0xffffff;
 
 
-   printf ("Header:     Format.Type = %1.1x.%1.1x length = %6.6x\n"
-           "            spec0       = %1.1x    naux64 = %1.1x  spec1 = %6.6x\n",
-            format,
-            type,
-            length,
-            specific0,
-            naux64,
-            specific1);
+   printf ("Header:     Type.Format = %1.1x.%1.1x length = %6.6x\n"
+           "            naux64      = %1.1x      subtype = %1.1x  spec = %6.6x\n",
+           type,
+           format,
+           length,
+           naux64,
+           subtype,
+           specific);
 
    return;
 }
@@ -1160,18 +1186,48 @@ static void  print_id (uint64_t const *data)
   \param[in]  hdr  The format = 1 header
                                                                           */
 /* ---------------------------------------------------------------------- */
-static void print_header1 (char const *dsc, uint32_t hdr)
+static void print_header1 (char const *dsc, uint64_t hdr)
 {
-   unsigned int  format = (hdr >>  0) &     0xf;
-   unsigned int    type = (hdr >>  4) &     0xf;
-   unsigned int version = (hdr >>  8) &     0xf;
-   unsigned int  length = (hdr >> 12) & 0xfffff;
+   unsigned int  format = (hdr >>  0) &        0xf;
+   unsigned int    type = (hdr >>  4) &        0xf;
+   unsigned int  length = (hdr >>  8) &  0xfffffff;
+   uint32_t      bridge = (hdr >> 32) & 0xffffffff;
    
-   printf ("%-10.10s: Format.Type = %1.1x.%1.1x Version = %1.1x Length = %5.5x\n",
+   printf ("%-10.10s: Type.Format = %1.1x.%1.1x Length = %6.6x Bridge = %8.8" PRIx32 "\n",
            dsc,
-           format,
            type,
+           format,
+           length,
+           bridge);
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Prints the field format = 2 header
+
+  \param[in]  hdr  The format = 2 header
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static void print_header2 (char const *dsc, uint32_t hdr)
+{
+   unsigned int   format = (hdr >>  0) &   0xf;
+   unsigned int     type = (hdr >>  4) &   0xf;
+   unsigned int  version = (hdr >>  8) &   0xf;
+   unsigned int specific = (hdr >> 12) &  0xff;
+   unsigned int   length = (hdr >> 20) & 0xfff;
+   
+   printf ("%-10.10s: Type.Format = %1.1x.%1.1x Version = %1.1x Spec = %2.2x"
+           " Length = %6.6x\n",
+           dsc,
+           type,
+           format,
            version,
+           specific,
            length);
 
    return;
@@ -1184,7 +1240,7 @@ static void print_origin (uint64_t const *data)
 {
    uint32_t hdr = data[0];
 
-   print_header1 ("Origin", hdr);
+   print_header2 ("Origin", hdr);
 
    uint32_t      location = data[0] >> 32;
    uint64_t  serialNumber = data[1];
@@ -1220,6 +1276,72 @@ static void print_origin (uint64_t const *data)
 /* ---------------------------------------------------------------------- */
 
 
+/* ---------------------------------------------------------------------- *//*!
+
+   \brief Prints the packets header
+
+   \param[in] data  The begining of the packets record
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static void print_tpcRecords (uint64_t const *data)
+{
+   print_header1 ("TpcRecords", data[0]);
+
+   uint64_t const *toc = (data + 1);
+   print_toc    (toc);
+   putchar ('\n');
+   
+   uint32_t  tocHdr = *(uint32_t const *)(toc);
+   unsigned  n64toc = (tocHdr >>  8) & 0xfff;
+   unsigned   nctbs = (tocHdr >> 24) &   0xf;
+
+
+   uint32_t const    *pctbs =  (uint32_t const *)toc + 1;
+   uint64_t const *ppktsHdr =  (uint64_t const *)toc + n64toc;
+   uint64_t const    *ppkts =  ppktsHdr + 1;
+
+   // --------------------------
+   // Loop over the contributors
+   // --------------------------
+   for (unsigned ictb = 0; ictb < nctbs;  ictb++)
+   {
+      uint32_t ctb   = *pctbs;
+      unsigned csf   = (ctb >>  0)  & 0xfff;
+      unsigned npkts = (ctb >> 12)  &  0xff;
+      unsigned opkts = (ctb >> 20) & 0xfff;
+
+      uint32_t const *ppktDscs = pctbs + nctbs+ opkts;
+
+      printf ("Ctb[%2u]:  Csf = %3.3x Nctbs = %2u Offset32 = %3.3x\n",
+              ictb, csf, npkts, opkts);
+
+      puts (" Pkts  Type.Format Offset");
+
+      // -----------------------------------------------------
+      // Loop over the packet descriptors for this contributor
+      // -----------------------------------------------------
+      for (unsigned ipkt = 0; ipkt < npkts;  ipkt++)
+      {
+         uint32_t pktDsc = *ppktDscs++;
+         unsigned format = (pktDsc >> 0) &      0xf;
+         unsigned type   = (pktDsc >> 4) &      0xf;
+         unsigned opkt   = (pktDsc >> 8) & 0xffffff;
+
+
+         // -----------------------------
+         // Dump the first 4 64 bit words
+         // -----------------------------
+         uint64_t const *ppkt = ppkts + opkt;
+         printf ("%2u.%2u      %1x.%1x       %6.6x "
+                 "%16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
+                 ictb, ipkt, type, format, opkt, ppkt[0], ppkt[1], ppkt[2], ppkt[3]);
+      }
+   }
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
 
 /* ---------------------------------------------------------------------- *//*!
 
@@ -1230,33 +1352,76 @@ static void print_origin (uint64_t const *data)
 /* ---------------------------------------------------------------------- */
 static void print_toc (uint64_t const *data)
 {
-   uint32_t hdr     = data[0];
-   uint32_t master  = data[0] >> 32;
+   uint32_t            hdr = data[0];
+   uint32_t const *ctb_ptr = ((uint32_t const *)data) + 1;
 
-   print_header1 ("Toc", hdr);
-   
-   unsigned format = (master >>  0) & 0xf;
-   unsigned type   = (master >>  4) & 0xf;
-   unsigned ntoc   = (master >>  8) & 0xffffff;
+   unsigned format  = (hdr >>  0) &   0xf;
+   unsigned type    = (hdr >>  4) &   0xf;
+   unsigned size   =  (hdr >>  8) & 0xfff;
+   unsigned version = (hdr >> 20) &   0xf;
+   unsigned nctbs  =  (hdr >> 24) &   0xf;
 
-   printf ("            Master: Format.Type = %1.1x.%1.1x count = %3d\n",
+
+   uint32_t const *pkt_ptr = ctb_ptr + nctbs;
+
+   printf ("Toc        :"
+   "Format.Type.Version = %1.1x.%1.1x.%1.1x count = %3d size %4.4x %8.8"
+   "" PRIx32 "\n",
            format,
            type,
-           ntoc);
+           version,
+           nctbs,
+           size,
+           hdr);
 
-   uint32_t const *tocs = (uint32_t const *)(&data[1]);
-   puts ("            Format.Type Offset64");
-   for (unsigned idx = 0; idx < ntoc; idx++)
+
+   // -------------------------------------------------------
+   // Look ahead to the first packet of the first contributor
+   // -------------------------------------------------------
+   uint32_t pkt = *pkt_ptr++;
+   unsigned o64 = (pkt >> 8) & 0xffffff;
+
+
+   // -----------------------------
+   // Iterate over the contributors
+   // -----------------------------
+   for (int ictb = 0; ictb < nctbs; ictb++)
    {
-      uint32_t      toc = tocs[idx];
-      unsigned   format = (toc >> 0) & 0xf;
-      unsigned     type = (toc >> 4) & 0xf;
-      unsigned offset64 = (toc >> 8) & 0xffffff;
-      printf ("           %2d. %1.x.%1.1x %6.6x\n", 
-              idx, 
-              format,
-              type,
-              offset64);
+      unsigned   ctb = *ctb_ptr++;
+      unsigned   csf = (ctb >>  0) & 0xfff;
+      unsigned npkts = (ctb >> 12) &  0xff;
+      unsigned   o32 = (ctb >> 20) & 0xfff;
+      unsigned fiber = (csf >>  0) &   0x7;
+      unsigned  slot = (csf >>  3) &   0x7;
+      unsigned crate = (csf >>  6) &  0x1f;
+
+      printf ("            Ctb[%2u] Id: %2d.%2d.%2d npkts: %3d  idx = %3d\n",
+              ictb,
+              crate, slot, fiber,
+              npkts,  o32);
+
+
+      // --------------------------------------------
+      // Iterate over the packets in this contributor
+      // --------------------------------------------
+      for (unsigned ipkt = 0; ipkt < npkts; ipkt++)
+      {
+         unsigned   format = (pkt >> 0) & 0xf;
+         unsigned     type = (pkt >> 4) & 0xf;
+         unsigned offset64 = o64;
+
+         uint32_t      pkt = *pkt_ptr++;
+         o64 = (pkt >> 8) & 0xffffff;
+         
+         unsigned int  n64 = o64 - offset64;
+         printf ("           %2d. %1.x.%1.1x %6.6x %6.6x %8.8" PRIx32 "\n", 
+                 ipkt, 
+                 format,
+                 type,
+                 offset64,
+                 n64,
+                 pkt);
+      }
    }
 
    return;
