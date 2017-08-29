@@ -15,6 +15,12 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2017.08.29 jjr Added code to support the more 'official' output record
+//                format.  Stripped the debugging output back to one line
+//                per transmitted event.  There still are messages
+//                associated with error conditions.  
+//                --> This code needs a good scrubbing, but should be
+//                sufficient to test the data reading interface methods.
 // 2017.05.11 jjr Added code to monitor the WIB packets for errors in the
 //                timestamp and convert counts.
 // 2016.10.28 jjr Added the triggering configuration parameters naccept
@@ -33,7 +39,8 @@
 #include "FrameBuffer.h"
 #include <AxisDriver.h>
 #include "AxiBufChecker.h"
-#include "Header.hh"
+#include "Headers.hh"
+#include "TpcRecords.hh"
 
 #include "List-Single.hh"
 
@@ -54,16 +61,22 @@ typedef uint32_t __u32;
 
 using namespace std;
 
-class Data
-{
-public:
-   uint64_t data[1];
-};
 
+/* ---------------------------------------------------------------------- *//*!
 
+   \class  TimingClockTicks
+   \brief  Captures the parameters of and methods for the timing system
+                                                                          */
+/* ---------------------------------------------------------------------- */
 class TimingClockTicks
 {
 public:
+   /* ------------------------------------------------------------------- *//*!
+   
+     \enum  Constants
+     \brief The constants associated with the timing system
+                                                                          */
+   /* ------------------------------------------------------------------- */
    enum Constants
    {
       CLOCK_PERIOD  = 20,   /*!< Number of nanoseconds per clock tick      */
@@ -71,6 +84,7 @@ public:
       SAMPLE_PERIOD = CLOCK_PERIOD * PER_SAMPLE, 
                             /*!< Number of nanoseconds between ADC samples */
    };
+   /* ------------------------------------------------------------------- */
 
 
    /* ------------------------------------------------------------------- *//*!
@@ -196,6 +210,7 @@ public:
 /* ---------------------------------------------------------------------- */
 class LatencyList : public List<FrameBuffer>
 {
+public:
    static const int Depth = 10 - 1;
    static const bool Debug = false;
 public:
@@ -203,11 +218,6 @@ public:
       List<FrameBuffer> (),
       m_remaining (Depth)
       {
-         fprintf (stderr,
-                  "Initializing latency list: %p %p:%p\n",
-                  this,
-                  m_flnk,
-                  m_blnk);
          return;
       }
 
@@ -225,6 +235,7 @@ public:
    {
       List<FrameBuffer>::init ();
       m_remaining = Depth;
+      fprintf (stderr, "LatencyList::init %p\n", this);
    }
    /* ------------------------------------------------------------------- */
 
@@ -243,6 +254,19 @@ public:
    {
        m_remaining = Depth;
        return;
+   }
+   /* ------------------------------------------------------------------- */
+
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief   Returns the number of nodes currently on the list
+     \return  The number of nodes currently on the list
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   int nnodes ()
+   {
+      return Depth - m_remaining;
    }
    /* ------------------------------------------------------------------- */
 
@@ -434,7 +458,8 @@ public:
       m_list[0].init ();
       m_list[1].init ();
       m_index = index;
-      m_ctb   = 0;
+      m_ctbs  = 0;
+      m_nctbs = 0;
    }
    /* ------------------------------------------------------------------- */
 
@@ -480,13 +505,15 @@ public:
       bool found = false;
 
       // Initialize the pending list to waiting for all possible destinations
-      m_ctb = (1 << MAX_DEST) - 1;
+      m_ctbs  = (1 << MAX_DEST) - 1;
+      m_nctbs = 0;
 
       // Loop over the latency lists of all the destinations
       for (int idx = 0; idx < MAX_DEST; idx++)
       {
          LatencyList             *list =  &lists[idx];
          List<FrameBuffer>::Node *flnk = list->m_flnk;
+
 
          /*
          fprintf (stderr,
@@ -502,6 +529,7 @@ public:
          if (flnk == reinterpret_cast<decltype (flnk)>(list))
          {
             m_list[idx].init ();
+            m_npkts[idx] = 0;
             /*
             fprintf (stderr,
                      "SeedAndDrain[%d] list = %p : %p (is empty)\n", 
@@ -515,6 +543,8 @@ public:
 
          uint64_t winBeg = m_limits.m_beg;
          uint64_t winEnd = m_limits.m_end;
+
+         int npkts = list->nnodes ();
 
          // ----------------------------------------------------------------
          // Find the first node that has a 
@@ -557,6 +587,7 @@ public:
                         m_list[idx].m_flnk->m_flnk);
                */
 
+
                // ------------------------------------------
                // Since triggers are not allowed to overlap, 
                // the latency list must be reset to empty
@@ -569,6 +600,9 @@ public:
                // This packet occurred before the trigger window opened
                int index = flnk->m_body.index ();
 
+               // Reduce the packet count
+               npkts    -= 1;
+
                /*
                fprintf (stderr,
                         "Discarding[%1d] node = %p {%16.16" PRIx64 " -> "
@@ -577,6 +611,7 @@ public:
                         flnk->m_body._ts_range[0],
                         flnk->m_body._ts_range[1]);
                */
+
                
 
                // Remove and free the node we were working on
@@ -617,6 +652,11 @@ public:
 
             }
          }
+
+         // -------------------------------------------------
+         // Stash the number of packets so far for this event
+         // -------------------------------------------------
+         m_npkts[idx] = npkts;
       }
 
       return found;
@@ -669,11 +709,11 @@ public:
 
       //fprintf (stderr, 
       //         "Adding: %2d:%1.1x %16.16" PRIx64 " >= %16.16" PRIx64 "\n",
-      //         dest, m_ctb, endTime, m_limits.m_end);
+      //         dest, m_ctbs, endTime, m_limits.m_end);
 
 
       // Check if this contribution is pending
-      if (m_ctb & ctb_mask) 
+      if (m_ctbs & ctb_mask) 
       {
          uint64_t  begTime = node->m_body._ts_range[0];
          uint64_t  endTime = node->m_body._ts_range[1];
@@ -714,7 +754,8 @@ public:
                      begTime,
                      endTime);
             */
-            m_list[dest].insert_tail (node);
+            m_list [dest].insert_tail (node);
+            m_npkts[dest] += 1;
 
 
             // Is this end time after the trigger window
@@ -724,8 +765,9 @@ public:
                // Yes, this contributor is complete
                // Remove it from the pending list
                // ---------------------------------
-               m_ctb &= ~ctb_mask;
-               if (m_ctb == 0) { Count[0] = Count[1] = 0; return Completed; }
+               m_nctbs += 1;
+               m_ctbs  &= ~ctb_mask;
+               if (m_ctbs == 0) { Count[0] = Count[1] = 0; return Completed; }
 
                // This did not complete the event
                else            {                          return     Added; }
@@ -757,8 +799,8 @@ public:
                         begTime, m_limits.m_end);
             }
 
-            m_ctb &= ~ctb_mask;
-            if (m_ctb == 0) { Count[0] = Count[1] = 0; return CompletedOverrun; }
+            m_ctbs &= ~ctb_mask;
+            if (m_ctbs == 0) { Count[0] = Count[1] = 0; return CompletedOverrun; }
             return TooLate;
          }
       }
@@ -771,7 +813,7 @@ public:
          if (true)
          {
             // If have waited too long, then declare this event complete
-            ///fprintf (stderr, "Overrun\n");
+            ///fputs ("Overrun\n", stderr);
             Count[0] = 0;
             Count[1] = 0;
             return Overrun;
@@ -946,8 +988,13 @@ public:
    TimestampLimits    m_limits;  /*!< Event time window                   */
    Trigger           m_trigger;  /*!< Event triggering information        */
    List<FrameBuffer> m_list[2];  /*!< List of the contributors            */
-   uint32_t              m_ctb;  /*!< Bit mask of incomplete contributors */
+   int                 m_nctbs;  /*!< Count of contributors               */
+   uint32_t             m_ctbs;  /*!< When building, bit mask of 
+                                      incomplete contributors 
+                                      When completed, bit mask of 
+                                      contributions present               */
    uint16_t         m_ctdid[2];  /*!< The WIB crate.slot.fiber id         */
+   uint16_t         m_npkts[2];  /*!< The number of packets in this event */
    uint16_t            m_index;  /*!< Associated dma frame buffer index   */
 };
 /* ---------------------------------------------------------------------- */
@@ -1323,7 +1370,6 @@ inline void FrameDiagnostics::dump_dataFrame (void const *data,
    uint16_t const *s = (uint16_t const *)data;
    int            ns = nbytes / sizeof (*s);
 
-   ns = 16; /// !!! KLUDGE
    for (int idx = 0; idx < ns; idx++)
    {
       if ((idx%16) == 0) printf ("d[%1d.%3d]:", dest, idx);
@@ -1454,7 +1500,7 @@ inline void FrameDiagnostics::check_dataFrame (uint64_t const *data,
          predicted_cvt_0 = cvt_0;
          predicted_cvt_1 = cvt_1;
       }
-      else if (1 && ((Counter % (32768/sample)) == 0) && ((frame % 256) == 0))
+      else if (1 && ((Counter % (8*32768/sample)) == 0) && ((frame % 256) == 0))
       {
          // ------------------------------------------
          // Print reassuring message at about 1/2-1 Hz
@@ -1498,7 +1544,34 @@ inline void FrameDiagnostics::check_dataFrame (uint64_t const *data,
 /* ====================================================================== */
 
 
-pdd::Fragment::Originator Origin;
+
+class HeaderAndOrigin
+{
+public:
+   HeaderAndOrigin () { return; }
+
+public:
+   pdd::Fragment::Header<pdd::Fragment::Type::Data> m_header;
+   pdd::Fragment::Originator                        m_origin;
+
+   // ----------------------------------------------------
+   // Return the number bytes rounded to a 64-bit boundary
+   // ----------------------------------------------------
+   uint32_t n64 ()
+   {
+      uint32_t n64l = sizeof(m_header) / sizeof (uint64_t)
+                    + m_origin.n64 ();
+      return n64l;
+   }
+
+
+};
+
+
+HeaderAndOrigin HeaderOrigin;
+
+
+
 
 
 // Class create
@@ -1525,21 +1598,26 @@ DaqBuffer::DaqBuffer () {
    rceInfo.print ();
    rceInfo.close ();
 
-   int nbytes = Origin.construct (rceInfo.m_firmware.m_fpgaVersion,
-                                  SoftwareVersion,
-                                  rceInfo.m_clusterElement.m_rptSwTag,
-                                  strlen (rceInfo.m_clusterElement.m_rptSwTag),
-                                  rceInfo.m_clusterIpmc.m_serialNumber,
-                                  rceInfo.m_clusterIpmc.m_address,
-                                  rceInfo.m_clusterIpmc.m_groupName,
-                                  strlen (rceInfo.m_clusterIpmc.m_groupName));
+   int n64 __attribute__ ((unused));
 
-   fprintf (stderr, "Origin\n");
-   uint32_t const *p = reinterpret_cast<decltype(p)>(&Origin);
+   auto &origin = HeaderOrigin.m_origin;
+   n64          = origin.construct (rceInfo.m_firmware.m_fpgaVersion,
+                                    SoftwareVersion,
+                                    rceInfo.m_clusterElement.m_rptSwTag,
+                                    strlen (rceInfo.m_clusterElement.m_rptSwTag),
+                                    rceInfo.m_clusterIpmc.m_serialNumber,
+                                    rceInfo.m_clusterIpmc.m_address,
+                                    rceInfo.m_clusterIpmc.m_groupName,
+                                    strlen (rceInfo.m_clusterIpmc.m_groupName));
+
+   /*
+   fputs ("Origin\n", stderr);
+   uint32_t const *p = reinterpret_cast<decltype(p)>(&origin);
    for (int idx = 0; idx < (nbytes + 3) / 4;  idx++)
    {
       fprintf (stderr, "origin[%2d] = %8.8" PRIx32 "\n", idx, p[idx]);
    }
+   */
 
    resetCounters ();
 }
@@ -1590,7 +1668,7 @@ static bool construct (DaqDmaDevice     &dma,
    if (status < 0)
    {
       fprintf(stderr,
-              "DaqBuffer::open -> Error opening %s dma device\n",
+              "DaqBuffer::open -> Error opening %-8s dma device\n",
               name);
       return false;
    }
@@ -1600,7 +1678,7 @@ static bool construct (DaqDmaDevice     &dma,
    if (status < 0)
    {
       fprintf(stderr,
-              "DaqBuffer::open -> Unable to set %s dma mask\n", 
+              "DaqBuffer::open -> Unable to set %-8s dma mask\n", 
               name);
       return false;
    }
@@ -1611,7 +1689,7 @@ static bool construct (DaqDmaDevice     &dma,
    if (status < 0)
    {
       fprintf(stderr,
-              "DaqBuffer::open -> Failed to map %s dma buffers\n",
+              "DaqBuffer::open -> Failed to map %-8s dma buffers\n",
               name);
       return false;
    }
@@ -1619,8 +1697,8 @@ static bool construct (DaqDmaDevice     &dma,
 
    // Report the parameters 
    fprintf(stderr, 
-           "DaqBuffer::open -> %s dma, running with %i + %i = %i (tx+rx=total)"
-           " buffers of %i bytes\n",
+           "DaqBuffer::open -> %-8s dma, running with %4i + %4i = %4i (tx+rx=total)"
+           " buffers of %8i bytes\n",
            name,
            dma._txCount, dma._rxCount, dma._bCount, dma._bSize);
 
@@ -1650,10 +1728,13 @@ bool DaqBuffer::open (string devPath)
    this->close();
 
 
+
    // --------------------------------
    // Establish the Data DMA interface
    // --------------------------------
    {
+      fputs ("ESTABLISH DMA INTERFACES\n", stderr);
+      
       static const uint8_t DataDests[2] = {0, 1};
       bool success = construct (_dataDma, 
                                 "/dev/axi_stream_dma_2",
@@ -1683,6 +1764,8 @@ bool DaqBuffer::open (string devPath)
          this->close ();
          return false;
       }
+
+      fputc ('\n', stderr);
    }
 
 
@@ -1729,7 +1812,7 @@ bool DaqBuffer::open (string devPath)
 
    
    // Set priority
-#if 1
+#if 0
    struct sched_param rxParam;
    int                 policy;
    struct timeval         cur;
@@ -1873,6 +1956,8 @@ void * DaqBuffer::rxRunRaw (void *p)
 /* ---------------------------------------------------------------------- */
 void DaqDmaDevice::vet ()
 {
+   fputs ("BAD HOMBRE BUFFER VETTING\n", stderr);
+
    // ----------------------------------------------
    // !!! KUDGE !!! CHECK READBILITY OF THE BUFFERS
    // ----------------------------------------------
@@ -1889,8 +1974,23 @@ void DaqDmaDevice::vet ()
    int nrxbufs   =   _rxCount;
    AxiBufChecker abc[_bCount];
 
+
+   /// !!! KLUDGE !!!
+   /// REDUCE BUFFERS BY ONE TO TEST IDEA THAT 
+   /// WHEN 2 DESTS ARE ENABLED, THE LAST BUFFER
+   /// CANNOT BE ALLOCATED
+   ///
+   /// This appears to be the case, so will leave this in temporarily.  
+   ///
+   /// !!! NOTE !!!
+   /// If the bad buffer is this last buffer, then have lost the 
+   /// protection afforded by this routine.
+   //
+   nrxbufs -= 1;
+
    for (int idx = 0; idx < 2; idx++)
    {
+
       int nbad = AxiBufChecker::extreme_vetting (abc, 
                                                  _fd,
                                                  idx, 
@@ -1901,7 +2001,7 @@ void DaqDmaDevice::vet ()
       nrxbufs -= nbad;
    }
 
-   fprintf (stderr, "Done\n");
+   fputc ('\n', stderr);
 
    return;
 }
@@ -2005,7 +2105,8 @@ static bool process (Event::Trigger    &trigger,
          }
          else
          {
-	        disTrgCnt += 1;
+            fputs ("Discarding trigger\n", stderr);
+	          disTrgCnt += 1;
          }
          trgActive = true;
       }
@@ -2049,8 +2150,7 @@ void DaqBuffer::rxRun ()
    // data flowing. Of course, the thread that fields command
    // to enable data flowing is also blocked, so deadlock.
    // --------------------------------------------------------
-   _dataDma.vet ();
-
+    _dataDma.vet ();
 
 
    // Hardwire trigger window to 5 msecs and convet to equivalent 
@@ -2093,7 +2193,7 @@ void DaqBuffer::rxRun ()
       events[idx].init (idx);
    }
 
-   fprintf (stderr, "Starting\n");
+   fputs ("STARTING\n", stderr);
 
    // Debugging aid for monitoring the rates of various dest DMA buffers
    MonitorRate       rate;
@@ -2107,12 +2207,6 @@ void DaqBuffer::rxRun ()
                  ?   _dataDma._fd 
                  :   _timingDma._fd) 
                  + 1;
-
-
-   
-
-   fprintf (stderr, "Maximum fd = %d (%d,%d)\n",
-            fdMax, _dataDma._fd, _timingDma._fd);
 
    // Run while enabled
    while (_rxThreadEn) 
@@ -2243,6 +2337,7 @@ void DaqBuffer::rxRun ()
                               " ------------ *\n",
                               dest, ErrorCnt[dest]++, got, exp, diff);
                      ///if (ErrorCnt[dest] > 1) exit (-1);
+
                   }
                }
 
@@ -2287,15 +2382,19 @@ void DaqBuffer::rxRun ()
                   continue;
                }
 
-               // Patch in the length
-               dbeg[0] |= rxSize; 
+               // Patch in the length, sans the trailer
+               uint32_t nbytes = rxSize - sizeof (uint64_t);
+               dbeg[0] |= nbytes;
+
 
                uint64_t timestampRange[2];
                auto fb = &fbs[index];
                getTimestampRange (timestampRange, _dataDma._map[index], rxSize);
                fb->m_body.setTimeRange  (timestampRange[0],
                                          timestampRange[1]);
-               fb->m_body.setSize       (rxSize);
+
+               // Set the size, sans the trailer
+               fb->m_body.setSize       (nbytes);
                fb->m_body.setRxSequence (_rxSequence++);
             
                                   
@@ -2391,28 +2490,44 @@ void DaqBuffer::rxRun ()
                      //                but is catagorized differently for
                      //                accounting and reporting purposes.
                      // -------------------------------------------------------
+
+                     // Get the list of contributors
+                     uint32_t ctbs = ((1 << MAX_DEST) - 1) & ~event->m_ctbs;
+                     event->m_ctbs = ctbs;
+
                      _txReqQueue->push (event);
                      trgActive   = false;
                      event       = NULL;
 
-                     
-                    latency[dest].resetToEmpty ();
-                    if (fate == Event::Completed) 
-                    { 
-                       CoCnt[0]++; 
-                       replace = false;
-                    }
-                    else if (fate == Event::CompletedOverrun) 
-                    { 
-                       CoCnt[2]++;
-                    }
-                    else
-                    {
-                       CoCnt[1]++;
-                    }
+                     // --------------------------------
+                     // Reset the latency lists to empty
+                     // This is okay since triggers are
+                     // prohibited from overlappping.
+                     // --------------------------------
+                     while (ctbs)
+                     {
+                        uint32_t ctb = ffsl (ctbs) - 1;
+                        latency[ctb].resetToEmpty ();
+                        ctbs  &= ~(1 << ctb);
+                     }
+
+
+                     if (fate == Event::Completed) 
+                     { 
+                        CoCnt[0]++; 
+                        replace = false;
+                     }
+                     else if (fate == Event::CompletedOverrun) 
+                     { 
+                        CoCnt[2]++;
+                     }
+                     else
+                     {
+                        CoCnt[1]++;
+                     }
                     
-                    ///fprintf (stderr, "Completed %d:%5d:%5d\n",
-                    ///         CoCnt[0], CoCnt[1], CoCnt[2]);
+                     ///fprintf (stderr, "Completed %d:%5d:%5d\n",
+                     ///         CoCnt[0], CoCnt[1], CoCnt[2]);
                   }
                }
 
@@ -2477,29 +2592,8 @@ void * DaqBuffer::txRunRaw ( void *p ) {
 }
 
 
-template<int MAX_ENTRIES>
-class TocData
-{
-public:
-   pdd::Fragment::Toc<MAX_ENTRIES> &toc ()
-   {
-      return m_toc;
-   }
 
-   pdd::Header1 &data (int size)
-   {
-      return reinterpret_cast<pdd::Header1 &>
-          (*(reinterpret_cast<char *>(&m_toc) + size));
-   }
-
-
-public:
-   pdd::Fragment::Toc<MAX_ENTRIES> m_toc;
-   uint64_t                      m_spare;
-};
-
-
-
+#define DUMPS 0
 #if DUMPS
 /* ---------------------------------------------------------------------- *//*!
 
@@ -2523,20 +2617,21 @@ static void header0_dump (pdd::Header0 const & header0)
    static const char *RecType[] =
    {
     [(int)Fragment::Header<Fragment::Type::Data>::RecType::Reserved_0] = "Reserved_0",
-    [(int)Fragment::Header<Fragment::Type::Data>::RecType::TpcData   ] = "TpcData",
     [(int)Fragment::Header<Fragment::Type::Data>::RecType::Originator] = "Originator",
-    [(int)Fragment::Header<Fragment::Type::Data>::RecType::Toc       ] = "Toc"
+    [(int)Fragment::Header<Fragment::Type::Data>::RecType::TpcNormal ] = "TpcNorma",
+
+    [(int)Fragment::Header<Fragment::Type::Data>::RecType::TpcDamaged] = "TocDamaged"
    };
 
 
 
    uint64_t  w64 = header0.m_w64;
-   unsigned int    format = header0.format    (w64);
-   unsigned int      type = header0.type      (w64);
-   unsigned int    length = header0.length    (w64);
-   unsigned int specific0 = header0.specific0 (w64);
-   unsigned int    naux64 = header0.naux64    (w64);
-   unsigned int specific1 = header0.specific1 (w64);
+   unsigned int    format = header0.format  (w64);
+   unsigned int      type = header0.type    (w64);
+   unsigned int    length = header0.length  (w64);
+   unsigned int   subtype = header0.subtype (w64);
+   unsigned int    naux64 = header0.naux64  (w64);
+   unsigned int    bridge = header0.bridge  (w64);
 
    char const *typeName = type < sizeof (TypeNames) / sizeof (TypeNames[0])
                         ? TypeNames[type]
@@ -2545,8 +2640,8 @@ static void header0_dump (pdd::Header0 const & header0)
    char const *recName;
    if (type == (int)Fragment::Type::Data)
    {
-      recName  = (specific0 < sizeof (RecType) / sizeof (RecType[0]))
-               ? RecType[specific0] 
+      recName  = (subtype < sizeof (RecType) / sizeof (RecType[0]))
+               ? RecType[subtype] 
                : "UnknownDataType";
    }
    else
@@ -2555,17 +2650,18 @@ static void header0_dump (pdd::Header0 const & header0)
    }
                
 
+
    fprintf (stderr, "Header0: %16s.%16s\n"
-                    "        format=%1.1x  type=%1.1x length:%6.6x\n"
-                    "        spec0 =%1.1x  naux64=%1.x spec1:%6.6x\n",
+                    "        format =%1.1x  type  =%1.1x length:%6.6x\n"
+                    "        subtype=%1.1x  naux64=%1.1x bridge:%6.6x\n",
             typeName,
             recName,
             format,
             type,
             length,
-            specific0,
+            subtype,
             naux64,
-            specific1);
+            bridge);
 
    return;
 }
@@ -2584,23 +2680,22 @@ static void originator_dump (pdd::Fragment::Originator const &originator)
    using namespace pdd;
 
 
-
    {
-      Header1  const &header = originator;
+      Header2  const &header = originator;
       uint32_t     m_w32   = header.m_w32;
       unsigned int type    = header.type    (m_w32);
-      unsigned int version = header.version (m_w32);
-      unsigned int nbytes  = header.nbytes  (m_w32);
+      unsigned int version = header.bridge  (m_w32);
+      unsigned int    n64  = header.n64     (m_w32);
 
-      fprintf (stderr, "Origin: type=%1.1x version=%1.1x nbytes=%6.6x\n",
+      fprintf (stderr, "Origin: type=%1.1x version=%1.1x n64=%6.6x\n",
                type,
                version,
-               nbytes);
+               n64);
    }
 
 
    {
-      Fragment::OriginatorBody const &body   = originator.m_body;
+      Fragment::OriginatorBody const &body   = HeaderOrigin.m_origin.m_body;
       
       Fragment::Version const &version = body.version   ();
       char const             *rptSwTag = body.rptSwTag  ();
@@ -2636,16 +2731,102 @@ static void originator_dump (pdd::Fragment::Originator const &originator)
    return;
 }
 /* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- */
+static void fragment_dump (Event const *event)
+{
+   for (int idx = 0; idx < MAX_DEST; idx++)
+   {
+       List<FrameBuffer>      const     *list = &event->m_list[idx];
+      List<FrameBuffer>::Node const     *node = list->m_flnk;
+      List<FrameBuffer>::Node const *terminal = list->terminal();
+      
+      // ----------------------
+      // Test for an empty list
+      // ----------------------
+      if (node == terminal) 
+      {
+         break;
+      }
+
+      int       count = 0;
+      do
+      {
+         uint32_t      nbytes = node->m_body.size     ();
+         uint8_t         *ptr = node->m_body.baseAddr ();
+         unsigned int   index = node->m_body.index    ();
+
+         fprintf (stderr,
+                  "Fragment[%1d.%2d] = ptr:size: %p:%8.8x" PRIx32 "index: %3u\n",
+                  idx, count, ptr, nbytes, index);
+
+         AxiBufChecker x;
+         int iss = x.check_buffer (ptr, index, nbytes);
+         if (iss)
+         {
+            fprintf (stderr,
+                     "Fragment[%1d.%2d] is bad\n",
+                     idx, count);
+         }
+
+         count += 1;
+         
+         if (count > 15) break;
+         
+         node = node->m_flnk;
+      }
+      while (node != terminal);
+      
+   }
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static void node_dump (List<FrameBuffer> const *list,
+                       List<FrameBuffer>::Node const *node,
+                       int ictb,
+                       int toc_idx,
+                       uint32_t nbytes)
+{
+                                   
+   int  delta = node->m_body._ts_range[1] 
+              - node->m_body._ts_range[0];
+            
+   fprintf (stderr, 
+            "Node[%2d.%2d] %p flnk:%p blnk:%p end: %12.12" 
+            PRIx64 "->%12.12" PRIx64 " diff: %6d index: %3d size: %8.8x\n",
+            ictb,
+            toc_idx,
+            node, 
+            list->m_flnk,
+            list->m_blnk,
+            node->m_body._ts_range[0],
+            node->m_body._ts_range[1],
+            delta,
+            node->m_body.index (),
+            nbytes);
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
 #else
 /* ---------------------------------------------------------------------- */
 #define header0_dump(_header0)
-#define originator_dump (__originator)
+#define originator_dump(__originator)
+#define fragment_dump(_header)
+#define node_dump (_list, _node, _ictb, _toc_idx, _nbyte)
 /* ---------------------------------------------------------------------- */
 #endif
 /* ---------------------------------------------------------------------- */
 
 
- 
+
+
 
 /* ---------------------------------------------------------------------- *//*!
 
@@ -2660,11 +2841,26 @@ void DaqBuffer::txRun ()
 
    using namespace pdd;
 
-   #define MAX_ENTRIES 40
-   TocData<MAX_ENTRIES>                     tocData;
-   Fragment::Header<Fragment::Type::Data>    header;
-   Fragment::Toc<MAX_ENTRIES> &toc = tocData.toc ();
+   #define MAX_CONTRIBUTORS  MAX_DEST
+   #define MAX_PACKETS      (MAX_DEST) * 32
+
+   // --------------------------------------------------------------
+   // Provide the storage for the Data record. This includes the 
+   //    1. The Data header
+   //    2. The Table of Contents 
+   //       -- Sized for MAX_CONTRIBUTORS and a total of MAX_PACKETS
+   //    3. The Packet Header
+   // --------------------------------------------------------------
+   uint8_t dataRecord[sizeof (Fragment::Tpc::Data) 
+                     + sizeof (Fragment::Tpc::Toc<MAX_CONTRIBUTORS, MAX_PACKETS>)
+                     + sizeof (Fragment::Tpc::Packet)] __attribute__ ((aligned (8)));
+   Fragment::Tpc::Data  
+             *tpcData = reinterpret_cast<Fragment::Tpc::Data *>(dataRecord);
+
+   Fragment::Tpc::Toc<MAX_CONTRIBUTORS, MAX_PACKETS> 
+                 &toc = reinterpret_cast<Fragment::Tpc::Toc<MAX_CONTRIBUTORS, MAX_PACKETS> &>(tpcData[1]);
    
+      
 
    // --------------------
    // Setup message header
@@ -2672,7 +2868,7 @@ void DaqBuffer::txRun ()
    msg.msg_name       = &_txServerAddr;
    msg.msg_namelen    = sizeof(struct sockaddr_in);
    msg.msg_iov        = msg_iov;
-   msg.msg_iovlen     = 3;
+   msg.msg_iovlen     = 2;
    msg.msg_control    = NULL;
    msg.msg_controllen = 0;
    msg.msg_flags      = 0;
@@ -2683,178 +2879,228 @@ void DaqBuffer::txRun ()
    // their respective iov's
    // ------------------------------------
 
-   // -------------------------
-   // -- Fragment header
-   // -------------------------
-   msg_iov[0].iov_base = &header;
-   msg_iov[0].iov_len  = sizeof(header);
+   // --------------------------------------------
+   // -- Fragment header + Origination Information
+   // --------------------------------------------
+   msg_iov[0].iov_base = &HeaderOrigin;
+   msg_iov[0].iov_len  =  HeaderOrigin.n64 () * sizeof (uint64_t);
 
-
-   // -------------------------
-   // -- Data Origination block
-   // -------------------------
-   msg_iov[1].iov_base = &Origin;
-   msg_iov[1].iov_len  =  Origin.nbytes ();
-   
 
    // ---------------------------
    // Wait on the incoming frames
    // ---------------------------
    while ( _txThreadEn ) 
    {
-      static int DataVersionNumber = 1;
-
       // Wait for data in the pend buffer
-      Event *event = reinterpret_cast<decltype (event)>(_txReqQueue->pop(WaitTime));
+      Event *event = reinterpret_cast<decltype (event)>
+                    (_txReqQueue->pop(WaitTime));
 
       if (event == NULL) 
       {
          continue;
       }
 
-      // --------------------------
-      // The TocData start at iov 3
-      // --------------------------
-      msg.msg_iovlen  = 3;
+      // -----------------------------------
+      // The Tpc Data Records start at iov 2
+      // -----------------------------------
+      msg.msg_iovlen  = 2;
       uint32_t ndata  = 0;
 
       uint16_t    srcs[2];
-      int     toc_idx = 0;
-      uint32_t counts = 0;
-      int             idx;
 
-      ///fprintf (stderr, "Got Event %p\n", event);
+
+      int         nctbs = event->m_nctbs;
+      unsigned int ctbs = event->m_ctbs;
+      int       ctb_idx = 0;
+      int       pkt_idx = 0;
+
+      auto   toc_pkt    = toc.packets (nctbs);
+      auto   toc_ctb    = toc.contributors ();
+      int    toc_offset = 0;
+
+
+      // -------------------------------
+      // !!! KLUDGE -- for emulated data
+      // -------------------------------
+      static const uint16_t Csfs[2] = 
+      {
+         (0x1 << 6) | (0x2 << 3) | (0x3 << 0),
+         (0xa << 5) | (0x6 << 3) | (0x7 << 0),
+      };
+
+
+      //fprintf (stderr, "Got Event %p ctbs:%8.8x nctbs:%d\n", event, ctbs, nctbs);
 
       // ------------------------------------------------
       // Capture the frames from each incoming HLS source
       // ------------------------------------------------
-      for (idx = 0; idx < MAX_DEST; idx++)
+      while (ctbs)
       {
-         List<FrameBuffer> *list = &event->m_list[idx];
+         int                ictb = ffs (ctbs) - 1;
+         List<FrameBuffer> *list = &event->m_list[ictb];
          List<FrameBuffer>::Node           *node = list->m_flnk;
-         List<FrameBuffer>::Node const *terminal = list->terminal();
+         List<FrameBuffer>::Node const *terminal = list->terminal ();
+         ctbs &= ~(1 << ictb);
 
-         // ----------------------
-         // Test for an empty list
-         // ----------------------
-         if (node == terminal) 
-         {
-            srcs[idx] = 0;
-            break;
-         }
+         int npkts = 0;
 
          // ---------------------------------------------
          // Get the crate.slot.fiber for this contributor
          // ---------------------------------------------
-         srcs[idx] = node->m_body.getCsf ();
-                                
+         ////// !!!! srcs[ictb] = node->m_body.getCsf ();
+         uint16_t csf = srcs[ictb] = Csfs[ictb];
 
-         int       count = 0;
+
+         // ---------------------------------------------------------------
+         // Fill in the csf, packet count and offset to the first TOC entry
+         // for this contributor.
+         // ---------------------------------------------------------------
+         toc_ctb[ctb_idx].construct (csf, event->m_npkts[ictb], toc_offset);
+
+
+         // -----------------------------------------------------
+         // Grab all the packets associated with this contributor
+         // -----------------------------------------------------
          do
          {
-            uint32_t      nbytes = node->m_body.size  ();
-            void            *ptr = node->m_body.baseAddr ();
-            uint64_t const  *p64 = reinterpret_cast<decltype(p64)>(ptr);
+            uint32_t      nbytes = node->m_body.size       () - sizeof (uint64_t);
+            uint64_t        *p64 = node->m_body.baseAddr64 ();
 
             uint64_t  dataHeader = p64[0];
             int       dataFormat = (dataHeader >> 24) & 0xf;
 
+
+            // ------------------------------------------------------
+            // Setup buffer pointers and size
+            // The data header from the HLS stream is not transported.
+            // All the relevant informatin is captured in the TOC
+            // ------------------------------------------------------
+            msg_iov[msg.msg_iovlen].iov_base = p64 + 1;
+            msg_iov[msg.msg_iovlen].iov_len  = nbytes;
+
             /*
             fprintf (stderr, 
-                     "Node[%2d.%2d] %p flnk:%p blnk:%p end: %16.16" 
-                     PRIx64 " -> %16.16" PRIx64 " index: %3d size: %8.8x\n",
-                     idx,
-                     count,
-                     node, 
-                     list->m_flnk,
-                     list->m_blnk,
-                     node->m_body._ts_range[0],
-                     node->m_body._ts_range[1],
-                     node->m_body.index (),
-                     nbytes);
+                     "Pkt[%2d] = %16.16" PRIx64 " %16.16" PRIx64 " "
+                     "%16.16" PRIx64 " %16.16" PRIx64 "\n",
+                     pkt_idx, p64[0], p64[1], p64[2], p64[3]);
             */
-            count += 1;
 
-            // Accumulate the total data size sans the trailer
-            nbytes -= sizeof (uint64_t);
-
-
-
-            // Setup buffer pointers if valid payload
-            msg_iov[msg.msg_iovlen].iov_base = ptr;
-            msg_iov[msg.msg_iovlen].iov_len  = nbytes;
             msg.msg_iovlen++;
 
-            toc.m_body.add (toc_idx++, dataFormat, 0, idx, ndata/sizeof (uint64_t));
-            ndata  += nbytes;
-            ///fprintf (stderr, "Ndata[%2d] = %8.8" PRIx32 "\n", toc_idx-1, ndata);
-  
-            if (count > 15) break;
 
-            node = node->m_flnk;
+            // -----------------------------------------------------
+            // Construct the table of contents entry for this packet
+            // -----------------------------------------------------
+            toc_pkt[pkt_idx].construct (dataFormat, 
+                                        0, ndata/sizeof (uint64_t));
+
+            ///node_dump (list, node, ictb, pkt_idx, nbytes);
+
+
+            pkt_idx += 1;             // Bump packet index
+            npkts   += 1;             // Bump number packets, this contributor
+            ndata   += nbytes;        // Running count of data size
+            node     = node->m_flnk;  // Next node
+
          }
          while (node != terminal);
 
-         counts = toc.m_body.m_master.add (counts, count);
+         /*
+         fprintf (stderr, "Event:packet count[%d] = %d vs %d\n",
+                  ictb, event->m_npkts[ictb], npkts);
+         */
+
+
+         // ----------------------------------------------------------
+         // Beginning offset to the TOC entry for the next contributor
+         // ----------------------------------------------------------
+         toc_offset += pkt_idx;
+         ctb_idx    += 1;
       }
 
 
+      // ---------------------------------------
+      // Add the terminating index so the length
+      // of the final frame can be determined.
+      // ---------------------------------------
+      toc_pkt[pkt_idx++].construct  (0, 0, ndata/sizeof (uint64_t));
 
-      // -------------------------------------
-      // Add the terminating index so the 
-      // length of the frame can be determined
-      // -------------------------------------
-      toc.m_body.m_master.construct (counts);
-      toc.m_body.add  (toc_idx++, 0, 0, idx, ndata/sizeof (uint64_t));
-
-      srcs[0] = (0x1 << 6) | (0x2 << 3) | (0x3 << 0);
-      srcs[1] = (0xa << 5) | (0x6 << 3) | (0x7 << 0);
 
       ///fprintf (stderr, "Srcs %4.4" PRIx16 " %4.4" PRIx16 " %8.8" PRIx32 "\n", 
       ///         srcs[0], srcs[1], ndata);
 
 
-      // -------------------------------
-      // Construct the table of contents
-      // -------------------------------
-      uint32_t toc_nbytes = toc.nbytes (toc_idx);
+      // --------------------------------------------------
+      // Complete the construction of the table of contents
+      // First compute its total size, in bytes
+      // --------------------------------------------------
+      uint32_t toc_nbytes   = toc.nbytes   (ctb_idx + pkt_idx);
+      uint32_t toc_n64bytes = toc.n64bytes (ctb_idx + pkt_idx);
 
-      // ------------------------------------------------
-      // Check if have an integral number of 64-bit words
-      // ------------------------------------------------
-      if ((toc_nbytes & 0x7))
+      /*
+      fprintf (stderr,
+               "Toc:nctbs=%2d npkts=%2d nbytes=%4d n64=%4d\n",
+               ctb_idx, pkt_idx, toc_nbytes, toc_n64bytes);
+      */
+      toc.construct (nctbs, toc_n64bytes/sizeof (uint64_t));
+
+
+
+
+      // -------------------------------------------
+      // Pad to a 64-bit boundary
+      // -------------------------------------------
+      uint32_t   *p32 = reinterpret_cast<uint32_t *>((char *)&toc + toc_nbytes);
+      if ( (toc_nbytes & 0x7) != 0)
       {
-         // No, add a padding word and round up 
-         toc.m_body.add (toc_idx, 0, 0,   0,     0);
-         toc_nbytes +=  7;
-         toc_nbytes &= ~7;
+         // ----------------------------------------
+         // Not on an even 64-bit boundary, 
+         // Add a padding word and round up size up
+         // ----------------------------------------
+
+         p32[0]  = 0;
+         p32    += 1;
+         toc_nbytes += sizeof (p32[0]);
       }
 
-      toc.construct (toc_nbytes);
-      msg_iov[2].iov_base = &toc;
-      msg_iov[2].iov_len  =  toc_nbytes;
 
-#if   0
-      {
-         uint32_t const *p = (uint32_t const *)&toc;
-         for (unsigned i = 0; i < toc_nbytes / 4; i++)
-         {
-            fprintf (stderr,
-                     "toc[%2u] = %8.8" PRIx32 "\n", i, p[i]);
-         }
-      }
-#endif
+      // --------------------------------
+      // Add the data packet header
+      // This immediately follows the TOC
+      // --------------------------------
+      void                   *pkt_ptr = reinterpret_cast<char *>(&toc) + toc_nbytes;
+      pdd::Fragment::Tpc::Packet *pkt = reinterpret_cast<decltype (pkt)>(pkt_ptr);
+      pkt->construct ((ndata + sizeof (uint64_t) - 1)/sizeof (uint64_t));
 
 
       // -------------------------
       // Construct the data header
       // ------------------------
       static int DataType  = static_cast<decltype (DataType)>
-                          (Fragment::Header<Fragment::Type::Data>::RecType::TpcData);
-      Header1 *dataHeader = &tocData.data (toc_nbytes);
-      dataHeader->construct (DataType,
-                             DataVersionNumber,
-                             ndata);
+                          (Fragment::Header<Fragment::Type::Data>::RecType::TpcNormal);
+
+      ndata += sizeof (Fragment::Tpc::Packet);
+      tpcData->construct (DataType, 
+                          (sizeof (Fragment::Tpc::Packet) + ndata)/sizeof (uint64_t),
+                          0);
+
+      msg_iov[1].iov_base = dataRecord;
+      msg_iov[1].iov_len  = sizeof (Fragment::Tpc::Data) 
+                          + toc_n64bytes 
+                          + sizeof (Fragment::Tpc::Packet);
+
+#if   0
+      {
+         uint32_t const *p = (uint32_t const *)&toc;
+         for (unsigned i = 0; i < (toc_nbytes + 3) / 4 + 3; i++)
+         {
+            fprintf (stderr,
+                     "toc[%2u] = %8.8" PRIx32 " %p:%p\n", i, p[i], &p[i], pkt);
+         }
+      }
+#endif
+
+
 
 
  
@@ -2862,24 +3108,22 @@ void DaqBuffer::txRun ()
       // Add the size of the table of contents and the trailer
       // to the transmitted count.
       // -----------------------------------------------------
-      uint32_t txSize = sizeof (header)
-                      + Origin.nbytes ()
+      uint32_t txSize = HeaderOrigin.n64 () * sizeof (uint64_t)
                       + toc_nbytes 
+                      + 8
                       + ndata
                       + sizeof (Trailer);
       /*
      fprintf (stderr,
                "Header  %8.8x\n"
-               "Origin  %8.8x\n"
                "Toc     %8.8x\n"
                "DataH   %8.8x\n"
                "Data    %8.8x\n"
                "Trailer %8.8x\n"
                "Total   %8.8x\n",
-               (unsigned)sizeof (header),
-               (unsigned)Origin.nbytes (),
+               (unsigned)HeaderOrigin.n64 (),
                (unsigned)toc_nbytes,
-               (unsigned)sizeof (*dataHeader),
+              (unsigned)8,
                (unsigned)ndata,
                (unsigned)sizeof (Trailer),
                txSize);
@@ -2890,29 +3134,32 @@ void DaqBuffer::txRun ()
       // -----------------------------------
       // Construct the event fragment header
       // -----------------------------------
-      header.construct (Fragment::Header<Fragment::Type::Data>::RecType::TpcData,
-                        srcs[0], 
-                        srcs[1],
-                        event->m_trigger.m_source,
-                        event->m_trigger.m_sequence,
-                        event->m_trigger.m_timestamp,
-                        txSize);
-
-      ///uint64_t *p = (uint64_t *)&header;
-      ///fprintf (stderr, 
-      ///         "Header = %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
-      ///         p[0],
-      ///         p[1],
-      ///         p[2]);
-      ///header0_dump    (header);
-      ///originator_dump (Origin);
+      HeaderOrigin.m_header.construct
+                          (Fragment::Header<Fragment::Type::Data>::RecType::TpcNormal,
+                           srcs[0], 
+                           srcs[1],
+                           event->m_trigger.m_source,
+                           event->m_trigger.m_sequence,
+                           event->m_trigger.m_timestamp,
+                           txSize / sizeof (uint64_t));
+      /*
+      uint64_t *p = (uint64_t *)&HeaderOrigin;
+      fprintf (stderr, 
+               "Header = %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
+               p[0],
+               p[1],
+               p[2]);
+      */
+      header0_dump    (HeaderOrigin.m_header);
+      originator_dump (HeaderOrigin.m_origin);
 
       fprintf (stderr, "Header.m_64 %16.16" PRIx64 " "
-                  "Identifier.m_64 = %16.16" PRIx64 " ts = %16.16" PRIx64 "\n",
-               header.m_w64,
-               header.m_identifier.m_w64,
-               header.m_identifier.m_timestamp);
-
+                  "Identifier.m_64 = %16.16" PRIx64 " ts = %16.16" PRIx64 " "
+                  "Npackets = %3u\n",
+               HeaderOrigin.m_header.m_w64,
+               HeaderOrigin.m_header.m_identifier.m_w64,
+               HeaderOrigin.m_header.m_identifier.m_timestamp,
+               pkt_idx - 1);
 
 
       // ---------------------------------------
@@ -2920,9 +3167,10 @@ void DaqBuffer::txRun ()
       // The last 64-bit word, containing the
       // firmware trailer is repurposed for this
       // ---------------------------------------
-      Trailer *trailer = static_cast<decltype(trailer)>
-                         (msg_iov[msg.msg_iovlen-1].iov_base);
-      trailer->construct (header.retrieve ());
+      Trailer *trailer = reinterpret_cast<decltype(trailer)>
+                        (reinterpret_cast<char *>(msg_iov[msg.msg_iovlen-1].iov_base) 
+                                                + msg_iov[msg.msg_iovlen-1].iov_len);
+      trailer->construct (HeaderOrigin.m_header.retrieve ());
       msg_iov[msg.msg_iovlen - 1].iov_len += sizeof (*trailer);
 
                                                   
@@ -2931,9 +3179,19 @@ void DaqBuffer::txRun ()
       for (unsigned int idx = 0; idx < msg.msg_iovlen; idx++)
       {
 
-         int   len = msg_iov[idx].iov_len;
+         int             len = msg_iov[idx].iov_len;
+         uint64_t const *p64 = reinterpret_cast<decltype (p64)>
+                              (msg_iov[idx].iov_base);
 
          tot += len;
+         
+         /*
+         fprintf (stderr, 
+                  "Iov[%2d.%4u:%6.6x] = %16.16" PRIx64 " %16.16" PRIx64 " "
+                  "%16.16" PRIx64 " %16.16" PRIx64 "\n",
+                  idx, len, tot, p64[0], p64[1], p64[2], p64[3]);
+         */
+
          /*
          void *ptr = msg_iov[idx].iov_base;
          fprintf (stderr,
@@ -2974,9 +3232,50 @@ void DaqBuffer::txRun ()
                _counters._txErrors++;
 
 
-               sleep (disconnect_wait);
-               disableTx ();
-               fputs ("Disconnected", stderr);
+               for (unsigned int idx = 0; idx < msg.msg_iovlen; idx++)
+               {
+
+                  unsigned int len = msg_iov[idx].iov_len;
+                  uint8_t     *ptr = (uint8_t *)msg_iov[idx].iov_base;
+
+                
+                  AxiBufChecker x;
+                  int iss = x.check_buffer (ptr, idx, len);
+                  if (iss)
+                  {
+                     fprintf (stderr,
+                              "Iov[%2d] %p for %u bytes -> BAD\n",
+                              idx, ptr, len);
+                  }
+                  else
+                  {
+                     fprintf (stderr,
+                              "Iov[%2d] %p for %u bytes -> okay\n",
+                              idx, ptr, len);
+                  }
+               }      
+
+
+
+               fragment_dump (event);
+
+               ret = sendmsg(_txFd,&msg,0);
+               if (ret != (int32_t)txSize)
+               {
+                  fprintf (stderr, "Resend failed %d\n", ret);
+               }
+               else
+               {
+                  fprintf (stderr, "Resend succeeded %d\n", ret);
+               }
+
+               /// --------------------------------
+               ///  --- This was just for debugging
+               /// --------------------------------
+               ///sleep (disconnect_wait);
+               ///disableTx ();
+               ///fputs ("Disconnected", stderr);
+               
             }
          }
          else
@@ -2993,6 +3292,7 @@ void DaqBuffer::txRun ()
             _counters._txTotal += txSize;
          }
       }
+
 
 
       // ------------------------------------------------------------------

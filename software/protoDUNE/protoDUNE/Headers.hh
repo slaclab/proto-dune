@@ -40,9 +40,11 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2017.08.29 jjr Stripped debugging print statements.
    2017.06.19 jjr Created
   
 \* ---------------------------------------------------------------------- */
+
 
 namespace pdd {
 
@@ -101,12 +103,12 @@ namespace pdd {
 class Header0
 {
 public:
-   Header0 (int        type, 
-            int      naux64, 
-            uint8_t   spec0, 
-            uint32_t  spec1, 
-            uint32_t nbytes) :
-      m_w64 (compose (type, naux64, spec0, spec1, nbytes))
+   Header0 (int         type,
+            uint8_t  subtype, 
+            uint32_t  bridge, 
+            int       naux64, 
+            uint32_t     n64) :
+      m_w64 (compose (type, subtype, bridge, naux64, n64))
   {
      return;
   }
@@ -122,8 +124,8 @@ public:
       Format    =  4, /*!< Size of the format field                      */
       Type      =  4, /*!< Size of the frame type field                  */
       Length    = 24, /*!< Size of the length field                      */
-      Specific0 =  4, /*!< Size of the first type specific field         */
       NAux64    =  4, /*!< Size of the auxillary length field            */
+      SubType   =  4, /*!< Size of the record's subtype field            */
       Specific1 = 24  /*!< Size of the first type specific field         */
    };
    /* ------------------------------------------------------------------ */
@@ -138,12 +140,12 @@ public:
    /* ------------------------------------------------------------------ */
    enum class Offset: int
    {
-      Format    =  0, /*!< Size of the format field                       */
-      Type      =  4, /*!< Size of the frame type field                   */
-      Length    =  8, /*!< Size of the length field                       */
-      Specific0 = 32, /*!< Size of the first type specific field          */
-      NAux64    = 36, /*!< Size of the auxillary length field             */
-      Specific1 = 40  /*!< Size of the second type specific field         */
+      Format    =  0, /*!< Offset to the format field                    */
+      Type      =  4, /*!< Offset to the frame type field                */
+      Length    =  8, /*!< Offset to the length field                    */
+      NAux64    = 32, /*!< Offset to the auxillary length field          */
+      SubType   = 36, /*!< Offset to the record's subtype field          */
+      Bridge    = 40  /*!< Offset to the bridge word                     */
    };
    /* ------------------------------------------------------------------ */
 
@@ -159,18 +161,28 @@ public:
       Format    =  0x0000000f,
       Type      =  0x0000000f,
       Length    =  0x00ffffff,
-      Specific0 =  0x0000000f,
       NAux64    =  0x0000000f,
-      Specific1 =  0x00ffffff
+      SubType   =  0x0000000f,
+      Bridge    =  0x00ffffff
    };
    /* ------------------------------------------------------------------ */
 
 public:
    static uint64_t compose (int            type,
+                            uint8_t     subtype,
+                            uint32_t     bridge,
                             int          naux64,
-                            uint8_t       spec0,
-                            uint32_t      spec1, 
-                            uint32_t     nbytes);
+                            uint32_t        n64);
+
+   void          construct (int            type,
+                            uint8_t     subtype,
+                            uint32_t     bridge,
+                            int          naux64,
+                            uint32_t        n64)
+   {
+      m_w64 = compose (type, subtype, bridge, n64, naux64);
+   }
+
 
    uint64_t retrieve () const
    {
@@ -195,9 +207,9 @@ public:
    }
 
 
-   static uint32_t specific0 (uint64_t w64)
+   static uint32_t subtype (uint64_t w64)
    { 
-      return PDD_EXTRACT64 (w64, Mask::Specific0, Offset::Specific0);
+      return PDD_EXTRACT64 (w64, Mask::SubType, Offset::SubType);
    }
 
 
@@ -207,9 +219,9 @@ public:
    }
 
 
-   static uint32_t specific1 (uint64_t w64)
+   static uint32_t bridge (uint64_t w64)
    { 
-      return PDD_EXTRACT64 (w64, Mask::Specific1, Offset::Specific1);
+      return PDD_EXTRACT64 (w64, Mask::Bridge, Offset::Bridge);
    }
 
 
@@ -219,29 +231,36 @@ public:
 /* ---------------------------------------------------------------------- */
 
 
+
 /* ---------------------------------------------------------------------- *//*!
 
   \brief Method to compose a generic Header0 
-
-  \param[in]   type  The fragment type
+  \param[in]    type The fragment type
+  \param[in] subtype The  4-bit record subtype
   \param[in] naux64  The number of 64 bit auxillary words
-  \param[in]  spec0  The  8-bit type specific word
   \param[in]  spec1  The 24-bit type specific word
-  \param[in] nbytes  The length of this fragment in bytes
+  \param[in]    n64  The length of this fragment in units of 64-bit words
                                                                           */
 /* ---------------------------------------------------------------------- */
 inline uint64_t Header0::compose (int          type,
+                                  uint8_t   subtype,
+                                  uint32_t   bridge, 
                                   int        naux64,
-                                  uint8_t     spec0, 
-                                  uint32_t    spec1,
-                                  uint32_t   nbytes)
+                                  uint32_t      n64)
 {
-   uint64_t w64 = PDD_INSERT64 (Mask::Format,    Offset::Format,        0)
-                | PDD_INSERT64 (Mask::Type,      Offset::Type,       type)
-                | PDD_INSERT64 (Mask::Length,    Offset::Length,   nbytes)
-                | PDD_INSERT64 (Mask::Specific0, Offset::Specific0, spec0)
-                | PDD_INSERT64 (Mask::NAux64,    Offset::NAux64,   naux64)
-                | PDD_INSERT64 (Mask::Specific1, Offset::Specific1, spec1);
+   /*
+   fprintf (stderr, 
+            "Header0::compose type=%d subtype=%d bridge=%8.8" PRIx32 " "
+            "naux64=%d n64=%8.8" PRIx32 "\n",
+            type, subtype, bridge, naux64, n64);
+   */
+             
+   uint64_t w64 = PDD_INSERT64 (Mask::Format,  Offset::Format,        0)
+                | PDD_INSERT64 (Mask::Type,    Offset::Type,       type)
+                | PDD_INSERT64 (Mask::Length,  Offset::Length,      n64)
+                | PDD_INSERT64 (Mask::SubType, Offset::SubType, subtype)
+                | PDD_INSERT64 (Mask::NAux64,  Offset::NAux64,   naux64)
+                | PDD_INSERT64 (Mask::Bridge,  Offset::Bridge,   bridge);
 
    return w64;
 };
@@ -258,20 +277,20 @@ inline uint64_t Header0::compose (int          type,
 /* ---------------------------------------------------------------------- */
 class Header1
 {
-   static const int VersionNumber = 1;public:
+public:
    Header1 () { return; }
 
 
    Header1 (int        type, 
-            int     version,
-            uint32_t nbytes) :
-      m_w32 (compose (type, version, nbytes))
+            uint32_t    n64,
+            uint32_t bridge) :
+      m_w64 (compose (type, n64, bridge))
   {
      return;
   }
 
-   int nbytes () { return (m_w32 >> static_cast<     int>(Offset::Length))
-                                  & static_cast<uint32_t>(  Mask::Length); }
+   int n64 () { return (m_w64 >> static_cast<     int>(Offset::Length))
+                               & static_cast<uint32_t>(  Mask::Length); }
 
    /* ------------------------------------------------------------------- *//*!
 
@@ -283,8 +302,8 @@ class Header1
    {
       Format    =  4, /*!< Size of the format field                      */
       Type      =  4, /*!< Size of the record/frame type    field        */
-      Version   =  4, /*!< Size of the resOcord/frame version field        */
       Length    = 24, /*!< Size of the length field                      */
+      Bridge    = 32  /*!< Size of the bridge field                      */
    };
    /* ------------------------------------------------------------------ */
 
@@ -300,8 +319,8 @@ class Header1
    {
       Format    =  0, /*!< Offset of the format field                    */
       Type      =  4, /*!< Offset of the frame type field                */
-      Version   =  8, /*!< Offset of the record/frame version field      */
-      Length    = 12, /*!< Offset of the length field                    */
+      Length    =  8, /*!< Offset of the length field                    */
+      Bridge    = 32  /*!< Offset of the bridge field                    */
    };
    /* ------------------------------------------------------------------ */
 
@@ -317,42 +336,190 @@ class Header1
       Format    =  0x0000000f,
       Type      =  0x0000000f,
       Version   =  0x0000000f,
-      Length    =  0x000fffff,
+      Length    =  0x00ffffff,
+      Bridge    =  0xffffffff
    };
    /* ------------------------------------------------------------------ */
 
 public:
-   static uint64_t compose (int            type,
-                            int         version,
-                            uint32_t     nbytes);
+   static uint32_t compose (int            type,
+                            uint32_t        n64,
+                            uint32_t     bridge);
 
    void construct (int        type,
-                   int     version,
-                   uint32_t nbytes)
+                   uint32_t    n64,
+                   uint32_t bridge)
     {
-       Header1::m_w32 = Header1::compose (type, version, nbytes);
+       Header1::m_w64 = Header1::compose (type, n64, bridge);
        return;
     }
 
    uint64_t retrieve () const
    {
+      return m_w64;
+   }
+
+   static uint32_t type (uint64_t w64)
+   {
+      return PDD_EXTRACT64 (w64, Mask::Type, Offset::Type);
+   }
+
+   static uint32_t n64 (uint64_t w64)
+   {
+         return PDD_EXTRACT64 (w64, Mask::Length, Offset::Length);
+   }
+
+   static uint32_t bridge (uint64_t w64)
+   {
+      return PDD_EXTRACT64 (w64, Mask::Bridge, Offset::Bridge);
+   }
+
+
+public:
+   uint64_t m_w64;
+} __attribute__ ((packed));
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Method to compose a generic Header1
+
+  \param[in]    type  The record type
+  \param[in]     n64  The length of this fragment in units of 64-bit words
+  \param[in]  bridge  An arbitrary 32-bit bridge word. Its meaning is
+                      record \a type specific
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint32_t Header1::compose (int        type,
+                                  uint32_t    n64,
+                                  uint32_t bridge)
+{
+   /*
+   fprintf (stderr, 
+            "Header1::compose Format:%d Type:%d N64:%8.8" PRIx32 ""
+            " Bridge:%8.8" PRIx32 "\n",
+            1, type, n64, bridge);
+   */
+   uint32_t w32 = PDD_INSERT64 (Mask::Format, Offset::Format,      1)
+                | PDD_INSERT64 (Mask::Type,   Offset::Type,     type)
+                | PDD_INSERT64 (Mask::Length, Offset::Length,    n64)
+                | PDD_INSERT64 (Mask::Bridge, Offset::Bridge, bridge);
+
+   return w32;
+};
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \class  Header 2
+  \brief  Generic format = 1 header
+                                                                          */
+/* ---------------------------------------------------------------------- */
+class Header2
+{
+public:
+   Header2 () { return; }
+
+
+   Header2 (int            type, 
+            unsigned int    n64,
+            unsigned int bridge) :
+
+      m_w32 (compose (type, n64, bridge))
+  {
+     return;
+  }
+
+   int n64 () { return (m_w32 >> static_cast<     int>(Offset::Length))
+                               & static_cast<uint32_t>(  Mask::Length); }
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \enum  class Size
+     \brief Enumerates the sizes of the Header bit fields.
+                                                                         */
+   /* ------------------------------------------------------------------ */
+   enum class Size: int
+   {
+      Format    =  4, /*!< Size of the format field                      */
+      Type      =  4, /*!< Size of the record/frame type    field        */
+      Length    = 12, /*!< Size of the length field                      */
+      Bridge    = 12 /*!< Size of the bridge word field                 */
+   };
+   /* ------------------------------------------------------------------ */
+
+
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \enum  class Offset
+     \brief Enumerates the right justified offsets of the header bit 
+            fields.
+                                                                         */
+   /* ------------------------------------------------------------------ */
+   enum class Offset: int
+   {
+      Format    =  0, /*!< Offset of the format field                    */
+      Type      =  4, /*!< Offset of the frame type field                */
+      Length    =  8, /*!< Offset of the length field                    */
+      Bridge    = 20, /*!< Offset of the bridge word field               */
+   };
+   /* ------------------------------------------------------------------ */
+
+
+   /* ------------------------------------------------------------------- *//*!
+
+     \enum  class Offset
+     \brief Enumerates the right justified masks of the header bit fields.
+                                                                         */
+   /* ------------------------------------------------------------------ */
+   enum class Mask: uint32_t
+   {
+      Format    =  0x0000000f,
+      Type      =  0x0000000f,
+      Length    =  0x00000fff,
+      Bridge    =  0x00000fff, 
+   };
+   /* ------------------------------------------------------------------ */
+
+public:
+   static uint32_t compose (unsigned int   type,
+                            unsigned int    n64,
+                            unsigned int bridge);
+
+
+   void          construct (unsigned int   type,
+                            unsigned int    n64,
+                            unsigned int bridge)
+   {
+      Header2::m_w32 = Header2::compose (type, n64, bridge);
+      return;
+   }
+
+   uint32_t retrieve () const
+   {
       return m_w32;
    }
 
-   static uint32_t type (uint32_t w32)
+   static uint32_t type (uint64_t w32)
    {
       return PDD_EXTRACT32 (w32, Mask::Type, Offset::Type);
    }
 
-   static uint32_t version (uint32_t w32)
-   {
-      return PDD_EXTRACT32 (w32, Mask::Version, Offset::Version);
-   }
-
-   static uint32_t nbytes (uint32_t w32)
+   static uint32_t n64 (uint32_t w32)
    {
          return PDD_EXTRACT32 (w32, Mask::Length, Offset::Length);
    }
+
+   static uint32_t bridge (uint32_t w32)
+   {
+      return PDD_EXTRACT32 (w32, Mask::Bridge, Offset::Bridge);
+   }
+
 
 public:
    uint32_t m_w32;
@@ -363,22 +530,28 @@ public:
 
 /* ---------------------------------------------------------------------- *//*!
 
-  \brief Method to compose a generic Header1
+  \brief Method to compose a generic Header2
 
-  \param[in]    type  The fragment type
-  \param[in] version  A 4-bit version number of this frame/record
-  \param[in]  nbytes  The length of this fragment in bytes
+  \param[in]    type  The record type
+  \param[in]     n64  The length of this fragment in units of 64-bit words
+  \param[in   bridge  An 12-bit type specific bridge field
+
                                                                           */
 /* ---------------------------------------------------------------------- */
-inline uint64_t Header1::compose (int        type,
-                                  int     version,
-                                  uint32_t nbytes)
+inline uint32_t Header2::compose (unsigned int   type,
+                                  unsigned int    n64,
+                                  unsigned int bridge)
 {
-   uint32_t w32 = PDD_INSERT32 (Mask::Format,    Offset::Format,        1)
-                | PDD_INSERT32 (Mask::Type,      Offset::Type,       type)
-                | PDD_INSERT32 (Mask::Version,   Offset::Version, version)
-                | PDD_INSERT32 (Mask::Length,    Offset::Length,   nbytes);
+   /*
+   fprintf (stderr, 
+            "Header1::compose Format:%d Type:%d N64:%3.3x Bridge:%3.3x\n",
+            1, type, n64, bridge);
+   */
 
+   uint32_t w32 = PDD_INSERT64 (Mask::Format,    Offset::Format,        2)
+                | PDD_INSERT64 (Mask::Type,      Offset::Type,       type)
+                | PDD_INSERT64 (Mask::Length,    Offset::Length,      n64)
+                | PDD_INSERT64 (Mask::Bridge,    Offset::Bridge,   bridge);
 
    return w32;
 };
@@ -400,7 +573,14 @@ class Trailer
 public:
    Trailer (uint64_t  header) : m_w64 (~header) { return; }
    static   uint64_t compose  (uint64_t header) { return  ~header; }
-   void            construct  (uint64_t header) { m_w64 = ~header; }
+   void            construct  (uint64_t header) 
+   { 
+      m_w64 = ~header; 
+      /*
+      fprintf (stderr, "Trailer: %16.16" PRIx64 " -> %16.16" PRIx64 "\n", 
+               header, m_w64);
+      */
+   }
 
 public:
    uint64_t m_w64;
@@ -575,19 +755,18 @@ template<enum Fragment::Type TYPE>
 class Header : public Header0
 {
 public:
-   Header  (int          naux64,
-            uint32_t      spec0,
-            uint8_t       spec1,
-            uint32_t     nbytes) :
-      Header0 (static_cast<int>(TYPE), naux64, spec0, spec1, nbytes)
+   Header  (uint8_t     subtype,
+            uint32_t     bridge,
+            int          naux64,
+            uint32_t        n64) :
+      Header0 (static_cast<int>(TYPE), subtype, bridge, naux64, n64)
    {
       return;
    }
 
-   static uint64_t compose (int      naux64,
-                            uint32_t  spec0, 
-                            uint8_t   spec1,
-                            uint32_t nbytes);
+   static uint64_t compose (uint8_t subtype,
+                            uint8_t  naux64,
+                            uint32_t   n64);
 } __attribute__ ((packed));
 /* ---------------------------------------------------------------------- */
 
@@ -603,10 +782,9 @@ template<enum Fragment::Type TYPE>
 class Trailer
 {
 public:
-   static uint64_t compose (int       naxu64,
-                            uint32_t   spec0,
-                            uint8_t    spec1,
-                            uint32_t nbytes);
+   static uint64_t compose (uint8_t subtype,
+                            int      naxu64,
+                            uint32_t    n64);
 
 public:
    uint64_t m_w64;
@@ -628,22 +806,22 @@ class Header<Fragment::Type::Data> : public Header0
 public:
    enum class RecType 
    {
-      Reserved_0 = 0,
-      TpcData    = 1,
-      Originator = 2,
-      Toc        = 3
+      Reserved_0   = 0,  /*!< Reserved for future use                     */
+      Originator   = 1,  /*!< Originator record type                      */
+      TpcNormal    = 2,  /*!< Normal  TPC data, \e i.e. no errors         */
+      TpcDamaged   = 3   /*!< Damaged TPC data, \e i.e. has errors        */
    };
 
 
 public:
    Header<Fragment::Type::Data> (RecType              rectype,
                                  Identifier const &identifier,
-                                 uint32_t              nbytes) :
+                                 uint32_t                 n64) :
       Header0 (static_cast<int>(Fragment::Type::Data), 
-               (sizeof (identifier))/ sizeof (uint64_t),
                static_cast<uint8_t>(rectype),
                Fragment::Pattern,
-               nbytes),
+               (sizeof (identifier))/ sizeof (uint64_t),
+               n64),
       m_identifier (identifier)
       {
          return;
@@ -651,9 +829,9 @@ public:
 
    Header<Fragment::Type::Data> (RecType       rectype) :
       Header0 (static_cast<int>(Fragment::Type::Data), 
-               sizeof (struct Identifier) / sizeof (uint64_t),
                static_cast<uint8_t>(rectype),
                Fragment::Pattern,
+               sizeof (struct Identifier) / sizeof (uint64_t),
                0),
       m_identifier ()
       {
@@ -675,13 +853,13 @@ public:
 
    void construct (RecType              rectype,
                    Identifier const &identifier,
-                   uint32_t              nbytes)
+                   uint32_t                 n64)
    {
       m_w64 = Header0::compose (static_cast<int>(Fragment::Type::Data),
-                                sizeof (m_identifier) / sizeof (uint64_t),
                                 static_cast<uint8_t>(rectype),
                                 Fragment::Pattern,
-                                nbytes);
+                                sizeof (m_identifier) / sizeof (uint64_t),
+                                n64);
 
       m_identifier = identifier;
       return;
@@ -694,13 +872,13 @@ public:
                    uint8_t          type,
                    uint32_t     sequence,
                    uint64_t    timestamp,
-                   uint32_t       nbytes)
+                   uint32_t          n64)
    {
       m_w64 = Header0::compose (static_cast<int>(Fragment::Type::Data),
-                                sizeof (m_identifier) / sizeof (uint64_t),
                                 static_cast<uint8_t>(rectype),
                                 Fragment::Pattern,
-                                nbytes);
+                                sizeof (m_identifier) / sizeof (uint64_t),
+                                n64);
       //fprintf (stderr, "Header.m_64 %16.16" PRIx64 "\n", m_w64);
 
       m_identifier.construct (src0, src1, type, sequence, timestamp);
@@ -729,11 +907,13 @@ public:
 
    static uint64_t compose (uint32_t firmware, uint32_t software)
    {
-      uint64_t version = firmware;
+      uint64_t version = software;
       version <<= 32;
-      version  |= software;
+      version  |= firmware;
 
-      fprintf (stderr, "Version %16.16" PRIx64 "\n", version);
+      //fprintf (stderr, "Version %16.16" PRIx64 "\n", version);
+
+
       return version;
    }
 
@@ -743,8 +923,8 @@ public:
       return;
    }
 
-   static uint32_t software (uint64_t m_64) { return m_64 >>  0; }
-   static uint32_t firmware (uint64_t m_64) { return m_64 >> 32; }
+   static uint32_t firmware (uint64_t m_64) { return m_64 >>  0; }
+   static uint32_t software (uint64_t m_64) { return m_64 >> 32; }
 
    uint32_t software () const { return software (m_w64); }
    uint32_t firmware () const { return firmware (m_w64); }
@@ -790,8 +970,8 @@ public:
       return size;
    }
 
-   uint32_t location      () const { return     m_location; }
-   uint64_t serialNumber  () const { return m_serialNumber; }
+   uint32_t      location () const { return     m_location; }
+   uint64_t  serialNumber () const { return m_serialNumber; }
    Version const &version () const { return      m_version; }
    char const   *rptSwTag () const { return      m_strings; }
    char const  *groupName () const { return &m_strings [strlen(rptSwTag()) + 1]; }
@@ -806,10 +986,16 @@ public:
 
 
 
-class Originator : public Header1
+/* ---------------------------------------------------------------------- *//*!
+
+  \class Originator
+  \brief Information about the physical entity (RCE) producing the data
+         and the software and firmware running on it
+                                                                          */
+/* ---------------------------------------------------------------------- */
+class Originator : public Header2
 {
-public:
-   static const int Version = 1;
+   static const int Version = 0;
 public:
    Originator () { return; }
 
@@ -822,7 +1008,7 @@ public:
                   char const   *groupName,
                   uint8_t      ngroupName)
    {
-      fprintf (stderr, "Fw/Sw = %8.8" PRIx32 " %8.8" PRIx32 "\n", fw_version, sw_version);
+      //fprintf (stderr, "Fw/Sw = %8.8" PRIx32 " %8.8" PRIx32 "\n", fw_version, sw_version);
       int size = m_body.construct (fw_version,
                                    sw_version,
                                    rptSwTag,
@@ -832,11 +1018,11 @@ public:
                                    groupName,
                                    ngroupName);
 
-      size += sizeof (Header1);
-      Header1::construct (static_cast<int>
+      size += sizeof (Header2);
+      Header2::construct (static_cast<int>
                           (Header<Fragment::Type::Data>::RecType::Originator), 
-                          Version,
-                          size);
+                          (size + sizeof (uint64_t) - 1) / sizeof (uint64_t),
+                          Version);
 
       return size;
    }
@@ -844,342 +1030,42 @@ public:
    OriginatorBody m_body;
 } __attribute__ ((packed));
 /* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \class TocBody
-  \brief Table of contents for the data pieces
-                                                                          */
-/* ---------------------------------------------------------------------- */
-template<int MAX_ENTRIES>
-class TocBody
-{
-public:
-
-public:
-   TocBody () { return; }
-
-   void add (int idx, int format, int version, int src, uint32_t offset)
-   {
-      m_entries[idx].construct (format, version, offset);
-   }
-
-   /* ------------------------------------------------------------------- *//*!
-
-      \class Master
-      \brief Allows one to locate the toc entries for up to 3 sources
-                                                                          */
-   /* ------------------------------------------------------------------- */
-   class Master
-   {
-   public:
-      static const int VersionNumber = 1;
-
-      /* ---------------------------------------------------------------- *//*!
-
-        \enum  class Size
-        \brief Enumerates the sizes of the Master bit fields.
-                                                                          */
-      /* ---------------------------------------------------------------- */
-      enum class Size: int
-      {
-         Format    =  4, /*!< Size of the format field                    */
-         Version   =  4, /*!< Size of the record/frame version field      */
-         Counts    = 24  /*!< Size of the counts field                    */
-      };
-      /* ---------------------------------------------------------------- */
-
-
-      /* ---------------------------------------------------------------- *//*!
-
-        \enum  class Offset
-        \brief Enumerates the right justified offsets of the Master bit 
-               fields.
-                                                                          */
-      /* ---------------------------------------------------------------- */
-      enum class Offset: int
-      {
-         Format    =  0, /*!< Offset of the format field                  */
-         Version   =  4, /*!< Offset of the record/frame version field    */
-         Counts    =  8, /*!< Offset of the counts field                  */
-      };
-      /* ---------------------------------------------------------------- */
-
-
-      /* ---------------------------------------------------------------- *//*!
-
-        \enum  class Offset
-        \brief Enumerates the right justified masks of the Master bit 
-               fields.
-                                                                         */
-      /* --------------------------------------------------------------- */
-      enum class Mask: uint32_t
-      {
-         Format    =  0x0000000f,
-         Version   =  0x0000000f,
-         Counts    =  0x00ffffff,
-      };
-      /* --------------------------------------------------------------- */
-
-
-      /* --------------------------------------------------------------- *//*!
-
-        \brief Method to layout the Master index
-
-        \param[in]  offset  A 24 bit number containing up to 3 source
-                            ids.
-                                                                         */
-      /* --------------------------------------------------------------- */
-      static uint64_t compose (uint32_t counts)
-      {
-         uint32_t w32 = 
-             PDD_INSERT32 (Mask::Format,   Offset::Format,              1)
-           | PDD_INSERT32 (Mask::Version,  Offset::Version, VersionNumber)
-           | PDD_INSERT32 (Mask::Counts,   Offset::Counts,         counts);
-
-
-         ///fprintf (stderr, "Toc.master = %8.8" PRIx32 "\n", w32);
-         return w32;
-      }
-      /* ---------------------------------------------------------------- */
-
-
-      /* ---------------------------------------------------------------- *//*!
-
-        \brief   Adds another count field
-        \return  The updated count field
-   
-        \param[in]  counts The current counts field
-        \param[in]   count The count field to add
-                                                                          */
-      /* ---------------------------------------------------------------- */
-      static uint32_t add (uint32_t counts, uint8_t count)
-      {
-         
-         counts <<= 8;
-         counts  |= count;
-
-         ///fprintf (stderr, "Toc.master.counts = %8.8" PRIx32 "%8.8" PRIx32 "\n", 
-         ///         count, counts);
-
-         return count;
-      }
-      /* ---------------------------------------------------------------- */
-
-
-      /* ---------------------------------------------------------------- *//*!
-
-        \brief Constructs the TOC layout entry
-
-        \param[in] counts  Up to 3 source id counts, devoting 8-bits per
-                                                                          */
-      /* ---------------------------------------------------------------- */
-      void construct (uint32_t counts)
-      {
-         m_w32 = compose (counts);
-         ///fprintf (stderr, "Toc.master = %8.8" PRIx32 "\n", m_w32);
-         return;
-      }
-      /* ---------------------------------------------------------------- */
-
-   public:
-      uint32_t m_w32;
-   };
-   /* ------------------------------------------------------------------- */
-
-
- 
-   class Entry
-   {
-      /* ---------------------------------------------------------------- *//*!
-
-        \enum  class Size
-        \brief Enumerates the sizes of the Entry bit fields.
-                                                                          */
-      /* ---------------------------------------------------------------- */
-      enum class Size: int
-      {
-         Format    =  4, /*!< Size of the format field                    */
-         Version   =  4, /*!< Size of the record/frame version field      */
-         Offset64  = 24, /*!< Size of the offset field                    */
-      };
-      /* ---------------------------------------------------------------- */
-
-
-      /* ---------------------------------------------------------------- *//*!
-
-        \enum  class Offset
-        \brief Enumerates the right justified offsets of the Entry bit 
-               fields.
-                                                                          */
-      /* ---------------------------------------------------------------- */
-      enum class Offset: int
-      {
-         Format    =  0, /*!< Offset of the format field                  */
-         Type      =  4, /*!< Offset of the frame type field              */
-         Version   =  8, /*!< Offset of the record/frame version field    */
-         Offset64  = 12, /*!< Offset of the offset index field            */
-      };
-      /* ---------------------------------------------------------------- */
-
-
-      /* ---------------------------------------------------------------- *//*!
-
-        \enum  class Mask
-        \brief Enumerates the right justified masks of the Entry bit 
-               fields.
-                                                                         */
-      /* --------------------------------------------------------------- */
-      enum class Mask: uint32_t
-      {
-         Format    =  0x0000000f,
-         Type      =  0x0000000f,
-         Version   =  0x0000000f,
-         Offset64  =  0x000fffff,
-      };
-      /* --------------------------------------------------------------- */
-
-   public:
-
-      /* --------------------------------------------------------------- *//*!
-
-        \brief Method to compose a generic Header1
-
-        \param[in]    type  The fragment type
-        \param[in] version  A 4-bit version number of this frame/record
-        \param[in]  offset  The 64 bit offset to the entry
-                                                                         */
-      /* --------------------------------------------------------------- */
-      static uint64_t compose (int            type,
-                               int         version,
-                               uint32_t     offset)
-      {
-         uint32_t w32 = PDD_INSERT32 (Mask::Format,   Offset::Format,        1)
-                      | PDD_INSERT32 (Mask::Type,     Offset::Type,       type)
-                      | PDD_INSERT32 (Mask::Version,  Offset::Version, version)
-                      | PDD_INSERT32 (Mask::Offset64, Offset::Offset64, offset);
-
-         return w32;
-      }
-      /* ---------------------------------------------------------------- */
-
-
-      void construct (int        type,
-                      int     version,
-                      uint32_t offset)
-      {
-         m_w32 = compose (type, version, offset);
-         return;
-      }
-
-   public:
-      uint32_t m_w32;
-
-   };
-   /* ---------------------------------------------------------------- */
-
-
-public:
-   Master   m_master;
-   Entry    m_entries[MAX_ENTRIES];
-} __attribute__ ((packed));
-/* ---------------------------------------------------------------------- */
-
-
-
-template<int MAX_ENTRIES>
-class Toc : public Header1
-{
-public:
-   static const int Version = 1;
-public:
-   Toc () { return; }
-
-   void construct (uint32_t size)
-   {
-      Header1::construct (static_cast<int>
-                          (Header<Fragment::Type::Data>::RecType::Toc), 
-                          Version,
-                          size);
-   }
-
-   uint32_t nbytes (int idx) const
-   {
-      uint32_t size = sizeof (*this) - (MAX_ENTRIES - idx) 
-                    * sizeof (typename TocBody<MAX_ENTRIES>::Entry);
-      return size;
-   }
-
-   uint32_t n64bytes (int idx) const
-   {
-      uint32_t size = (nbytes + sizeof (uint64_t) - 1) & ~(sizeof (uint64_t) - 1);
-      return size;
-   }
-
-
-public:
-   TocBody<MAX_ENTRIES> m_body;
-} __attribute__ ((packed));
-/* ---------------------------------------------------------------------- */
 }
 
 
 template<enum Fragment::Type TYPE>
-inline uint64_t Fragment::Header<TYPE>:: compose (int      naux64,
-                                                  uint32_t  spec0, 
-                                                  uint8_t   spec1,
-                                                  uint32_t nbytes)
+inline uint64_t Fragment::Header<TYPE>:: compose (uint8_t  subtype,
+                                                  uint8_t   naux64,
+                                                  uint32_t     n64)
 {
    uint64_t w64 = Header0::compose (static_cast<int>(TYPE),
-                                    naux64,
+                                    subtype,
                                     Fragment::Pattern,
-                                    spec1,
-                                    nbytes);
+                                    naux64,
+                                    n64);
    return w64;
 }
 
 
 template<enum Fragment::Type TYPE>
-inline uint64_t Fragment::Trailer<TYPE>::compose (int       naux64,
-                                                  uint32_t   spec0,
-                                                  uint8_t    spec1,
-                                                  uint32_t  nbytes)
+inline uint64_t Fragment::Trailer<TYPE>::compose (uint8_t   subtype,
+                                                  int        naux64,
+                                                  uint32_t      n64)
 {
+   uint32_t bridge = Fragment::Pattern;
    uint64_t w64 = 
-      PDD_INSERT64C (Header0::Mask::Format,    Header0::Offset::Format,        0)
-    | PDD_INSERT64C (Header0::Mask::Type,      Header0::Offset::Type,       TYPE)
-    | PDD_INSERT64C (Header0::Mask::NAux64,    Header0::Offset::NAux64,   naux64)
-    | PDD_INSERT64C (Header0::Mask::Specific0, Header0::Offset::Specific0, spec0)
-    | PDD_INSERT64C (Header0::Mask::Specific1, Header0::Offset::Specific1, spec1)
-    | PDD_INSERT64C (Header0::Mask::Length,    Header0::Offset::Length,   nbytes);
+      PDD_INSERT64C (Header0::Mask::Format,  Header0::Offset::Format,        0)
+    | PDD_INSERT64C (Header0::Mask::Type,    Header0::Offset::Type,       TYPE)
+    | PDD_INSERT64C (Header0::Mask::NAux64,  Header0::Offset::NAux64,   naux64)
+    | PDD_INSERT64C (Header0::Mask::SubType, Header0::Offset::SubType, subtype)
+    | PDD_INSERT64C (Header0::Mask::Bridge,  Header0::Offset::Bridge,   bridge)
+    | PDD_INSERT64C (Header0::Mask::Length,  Header0::Offset::Length,      n64);
 
    return w64;
 }
 
 
-
-#if 0
-template<>
-inline void FragmentHeader< FragmentType::Data>::construct (RecType       type,
-                                                           uint32_t swversion,
-                                                           uint32_t fwversion,
-                                                           uint32_t    nbytes)
-{
-   m_w64 = Header0::compose (FragmentType::Data,
-                             sizeof (struct Version) / sizeof (uint64_t),
-                             FragmentPattern,
-                             static_cast<uint8_t>(type),
-                             nbytes);
-
-   m_version.software = swversion;
-   m_version.firmware = fwversion;
-   return;
-}
-#endif
-
-
+/*
 #undef PDD_INSERT
 #undef PDD_INSERTC
 
@@ -1188,7 +1074,7 @@ inline void FragmentHeader< FragmentType::Data>::construct (RecType       type,
 
 #undef PDD_INSERT64
 #undef PDD_INSERT64C
-
+*/
 }
 
 #endif

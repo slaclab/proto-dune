@@ -183,7 +183,7 @@ inline int DaqDmaDevice::enable (uint8_t const *dests, int ndests)
    {
       uint8_t dest = dests[idx];
 
-      fprintf (stderr, "Setting masks for %u\n", dest);
+      ///fprintf (stderr, "Setting masks for %u\n", dest);
       dmaAddMaskBytes(mask, dest);
    }
 
@@ -417,10 +417,15 @@ public:
    void print_firmware ()
    {
       Firmware *fw = &m_firmware;
-      fprintf (stderr, "  Fpga  version = %8.8" PRIx32 "\n",  fw->m_fpgaVersion);
-      fprintf (stderr, "  Rce   version = %8.8" PRIx32 "\n",   fw->m_rceVersion);
-      fprintf (stderr, "  Ethernet Mode = %8.8" PRIx32 "\n",      fw->m_ethMode);
-      fprintf (stderr, "  Build  string = %s\n",              fw->m_buildString);
+      fprintf (stderr, 
+               "  Fpga  version = %8.8" PRIx32 "\n"
+               "  Rce   version = %8.8" PRIx32 "\n"
+               "  Ethernet Mode = %8.8" PRIx32 "\n"
+               "  Build  string = %s\n",
+               fw->m_fpgaVersion,
+               fw->m_rceVersion,
+               fw->m_ethMode,
+               fw->m_buildString);
 
       return;
    }
@@ -429,14 +434,23 @@ public:
    {
       ClusterElement *ce = &m_clusterElement;
 
-      fprintf (stderr, "  Bsi   version = %8.8"   PRIx32 "\n",     ce->m_bsiVersion);
-      fprintf (stderr, "  Network  Type = %8.8"   PRIx32 "\n", ce->m_networkPhyType);
-      fprintf (stderr, "  Mac   address = %16.16" PRIx64 "\n",     ce->m_macAddress);
-      fprintf (stderr, "  Interconnect  = %8.8"   PRIx32 "\n",   ce->m_interconnect);
-      fprintf (stderr, "  UBoot version = %s\n",                 ce->m_uBootVersion);
-      fprintf (stderr, "  RPT SW   tag = %s\n",                     ce->m_rptSwTag);
-      fprintf (stderr, "  Device    Dna = %16.16" PRIx64 "\n",      ce->m_deviceDna);
-      fprintf (stderr, "  Fuse    value = %8.8"   PRIx32 "\n",    ce->m_efFuseValue);
+      fprintf (stderr, 
+               "  BSI   version = %8.8"   PRIx32 "\n"
+               "  Network  Type = %8.8"   PRIx32 "\n"
+               "  Mac   address = %16.16" PRIx64 "\n"
+               "  Interconnect  = %8.8"   PRIx32 "\n"
+               "  UBoot version = %s\n"
+               "  RPT SW   tag  = %s\n"
+               "  Device    Dna = %16.16" PRIx64 "\n"
+               "  Fuse    value = %8.8"   PRIx32 "\n",
+               ce->m_bsiVersion,
+               ce->m_networkPhyType,
+               ce->m_macAddress,
+               ce->m_interconnect,
+               ce->m_uBootVersion,
+               ce->m_rptSwTag,
+               ce->m_deviceDna,
+               ce->m_efFuseValue);
 
       return;
 
@@ -453,30 +467,39 @@ public:
       uint8_t  element = (address >>  0) & 0xff;
 
       
-      fprintf (stderr, "  Serial Number = %16.16" PRIx64 "\n",  ci->m_serialNumber);
-      fprintf (stderr, "  Slot.Bay.Elem = %2.2x/%2.2x/%2.2x\n", slot,
-                                                              bay,
-                                                             element);
-      fprintf (stderr, "  Group    Name = %s\n",               ci->m_groupName);
-      fprintf (stderr, "  Rtm      Type = %8.8"   PRIx32 "\n", ci->m_extInterconnect);
+      fprintf (stderr, 
+               "  Serial Number = %16.16" PRIx64 "\n"
+               "  Slot.Bay.Elem = %2.2x/%2.2x/%2.2x\n"
+               "  Group    Name = %s\n"
+               "  Rtm      Type = %8.8"   PRIx32 "\n",
+               ci->m_serialNumber,
+               slot, bay, element,
+               ci->m_groupName,
+               ci->m_extInterconnect);
 
       return;
    }
 
    void print ()
    {
-      fprintf (stderr, "Firmware:\n");
+      fprintf (stderr, 
+               "\n"
+               "RCE CONFIGURATION INFORMATION\n"
+               "Firmware:\n");
       print_firmware       ();
 
-      fprintf (stderr, "\nCluster Element values:\n");
+      fprintf (stderr, "\nCluster Element:\n");
       print_clusterElement ();
 
-      fprintf (stderr, "\nCluster Ipmc values:\n");
+      fprintf (stderr, "\nCluster IPMC:\n");
       print_clusterIpmc    ();
+
+      fprintf (stderr, "\n");
 
       return;
    }
    /* ------------------------------------------------------------------- */
+
 
 private:
    /* ------------------------------------------------------------------- */
