@@ -15,10 +15,22 @@
 // may be copied, modified, propagated, or distributed except according to 
 // the terms contained in the LICENSE.txt file.
 // Proprietary and confidential to SLAC.
+//
 //-----------------------------------------------------------------------------
 // Modification history :
-// 08/15/2014: created
-//-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------
+//
+//       DATE WHO WHAT
+// ---------- --- -------------------------------------------------------
+// 2017.08.10 jjr Corrected faulty call to munmap.  It was being passed
+//                the physical address to unmap, not the virtual address.
+//                This was the root cause of one of the AXI stream DMA
+//                buffers being inaccessible. By happenstance one of its
+//                buffers contained the (incorrect) address being 
+//                unmapped.
+// 2014.08.15 rth Created
+// ----------------------------------------------------------------------
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -153,12 +165,24 @@ void MappedMemory::close () {
          if ( _map[x] != NULL ) {
 
 #ifndef RTEMS
-            munmap((void *)_memBase[x],_memSize[x]);
+            // --------------------------------------------------------
+            // 2017.08.10 -- jjr
+            // -----------------
+            // Corrected the first parameter to be the virtual address,
+            // not the physical address to be unmapped.  This caused
+            // all sorts of havoc, with any virtual address that
+            // coincided with this physical address to be unmapped.
+            // This would result in a segment fault when said adddress
+            // was accessed.
+            // --------------------------------------------------------
+            munmap((void *)_map[x], _memSize[x]);
 #endif
             _map[x] = NULL;
 
             if ( _debug ) 
-               printf("MappedMemory::close -> UnMapped 0x%08x with size 0x%08x.\n",_memBase[x],(uint32_t)_memSize[x]);
+               printf("MappedMemory::close -> UnMapped 0x%08x with size 0x%08x.\n",
+                      _memBase[x],
+                      (uint32_t)_memSize[x]);
          }
          _map[x] = NULL;
       }
