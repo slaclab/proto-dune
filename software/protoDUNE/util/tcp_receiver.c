@@ -1,5 +1,49 @@
 // -*-Mode: C;-*-
 
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  @file     tcp_receiver.c
+ *  @brief    Toy TCP/IP receiver for data from the RCEs
+ *  @verbatim
+ *                               Copyright 2013
+ *                                    by
+ *
+ *                       The Board of Trustees of the
+ *                    Leland Stanford Junior University.
+ *                           All rights reserved.
+ *
+ *  @endverbatim
+ *
+ *  @par Facility:
+ *  pdd
+ *
+ *  @author
+ *  <russell@slac.stanford.edu>
+ *
+ *  @par Date created:
+ *  <2017/06/19>
+ *
+ * @par Credits:
+ * SLAC
+ *
+\* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *\
+   
+   HISTORY
+   -------
+  
+   DATE       WHO WHAT
+   ---------- --- ---------------------------------------------------------
+   2017.08.28 jjr Fix position of trigger type in auxilliary block to 
+                  match the documentation
+   2017.08.29 jjr Added documentation and history block
+  
+\* ---------------------------------------------------------------------- */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -1154,8 +1198,8 @@ static void  print_id (uint64_t const *data)
            w64, timestamp);
 
    unsigned format   = (w64 >>  0) & 0xf;
-   unsigned src0     = (w64 >>  4) & 0xfff;
-   unsigned type     = (w64 >> 16) & 0xf;
+   unsigned type     = (w64 >>  4) & 0xf;
+   unsigned src0     = (w64 >>  8) & 0xfff;
    unsigned src1     = (w64 >> 20) & 0xfff;
    unsigned sequence = (w64 >> 32) & 0xffffffff;
 

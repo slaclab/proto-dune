@@ -40,6 +40,8 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2017.08.28 jjr Fix position of trigger type in auxilliary block to 
+                  match the documentation
    2017.08.29 jjr Stripped debugging print statements.
    2017.06.19 jjr Created
   
@@ -637,26 +639,28 @@ class Identifier
 
 public:
    Identifier ()  { return; }
-   Identifier (uint16_t        src,
+   Identifier (uint8_t        type,
+               uint16_t        src,
                uint32_t   sequence,
-               uint8_t        type,
-               uint64_t  timestamp) : 
-      Identifier (FormatType::_0, src,     0, type, sequence, timestamp) { return; }
 
-   Identifier (uint16_t       src0, 
+               uint64_t  timestamp) : 
+      Identifier (FormatType::_0, type, src,     0, sequence, timestamp) { return; }
+
+   Identifier (uint16_t       type,
+               uint16_t       src0, 
                uint16_t       src1,
-               uint16_t       type,
+
                uint32_t   sequence,
                uint64_t  timestamp) :
-      Identifier (FormatType::_1, src0, src1, type, sequence, timestamp) { return; }
+      Identifier (FormatType::_1, type, src0, src1,  sequence, timestamp) { return; }
 
    Identifier (enum FormatType format,
+               uint8_t           type,
                uint16_t          src0,
                uint16_t          src1,
-               uint8_t           type,
                uint32_t      sequence,
                uint64_t     timestamp) :
-      m_w64       (compose (static_cast<int>(format), src0, src1, type, sequence)),
+      m_w64       (compose (static_cast<int>(format), type, src0, src1, sequence)),
       m_timestamp (timestamp)
    {
       return;
@@ -671,8 +675,8 @@ public:
    enum class Size
    {
       Format   =  4, /*!< Size of the format field                       */
+      Type     =  4, /*!< Trigger Type                                   */
       Src0     = 12, /*!< Channel bundle 0 source identifier (from WIB)  */
-      Reserved =  4, /*!< Reserved, must be 0                            */
       Src1     = 12, /*!< Channel bundle 1 source identified (from WIB)  */
       Sequence = 32  /*!< Overall sequence number                        */
    };
@@ -680,8 +684,8 @@ public:
    enum class Mask : uint32_t
    {
       Format   = 0x0000000f,
-      Src0     = 0x00000fff,
       Type     = 0x0000000f,
+      Src0     = 0x00000fff,
       Src1     = 0x00000fff,
       Sequence = 0xffffffff
    };
@@ -689,22 +693,22 @@ public:
    enum Offset
    {
       Format    = 0,
-      Src0      = 4,
-      Type      = 16,
+      Type      = 4,
+      Src0      = 8,
       Src1     = 20,
       Sequence = 32
    };
 
-   void construct (uint16_t       src0, 
-                   uint16_t       src1,
-                   uint8_t        type,
+   void construct (uint8_t        type,
+                   uint16_t       src0, 
+                   uint16_t       src1,                  
                    uint32_t   sequence,
                    uint64_t  timestamp)
       {
          m_w64 = compose (static_cast<int>(FormatType::_1),
+                          type,
                           src0,
                           src1,
-                          type,
                           sequence);
          m_timestamp = timestamp;
 
@@ -718,15 +722,15 @@ public:
       }
    
    static uint64_t compose (int         format, 
+                            uint8_t       type,
                             uint16_t      src0, 
                             uint16_t      src1,
-                            uint8_t       type,
                             uint32_t  sequence)
    {
       uint64_t w64 = 
                PDD_INSERT64 (Mask::Format,   Offset::Format,     format)
-             | PDD_INSERT64 (Mask::Src0,     Offset::Src0,         src0)
              | PDD_INSERT64 (Mask::Type,     Offset::Type,         type)
+             | PDD_INSERT64 (Mask::Src0,     Offset::Src0,         src0)
              | PDD_INSERT64 (Mask::Src1,     Offset::Src1,         src1)
              | PDD_INSERT64 (Mask::Sequence, Offset::Sequence, sequence);
  
@@ -867,9 +871,9 @@ public:
 
 
    void construct (RecType       rectype,
+                   uint8_t          type,
                    uint16_t         src0,
                    uint16_t         src1,
-                   uint8_t          type,
                    uint32_t     sequence,
                    uint64_t    timestamp,
                    uint32_t          n64)
@@ -881,7 +885,7 @@ public:
                                 n64);
       //fprintf (stderr, "Header.m_64 %16.16" PRIx64 "\n", m_w64);
 
-      m_identifier.construct (src0, src1, type, sequence, timestamp);
+      m_identifier.construct (type, src0, src1, sequence, timestamp);
       return;
    }
 

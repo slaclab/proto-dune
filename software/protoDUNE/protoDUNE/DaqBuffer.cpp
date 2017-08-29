@@ -15,6 +15,8 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2017.08.28 jjr Fix position of trigger type in auxilliary block to 
+//                match the documentation
 // 2017.08.29 jjr Added code to support the more 'official' output record
 //                format.  Stripped the debugging output back to one line
 //                per transmitted event.  There still are messages
@@ -3136,9 +3138,9 @@ void DaqBuffer::txRun ()
       // -----------------------------------
       HeaderOrigin.m_header.construct
                           (Fragment::Header<Fragment::Type::Data>::RecType::TpcNormal,
+                           event->m_trigger.m_source,
                            srcs[0], 
                            srcs[1],
-                           event->m_trigger.m_source,
                            event->m_trigger.m_sequence,
                            event->m_trigger.m_timestamp,
                            txSize / sizeof (uint64_t));
