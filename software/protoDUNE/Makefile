@@ -61,7 +61,7 @@ dir:
 
 # Clean
 server_clean:
-	cd cntrlGui; qmake; make clean; make distclean
+	cd cntrlGui; qmake-qt4; make clean; make distclean
 
 # Clean
 clean: $(CLN)
@@ -92,7 +92,7 @@ $(BIN)/%: $(UTL_DIR)/%.cpp
 
 # Compile gui
 gui:
-	cd cntrlGui; qmake
+	cd cntrlGui; qmake-qt4
 	cd cntrlGui; make
 endif
 
