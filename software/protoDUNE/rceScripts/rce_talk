@@ -28,87 +28,87 @@ class RceComm:
     def guess_os(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if (sock.connect_ex((self.ip,22)) == 0):#ssh
-            r="Linux" 
+            r="Linux"
         elif (sock.connect_ex((self.ip,23)) == 0):#telnet
-            r="RTEMS" 
+            r="RTEMS"
         else:
              r="Unknown"
-        sock.close()        
+        sock.close()
         return r
-        
+
     def ssh(self):
         if self.guess_os()=='Linux':
             host = "ssh root@" + self.ip
             os.system(host)
         else:
-            print self.ssh_error  
-      
+            print self.ssh_error
+
     def ssh_cmd(self,cmd):
         if self.guess_os()=='Linux':
             host = "root@" + self.ip
-            ssh = subprocess.Popen(["ssh", "%s" % host, cmd],shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE) 
+            ssh = subprocess.Popen(["ssh", "%s" % host, cmd],shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             out = ssh.stdout.readlines()
-            err = ssh.stderr.readlines()     
+            err = ssh.stderr.readlines()
             return (out,err)
         else:
-            print self.ssh_error      
+            print self.ssh_error
 
     def scp_put(self,source,dest,recursive=False):
         if self.guess_os()=='Linux':
             destPntr = 'root@' + self.ip + ':' + ''.join(dest)
             if recursive: flag="-Br"
-            else: flag="-B"        
-            scp = subprocess.Popen( ["scp",flag,''.join(source),destPntr],shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE) 
-            scp.wait() 
+            else: flag="-B"
+            scp = subprocess.Popen( ["scp",flag,''.join(source),destPntr],shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            scp.wait()
             out = scp.stdout.readlines()
             err = scp.stderr.readlines()
-            self.ssh_cmd("sync")   
-            return (out,err)  
+            self.ssh_cmd("sync")
+            return (out,err)
         else:
-            print self.ssh_error  
+            print self.ssh_error
 
     def scp_get(self,source,dest,recursive=False):
         if self.guess_os()=='Linux':
             srcPntr = 'root@' + self.ip + ':' + ''.join(source)
             if recursive: flag="-Br"
-            else: flag="-B" 
-            scp = subprocess.Popen( ["scp",flag,srcPntr,''.join(dest)],shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE) 
-            scp.wait() 
+            else: flag="-B"
+            scp = subprocess.Popen( ["scp",flag,srcPntr,''.join(dest)],shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            scp.wait()
             out = scp.stdout.readlines()
-            err = scp.stderr.readlines()   
-            return (out,err) 
+            err = scp.stderr.readlines()
+            return (out,err)
         else:
-            print self.ssh_error 
+            print self.ssh_error
 
     def telnet(self):
         if self.guess_os()=='RTEMS':
             host = "telnet " + self.ip
             os.system(host)
         else:
-            print self.telnet_error 
+            print self.telnet_error
 
     def telnet_cmd(self,cmd):
-        if self.guess_os()=='RTEMS': 
+        if self.guess_os()=='RTEMS':
             result=""
-            session=telnetlib.Telnet(self.ip,23,self.timeout)        
+            session=telnetlib.Telnet(self.ip,23,self.timeout)
             session.read_until("[/] # ")
             session.write(cmd+"\r")
             if not cmd.startswith('reboot'):
                 result=session.read_until("[/] # ")
                 session.write("exit\r")
             session.close()
-            return (result) 
+            return (result)
         else:
-            print self.telnet_error  
+            print self.telnet_error
 
     def boot_linux(self):
         current_os=self.guess_os()
-        if current_os=='RTEMS': 
+        if current_os=='RTEMS':
             self.telnet_cmd("reboot -t linux")
             return "Done. Booted to Linux"
         elif current_os=='Linux':
             return "Done. Already in Linux"
-        elif current_os=='Unknown': 
+        elif current_os=='Unknown':
             return "Unkown State"
 
     def boot_rtems(self):
@@ -119,8 +119,8 @@ class RceComm:
             self.ssh_cmd("sync;reboot_rtems &")
             return "Booted to RTEMS"
         elif current_os=='Unknown':
-            return "Unknown State"        
-        
+            return "Unknown State"
+
     def reboot(self):
         current_os=self.guess_os()
         if current_os=='RTEMS':
@@ -130,17 +130,17 @@ class RceComm:
             self.ssh_cmd("sync;reboot")
             return "done"
         elif current_os=='Unknown':
-            return -1 
+            return -1
 
     def setup_ssh_keys(self):
         out,err = self.ssh_cmd("mkdir -p .ssh; touch .ssh/authorized_keys")
         if(''.join(err)!=""):
-            return (out,err) 
+            return (out,err)
         termCmd  = "cat " + os.path.expanduser("~")
-        termCmd += "/.ssh/id_rsa.pub | " 
+        termCmd += "/.ssh/id_rsa.pub | "
         termCmd += "`ssh root@"+self.ip+" 'cat >> .ssh/authorized_keys'`"
-        os.system(termCmd)  
-        return (out,err)  
+        os.system(termCmd)
+        return (out,err)
 
     def shutdown_cob(self,slot):
         print "Powering Down Blades"
@@ -155,14 +155,14 @@ class RceComm:
         print "\nPowering Up Blades"
         cmd = "clia activate board "+slot+";"
         out,err = self.ssh_cmd(cmd)
-        return (out,err) 
+        return (out,err)
 
     def open_switch_cob(self,slot):
         print "Force open COB Switch: Slot#"+slot
         cmd = "clia sendcmd " + hex(128+(2*int(slot))) + " 0x2e 0x08 0x0a 0x40 0x00 0x00 0x00;"
         print cmd
         out,err = self.ssh_cmd(cmd)
-        return (out,err)        
+        return (out,err)
 
     def close_switch_cob(self,slot):
         print "Force close COB Switch: Slot#"+slot
@@ -176,14 +176,14 @@ class RceComm:
         cmd = "clia sendcmd " + hex(128+(2*int(slot))) + " 0x2e 0x08 0x0a 0x40 0x00 0x00 0x02;"
         print cmd
         out,err = self.ssh_cmd(cmd)
-        return (out,err)        
+        return (out,err)
 
     def open_switch_rtm(self,slot):
         print "Force open RTM Switch: Slot#"+slot
         cmd = "clia sendcmd " + hex(128+(2*int(slot))) + " 0x2e 0x08 0x0a 0x40 0x00 0x01 0x00;"
         print cmd
         out,err = self.ssh_cmd(cmd)
-        return (out,err)        
+        return (out,err)
 
     def close_switch_rtm(self,slot):
         print "Force close RTM Switch: Slot#"+slot
@@ -197,7 +197,7 @@ class RceComm:
         cmd = "clia sendcmd " + hex(128+(2*int(slot))) + " 0x2e 0x08 0x0a 0x40 0x00 0x01 0x02;"
         print cmd
         out,err = self.ssh_cmd(cmd)
-        return (out,err)     
+        return (out,err)
 
     def getPath (self,pathIn,node):
         path = node.localName
@@ -239,17 +239,17 @@ class RceComm:
         s.settimeout(10)
         port = sport
         while ready == 0 and port < (sport+10):
-            try: 
+            try:
                 s.connect((self.ip, port))
                 ready = 1
-            except Exception, e: 
+            except Exception, e:
                 err.append("Cannot establish a connectioan to " + self.ip + ":" + str(port))
                 port = port + 1
         if ready == 0:
             return (out,err)
         while "\f" not in data:
-            data += s.recv(1024) 
-        s.close()    
+            data += s.recv(1024)
+        s.close()
 
         dom = parseString(data[0:-2])
         searchNodes = dom.getElementsByTagName(TagName)
@@ -263,9 +263,9 @@ class RceComm:
                 print line.ljust(self.width+2) + " = " + self.varValue[i]
             else:
                 out.append(line.ljust(self.width+2) + " = " + self.varValue[i])
-            i = i + 1      
-        return (out,err) 
-        
+            i = i + 1
+        return (out,err)
+
 ###################################################################################
 
 class LbneAliasMap:
@@ -315,11 +315,12 @@ class LbneAliasMap:
             ( '10.0.1.196' ):'FNAL-122',
             ( '10.0.1.197' ):'FNAL-130',
             ( '10.0.1.198' ):'FNAL-132',
-            ( '10.0.1.200' ):'FNAL-DTM1', 
+            ( '10.0.1.200' ):'FNAL-DTM1',
             ###################
             # CERN Defined RCEs
             ###################
             ( '192.168.1.2' ):'SM-CERN',
+
             ( '10.73.136.22' ):'CERN-100',
             ( '10.73.136.23' ):'CERN-102',
             ( '10.73.136.24' ):'CERN-110',
@@ -328,7 +329,17 @@ class LbneAliasMap:
             ( '10.73.136.27' ):'CERN-122',
             ( '10.73.136.28' ):'CERN-130',
             ( '10.73.136.29' ):'CERN-132',
-            ( '10.73.136.30' ):'CERN-DTM1' 
+            ( '10.73.136.30' ):'CERN-DTM1',
+
+            ( '10.73.136.41' ):'CERN-200',
+            ( '10.73.136.42' ):'CERN-202',
+            ( '10.73.136.43' ):'CERN-210',
+            ( '10.73.136.44' ):'CERN-212',
+            ( '10.73.136.45' ):'CERN-220',
+            ( '10.73.136.46' ):'CERN-222',
+            ( '10.73.136.47' ):'CERN-230',
+            ( '10.73.136.48' ):'CERN-232',
+            ( '10.73.136.49' ):'CERN-DTM2',
             }
         self.sector_map = dict((v,k) for k, v in self.slot_map.iteritems())
 
@@ -344,11 +355,11 @@ class LbneAliasMap:
 
 class LbneComm(RceComm,LbneAliasMap):
 
-    def __init__ (self,sector): 
+    def __init__ (self,sector):
         LbneAliasMap.__init__(self)
         self.sector=sector
         self.shelf_id=self.sector_map.get(sector)
-        RceComm.__init__(self,self.shelf_id,sector)    
+        RceComm.__init__(self,self.shelf_id,sector)
 
     def getName(self):
         return self.sector
@@ -373,7 +384,7 @@ class LbneCommGroup(LbneAliasMap):
 
     def worker(self,rce,string,output,args):
         output.put((rce.getName(),getattr(rce,string)(*args)))
-        
+
     def setPrintAction(self,printAction):
         self.printAction = printAction
 
@@ -387,8 +398,8 @@ class LbneCommGroup(LbneAliasMap):
             except:
                 print "Failed to create worker for action="+string +params
         for p in procs:
-            p.start() 
-        for check in range(60): 
+            p.start()
+        for check in range(60):
             alive=True
             for p in procs:
                 alive=alive and p.is_alive()
@@ -398,7 +409,7 @@ class LbneCommGroup(LbneAliasMap):
             time.sleep(1)
             if string!="setup_ssh_keys": sys.stdout.write( ".")
             sys.stdout.flush()
-        if(string!="ssh" and string!="telnet"): print ". done"    
+        if(string!="ssh" and string!="telnet"): print ". done"
         for rce in self.rce_list:
             result.append(self.output.get())
             result=sorted(result,key=lambda x:x[0])
@@ -412,9 +423,9 @@ class LbneCommGroup(LbneAliasMap):
                 for l  in rce[1].split("\n"):
                     print "["+rce[0]+"]::"+l
             else:
-                for l in (rce[1][0]): 
+                for l in (rce[1][0]):
                     print  "["+rce[0]+"]::"+ 'stdout::',l.rstrip('\n')
-                for l in (rce[1][1]): 
+                for l in (rce[1][1]):
                     print "["+rce[0]+"]::"+ 'stderr::',l.rstrip("\n")
 
 ###################################################################################
@@ -428,13 +439,13 @@ def usage():
     print "------------------------"
     print "list                      list elements from dictionary sorting"
     print "guess_os                  get current OS running"
-    print "reboot                    restart the current OS"    
+    print "reboot                    restart the current OS"
     print "setup_ssh_keys            setup up the ssh authorized keys"
     print "setup_linux TARGET        Setup the Linux environment"
     print "ssh                       start a ssh session (only for one RCE element)"
     print "ssh_cmd CMDARG            CMDARG through ssh"
     print "scp_put [-r] SRC DEST     from SRC to RCE DEST, -r for recursive copy"
-    print "scp_get [-r] SRC DEST     from RCE SRC to DEST, -r for recursive copy"    
+    print "scp_get [-r] SRC DEST     from RCE SRC to DEST, -r for recursive copy"
     print "telnet                    start a telnet session (only for one RCE element)"
     print "telnet_cmd CMDARG         CMDARG through telnet"
     print "set_image SRC             set the RCE's FPGA image from SRC"
@@ -449,10 +460,10 @@ def usage():
     print "List of Application Specific Commands:"
     print "--------------------------------------"
     print "check_host                get the RCE's status"
-    print "status_gui [PORT]         start the status gui, default PORT=8090" 
+    print "status_gui [PORT]         start the status gui, default PORT=8090"
     print "restart_rce_software      restart the RCE's server"
     print "build_rce_software        build the rce server software on the RCE"
-    print "###########################################################################"              
+    print "###########################################################################"
     print ""
 
 ###################################################################################
@@ -460,7 +471,7 @@ def usage():
 def main(argv):
     argc=len(argv)-2
     pwd=os.getcwd()
-    if(argc<0 or  len(LbneAliasMap().getSectorGroup(argv[0]))<1): 
+    if(argc<0 or  len(LbneAliasMap().getSectorGroup(argv[0]))<1):
         if (len(argv)==1) and (argv[0]=="list"):
            result=LbneAliasMap().getSectorGroup("")
            for key,val in result.items(): print str(key),str(val)
@@ -472,7 +483,7 @@ def main(argv):
     cmd = argv[1]
     g=LbneCommGroup(argv[0])
     ################################
-    #   List of System Commands:   #    
+    #   List of System Commands:   #
     ################################
     if(cmd=='list'and argc==0):
         result=LbneAliasMap().getSectorGroup(argv[0])
@@ -484,14 +495,14 @@ def main(argv):
     elif (cmd=="boot_rtems" and argc==0):
         g.action("boot_rtems")
     elif (cmd=="reboot" and argc==0):
-        g.action("reboot")        
+        g.action("reboot")
     elif (cmd=="setup_ssh_keys" and argc==0):
         g.action("setup_ssh_keys")
     elif (cmd=="ssh" and argc==0):
         numIp = len(g.rce_names)
         if( numIp == 1):
             g.setPrintAction(False)
-            g.action("ssh")    
+            g.action("ssh")
         else:
             print "Error:\tOnly one IP is supported per ssh session"
             print "\tCurrnetly, %s IP addresses are selected" % numIp
@@ -503,8 +514,8 @@ def main(argv):
     elif (cmd=="scp_put" and argc>=2):
         i=2
         recursive=False
-        if(argv[i]=='-r'): 
-            recursive=True 
+        if(argv[i]=='-r'):
+            recursive=True
             i+=1
         g.action("scp_put",argv[i:-1], argv[-1],recursive)
     elif (cmd=="scp_get" and argc>=2):
@@ -518,7 +529,7 @@ def main(argv):
         numIp = len(g.rce_names)
         if( numIp == 1):
             g.setPrintAction(False)
-            g.action("telnet")    
+            g.action("telnet")
         else:
             print "Error:\tOnly one IP is supported per telnet session"
             print "\tCurrnetly, %s IP addresses are selected" % numIp
@@ -557,8 +568,8 @@ def main(argv):
     elif (cmd=="hardware_switch_rtm" and argc==1):
         g.action("hardware_switch_rtm",argv[2])
     #############################################
-    #   List of Application Specific Commands:  #    
-    #############################################  
+    #   List of Application Specific Commands:  #
+    #############################################
     elif (cmd=="check_host" and argc==0):
         ssh_cmd  = "uname -r; "
         ssh_cmd += "uptime; "
@@ -572,7 +583,7 @@ def main(argv):
     elif (cmd=="start_gui" and argc<=1):
         result=LbneAliasMap().getSectorGroup(argv[0])
         ipList=''
-        for key,val in result.items(): 
+        for key,val in result.items():
             if(ipList==''):
                 if(argc==0):
                     ipList = val + " 8090"
@@ -581,11 +592,11 @@ def main(argv):
             else:
                 ipList += " " + val
         binCmd = locPath + 'bin/cntrlGui ' + ipList
-        os.system(binCmd)     
+        os.system(binCmd)
     elif (cmd=="status_gui" and argc<=1):
         result=LbneAliasMap().getSectorGroup(argv[0])
         ipList=''
-        for key,val in result.items(): 
+        for key,val in result.items():
             if(ipList==''):
                 if(argc==0):
                     ipList = val + " 8090"
@@ -594,7 +605,7 @@ def main(argv):
             else:
                 ipList += " " + val
         binCmd = locPath + 'bin/statusGui ' + ipList
-        os.system(binCmd)     
+        os.system(binCmd)
     elif (cmd=="restart_rce_software" and argc==0):
         ssh_cmd  = "cd /mnt/host/protoDUNE; "
         ssh_cmd += "killall -q rceServer; "
@@ -609,7 +620,7 @@ def main(argv):
         ssh_cmd += "nohup /mnt/host/protoDUNE/rceScripts/start_server.csh"
         g.action("ssh_cmd",ssh_cmd)
     elif (cmd=="setup_linux" and argc==1):
-        
+
         if (argv[2] == 'slac'):
             pass
         elif (argv[2] == 'cern'):
@@ -617,7 +628,7 @@ def main(argv):
         else:
             print usage()
             return (-1)
-        
+
         # Setup rce_start.service
         g.action("scp_put",(locPath+"rceData/axistreamdma.sh."+argv[2]), "/bin/axistreamdma.sh")
         g.action("ssh_cmd","chmod +x /bin/axistreamdma.sh")
@@ -625,21 +636,21 @@ def main(argv):
         g.action("ssh_cmd","systemctl enable axistreamdma")
         g.action("ssh_cmd","rm -f /etc/rc.local")
         g.action("ssh_cmd","rm -f /etc/resolv.conf")
-        
+
         # Package Update
         g.action("ssh_cmd","pacman -U --noconfirm /opt/RCE_SDK/tgt/linux/packages/extra/*.xz")
-        
+
         # NFS and account setup
         g.action("ssh_cmd","mkdir -p /mnt/host")
         g.action("ssh_cmd","chsh --shell /bin/tcsh")
-        
+
         # SYNC the SD memory card
         g.action("ssh_cmd","sync; sync; sync")
-        
+
         # Reboot with the /mnt/boot/fpga.bit
         # Refer https://confluence.slac.stanford.edu/x/CrufD
         g.action("ssh_cmd","reboot_rce -b 1")
-        
+
     else:
         print usage()
         return (-1)
