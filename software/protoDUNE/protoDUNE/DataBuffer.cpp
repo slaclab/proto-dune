@@ -380,7 +380,7 @@ DataBuffer::StatusVariables::StatusVariables (Device *device)
       [TxPend]      = { "TxPend",      "Transmit Pend",                   0 },
       [DisTrgCnt]   = { "DisTrgCnt",   "Discarded Trigger Count",         0 },
       [DropSeqCnt]  = { "DropSeqCnt",  "Drop Sequnece Count",             0 },
-      [TrgMsgCnt]   = { "TrgMsgCng",   "Trigger Message Count",           0 },
+      [TrgMsgCnt]   = { "TrgMsgCnt",   "Trigger Message Count",           0 },
    };
 
 

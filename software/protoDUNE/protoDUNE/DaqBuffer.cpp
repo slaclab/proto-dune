@@ -3364,6 +3364,7 @@ void DaqBuffer::getStatus(struct BufferStatus *status) {
    status->txErrors     = _counters._txErrors;
    status->disTrgCnt    = _counters._disTrgCnt;
    status->dropSeqCnt   = _counters._dropSeqCnt;
+   status->trgMsgCnt    = _counters._trgMsgCnt;
 
    // These are derived rates
    status->triggerRate  = triggerRate;
