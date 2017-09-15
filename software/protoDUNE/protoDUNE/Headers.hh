@@ -344,7 +344,7 @@ public:
    /* ------------------------------------------------------------------ */
 
 public:
-   static uint32_t compose (int            type,
+   static uint64_t compose (int            type,
                             uint32_t        n64,
                             uint32_t     bridge);
 
@@ -394,7 +394,7 @@ public:
                       record \a type specific
                                                                           */
 /* ---------------------------------------------------------------------- */
-inline uint32_t Header1::compose (int        type,
+inline uint64_t Header1::compose (int        type,
                                   uint32_t    n64,
                                   uint32_t bridge)
 {
@@ -404,12 +404,13 @@ inline uint32_t Header1::compose (int        type,
             " Bridge:%8.8" PRIx32 "\n",
             1, type, n64, bridge);
    */
-   uint32_t w32 = PDD_INSERT64 (Mask::Format, Offset::Format,      1)
+
+   uint64_t w64 = PDD_INSERT64 (Mask::Format, Offset::Format,      1)
                 | PDD_INSERT64 (Mask::Type,   Offset::Type,     type)
                 | PDD_INSERT64 (Mask::Length, Offset::Length,    n64)
                 | PDD_INSERT64 (Mask::Bridge, Offset::Bridge, bridge);
 
-   return w32;
+   return w64;
 };
 /* ---------------------------------------------------------------------- */
 
@@ -498,6 +499,10 @@ public:
                             unsigned int    n64,
                             unsigned int bridge)
    {
+      /*
+      printf ("Header2::construct type = %u n64 = %u  bridge = %8.8x\n",
+              type, n64, bridge);
+      */
       Header2::m_w32 = Header2::compose (type, n64, bridge);
       return;
    }
@@ -546,7 +551,7 @@ inline uint32_t Header2::compose (unsigned int   type,
 {
    /*
    fprintf (stderr, 
-            "Header1::compose Format:%d Type:%d N64:%3.3x Bridge:%3.3x\n",
+            "Header2::compose Format:%d Type:%d N64:%3.3x Bridge:%3.3x\n",
             1, type, n64, bridge);
    */
 
@@ -593,7 +598,7 @@ public:
 
 
 
-namespace Fragment
+namespace fragment
 {
 
 /* ---------------------------------------------------------------------- *//*!
@@ -755,7 +760,7 @@ public:
    This class is specialized for the various types of fragment headers
                                                                           */
 /* ---------------------------------------------------------------------- */
-template<enum Fragment::Type TYPE>
+template<enum fragment::Type TYPE>
 class Header : public Header0
 {
 public:
@@ -782,7 +787,7 @@ public:
   \brief Template class for Fragment Trailers
                                                                           */
 /* ---------------------------------------------------------------------- */
-template<enum Fragment::Type TYPE>
+template<enum fragment::Type TYPE>
 class Trailer
 {
 public:
@@ -804,7 +809,7 @@ public:
                                                                           */
 /* ---------------------------------------------------------------------- */
 template<>
-class Header<Fragment::Type::Data> : public Header0
+class Header<fragment::Type::Data> : public Header0
 {
 
 public:
@@ -818,12 +823,12 @@ public:
 
 
 public:
-   Header<Fragment::Type::Data> (RecType              rectype,
+   Header<fragment::Type::Data> (RecType              rectype,
                                  Identifier const &identifier,
                                  uint32_t                 n64) :
-      Header0 (static_cast<int>(Fragment::Type::Data), 
+      Header0 (static_cast<int>(fragment::Type::Data), 
                static_cast<uint8_t>(rectype),
-               Fragment::Pattern,
+               fragment::Pattern,
                (sizeof (identifier))/ sizeof (uint64_t),
                n64),
       m_identifier (identifier)
@@ -831,10 +836,10 @@ public:
          return;
       }
 
-   Header<Fragment::Type::Data> (RecType       rectype) :
-      Header0 (static_cast<int>(Fragment::Type::Data), 
+   Header<fragment::Type::Data> (RecType       rectype) :
+      Header0 (static_cast<int>(fragment::Type::Data), 
                static_cast<uint8_t>(rectype),
-               Fragment::Pattern,
+               fragment::Pattern,
                sizeof (struct Identifier) / sizeof (uint64_t),
                0),
       m_identifier ()
@@ -842,11 +847,11 @@ public:
          return;
       }
 
-   Header<Fragment::Type::Data> () :
-      Header0 (static_cast<int>(Fragment::Type::Data), 
+   Header<fragment::Type::Data> () :
+      Header0 (static_cast<int>(fragment::Type::Data), 
                sizeof (struct Identifier) / sizeof (uint64_t),
                0,
-               Fragment::Pattern,
+               fragment::Pattern,
                0),
       m_identifier ()
       {
@@ -859,9 +864,9 @@ public:
                    Identifier const &identifier,
                    uint32_t                 n64)
    {
-      m_w64 = Header0::compose (static_cast<int>(Fragment::Type::Data),
+      m_w64 = Header0::compose (static_cast<int>(fragment::Type::Data),
                                 static_cast<uint8_t>(rectype),
-                                Fragment::Pattern,
+                                fragment::Pattern,
                                 sizeof (m_identifier) / sizeof (uint64_t),
                                 n64);
 
@@ -878,9 +883,9 @@ public:
                    uint64_t    timestamp,
                    uint32_t          n64)
    {
-      m_w64 = Header0::compose (static_cast<int>(Fragment::Type::Data),
+      m_w64 = Header0::compose (static_cast<int>(fragment::Type::Data),
                                 static_cast<uint8_t>(rectype),
-                                Fragment::Pattern,
+                                fragment::Pattern,
                                 sizeof (m_identifier) / sizeof (uint64_t),
                                 n64);
       //fprintf (stderr, "Header.m_64 %16.16" PRIx64 "\n", m_w64);
@@ -1024,7 +1029,7 @@ public:
 
       size += sizeof (Header2);
       Header2::construct (static_cast<int>
-                          (Header<Fragment::Type::Data>::RecType::Originator), 
+                          (Header<fragment::Type::Data>::RecType::Originator), 
                           (size + sizeof (uint64_t) - 1) / sizeof (uint64_t),
                           Version);
 
@@ -1037,26 +1042,26 @@ public:
 }
 
 
-template<enum Fragment::Type TYPE>
-inline uint64_t Fragment::Header<TYPE>:: compose (uint8_t  subtype,
+template<enum fragment::Type TYPE>
+inline uint64_t fragment::Header<TYPE>:: compose (uint8_t  subtype,
                                                   uint8_t   naux64,
                                                   uint32_t     n64)
 {
    uint64_t w64 = Header0::compose (static_cast<int>(TYPE),
                                     subtype,
-                                    Fragment::Pattern,
+                                    fragment::Pattern,
                                     naux64,
                                     n64);
    return w64;
 }
 
 
-template<enum Fragment::Type TYPE>
-inline uint64_t Fragment::Trailer<TYPE>::compose (uint8_t   subtype,
+template<enum fragment::Type TYPE>
+inline uint64_t fragment::Trailer<TYPE>::compose (uint8_t   subtype,
                                                   int        naux64,
                                                   uint32_t      n64)
 {
-   uint32_t bridge = Fragment::Pattern;
+   uint32_t bridge = fragment::Pattern;
    uint64_t w64 = 
       PDD_INSERT64C (Header0::Mask::Format,  Header0::Offset::Format,        0)
     | PDD_INSERT64C (Header0::Mask::Type,    Header0::Offset::Type,       TYPE)
