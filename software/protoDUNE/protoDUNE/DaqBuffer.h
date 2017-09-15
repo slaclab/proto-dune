@@ -29,6 +29,7 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2017.09.15  jjr  Bump software version to 1.0.3.0
 // 2017.08.29  jjr  Bump software version to 1.0.1.0
 // 2017.06.19  jjr  Replaced naccept/nframes with pretrigger and dureation times
 // 2017.05.26  jjr  Added checkBuffer method to check for unreadable DMA buffers
@@ -649,7 +650,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01000200;
+      static const uint32_t SoftwareVersion = 0x01000300;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;      

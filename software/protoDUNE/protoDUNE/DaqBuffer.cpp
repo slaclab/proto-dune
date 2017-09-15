@@ -15,7 +15,7 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
-// 2017.09.15 jjr Readied for release 1.0.1-0
+// 2017.09.15 jjr Readied for release 1.0.3-0
 // 2017.09.15 jjr Removed a lot of debugging printout.
 //
 //                Corrected an error whereby the event list was not
