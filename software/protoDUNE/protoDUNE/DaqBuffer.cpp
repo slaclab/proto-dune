@@ -15,6 +15,13 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2017.10.12 jjr Release 1.0.4-0, 
+//                This corrects 2 errors in the calculation of lengths
+//                in the output TpcDataRecords. 
+//                   - The length of the table of contents (TOC) record
+//                     failed to include the terminating 64-bit word
+//                   - The length of the Packet record failed to include
+//                     the header size.
 // 2017.09.15 jjr Readied for release 1.0.3-0
 // 2017.09.15 jjr Removed a lot of debugging printout.
 //
@@ -3212,11 +3219,16 @@ static int addTpcDataRecord (struct msghdr                  *msg,
    */
 
 
-   // ---------------------------------------
+   // ---------------------------------------------------------
+   // 2017.10.12 -- jjr
+   // ----------------
+   // Changed [pkt_idx] -> [pkt_idx++] so that pkt_idx includes
+   // the terminating index as part of its count.
+   //
    // Add the terminating index so the length
    // of the final frame can be determined.
-   // ---------------------------------------
-   toc_pkt[pkt_idx].construct  (0, 0, ndata/sizeof (uint64_t));
+   // ---------------------------------------------------------
+   toc_pkt[pkt_idx++].construct  (0, 0, ndata/sizeof (uint64_t));
 
 
    ///fprintf (stderr, "Srcs %4.4" PRIx16 " %4.4" PRIx16 " %8.8" PRIx32 "\n", 
@@ -3256,13 +3268,20 @@ static int addTpcDataRecord (struct msghdr                  *msg,
    }
 
 
-   // --------------------------------
+   // ----------------------------------------------------------------
+   // 2017.10.12 -- jjr
+   // -----------------
+   // Data packet length did not include the size of the packet header
+   // Added this on.
+   //
    // Add the data packet header
    // This immediately follows the TOC
-   // --------------------------------
+   // ----------------------------------------------------------------
    void              *pkt_ptr = reinterpret_cast<char *>(toc) + toc_nbytes;
    fragment::tpc::Packet *pkt = reinterpret_cast<decltype (pkt)>(pkt_ptr);
-   pkt->construct ((ndata + sizeof (uint64_t) - 1)/sizeof (uint64_t));
+   uint              pktLen64 = (sizeof (Header1) + 
+                     ndata + sizeof (uint64_t) - 1)/sizeof (uint64_t);
+   pkt->construct (pktLen64);
    
 
    // --------------------------------
@@ -3273,8 +3292,8 @@ static int addTpcDataRecord (struct msghdr                  *msg,
 
 
 
-   // ---------------------------------------------------------------------------
-   // Calculate the length of the locally generate portion of the TPC data record.
+   // ---------- -------------------------------------------------------------
+   // Calculate length of the locally generate portion of the TPC data record.
    // This includes the lengths of
    //   1. The TPC data record header
    //   2. The Range Record
@@ -3284,7 +3303,7 @@ static int addTpcDataRecord (struct msghdr                  *msg,
    // The calculate the total length to the TPC data reord as the sum of
    //   1. The local tpc data size +
    //   2. The size from the data vectors
-   // -------------------------------------------------------------------------
+   // -----------------------------------------------------------------------
    uint32_t streamLclSize = sizeof (fragment::tpc::Stream) 
                           + rangeSize 
                           + toc_n64bytes 
@@ -3442,8 +3461,8 @@ void DaqBuffer::txRun ()
          // ---------------------------------------------
          // Get the crate.slot.fiber for this contributor
          // ---------------------------------------------
-         ////uint16_t csf = srcs[ictb] = list->m_flnk->m_body.getCsf ();
-         uint16_t csf = ictb ? 0x123 : 0x456;
+         uint16_t csf = srcs[ictb] = list->m_flnk->m_body.getCsf ();
+         ///uint16_t csf = ictb ? 0x123 : 0x456;
 
          // ------------------------------------------------
          // Add the Tpc Data Record to the transmitted event

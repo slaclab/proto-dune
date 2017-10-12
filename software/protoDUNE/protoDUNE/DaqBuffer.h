@@ -29,6 +29,13 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2017.10.12  jjr  Bump software version to 1.0.4.0
+//                  This corrects 2 errors in the calculation of lengths
+//                  in the output TpcDataRecords. 
+//                   - The length of the table of contents (TOC) record
+//                     failed to include the terminating 64-bit word
+//                   - The length of the Packet record failed to include
+//                     the header size.
 // 2017.09.15  jjr  Bump software version to 1.0.3.0
 // 2017.08.29  jjr  Bump software version to 1.0.1.0
 // 2017.06.19  jjr  Replaced naccept/nframes with pretrigger and dureation times
@@ -650,7 +657,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01000300;
+      static const uint32_t SoftwareVersion = 0x01000400;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;      
