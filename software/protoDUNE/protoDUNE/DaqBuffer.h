@@ -29,6 +29,8 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2017.10.19  jjr  Version 1.0.5.0
+//                  Correct an error in the Table of Contents descriptor count.
 // 2017.10.12  jjr  Bump software version to 1.0.4.0
 //                  This corrects 2 errors in the calculation of lengths
 //                  in the output TpcDataRecords. 
@@ -657,7 +659,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01000400;
+      static const uint32_t SoftwareVersion = 0x01000500;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;      
