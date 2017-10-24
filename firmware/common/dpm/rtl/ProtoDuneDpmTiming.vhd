@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTiming.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-07-24
+-- Last update: 2017-10-24
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -72,6 +72,7 @@ architecture mapping of ProtoDuneDpmTiming is
    signal runEn : sl;
    signal busy  : sl;
 
+   signal softRst         : sl;
    signal clock           : sl;
    signal recClk          : sl;
    signal timingClock     : sl;
@@ -96,7 +97,6 @@ architecture mapping of ProtoDuneDpmTiming is
    attribute dont_touch of timingBus : signal is "TRUE";
 
 begin
-
 
    U_BUSY : OBUFDS
       port map (
@@ -199,7 +199,7 @@ begin
          SCLK_FREQ => 125.0)
       port map (
          sclk    => axilClk,            -- Free-running system clock
-         srst    => axilRst,            -- System reset (sclk domain)
+         srst    => softRst,            -- System reset (sclk domain)
          addr    => x"00",  -- "Any address except 0x01 is acceptable for this test" from Dave Newbold (20MARCH2017)
          tgrp    => "00",  -- "Any tgrp is acceptable - 0x0 will do" from Dave Newbold (20MARCH2017)
          stat    => timingBus.stat,  -- The status signal (stat) that indicates the internal state of the endpoint
@@ -246,7 +246,8 @@ begin
          axilReadMaster  => axilReadMaster,
          axilReadSlave   => axilReadSlave,
          axilWriteMaster => axilWriteMaster,
-         axilWriteSlave  => axilWriteSlave);
+         axilWriteSlave  => axilWriteSlave,
+         softRst         => softRst);
 
    process(wibClk)
    begin
