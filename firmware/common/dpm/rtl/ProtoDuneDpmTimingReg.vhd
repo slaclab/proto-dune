@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTimingReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-09-26
--- Last update: 2017-05-11
+-- Last update: 2017-10-24
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -51,7 +51,8 @@ entity ProtoDuneDpmTimingReg is
       axilReadMaster  : in  AxiLiteReadMasterType;
       axilReadSlave   : out AxiLiteReadSlaveType;
       axilWriteMaster : in  AxiLiteWriteMasterType;
-      axilWriteSlave  : out AxiLiteWriteSlaveType);
+      axilWriteSlave  : out AxiLiteWriteSlaveType;
+      softRst         : out sl);
 end ProtoDuneDpmTimingReg;
 
 architecture rtl of ProtoDuneDpmTimingReg is
@@ -62,8 +63,9 @@ architecture rtl of ProtoDuneDpmTimingReg is
       cdrEdgeSel     : sl;
       cdrDataInv     : sl;
       swFlush        : sl;
-      cntRst         : sl;
       rollOverEn     : slv(STATUS_SIZE_C-1 downto 0);
+      cntRst         : sl;
+      softRst        : sl;
       hardRst        : sl;
       axilReadSlave  : AxiLiteReadSlaveType;
       axilWriteSlave : AxiLiteWriteSlaveType;
@@ -73,9 +75,10 @@ architecture rtl of ProtoDuneDpmTimingReg is
       cdrEdgeSel     => '0',
       cdrDataInv     => '0',
       swFlush        => '1',
-      cntRst         => '1',
       rollOverEn     => (others => '0'),
-      hardRst        => '0',
+      cntRst         => '1',
+      softRst        => '1',
+      hardRst        => '0',            -- must be zero to prevent lock up
       axilReadSlave  => AXI_LITE_READ_SLAVE_INIT_C,
       axilWriteSlave => AXI_LITE_WRITE_SLAVE_INIT_C);
 
@@ -106,6 +109,7 @@ begin
 
       -- Reset the strobes
       v.hardRst := '0';
+      v.softRst := '0';
       v.cntRst  := '0';
 
       -- Check for hard reset
@@ -134,6 +138,7 @@ begin
 
       axiSlaveRegister(regCon, x"FF0", 0, v.rollOverEn);
       axiSlaveRegister(regCon, x"FF4", 0, v.cntRst);
+      axiSlaveRegister(regCon, x"FF8", 0, v.softRst);
       axiSlaveRegister(regCon, x"FFC", 0, v.hardRst);
 
       -- Closeout the transaction
@@ -162,6 +167,15 @@ begin
          r <= rin after TPD_G;
       end if;
    end process seq;
+
+   U_softRst : entity work.PwrUpRst
+      generic map (
+         TPD_G      => TPD_G,
+         DURATION_G => 125000000)
+      port map (
+         arst   => r.softRst,
+         clk    => axilClk,
+         rstOut => softRst);
 
    U_SyncOutVec : entity work.SynchronizerVector
       generic map (
