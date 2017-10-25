@@ -123,6 +123,7 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
 //   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
 
    addRegister(new Register("CounterReset", baseAddress_ + 0xFF4));
+   addRegister(new Register("SoftReset",    baseAddress_ + 0xFF8));
    addRegister(new Register("HardReset",    baseAddress_ + 0xFFC));
    
    // Enable polling
@@ -149,6 +150,10 @@ void DataDpmTiming::hardReset () {
 
 // Soft Reset
 void DataDpmTiming::softReset () {
+   Register *r;
+   REGISTER_LOCK
+   r = getRegister("SoftReset"); r->set(0x1); writeRegister(r, true);
+   REGISTER_UNLOCK
    Device::softReset();
 }
 

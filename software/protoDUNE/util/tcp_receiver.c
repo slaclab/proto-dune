@@ -37,6 +37,8 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2017.10.19 jjr Remove execute flag when creating the output file
+                  Format the last packet descriptor as the terminator.
    2017.08.28 jjr Fix position of trigger type in auxilliary block to 
                   match the documentation
    2017.08.29 jjr Added documentation and history block
@@ -720,8 +722,8 @@ int main(int argc, char *const argv[])
     int fd = -1;
     if (prms.ofilename)
     {
-       fd = creat (prms.ofilename,  S_IRUSR | S_IWUSR | S_IXUSR
-                                  | S_IRGRP | S_IWGRP | S_IXGRP
+       fd = creat (prms.ofilename,  S_IRUSR | S_IWUSR 
+                                  | S_IRGRP | S_IWGRP
                                   | S_IROTH);
        if (fd >= 0)
        {
@@ -1538,7 +1540,7 @@ static void print_toc (uint64_t const *data)
    // --------------------------------------------
    // Iterate over the packets in this contributor
    // --------------------------------------------
-   for (unsigned ipkt = 0; ipkt < npkts; ipkt++)
+   for (unsigned ipkt = 0; ; ipkt++)
    {
       unsigned   format = (pkt >> 0) & 0xf;
       unsigned     type = (pkt >> 4) & 0xf;
@@ -1550,8 +1552,26 @@ static void print_toc (uint64_t const *data)
       // ----------------------------------------------------------
       pkt  = *pkt_ptr++;
       o64  = (pkt >> 8) & 0xffffff;
-      unsigned int n64 = o64 - offset64;
 
+
+      // -----------------------------------------------
+      // Check for and format the last packet descriptor
+      // -----------------------------------------------
+      if (ipkt == npkts)
+      {
+         printf ("           %2d. %1.x.%1.1x %6.6x\n",
+                 npkts,
+                 format,
+                 type,
+                 offset64);
+         break;
+      }
+
+
+      // -------------------------
+      // Just a regular descriptor
+      // -------------------------
+      unsigned int n64 = o64 - offset64;
       printf ("           %2d. %1.x.%1.1x %6.6x %6.6x %8.8" PRIx32 "\n",
               ipkt, 
               format,
@@ -1560,6 +1580,7 @@ static void print_toc (uint64_t const *data)
               n64,
               pkt);
    }
+
 
    return;
 }

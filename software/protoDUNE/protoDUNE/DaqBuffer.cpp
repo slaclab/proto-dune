@@ -3247,7 +3247,12 @@ static int addTpcDataRecord (struct msghdr                  *msg,
      "Toc:nctbs=%2d npkts=%2d nbytes=%4d n64=%4d\n",
      ctb_idx, pkt_idx, toc_nbytes, toc_n64bytes);
    */
-   toc->construct (pkt_idx, toc_n64bytes/sizeof (uint64_t));
+   /* 
+    | 2017.10.19 - jjr
+    | ----------------
+    | The number of packets does not include the terminating packet
+   */
+   toc->construct (pkt_idx - 1, toc_n64bytes/sizeof (uint64_t));
    
 
 
