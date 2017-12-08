@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEmuTxFramer.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-05
+-- Last update: 2017-12-08
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ architecture rtl of ProtoDuneDpmEmuTxFramer is
       crcRst     : sl;
       crcData    : slv(15 downto 0);
       cnt        : natural range 0 to 125;
-      idx        : natural range 0 to 47;
+      idx        : natural range 0 to 127;
    end record RegType;
    constant REG_INIT_C : RegType := (
       convt      => '0',
@@ -119,7 +119,10 @@ begin
       case r.cnt is
          ----------------------------------------------------------------------
          when 1 =>
+            -- Latch the timestamp
             v.timestamp := timingTs;
+            -- Reset the counter
+            v.idx       := 0;
             -- Check the enable
             if enable = '1' then
                -- Send Start of Frame pattern
@@ -161,30 +164,22 @@ begin
             v.txData(0) := r.convertCnt;
          ----------------------------------------------------------------------
          when 17 to 64 =>
-            -- Send the COLDDATA 1
-            v.txData(0) := coldData1((r.idx*16)+15 downto (r.idx*16));
-            -- Increment counter
-            if r.idx = 47 then
-               -- Reset the counter
-               v.idx := 0;
-            else
-               v.idx := r.idx + 1;
-            end if;
+            -- Send the COLDDATA
+            v.txData(0)(15 downto 8) := coldData2((r.idx*8)+7 downto (r.idx*8));
+            v.txData(0)(7 downto 0)  := coldData1((r.idx*8)+7 downto (r.idx*8));
+            -- Increment the counter
+            v.idx                    := r.idx + 1;
          ----------------------------------------------------------------------       
          when 68 =>
             -- Send the convert counter        
             v.txData(0) := r.convertCnt;
          ----------------------------------------------------------------------
          when 73 to 120 =>
-            -- Send the COLDDATA 2
-            v.txData(0) := coldData2((r.idx*16)+15 downto (r.idx*16));
-            -- Increment counter
-            if r.idx = 47 then
-               -- Reset the counter
-               v.idx := 0;
-            else
-               v.idx := r.idx + 1;
-            end if;
+            -- Send the COLDDATA
+            v.txData(0)(15 downto 8) := coldData2((r.idx*8)+7 downto (r.idx*8));
+            v.txData(0)(7 downto 0)  := coldData1((r.idx*8)+7 downto (r.idx*8));
+            -- Increment the counter
+            v.idx                    := r.idx + 1;
          ----------------------------------------------------------------------
          when 121 =>                    -- End of datagram @ v.txData(1)
             -- Send IDLE pattern
