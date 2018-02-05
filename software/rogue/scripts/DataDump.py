@@ -41,7 +41,7 @@ system = pr.Root(name='System',description='Front End Board')
 dataWriter = pr.utilities.fileio.StreamWriter(name='dataWriter')
 system.add(dataWriter)
 
-# Create the ETH interface @ IP Address = args.dev
+# Create the ETH interface @ IP Address = args.ip
 ethLink = pr.protocols.UdpRssiPack(host=args.ip,port=8192,size=1400)    
 
 print( "RSSI Link Up!" )
@@ -52,4 +52,4 @@ pr.streamConnect(ethLink.application(0),dataWriter.getChannel(0x0))
 # Start the system
 system.start(pollEn=False)    
 
-os.system("""bash -c 'read -s -n 1 -p "Press any key to continue..."'""")
+os.system("""bash -c 'read -s -n 1 -p "Press any key to continue...\n"'""")
