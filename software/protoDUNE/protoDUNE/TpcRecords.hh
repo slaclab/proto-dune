@@ -40,6 +40,8 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.02.06 jjr Added a status field to the bridge word.  This is used to
+                  accumulate status and error bits.
    2017.08.29 jjr Stripped debugging print statements.
    2017.08.07 jjr Created
   
@@ -91,7 +93,8 @@ public:
    class Bridge
    {
    public:
-      Bridge (uint32_t csf, uint32_t left) : m_w32 (compose (csf, left))
+      Bridge (uint32_t csf, uint32_t left, uint8_t status) : 
+              m_w32 (compose (csf, left, status))
       {
          return;
       }
@@ -108,7 +111,7 @@ public:
          Format    =  4,  /*!< Size of the bridge word's format field     */
          Csf       = 12,  /*!< Size of the Crate.Slot.Fiber field         */
          Left      =  8,  /*!< Size of the number of Tpc Records left     */
-         Reserved  =  8   /*!< Size of the reserved field                 */
+         Status    =  8,  /*!< Size of the status field                   */
       };
       /* ---------------------------------------------------------------- */
 
@@ -124,7 +127,7 @@ public:
          Format   =  0, /*!< Offset to the bridge words's format field    */
          Csf      =  4, /*!< Offset to the Crate.Sloc.Fiber field         */  
          Left     = 16, /*!< Offset to the number of Tpc Records left     */
-         Reserved =  8  /*!< Offset to the reserved field                 */
+         Status   = 24  /*!< Offset to the status field                   */
       };
       /* ---------------------------------------------------------------- */
 
@@ -139,17 +142,31 @@ public:
          Format   = 0x0000000f,
          Csf      = 0x00000fff,
          Left     = 0x000000ff,
-         Reserved = 0x000000ff
+         Status   = 0x000000ff
       };
       /* ---------------------------------------------------------------- */
 
    public:
-      static uint32_t compose (uint32_t csf, uint32_t left)
+      static uint32_t compose (uint32_t csf, uint32_t left, uint8_t status)
       {
-         uint32_t w32 = PDD_INSERT32 (Mask::Format, Offset::Format,  0)
-                      | PDD_INSERT32 (Mask::Csf,    Offset::Csf,   csf)
-                      | PDD_INSERT32 (Mask::Left,    Offset::Left, left);
+         uint32_t w32 = PDD_INSERT32 (Mask::Format, Offset::Format,      0)
+                      | PDD_INSERT32 (Mask::Csf,    Offset::Csf,       csf)
+                      | PDD_INSERT32 (Mask::Left,   Offset::Left,     left)
+                      | PDD_INSERT32 (Mask::Status, Offset::Status, status);
          return w32;
+      }
+
+      static uint32_t getStatus (uint32_t bridge)
+      {
+         uint32_t status = PDD_EXTRACT32 (bridge, Mask::Status, Offset::Status);
+         return status;
+      }
+
+      uint32_t getStatus () const
+      {
+         uint32_t bridge = m_w32;
+         uint32_t status = getStatus (bridge);
+         return status;
       }
 
    public:
@@ -167,6 +184,16 @@ public:
 
       return;
    }
+
+   uint32_t getStatus () const
+   {
+      uint64_t      header = retrieve ();
+      uint32_t bridge_word = bridge   (header);
+      uint32_t      status = Bridge::getStatus (bridge_word);
+
+      return   status;
+   }
+      
 };
 /* ---------------------------------------------------------------------- */
 

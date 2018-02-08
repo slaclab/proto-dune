@@ -20,6 +20,7 @@
 //
 //       DATE WHO WHAT 
 // ---------- --- ------------------------------------------------------------
+// 2018.02.06 jjr Added a status mask to accumulate error/status bits
 // 2017.07.11 jjr Moved many methods from .cpp file to be inlined
 //                Added method to get the frame address as a 64 bit number
 // 2017.05.27 jjr Added setData to set fields separately.  
@@ -40,12 +41,19 @@ class FrameBuffer {
       int32_t    _index;
       uint32_t   _size;
       uint32_t   _rx_sequence;
+      uint32_t   _status;
 
 public:
       uint64_t   _ts_range[2];
    public:
       FrameBuffer  ();
      ~FrameBuffer  ();
+
+     enum StatusMask
+     {
+        Missing = 1    /*!< Frame has missing time samples */
+     };
+        
 
       void        setData (uint32_t        index, 
                            uint8_t         *data, 
@@ -60,6 +68,13 @@ public:
       {
          _ts_range[0] = beg;
          _ts_range[1] = end;
+         _status      =   0;
+      }
+
+
+      void  addStatus (StatusMask bit)
+      {
+         _status |= static_cast<uint32_t>(bit);
       }
 
       uint16_t getCsf () const
@@ -76,6 +91,7 @@ public:
          return id;
       }
 
+      uint32_t  status      () const;
       int32_t   index       () const;
       uint8_t  *baseAddr    () const;
       uint64_t *baseAddr64  () const;
@@ -199,6 +215,18 @@ inline uint32_t FrameBuffer::rx_sequence () const { return _rx_sequence; }
 inline uint64_t *FrameBuffer::baseAddr64 () const 
 {
    return reinterpret_cast<uint64_t *>(_data);
+}
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief The status of this frame expressed as a mask of error bits.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint32_t FrameBuffer::status () const
+{
+   return _status;
 }
 /* ---------------------------------------------------------------------- */
 /* END: IMPLEMENTATION                                                    */

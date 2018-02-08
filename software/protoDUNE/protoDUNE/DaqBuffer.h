@@ -29,7 +29,10 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
-// 2017.10.19  jjr  Version 1.0.5.0
+// 2017.02.06  jjr  Version 1.1.0-0
+//                  Add methods to individually specific the opening and
+//                  enabling of a DMA device
+// 2017.10.19  jjr  Version 1.0.5-0
 //                  Correct an error in the Table of Contents descriptor count.
 // 2017.10.12  jjr  Bump software version to 1.0.4.0
 //                  This corrects 2 errors in the calculation of lengths
@@ -38,8 +41,8 @@
 //                     failed to include the terminating 64-bit word
 //                   - The length of the Packet record failed to include
 //                     the header size.
-// 2017.09.15  jjr  Bump software version to 1.0.3.0
-// 2017.08.29  jjr  Bump software version to 1.0.1.0
+// 2017.09.15  jjr  Bump software version to 1.0.3-0
+// 2017.08.29  jjr  Bump software version to 1.0.1-0
 // 2017.06.19  jjr  Replaced naccept/nframes with pretrigger and dureation times
 // 2017.05.26  jjr  Added checkBuffer method to check for unreadable DMA buffers
 // 2017.04.05  jjr  Added rx and tx DMA buffer counts.  The new DMA driver
@@ -129,13 +132,17 @@ class DaqDmaDevice
 {
 public:
    DaqDmaDevice ();
-   int     open    (char const *name);
+   int     open    (char const *name, uint8_t const *dests, int ndests);
    int     enable  (uint8_t const *dests, int ndests);
+   int     enable  ();
    int     map     ();
    ssize_t free    (int index);
    void    vet     ();
    int     unmap   ();
    int     close   ();
+
+public:
+   static const uint32_t TUserEOFE = 0x1;
 
    int32_t             _fd;   /*!< File descriptor of DMA driver          */
    uint32_t         _bSize;   /*!< Size, in bytes, of the DMA buffers     */
@@ -143,6 +150,9 @@ public:
    uint32_t       _rxCount;   /*!< Count of DMA receive  buffers          */
    uint32_t       _txCount;   /*!< Count of DMA transmit buffers          */
    uint8_t          **_map;   /*!< Index -> virtual address DMA map       */
+   char     const   *_name;   /*!< The device name (for error reporting)  */
+   int             _ndests;   /*!< The number of destinations             */
+   uint8_t  const  *_dests;   /*!< Pointer to the array of destinations   */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -165,11 +175,26 @@ inline DaqDmaDevice::DaqDmaDevice () :
 /* ---------------------------------------------------------------------- *//*!
 
   \brief  Opens the AXI dma device
+
+  \param[in]   name  The name of the AXI dma device
+  \param[in]  dests  Array of the destination channels.
+  \param[in] ndests  The number of destination channels
+
+  Since only a pointer to the \a name and array \a dests is stored, the 
+  these must persist which usually means it is in static storage.
                                                                           */
 /* ---------------------------------------------------------------------- */
-inline int DaqDmaDevice::open (char const *name)
+inline int DaqDmaDevice::open (char    const  *name, 
+                               uint8_t const *dests,
+                               int           ndests)
 {
    _fd = ::open (name, O_RDWR | O_NONBLOCK);
+   if (_fd >= 0) 
+   {
+      _name   =   name;
+      _ndests = ndests;
+      _dests  =  dests;
+   }
    return _fd;
 }
 /* ---------------------------------------------------------------------- */
@@ -205,6 +230,21 @@ inline int DaqDmaDevice::enable (uint8_t const *dests, int ndests)
    }
 
    return 0;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Enables the specified destinations
+
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline int DaqDmaDevice::enable ()
+{
+   int    status = enable (_dests, _ndests);
+   return status;
 }
 /* ---------------------------------------------------------------------- */
 
@@ -659,11 +699,10 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01000500;
+      static const uint32_t SoftwareVersion = 0x01010000;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
-      static const uint32_t WaitTime        = 1000;      
-      static const uint32_t TUserEOFE       = 0x1;
+      static const uint32_t WaitTime        = 1000;
 
       // Thread tracking
       pthread_t _rxThread;

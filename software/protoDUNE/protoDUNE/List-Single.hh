@@ -28,7 +28,8 @@
  * -------
  *
  * DATE       WHO WHAT
- * ---------- --- -------------------------
+ * ---------- --- -------------------------------------------------------
+ * 2018.02.06 jjr Added routines to check the queue for an existing entry
  * 2017.05.25 jjr Adapted from EXO routines
  *
 \* ---------------------------------------------------------------------- */
@@ -63,6 +64,10 @@ public:
    Node        *insert_tail  (Node       *node);
    Node        *remove_head  ();
    Node        *remove_tail  ();
+
+   int          check        (Node const *node,
+                              int          max,
+                              const char  *msg) const;
 
    void append           (List<Body> *list);
    void prepend          (List<Body> *list);
@@ -329,7 +334,8 @@ typename List<Body>::Node const *List<Body>::terminal () const
 template<typename Body>
 bool List<Body>::is_empty () const
 {
-   return (m_flnk == reinterpret_cast<decltype (m_flnk)>(this));
+   List<Body>::Node const *flnk = m_flnk;
+   return (flnk == reinterpret_cast<decltype (flnk)>(this));
 }
 /* ---------------------------------------------------------------------- */
 
@@ -513,5 +519,67 @@ inline  void List<Body>::transfer (List<Body> *list)
    list->init ();
    return;
 }
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Scans the list to see if a node is already on it
+  \retval  0, Node is not on the list
+  \retval -1, Node is already on the list
+  \retval -2, List contains more than expected number of nodes
+
+  \param[in] xnode  The node to check for
+  \param[in]   max  The maximum number of nodes to scan
+  \param[in]   msg  A descriptive message
+                                                                          */
+/* ---------------------------------------------------------------------- */
+#if 0
+/* ---------------------------------------------------------------------- */
+template<typename Body>
+inline int List<Body>::check (List<Body>::Node const *xnode, 
+                              int                       max,
+                              const char               *msg) const
+{
+   Node const *last = terminal ();
+   Node const *node = m_flnk;
+   int          cnt = 0;
+
+   while (node != last)
+   {
+      if (node == xnode)
+      {
+         fprintf (stderr, 
+                  "Error: List::check <%s> duplicate node %p on list %p\n",
+                  msg, (void *)node, (void *)this);
+         return -1;
+      }
+      else if (cnt > max)
+      {
+         fprintf (stderr,
+                  "Error: List::check <%s> too many nodes on list %p\n",
+                  msg, (void *)this);
+         return -2;
+      }
+
+      node = node->m_flnk;
+      cnt += 1;
+   }
+
+   return 0;
+}
+/* ---------------------------------------------------------------------- */
+#else
+/* ---------------------------------------------------------------------- */
+template<typename Body>
+inline int List<Body>::check (List<Body>::Node const *xnode, 
+                              int                       max,
+                              const char               *msg) const
+{
+   return 0;
+}
+/* ---------------------------------------------------------------------- */
+#endif
 /* ---------------------------------------------------------------------- */
 #endif

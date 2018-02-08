@@ -37,6 +37,9 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.01.30 jjr Redid the title line to more accurately reflect the 
+                  quantities.  For example Bps -> bps since this is the
+                  traditional nomenclature for bits per second.
    2017.10.19 jjr Remove execute flag when creating the output file
                   Format the last packet descriptor as the terminator.
    2017.08.28 jjr Fix position of trigger type in auxilliary block to 
@@ -65,9 +68,25 @@
 #include <errno.h>
 
 
+
 /* ---------------------------------------------------------------------- *//*!
 
-  \struct _Prms
+  \enum   Mode
+  \brief  Describes the operational modes
+                                                                          */
+/* ---------------------------------------------------------------------- */
+enum Mode
+{
+   MODE_K_MONITOR = 0,  
+   MODE_K_DUMP    = 1
+};
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \class _Prms
   \brief  The configuration parameters
                                                                           *//*!
   \typedef Prms
@@ -76,6 +95,8 @@
 /* ---------------------------------------------------------------------- */
 struct _Prms
 {
+
+   enum Mode        mode;   /*!< Operational mode                         */
    int        portNumber;   /*!< The port to connect on the RCE side      */
    int           rcvSize;   /*!< Size of the receiver buffer in bytes     */
    int              data;   /*!< The number of data words to print        */
@@ -99,18 +120,21 @@ typedef struct _Prms Prms;
 static void getPrms (Prms *prms, int argc, char *const argv[])
 {
     int c;
-    int         portNumber =       8991;
-    int         rcvSize    = 128 * 1024;
-    int         data       =          0;
-    char        chkData    =          0;
-    int         nodelay    =          0;
-    int         nfailures  =         25;
-    char const *ofilename  =       NULL;
+    int         portNumber =           8991;
+    int         rcvSize    =     128 * 1024;
+    int         data       =              0;
+    char        chkData    =              0;
+    int         nodelay    =              0;
+    int         nfailures  =             25;
+    char const *ofilename  =           NULL;
+    enum Mode   mode       = MODE_K_MONITOR;
 
 
-    while ( (c = getopt (argc, argv, "o:f:p:r:xd:n:")) != EOF)
+    while ( (c = getopt (argc, argv, "dmo:f:p:r:xd:n:")) != EOF)
     {
-       if       (c == 'f') nfailures = strtoul (optarg, NULL, 0);
+       if       (c == 'f') nfailures  = strtoul (optarg, NULL, 0);
+       else if  (c == 'm') mode       = MODE_K_MONITOR;
+       else if  (c == 'd') mode       = MODE_K_DUMP;
        else if  (c == 'd') data       = strtoul (optarg, NULL, 0);
        else if  (c == 'p') portNumber = strtoul (optarg, NULL, 0);
        else if  (c == 'n') nodelay    = strtoul (optarg, NULL, 0);
@@ -119,7 +143,7 @@ static void getPrms (Prms *prms, int argc, char *const argv[])
        else if  (c == 'x') chkData    = 1;
     }
 
-
+    prms->mode       = mode;
     prms->portNumber = portNumber;
     prms->rcvSize    = rcvSize;
     prms->data       = data;
@@ -591,8 +615,8 @@ static inline unsigned int checkData (Ctx             *ctx,
 static inline void print_statistics_title ()
 {
    puts (
-   "   Rate        Bps SeqErrs DatErrs BadData Nevents   Total      Bytes\n"
-    " ------ ---------- ------- --------------- ------- ------- ----------");
+   "   Rate        bps SeqErrs DatErrs BadData NHeader   NData     Bytes\n"
+   " ------ ---------- ------- --------------- ------- ------- ----------");
 
     return;
 }
@@ -690,6 +714,8 @@ static inline int rnd64 (unsigned int  nbytes)
 /* ---------------------------------------------------------------------- */
 
 
+static int monitor (Prms const *prms);
+static int    dump (Prms const *prms);
 
 /* ---------------------------------------------------------------------- *//*!
 
@@ -701,6 +727,71 @@ static inline int rnd64 (unsigned int  nbytes)
 /* ---------------------------------------------------------------------- */
 int main(int argc, char *const argv[])
 {
+   int status = 0;
+   Prms      prms;
+   getPrms (&prms, argc, argv);
+
+   if (prms.mode == MODE_K_DUMP)
+   {
+      status = dump (&prms);
+   }
+   else if (prms.mode == MODE_K_MONITOR)
+   {
+      status = monitor (&prms);
+   }
+   else
+   {
+      fprintf (stderr,
+               "Error: Unrecognized operational mode: %d\n",
+               (int)prms.mode);
+   }
+
+    return status;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Create the output file
+  \return The file descriptor or -1 in case the file could not be created.
+
+  \param[in] filename The name of the file to create
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static int create_file (char const *filename)
+{
+    int fd = -1;
+
+    fd = creat (filename,  S_IRUSR | S_IWUSR 
+                         | S_IRGRP | S_IWGRP
+                         | S_IROTH);
+    if (fd >= 0)
+    {
+       fprintf (stderr, "Output file is: %s\n", filename);
+    }
+    else
+    {
+       fprintf (stderr, "Error opening output file: %s err = %d\n",
+                filename, errno);
+    }
+
+    return fd;
+}
+/* ---------------------------------------------------------------------- */
+ 
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Receives, monitors and optionally writes it to an output file
+
+  \param  prms  The control parameters
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static int monitor (Prms const *prms)
+{
     uint32_t              headerSize = sizeof (uint64_t);
     uint32_t		    maxBytes = 8*1024*1024;
 
@@ -709,10 +800,6 @@ int main(int argc, char *const argv[])
     uint32_t       eject = 60;
     char         need_lf =  0;
 
-    Prms      prms;
-    getPrms (&prms, argc, argv);
-
-
     bzero (rxData, maxBytes);
     Ctx           ctx;
     Ctx           prv;
@@ -720,21 +807,9 @@ int main(int argc, char *const argv[])
     init_ctx   (&prv);
 
     int fd = -1;
-    if (prms.ofilename)
+    if (prms->ofilename)
     {
-       fd = creat (prms.ofilename,  S_IRUSR | S_IWUSR 
-                                  | S_IRGRP | S_IWGRP
-                                  | S_IROTH);
-       if (fd >= 0)
-       {
-          fprintf (stderr, "Output file is: %s\n", prms.ofilename);
-       }
-       else
-       {
-          fprintf (stderr, "Error opening output file: %s err = %d\n",
-                   prms.ofilename, errno);
-          return -1;
-       }
+       fd = create_file (prms->ofilename);
     }
 
 
@@ -743,9 +818,9 @@ int main(int argc, char *const argv[])
 
 
     int         srvFd;
-    int         rcvFd  = open_client (prms.portNumber, 
-                                      prms.rcvSize, 
-                                      prms.nodelay,
+    int         rcvFd  = open_client (prms->portNumber, 
+                                      prms->rcvSize, 
+                                      prms->nodelay,
                                       &srvFd);
 
     uint8_t *dataStatic = rxData + headerSize;
@@ -757,8 +832,6 @@ int main(int argc, char *const argv[])
     {
        RcvProfile hdrRcv;
        RcvProfile datRcv;
-
-       puts ("\n ------ NEW EVENT ------");
 
        /* 
         | Obtain the header, the hdrRcv keeps track of how many
@@ -783,7 +856,7 @@ int main(int argc, char *const argv[])
           rcvFd   = reconnect_client (nread, 
                                       rcvFd,
                                       srvFd,
-                                      &prms, 
+                                      prms, 
                                       "reading header");
           invalidate_ctx (&ctx);
           continue;
@@ -796,13 +869,12 @@ int main(int argc, char *const argv[])
        }
 
        uint32_t failures = checkHeader (&ctx, rxData, headerSize);
-       print_hdr (get_w64 (rxData));
 
 
        if (failures)
        {
           int nfailures = ctx.nfailures++;
-          if (nfailures  < prms.nfailures)
+          if (nfailures  < prms->nfailures)
           {
              need_lf = if_newline (need_lf);
              printf ("Failure = %8.8"PRIx32"\n", failures);
@@ -869,7 +941,262 @@ int main(int argc, char *const argv[])
                 rcvFd = reconnect_client (nread,
                                           rcvFd,
                                           srvFd,
-                                          &prms, 
+                                          prms, 
+                                          "reading data");
+                invalidate_ctx (&ctx);
+                continue;
+             }
+
+
+             if (fd >= 0)
+             {
+                ssize_t nwrite = headerSize + nread;
+                ssize_t nwrote = write (fd, rxData, nwrite);
+                if (nwrote != nwrite)
+                {
+                   fprintf (
+                      stderr,
+                      "Error %d writing output %zd != %zd bytes to write\n",
+                      errno,
+                      nwrite, nwrote);
+                   exit (-1);
+                }
+             }
+
+
+             uint64_t const   *pTrailer = (uint64_t const *)
+                                          (data + ndata - sizeof (*pTrailer));
+
+             if (prms->chkData) 
+             {
+                unsigned int err = checkData (&ctx, data, ndata);
+                if (err)
+                {
+                   rcvProfile_print (&hdrRcv, "Hdr");
+                   rcvProfile_print (&datRcv, "Dat");
+                }
+             }
+
+             ctx.stats.datCnt += 1;
+             ctx.stats.datSiz += ndata;
+
+             //uint64_t trailer = *pTrailer;
+             //printf ("Trailer: %16.16" PRIx64 "\n", trailer);
+
+          }
+       }
+
+
+       /* 
+        | Periodically (once a second) output the accumuated statistics
+        | and status 
+       */
+       time_t prvTime = ctx.timestamp;
+       time (&ctx.timestamp);
+       if (ctx.timestamp != prvTime)
+       {
+          /*
+          printf ("Cur:Prv %u:%u\n", 
+                  (unsigned int)ctx.timestamp,
+                  (unsigned int)prvTime);
+          */
+
+
+          char c;
+          if (eject-- == 0)
+          {
+             // Reset the failure count
+             ctx.nfailures = 0;
+
+             c       = '\n';
+             need_lf = 0;
+             eject   = 60;
+          }
+          else
+          {
+             c       = '\r';
+             need_lf = 1;
+          }
+
+          print_statistics (&ctx, &prv, c);
+
+          need_lf = 1;
+          prv     = ctx;
+       }
+    }
+   
+    close (srvFd);
+    close (rcvFd);
+
+    return 0;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Receives, prints out a summary of the received event and
+         optionally writes it to an output file
+
+  \param  prms  The control parameters
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static int dump (Prms const *prms)
+{
+    uint32_t              headerSize = sizeof (uint64_t);
+    uint32_t		    maxBytes = 8*1024*1024;
+
+
+    uint8_t  *rxData = malloc (maxBytes); 
+    uint32_t       eject = 60;
+    char         need_lf =  0;
+
+    bzero (rxData, maxBytes);
+    Ctx           ctx;
+    Ctx           prv;
+    init_ctx   (&ctx);
+    init_ctx   (&prv);
+
+    int fd = -1;
+    if (prms->ofilename)
+    {
+       fd = create_file (prms->ofilename);
+    }
+
+
+    unsigned int retries[128];
+    memset (retries, 0, sizeof (retries));
+
+
+    int         srvFd;
+    int         rcvFd  = open_client (prms->portNumber, 
+                                      prms->rcvSize, 
+                                      prms->nodelay,
+                                      &srvFd);
+
+    uint8_t *dataStatic = rxData + headerSize;
+
+    print_socketopts  (rcvFd);
+    print_statistics_title ();
+
+    while (1)
+    {
+       RcvProfile hdrRcv;
+       RcvProfile datRcv;
+
+       puts ("\n ------ NEW EVENT ------");
+
+       /* 
+        | Obtain the header, the hdrRcv keeps track of how many
+        | separate rcv calls where made and the number of bytes
+        | each read.  One will see a similar thing when reading
+        | the data.  Of course there it is more interesting, since
+        | the typical header reader will complete in one call to
+        | rcv, while the data read will take many, depending on the
+        | size of the TCP receive buffer
+       */
+       ssize_t nread = read_data (rcvFd, rxData, headerSize, &hdrRcv);
+   
+
+       /* Check if had error or a disconnect */
+       if (nread <= 0)
+       {
+          need_lf = if_newline (need_lf);
+          puts ("Error");
+          rcvProfile_print (&hdrRcv, "Hdr");
+          rcvProfile_print (&datRcv, "Dat");
+          print_statistics (&ctx, &prv, '\n');          
+          rcvFd   = reconnect_client (nread, 
+                                      rcvFd,
+                                      srvFd,
+                                      prms, 
+                                      "reading header");
+          invalidate_ctx (&ctx);
+          continue;
+       }
+       else if (nread != headerSize)
+       {
+          printf ("Did not read enough data %zu\n", nread);
+          rcvProfile_print (&hdrRcv, "Hdr");
+          exit (-1);
+       }
+
+       uint32_t failures = checkHeader (&ctx, rxData, headerSize);
+       print_hdr (get_w64 (rxData));
+
+
+       if (failures)
+       {
+          int nfailures = ctx.nfailures++;
+          if (nfailures  < prms->nfailures)
+          {
+             need_lf = if_newline (need_lf);
+             printf ("Failure = %8.8"PRIx32"\n", failures);
+          }
+       }
+      
+       /* If the header is OK, read the 'data' associated with it */
+       if (failures == 0)
+       {
+          ssize_t  received = nread;
+          uint64_t header   = get_w64 (rxData);
+          uint32_t dataSize = ((header >> 8) & 0xffffff) * sizeof (uint64_t);
+
+
+          /* Ensure that the buffer can handle the data volume */
+          if (dataSize > maxBytes)
+          {
+             printf ("Packet too large  %x > %" PRIx32 "\n", dataSize, maxBytes);
+          }
+          
+          if (received < dataSize)
+          {
+             static int Count = 0;
+             uint8_t  *data =   rxData + headerSize;
+             uint32_t ndata = dataSize - headerSize;
+             nread          = read_data (rcvFd, data, ndata, &datRcv);
+
+             if (data != dataStatic)
+             {
+                printf ("Error data pointer %p != %p\n",
+                        data, dataStatic);
+             }
+
+             if (received != headerSize)
+             {
+                Count += 1;
+             }
+
+             /* 
+              | Make a cheap histogram of the number of rcv calls
+              | in an attempt to see if this at all correlates 
+              | with the failures.
+             */
+             {
+                int cnt = datRcv.cnt;
+                if (cnt > sizeof (retries) / sizeof (retries[0]))
+                {
+                   cnt = sizeof (retries) / sizeof (retries[0]) - 1;
+                }
+                retries[cnt] += 1;
+             }
+
+             /* Check if had error or disconnect */
+             if (nread <= 0)
+             {
+                need_lf = if_newline (need_lf);
+                printf ("Error reading %u bytes\n", ndata);
+                printf ("\n");
+                print_hdr (get_w64 (rxData));
+                printf ("\n");
+                rcvProfile_print (&hdrRcv, "Hdr");
+                rcvProfile_print (&datRcv, "Dat");
+                print_statistics (&ctx, &prv, '\n'); 
+                rcvFd = reconnect_client (nread,
+                                          rcvFd,
+                                          srvFd,
+                                          prms, 
                                           "reading data");
                 invalidate_ctx (&ctx);
                 continue;
@@ -925,7 +1252,7 @@ int main(int argc, char *const argv[])
              
 
 
-             if (prms.chkData) 
+             if (prms->chkData) 
              {
                 unsigned int err = checkData (&ctx, data, ndata);
                 if (err)

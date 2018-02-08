@@ -40,6 +40,7 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.02.06 jjr Added methods to add the source specifiers (i.e. the WIB
    2017.08.28 jjr Fix position of trigger type in auxilliary block to 
                   match the documentation
    2017.08.29 jjr Stripped debugging print statements.
@@ -578,6 +579,8 @@ inline uint32_t Header2::compose (unsigned int   type,
 class Trailer
 {
 public:
+   explicit Trailer () { return; }
+public:
    Trailer (uint64_t  header) : m_w64 (~header) { return; }
    static   uint64_t compose  (uint64_t header) { return  ~header; }
    void            construct  (uint64_t header) 
@@ -742,6 +745,21 @@ public:
       return w64;
    }
 
+   void construct (uint16_t src0, uint16_t src1)
+   {
+      m_w64 &= ~static_cast<uint64_t>(Mask  ::Src0) 
+            <<  static_cast<uint64_t>(Offset::Src0);
+
+      m_w64 &= ~static_cast<uint64_t>(Mask  ::Src1) 
+            <<  static_cast<uint64_t>(Offset::Src1);
+
+      m_w64 = PDD_INSERT64 (Mask::Src0,     Offset::Src0,         src0)
+            | PDD_INSERT64 (Mask::Src1,     Offset::Src1,         src1);
+
+      return;
+   }
+
+
 
 public:
    uint64_t       m_w64; /*!< 64-bit packed word of format,srcs, sequence */
@@ -871,6 +889,13 @@ public:
                                 n64);
 
       m_identifier = identifier;
+      return;
+   }
+
+   void construct (uint16_t         src0,
+                   uint16_t         src1)
+   {
+      m_identifier.construct (src0, src1);
       return;
    }
 
