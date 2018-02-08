@@ -7,10 +7,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000048
+export PRJ_VERSION = 0x00000049
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/02/08 0x00000049 llr  Rebuilding with latest version of surf/ruckus
 # 2017/07/24 0x00000048 llr  Preventing the timingRst from locking up the CPLL
 # 2017/06/05 0x00000047 llr  Integrated timing receiver into data emulator
 #                            Now the data emulator will send the actual timestamp
