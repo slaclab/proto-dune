@@ -3,10 +3,10 @@
 *.so
 *.pyc
 *.bit
-*.bit.gz
 *.mcs
-*.mcs.gz
-*.tar.gz
+*.ltx
+*.gz
+
 software/protoDUNE/python/arm/*
 *.orig
 *.save

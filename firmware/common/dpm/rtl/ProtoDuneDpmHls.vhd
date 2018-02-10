@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHls.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-02
+-- Last update: 2018-02-09
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -74,13 +74,13 @@ architecture mapping of ProtoDuneDpmHls is
    signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
-   -- attribute dont_touch                 : string;
-   -- attribute dont_touch of ibHlsMasters : signal is "TRUE";
-   -- attribute dont_touch of ibHlsSlaves  : signal is "TRUE";
-   -- attribute dont_touch of obHlsMasters : signal is "TRUE";
-   -- attribute dont_touch of obHlsSlaves  : signal is "TRUE";
-   -- attribute dont_touch of dmaIbMasters : signal is "TRUE";
-   -- attribute dont_touch of dmaIbSlaves  : signal is "TRUE";
+   attribute dont_touch                 : string;
+   attribute dont_touch of ibHlsMasters : signal is "TRUE";
+   attribute dont_touch of ibHlsSlaves  : signal is "TRUE";
+   attribute dont_touch of obHlsMasters : signal is "TRUE";
+   attribute dont_touch of obHlsSlaves  : signal is "TRUE";
+   attribute dont_touch of dmaIbMasters : signal is "TRUE";
+   attribute dont_touch of dmaIbSlaves  : signal is "TRUE";
 
 begin
 
@@ -171,9 +171,10 @@ begin
          generic map (
             -- General Configurations
             TPD_G               => TPD_G,
-            PIPE_STAGES_G       => 0,
-            -- VALID_THOLD_G       => 1,
-            VALID_THOLD_G       => 128,
+            INT_PIPE_STAGES_G   => 1,
+            PIPE_STAGES_G       => 1,
+            SLAVE_READY_EN_G    => true,
+            VALID_THOLD_G       => 128,  -- Hold until enough to burst into the interleaving MUX
             VALID_BURST_MODE_G  => true,
             -- FIFO configurations
             BRAM_EN_G           => true,
@@ -228,13 +229,13 @@ begin
    --------------               
    U_Mux : entity work.AxiStreamMux
       generic map (
-         TPD_G          => TPD_G,
-         PIPE_STAGES_G  => 1,
-         NUM_SLAVES_G   => (WIB_SIZE_C),
-         MODE_G         => "INDEXED",
-         TDEST_LOW_G    => 0,
-         ILEAVE_EN_G    => true,
-         ILEAVE_REARB_G => 0)
+         TPD_G                => TPD_G,
+         NUM_SLAVES_G         => WIB_SIZE_C,
+         MODE_G               => "INDEXED",
+         ILEAVE_EN_G          => true,
+         ILEAVE_ON_NOTVALID_G => false,
+         ILEAVE_REARB_G       => 128,
+         PIPE_STAGES_G        => 1)
       port map (
          -- Clock and reset
          axisClk      => dmaClk,

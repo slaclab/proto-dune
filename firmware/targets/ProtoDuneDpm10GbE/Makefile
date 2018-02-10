@@ -7,10 +7,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000050
+export PRJ_VERSION = 0x00000051
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/02/10 0x00000051 llr  Fix missing SOF to the HLS module (ESDUNE-38)
 # 2018/02/09 0x00000050 llr  Reverting the 64B/66B mods in surf/GTX7
 # 2018/02/08 0x00000049 llr  Rebuilding with latest version of surf/ruckus
 # 2017/07/24 0x00000048 llr  Preventing the timingRst from locking up the CPLL

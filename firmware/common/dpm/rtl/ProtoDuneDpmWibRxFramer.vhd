@@ -144,9 +144,11 @@ architecture rtl of ProtoDuneDpmWibRxFramer is
    signal startLog   : sl;
    signal oneShotLog : sl;
 
-   -- attribute dont_touch              : string;
-   -- attribute dont_touch of r         : signal is "TRUE";
-   -- attribute dont_touch of crcResult : signal is "TRUE";
+   attribute dont_touch              : string;
+   attribute dont_touch of r         : signal is "TRUE";
+   attribute dont_touch of crcResult : signal is "TRUE";
+   attribute dont_touch of master    : signal is "TRUE";
+   attribute dont_touch of slave     : signal is "TRUE";
 
 begin
 

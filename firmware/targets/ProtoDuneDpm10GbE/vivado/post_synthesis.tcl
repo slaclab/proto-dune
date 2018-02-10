@@ -8,14 +8,14 @@
 ## the terms contained in the LICENSE.txt file.
 ##############################################################################
 
-# Bypass the debug chipscope generation
-return
-
 ##############################
 # Get variables and procedures
 ##############################
 source -quiet $::env(RUCKUS_DIR)/vivado_env_var.tcl
 source -quiet $::env(RUCKUS_DIR)/vivado_proc.tcl
+
+# Bypass the debug chipscope generation
+return
 
 ############################
 ## Open the synthesis design
@@ -25,30 +25,52 @@ open_run synth_1
 ###############################
 ## Set the name of the ILA core
 ###############################
-set ilaName0 u_ila_0
+set ilaName u_ila_0
 
 ##################
 ## Create the core
 ##################
-CreateDebugCore ${ilaName0}
+CreateDebugCore ${ilaName}
 
 #######################
 ## Set the record depth
 #######################
-set_property C_DATA_DEPTH 1024 [get_debug_cores ${ilaName0}]
+set_property C_DATA_DEPTH 1024 [get_debug_cores ${ilaName}]
 
 #################################
 ## Set the clock for the ILA core
 #################################
-SetDebugCoreClk ${ilaName0} {U_App/U_Timing/cdrClk}
+SetDebugCoreClk ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/axilClk}
 
 #######################
 ## Set the debug Probes
 #######################
-ConfigProbe ${ilaName0} {U_App/U_Timing/cdrRst}
-ConfigProbe ${ilaName0} {U_App/U_Timing/timingBus[*}
+
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tUser][1]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tUser][0]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tLast]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tValid]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/slave[tReady]}
+
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tUser][1]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tUser][0]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tLast]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tValid]}
+ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibSlave[tReady]}
+
+ConfigProbe ${ilaName} {U_App/U_Hls/hlsMasters[0][tUser][1]}
+ConfigProbe ${ilaName} {U_App/U_Hls/hlsMasters[0][tUser][0]}
+ConfigProbe ${ilaName} {U_App/U_Hls/hlsMasters[0][tLast]}
+ConfigProbe ${ilaName} {U_App/U_Hls/hlsMasters[0][tValid]}
+ConfigProbe ${ilaName} {U_App/U_Hls/hlsSlaves[0][tReady]}
+
+ConfigProbe ${ilaName} {U_App/U_Hls/ssiMasters[0][tUser][1]}
+ConfigProbe ${ilaName} {U_App/U_Hls/ssiMasters[0][tUser][0]}
+ConfigProbe ${ilaName} {U_App/U_Hls/ssiMasters[0][tLast]}
+ConfigProbe ${ilaName} {U_App/U_Hls/ssiMasters[0][tValid]}
+ConfigProbe ${ilaName} {U_App/U_Hls/ssiSlaves[0][tReady]}
 
 ##########################
 ## Write the port map file
 ##########################
-WriteDebugProbes ${ilaName0} ${PROJ_DIR}/images/debug_probes.ltx
+WriteDebugProbes ${ilaName} debug.ltx
