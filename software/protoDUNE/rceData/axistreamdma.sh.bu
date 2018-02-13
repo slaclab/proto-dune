@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Switch to C-shell
+chsh -s /bin/tcsh
+
+# remove old driver
+/usr/bin/rmmod -s rcestream
+
+# Make host directory
+mkdir -p /mnt/host
+
+# Setup the NFS mount
+mount -t nfs 192.168.10.19:/home/RCE/DUNE-RCE/software /mnt/host
+
+# Load the DMA driver
+/mnt/host/protoDUNE/rceScripts/start_dma.csh
+
+# Start the RCE server
+/mnt/host/protoDUNE/rceScripts/start_server.csh
+
