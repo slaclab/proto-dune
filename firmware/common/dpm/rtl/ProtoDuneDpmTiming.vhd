@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTiming.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-10-24
+-- Last update: 2018-03-08
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -24,6 +24,7 @@ use work.StdRtlPkg.all;
 use work.AxiLitePkg.all;
 use work.AxiStreamPkg.all;
 use work.ProtoDuneDpmPkg.all;
+use work.pdts_defs.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -92,6 +93,9 @@ architecture mapping of ProtoDuneDpmTiming is
    signal timingMsgDrop   : sl;
    signal timingRunEnable : sl;
    signal triggerDet      : sl;
+
+   signal pdtsEndpointAddr : slv(7 downto 0);
+   signal pdtsEndpointTgrp : slv(1 downto 0);
 
    attribute dont_touch              : string;
    attribute dont_touch of timingBus : signal is "TRUE";
@@ -196,25 +200,30 @@ begin
    ---------------------         
    U_Timing : entity work.pdts_endpoint
       generic map (
-         SCLK_FREQ => 125.0)
+         SCLK_FREQ => 125.0,            -- 125 MHz
+         EN_TX     => false)
       port map (
-         sclk    => axilClk,            -- Free-running system clock
-         srst    => softRst,            -- System reset (sclk domain)
-         addr    => x"00",  -- "Any address except 0x01 is acceptable for this test" from Dave Newbold (20MARCH2017)
-         tgrp    => "00",  -- "Any tgrp is acceptable - 0x0 will do" from Dave Newbold (20MARCH2017)
-         stat    => timingBus.stat,  -- The status signal (stat) that indicates the internal state of the endpoint
-         rec_clk => recClk,
-         rec_d   => recData,
-         sfp_los => '0',
-         cdr_los => '0',
-         cdr_lol => recLol,
-         clk     => cdrClk,
-         rst     => cdrRst,
-         rdy     => timingBus.rdy,
-         sync    => timingBus.syncCmd,  -- Sync command output (clk domain)
-         sync_v  => timingBus.syncValid,  -- Sync command valid flag (clk domain)
-         tstamp  => timingBus.timestamp,  -- Timestamp out
-         evtctr  => timingBus.eventCnt);  -- Event counter out
+         sclk       => axilClk,         -- Free-running system clock
+         srst       => softRst,         -- System reset (sclk domain)
+         addr       => pdtsEndpointAddr,  -- Endpoint address (async, sampled in clk domain)
+         tgrp       => pdtsEndpointTgrp,  -- Timing group (async, sampled in clk domain)
+         stat       => timingBus.stat,  -- Status output (sclk domain)
+         rec_clk    => recClk,          -- CDR recovered clock from timing link
+         rec_d      => recData,  -- CDR recovered data from timing link (rec_clk domain)
+         txd        => open,    -- Output data to timing link (rec_clk domain)
+         sfp_los    => '0',     -- SFP LOS line (async, sampled in sclk domain)
+         cdr_los    => '0',     -- CDR LOS line (async, sampled in sclk domain)
+         cdr_lol    => recLol,  -- CDR LOL line (async, sampled in sclk domain)
+         sfp_tx_dis => open,            -- SFP tx disable line (clk domain)
+         clk        => cdrClk,          -- 50MHz clock output
+         rst        => cdrRst,          -- 50MHz domain reset
+         rdy        => timingBus.rdy,   -- Timestamp valid flag
+         sync       => timingBus.syncCmd,  -- Sync command output (clk domain)
+         sync_stb   => open,            -- Sync command strobe (clk domain)
+         sync_valid => timingBus.syncValid,  -- Sync command valid flag (clk domain)
+         tstamp     => timingBus.timestamp,  -- Timestamp out
+         sync_stb   => CMD_W_NULL,      -- Tx sync command input
+         sync_stb   => open);           -- Tx sync command handshake
 
    --------------------------
    -- Timing Register Control
@@ -225,29 +234,31 @@ begin
          AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
       port map (
          -- WIB Interface (wibClk domain)
-         wibClk          => wibClk,
-         wibRst          => wibRst,
-         runEnable       => runEn,
-         swFlush         => swFlush,
+         wibClk           => wibClk,
+         wibRst           => wibRst,
+         runEnable        => runEn,
+         swFlush          => swFlush,
          -- Timing RX Interface (cdrClk domain)
-         cdrClk          => cdrClk,
-         cdrRst          => cdrRst,
-         cdrEdgeSel      => cdrEdgeSel,
-         cdrDataInv      => cdrDataInv,
-         cdrLocked       => cdrLocked,
-         freqMeasured    => freqMeasured,
-         timingBus       => timingBus,
-         timingMsgDrop   => timingMsgDrop,
-         timingRunEnable => timingRunEnable,
-         triggerDet      => triggerDet,
+         cdrClk           => cdrClk,
+         cdrRst           => cdrRst,
+         cdrEdgeSel       => cdrEdgeSel,
+         cdrDataInv       => cdrDataInv,
+         cdrLocked        => cdrLocked,
+         freqMeasured     => freqMeasured,
+         timingBus        => timingBus,
+         timingMsgDrop    => timingMsgDrop,
+         timingRunEnable  => timingRunEnable,
+         triggerDet       => triggerDet,
+         pdtsEndpointAddr => pdtsEndpointAddr,
+         pdtsEndpointTgrp => pdtsEndpointTgrp,
          -- AXI-Lite Interface (axilClk domain)
-         axilClk         => axilClk,
-         axilRst         => axilRst,
-         axilReadMaster  => axilReadMaster,
-         axilReadSlave   => axilReadSlave,
-         axilWriteMaster => axilWriteMaster,
-         axilWriteSlave  => axilWriteSlave,
-         softRst         => softRst);
+         axilClk          => axilClk,
+         axilRst          => axilRst,
+         axilReadMaster   => axilReadMaster,
+         axilReadSlave    => axilReadSlave,
+         axilWriteMaster  => axilWriteMaster,
+         axilWriteSlave   => axilWriteSlave,
+         softRst          => softRst);
 
    process(wibClk)
    begin
@@ -261,6 +272,7 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
+         softRst         => softRst,
          -- Timing Interface (cdrClk domain)
          cdrClk          => cdrClk,
          cdrRst          => cdrRst,
