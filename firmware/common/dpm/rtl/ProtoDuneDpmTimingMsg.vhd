@@ -33,6 +33,7 @@ entity ProtoDuneDpmTimingMsg is
       TPD_G : time := 1 ns);
    port (
       softRst         : in  sl;
+      syncTrigCmd     : in  slv(3 downto 0);
       -- Timing Interface (cdrClk domain)
       cdrClk          : in  sl;
       cdrRst          : in  sl;
@@ -40,6 +41,7 @@ entity ProtoDuneDpmTimingMsg is
       timingMsgDrop   : out sl;
       timingRunEnable : out sl;
       triggerDet      : out sl;
+      eventCnt        : out slv(31 downto 0);
       -- AXI Stream Interface (dmaClk domain)
       dmaClk          : in  sl;
       dmaRst          : in  sl;
@@ -97,7 +99,7 @@ begin
          asyncRst => reset,
          syncRst  => cdrReset);
 
-   comb : process (cdrReset, r, timingBus, txSlave) is
+   comb : process (cdrReset, r, syncTrigCmd, timingBus, txSlave) is
       variable v : RegType;
    begin
       -- Latch the current value
@@ -129,7 +131,7 @@ begin
             end if;
 
             -- Check for trigger
-            if (timingBus.syncCmd = SCMD_SPILL_STOP) then  -- Maybe this should be changed to SCMD_FAKE_TRIG in the future???
+            if (timingBus.syncCmd = syncTrigCmd) then
                -- Set the flag
                v.triggerDet := '1';
             end if;
@@ -169,6 +171,7 @@ begin
       timingMsgDrop   <= r.timingMsgDrop;
       timingRunEnable <= r.timingRunEnable;
       triggerDet      <= r.triggerDet;
+      eventCnt        <= r.eventCnt;
 
    end process comb;
 

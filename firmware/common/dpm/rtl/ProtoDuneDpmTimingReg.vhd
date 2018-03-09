@@ -24,6 +24,8 @@ use work.StdRtlPkg.all;
 use work.AxiLitePkg.all;
 use work.ProtoDuneDpmPkg.all;
 
+use work.pdts_defs.all;
+
 entity ProtoDuneDpmTimingReg is
    generic (
       TPD_G            : time            := 1 ns;
@@ -47,6 +49,7 @@ entity ProtoDuneDpmTimingReg is
       triggerDet       : in  sl;
       pdtsEndpointAddr : out slv(7 downto 0);
       pdtsEndpointTgrp : out slv(1 downto 0);
+      syncTrigCmd      : out slv(3 downto 0);
       -- AXI-Lite Interface (axilClk domain)
       axilClk          : in  sl;
       axilRst          : in  sl;
@@ -62,6 +65,7 @@ architecture rtl of ProtoDuneDpmTimingReg is
    constant STATUS_SIZE_C : positive := 6;
 
    type RegType is record
+      syncTrigCmd      : slv(3 downto 0);
       pdtsEndpointAddr : slv(7 downto 0);
       pdtsEndpointTgrp : slv(1 downto 0);
       cdrEdgeSel       : sl;
@@ -76,6 +80,7 @@ architecture rtl of ProtoDuneDpmTimingReg is
    end record;
 
    constant REG_INIT_C : RegType := (
+      syncTrigCmd      => SCMD_SPILL_STOP,
       pdtsEndpointAddr => (others => '0'),
       pdtsEndpointTgrp => (others => '0'),
       cdrEdgeSel       => '0',
@@ -143,6 +148,7 @@ begin
       axiSlaveRegister(regCon, x"808", 0, v.cdrDataInv);
       axiSlaveRegister(regCon, x"80C", 0, v.pdtsEndpointAddr);
       axiSlaveRegister(regCon, x"810", 0, v.pdtsEndpointTgrp);
+      axiSlaveRegister(regCon, x"814", 0, v.syncTrigCmd);
 
       axiSlaveRegister(regCon, x"FF0", 0, v.rollOverEn);
       axiSlaveRegister(regCon, x"FF4", 0, v.cntRst);
@@ -168,6 +174,7 @@ begin
       cdrDataInv       <= r.cdrDataInv;
       pdtsEndpointAddr <= r.pdtsEndpointAddr;
       pdtsEndpointTgrp <= r.pdtsEndpointTgrp;
+      syncTrigCmd      <= r.syncTrigCmd;
 
    end process comb;
 

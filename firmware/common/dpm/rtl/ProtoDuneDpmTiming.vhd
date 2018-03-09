@@ -24,6 +24,7 @@ use work.StdRtlPkg.all;
 use work.AxiLitePkg.all;
 use work.AxiStreamPkg.all;
 use work.ProtoDuneDpmPkg.all;
+
 use work.pdts_defs.all;
 
 library unisim;
@@ -93,6 +94,7 @@ architecture mapping of ProtoDuneDpmTiming is
    signal timingMsgDrop   : sl;
    signal timingRunEnable : sl;
    signal triggerDet      : sl;
+   signal syncTrigCmd     : slv(3 downto 0);
 
    signal pdtsEndpointAddr : slv(7 downto 0);
    signal pdtsEndpointTgrp : slv(1 downto 0);
@@ -222,8 +224,8 @@ begin
          sync_stb   => open,            -- Sync command strobe (clk domain)
          sync_valid => timingBus.syncValid,  -- Sync command valid flag (clk domain)
          tstamp     => timingBus.timestamp,  -- Timestamp out
-         sync_stb   => CMD_W_NULL,      -- Tx sync command input
-         sync_stb   => open);           -- Tx sync command handshake
+         tsync_in   => CMD_W_NULL,      -- Tx sync command input
+         tsync_out  => open);           -- Tx sync command handshake
 
    --------------------------
    -- Timing Register Control
@@ -251,6 +253,7 @@ begin
          triggerDet       => triggerDet,
          pdtsEndpointAddr => pdtsEndpointAddr,
          pdtsEndpointTgrp => pdtsEndpointTgrp,
+         syncTrigCmd      => syncTrigCmd,
          -- AXI-Lite Interface (axilClk domain)
          axilClk          => axilClk,
          axilRst          => axilRst,
@@ -273,6 +276,7 @@ begin
          TPD_G => TPD_G)
       port map (
          softRst         => softRst,
+         syncTrigCmd     => syncTrigCmd,
          -- Timing Interface (cdrClk domain)
          cdrClk          => cdrClk,
          cdrRst          => cdrRst,
@@ -280,6 +284,7 @@ begin
          timingMsgDrop   => timingMsgDrop,
          timingRunEnable => timingRunEnable,
          triggerDet      => triggerDet,
+         eventCnt        => timingBus.eventCnt,
          -- AXI Stream Interface (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,

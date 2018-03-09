@@ -87,12 +87,14 @@ package ProtoDuneDpmPkg is
       syncCmd   : slv(3 downto 0);
       syncValid : sl;
       timestamp : slv(63 downto 0);
+      eventCnt  : slv(31 downto 0);
    end record;
    constant PROTO_DUNE_DPM_TIMING_INIT_C : ProtoDuneDpmTimingType := (
       stat      => (others => '0'),
       rdy       => '0',
       syncCmd   => (others => '0'),
       syncValid => '0',
-      timestamp => (others => '0'));
+      timestamp => (others => '0'),
+      eventCnt  => (others => '0'));
 
 end ProtoDuneDpmPkg;
