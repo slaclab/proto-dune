@@ -11,6 +11,7 @@ loadRuckusTcl $::env(PROJ_DIR)/../../common/VivadoHLS/DuneDataCompression
 loadSource -dir $::env(PROJ_DIR)/../../submodules/timing-board-firmware/components/pdts/firmware/hdl
 loadSource -dir $::env(PROJ_DIR)/../../submodules/timing-board-firmware/projects/endpoint/firmware/hdl
 remove_files [get_files {pdts_endpoint_dummy.vhd}] 
+remove_files [get_files {top_standalone_fmc.vhd.vhd}] 
 
 # Load local Source Code and constraints
 loadSource -dir       "$::DIR_PATH/hdl/"

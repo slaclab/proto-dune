@@ -103,8 +103,10 @@ begin
          cdrDataInv  => config.cdrDataInv,
          qsfpRst     => qsfpRst,
          busyOut     => busyOut,
-         sfpTxDis    => sfpTxDis,
-         sfpTx       => sfpTxDat,
+         -- sfpTxDis    => sfpTxDis,
+         -- sfpTx       => sfpTxDat,
+         sfpTxDis    => '0',
+         sfpTx       => recData,         
          -- CDR Interface
          recClk      => recClk,
          recData     => recData,
