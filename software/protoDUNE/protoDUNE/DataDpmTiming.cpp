@@ -122,6 +122,16 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
 //   rl->getVariable()->setTrueFalse();
 //   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
 
+//   addRegisterLink(rl = new RegisterLink("PdtsEndpointAddr",  0x80C, Variable::Configuration,0,0xFF));
+//   rl->getVariable()->setDescription("Drive's pdts_endpoint's addr port");
+
+//   addRegisterLink(rl = new RegisterLink("PdtsEndpointTgrp",  0x810, Variable::Configuration,0,0x3));
+//   rl->getVariable()->setDescription("Drive's pdts_endpoint's tgrp port");
+
+//   addRegisterLink(rl = new RegisterLink("SyncTrigCmd",  0x814, Variable::Configuration,0,0xF));
+//   rl->getVariable()->setDescription("Set's the op-code for trigger detection");
+
+
    addRegister(new Register("CounterReset", baseAddress_ + 0xFF4));
    addRegister(new Register("SoftReset",    baseAddress_ + 0xFF8));
    addRegister(new Register("HardReset",    baseAddress_ + 0xFFC));
