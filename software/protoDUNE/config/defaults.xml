@@ -298,7 +298,7 @@
         </DataDpmEmuCh>
       </DataDpmEmu>
       <DataDpmHlsMon>
-        <Blowoff>0x1</Blowoff>
+        <Blowoff>0x0</Blowoff>
         <Enabled>True</Enabled>
       </DataDpmHlsMon>
       <DataDpmTiming>
@@ -308,7 +308,7 @@
       <DataDpmWib>
         <Enabled>True</Enabled>
         <RollOverEn>0x0</RollOverEn>
-        <RxPolarity>False</RxPolarity>
+        <RxPolarity>True</RxPolarity>
         <TxPolarity>False</TxPolarity>
       </DataDpmWib>
       <DataDpmWibDbg>
