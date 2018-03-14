@@ -603,6 +603,7 @@ def main(argv):
             return (-1)
 
         # Setup rce_start.service
+        g.action("setup_ssh_keys")
         g.action("scp_put",(locPath+"rceData/axistreamdma.sh."+argv[2]), "/bin/axistreamdma.sh")
         g.action("ssh_cmd","chmod +x /bin/axistreamdma.sh")
         g.action("scp_put",(locPath+"rceData/axistreamdma.service"), "/usr/lib/systemd/system/axistreamdma.service")
