@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTimingReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-09-26
--- Last update: 2017-10-24
+-- Last update: 2018-03-08
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -24,35 +24,40 @@ use work.StdRtlPkg.all;
 use work.AxiLitePkg.all;
 use work.ProtoDuneDpmPkg.all;
 
+use work.pdts_defs.all;
+
 entity ProtoDuneDpmTimingReg is
    generic (
       TPD_G            : time            := 1 ns;
       AXI_ERROR_RESP_G : slv(1 downto 0) := AXI_RESP_DECERR_C);
    port (
       -- WIB Interface (wibClk domain)
-      wibClk          : in  sl;
-      wibRst          : in  sl;
-      runEnable       : in  sl;
-      swFlush         : out sl;
+      wibClk           : in  sl;
+      wibRst           : in  sl;
+      runEnable        : in  sl;
+      swFlush          : out sl;
       -- Timing RX Interface (cdrClk domain)
-      cdrClk          : in  sl;
-      cdrRst          : in  sl;
-      cdrEdgeSel      : out sl;
-      cdrDataInv      : out sl;
-      cdrLocked       : in  sl;
-      freqMeasured    : in  slv(31 downto 0);
-      timingBus       : in  ProtoDuneDpmTimingType;
-      timingMsgDrop   : in  sl;
-      timingRunEnable : in  sl;
-      triggerDet      : in  sl;
+      cdrClk           : in  sl;
+      cdrRst           : in  sl;
+      cdrEdgeSel       : out sl;
+      cdrDataInv       : out sl;
+      cdrLocked        : in  sl;
+      freqMeasured     : in  slv(31 downto 0);
+      timingBus        : in  ProtoDuneDpmTimingType;
+      timingMsgDrop    : in  sl;
+      timingRunEnable  : in  sl;
+      triggerDet       : in  sl;
+      pdtsEndpointAddr : out slv(7 downto 0);
+      pdtsEndpointTgrp : out slv(1 downto 0);
+      syncTrigCmd      : out slv(3 downto 0);
       -- AXI-Lite Interface (axilClk domain)
-      axilClk         : in  sl;
-      axilRst         : in  sl;
-      axilReadMaster  : in  AxiLiteReadMasterType;
-      axilReadSlave   : out AxiLiteReadSlaveType;
-      axilWriteMaster : in  AxiLiteWriteMasterType;
-      axilWriteSlave  : out AxiLiteWriteSlaveType;
-      softRst         : out sl);
+      axilClk          : in  sl;
+      axilRst          : in  sl;
+      axilReadMaster   : in  AxiLiteReadMasterType;
+      axilReadSlave    : out AxiLiteReadSlaveType;
+      axilWriteMaster  : in  AxiLiteWriteMasterType;
+      axilWriteSlave   : out AxiLiteWriteSlaveType;
+      softRst          : out sl);
 end ProtoDuneDpmTimingReg;
 
 architecture rtl of ProtoDuneDpmTimingReg is
@@ -60,27 +65,33 @@ architecture rtl of ProtoDuneDpmTimingReg is
    constant STATUS_SIZE_C : positive := 6;
 
    type RegType is record
-      cdrEdgeSel     : sl;
-      cdrDataInv     : sl;
-      swFlush        : sl;
-      rollOverEn     : slv(STATUS_SIZE_C-1 downto 0);
-      cntRst         : sl;
-      softRst        : sl;
-      hardRst        : sl;
-      axilReadSlave  : AxiLiteReadSlaveType;
-      axilWriteSlave : AxiLiteWriteSlaveType;
+      syncTrigCmd      : slv(3 downto 0);
+      pdtsEndpointAddr : slv(7 downto 0);
+      pdtsEndpointTgrp : slv(1 downto 0);
+      cdrEdgeSel       : sl;
+      cdrDataInv       : sl;
+      swFlush          : sl;
+      rollOverEn       : slv(STATUS_SIZE_C-1 downto 0);
+      cntRst           : sl;
+      softRst          : sl;
+      hardRst          : sl;
+      axilReadSlave    : AxiLiteReadSlaveType;
+      axilWriteSlave   : AxiLiteWriteSlaveType;
    end record;
 
    constant REG_INIT_C : RegType := (
-      cdrEdgeSel     => '0',
-      cdrDataInv     => '0',
-      swFlush        => '1',
-      rollOverEn     => (others => '0'),
-      cntRst         => '1',
-      softRst        => '1',
-      hardRst        => '0',            -- must be zero to prevent lock up
-      axilReadSlave  => AXI_LITE_READ_SLAVE_INIT_C,
-      axilWriteSlave => AXI_LITE_WRITE_SLAVE_INIT_C);
+      syncTrigCmd      => SCMD_SPILL_STOP,
+      pdtsEndpointAddr => (others => '0'),
+      pdtsEndpointTgrp => (others => '0'),
+      cdrEdgeSel       => '0',
+      cdrDataInv       => '0',
+      swFlush          => '1',
+      rollOverEn       => (others => '0'),
+      cntRst           => '1',
+      softRst          => '1',
+      hardRst          => '0',          -- must be zero to prevent lock up
+      axilReadSlave    => AXI_LITE_READ_SLAVE_INIT_C,
+      axilWriteSlave   => AXI_LITE_WRITE_SLAVE_INIT_C);
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -135,6 +146,9 @@ begin
       axiSlaveRegister(regCon, x"800", 0, v.swFlush);
       axiSlaveRegister(regCon, x"804", 0, v.cdrEdgeSel);
       axiSlaveRegister(regCon, x"808", 0, v.cdrDataInv);
+      axiSlaveRegister(regCon, x"80C", 0, v.pdtsEndpointAddr);
+      axiSlaveRegister(regCon, x"810", 0, v.pdtsEndpointTgrp);
+      axiSlaveRegister(regCon, x"814", 0, v.syncTrigCmd);
 
       axiSlaveRegister(regCon, x"FF0", 0, v.rollOverEn);
       axiSlaveRegister(regCon, x"FF4", 0, v.cntRst);
@@ -154,10 +168,13 @@ begin
       rin <= v;
 
       -- Outputs
-      axilWriteSlave <= r.axilWriteSlave;
-      axilReadSlave  <= r.axilReadSlave;
-      cdrEdgeSel     <= r.cdrEdgeSel;
-      cdrDataInv     <= r.cdrDataInv;
+      axilWriteSlave   <= r.axilWriteSlave;
+      axilReadSlave    <= r.axilReadSlave;
+      cdrEdgeSel       <= r.cdrEdgeSel;
+      cdrDataInv       <= r.cdrDataInv;
+      pdtsEndpointAddr <= r.pdtsEndpointAddr;
+      pdtsEndpointTgrp <= r.pdtsEndpointTgrp;
+      syncTrigCmd      <= r.syncTrigCmd;
 
    end process comb;
 

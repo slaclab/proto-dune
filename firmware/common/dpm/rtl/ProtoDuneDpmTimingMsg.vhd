@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTimingMsg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2017-05-11
--- Last update: 2018-02-09
+-- Last update: 2018-03-08
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -26,10 +26,14 @@ use work.SsiPkg.all;
 use work.RceG3Pkg.all;
 use work.ProtoDuneDpmPkg.all;
 
+use work.pdts_defs.all;
+
 entity ProtoDuneDpmTimingMsg is
    generic (
       TPD_G : time := 1 ns);
    port (
+      softRst         : in  sl;
+      syncTrigCmd     : in  slv(3 downto 0);
       -- Timing Interface (cdrClk domain)
       cdrClk          : in  sl;
       cdrRst          : in  sl;
@@ -37,6 +41,7 @@ entity ProtoDuneDpmTimingMsg is
       timingMsgDrop   : out sl;
       timingRunEnable : out sl;
       triggerDet      : out sl;
+      eventCnt        : out slv(31 downto 0);
       -- AXI Stream Interface (dmaClk domain)
       dmaClk          : in  sl;
       dmaRst          : in  sl;
@@ -57,12 +62,14 @@ architecture mapping of ProtoDuneDpmTimingMsg is
 
 
    type RegType is record
+      eventCnt        : slv(31 downto 0);
       timingMsgDrop   : sl;
       timingRunEnable : sl;
       triggerDet      : sl;
       txMaster        : AxiStreamMasterType;
    end record RegType;
    constant REG_INIT_C : RegType := (
+      eventCnt        => (others => '0'),
       timingMsgDrop   => '0',
       timingRunEnable => '0',
       triggerDet      => '0',
@@ -70,6 +77,9 @@ architecture mapping of ProtoDuneDpmTimingMsg is
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
+
+   signal reset    : sl;
+   signal cdrReset : sl;
 
    signal txMaster : AxiStreamMasterType;
    signal txSlave  : AxiStreamSlaveType;
@@ -79,7 +89,17 @@ architecture mapping of ProtoDuneDpmTimingMsg is
 
 begin
 
-   comb : process (cdrRst, r, timingBus, txSlave) is
+   reset <= cdrRst or softRst;
+
+   U_softRst : entity work.RstSync
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         clk      => cdrClk,
+         asyncRst => reset,
+         syncRst  => cdrReset);
+
+   comb : process (cdrReset, r, syncTrigCmd, timingBus, txSlave) is
       variable v : RegType;
    begin
       -- Latch the current value
@@ -94,13 +114,33 @@ begin
 
       -- Check if time stamp is ready
       if (timingBus.rdy = '1') then
+
          -- Check for valid 
          if (timingBus.syncValid = '1') then
+
+            -- Check for run_start command
+            if (timingBus.syncCmd = SCMD_RUN_START) then
+               -- Set the flag
+               v.timingRunEnable := '1';
+            end if;
+
+            -- Check for run_end command
+            if (timingBus.syncCmd = SCMD_RUN_STOP) then
+               -- Set the flag
+               v.timingRunEnable := '0';
+            end if;
+
+            -- Check for trigger
+            if (timingBus.syncCmd = syncTrigCmd) then
+               -- Set the flag
+               v.triggerDet := '1';
+            end if;
+
             -- Check if ready to move data
             if (v.txMaster.tValid = '0') then
                -- Forward the timing message
                v.txMaster.tData(63 downto 0)    := timingBus.timestamp;
-               v.txMaster.tData(95 downto 64)   := timingBus.eventCnt;
+               v.txMaster.tData(95 downto 64)   := r.eventCnt;
                v.txMaster.tData(99 downto 96)   := timingBus.syncCmd;
                v.txMaster.tData(103 downto 100) := timingBus.stat;
                v.txMaster.tValid                := '1';
@@ -113,27 +153,14 @@ begin
                v.timingMsgDrop := '1';
             end if;
 
---            -- Check for run_start command
---            if (timingBus.syncCmd = ???) then
---               -- Set the flag
---               v.timingRunEnable := '1';
---            end if;
---            -- Check for run_end command
---            if (timingBus.syncCmd = ???) then
---               -- Set the flag
---               v.timingRunEnable := '0';
---            end if;
+            -- Increment the counter
+            v.eventCnt := r.eventCnt + 1;
 
-            -- Check for trigger
-            if (timingBus.syncCmd = 3) then
-               -- Set the flag
-               v.triggerDet := '1';
-            end if;
          end if;
       end if;
 
       -- Reset
-      if (cdrRst = '1') then
+      if (cdrReset = '1') then
          v := REG_INIT_C;
       end if;
 
@@ -144,6 +171,7 @@ begin
       timingMsgDrop   <= r.timingMsgDrop;
       timingRunEnable <= r.timingRunEnable;
       triggerDet      <= r.triggerDet;
+      eventCnt        <= r.eventCnt;
 
    end process comb;
 
@@ -175,7 +203,7 @@ begin
       port map (
          -- Slave Port
          sAxisClk    => cdrClk,
-         sAxisRst    => cdrRst,
+         sAxisRst    => cdrReset,
          sAxisMaster => r.txMaster,
          sAxisSlave  => txSlave,
          -- Master Port

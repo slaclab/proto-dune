@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-07-24
+-- Last update: 2018-03-08
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -22,6 +22,8 @@ use work.StdRtlPkg.all;
 use work.AxiLitePkg.all;
 use work.AxiStreamPkg.all;
 use work.ProtoDuneDtmPkg.all;
+
+use work.pdts_defs.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -72,14 +74,16 @@ architecture rtl of ProtoDuneDtmCore is
    signal status : ProtoDuneDtmStatusType;
    signal config : ProtoDuneDtmConfigType;
 
-   signal recClk  : sl;
-   signal recData : sl;
-   signal recLol  : sl;
-   signal qsfpRst : sl;
-   signal dpmBusy : slv(7 downto 0);
-   signal cdrClk  : sl;
-   signal cdrRst  : sl;
-   signal busyOut : sl;
+   signal recClk   : sl;
+   signal recData  : sl;
+   signal recLol   : sl;
+   signal qsfpRst  : sl;
+   signal dpmBusy  : slv(7 downto 0);
+   signal cdrClk   : sl;
+   signal cdrRst   : sl;
+   signal busyOut  : sl;
+   signal sfpTxDis : sl;
+   signal sfpTxDat : sl;
 
 begin
 
@@ -99,8 +103,10 @@ begin
          cdrDataInv  => config.cdrDataInv,
          qsfpRst     => qsfpRst,
          busyOut     => busyOut,
+         -- sfpTxDis    => sfpTxDis,
+         -- sfpTx       => sfpTxDat,
          sfpTxDis    => '0',
-         sfpTx       => recData,
+         sfpTx       => recData,         
          -- CDR Interface
          recClk      => recClk,
          recData     => recData,
@@ -208,29 +214,36 @@ begin
          busyVec => status.busyVec,
          busyOut => status.busyOut);
 
-   ---------------------         
+   ---------------------
    -- CERN Timing Module
-   ---------------------         
+   ---------------------
    U_Timing : entity work.pdts_endpoint
       generic map (
-         SCLK_FREQ => 125.0)
+         SCLK_FREQ => 125.0,            -- 125 MHz
+         EN_TX     => false)
       port map (
-         sclk    => axilClk,            -- Free-running system clock
-         srst    => axilRst,            -- System reset (sclk domain)
-         addr    => x"00",  -- "Any address except 0x01 is acceptable for this test" from Dave Newbold (20MARCH2017)
-         tgrp    => "00",  -- "Any tgrp is acceptable - 0x0 will do" from Dave Newbold (20MARCH2017)
-         stat    => status.timing.stat,  -- The status signal (stat) that indicates the internal state of the endpoint
-         rec_clk => recClk,
-         rec_d   => recData,
-         sfp_los => '0',
-         cdr_los => '0',
-         cdr_lol => recLol,
-         clk     => cdrClk,
-         rst     => cdrRst,
-         rdy     => status.timing.rdy,
-         sync    => status.timing.syncCmd,  -- Sync command output (clk domain)
-         sync_v  => status.timing.syncValid,  -- Sync command valid flag (clk domain)
-         tstamp  => status.timing.timestamp,  -- Timestamp out
-         evtctr  => status.timing.eventCnt);  -- Event counter out
+         sclk       => axilClk,         -- Free-running system clock
+         srst       => axilRst,         -- System reset (sclk domain)
+         addr       => x"00",  -- Endpoint address (async, sampled in clk domain)
+         tgrp       => "00",   -- Timing group (async, sampled in clk domain)
+         stat       => status.timing.stat,     -- Status output (sclk domain)
+         rec_clk    => recClk,          -- CDR recovered clock from timing link
+         rec_d      => recData,  -- CDR recovered data from timing link (rec_clk domain)
+         txd        => sfpTxDat,  -- Output data to timing link (rec_clk domain)
+         sfp_los    => '0',    -- SFP LOS line (async, sampled in sclk domain)
+         cdr_los    => '0',    -- CDR LOS line (async, sampled in sclk domain)
+         cdr_lol    => recLol,  -- CDR LOL line (async, sampled in sclk domain)
+         sfp_tx_dis => sfpTxDis,        -- SFP tx disable line (clk domain)
+         clk        => cdrClk,          -- 50MHz clock output
+         rst        => cdrRst,          -- 50MHz domain reset
+         rdy        => status.timing.rdy,      -- Timestamp valid flag
+         sync       => status.timing.syncCmd,  -- Sync command output (clk domain)
+         sync_stb   => open,            -- Sync command strobe (clk domain)
+         sync_valid => status.timing.syncValid,  -- Sync command valid flag (clk domain)
+         tstamp     => status.timing.timestamp,  -- Timestamp out
+         tsync_in   => CMD_W_NULL,      -- Tx sync command input
+         tsync_out  => open);           -- Tx sync command handshake         
+
+   status.timing.eventCnt <= (others => '0');
 
 end architecture rtl;

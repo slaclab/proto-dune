@@ -34,5 +34,6 @@ set_clock_groups -asynchronous -group [get_clocks {wibClk}] -group [get_clocks {
 
 set_clock_groups -asynchronous -group [get_clocks {emuClk}] -group [get_clocks {wibClk}] 
 set_clock_groups -asynchronous -group [get_clocks {emuClk}] -group [get_clocks {cdrClk}] 
+set_clock_groups -asynchronous -group [get_clocks {emuClk}] -group [get_clocks {sysClk125}] 
 
 set_case_analysis 1 [get_pins {U_App/U_Timing/U_BUFGMUX/S}]
