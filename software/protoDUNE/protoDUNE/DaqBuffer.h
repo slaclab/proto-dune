@@ -141,6 +141,8 @@ public:
    int     unmap   ();
    int     close   ();
 
+   static ssize_t free    (int32_t fd, int index);
+
 public:
    static const uint32_t TUserEOFE = 0x1;
 
@@ -286,6 +288,21 @@ inline int DaqDmaDevice::map ()
 inline ssize_t DaqDmaDevice::free (int index)
 {
    ssize_t status = dmaRetIndex (_fd, index);
+   return  status;
+}
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+   \brief Free the buffer associated with the specified \a index
+
+   \param[in] index The index of the buffer to return;
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline ssize_t DaqDmaDevice::free (int fd, int index)
+{
+   ssize_t status = dmaRetIndex (fd, index);
    return  status;
 }
 /* ---------------------------------------------------------------------- */
