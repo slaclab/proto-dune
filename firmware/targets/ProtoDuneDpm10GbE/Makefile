@@ -1,4 +1,4 @@
-export GIT_BYPASS = 0
+export GIT_BYPASS = 1
 
 # Define target output
 target: bit
@@ -7,7 +7,8 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000051
+# TEST VERSION OF 52
+export PRJ_VERSION = 0x02000052
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
