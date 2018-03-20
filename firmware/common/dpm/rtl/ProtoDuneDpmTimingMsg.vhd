@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTimingMsg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2017-05-11
--- Last update: 2018-03-08
+-- Last update: 2018-03-20
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -33,7 +33,6 @@ entity ProtoDuneDpmTimingMsg is
       TPD_G : time := 1 ns);
    port (
       softRst         : in  sl;
-      syncTrigCmd     : in  slv(3 downto 0);
       -- Timing Interface (cdrClk domain)
       cdrClk          : in  sl;
       cdrRst          : in  sl;
@@ -99,7 +98,7 @@ begin
          asyncRst => reset,
          syncRst  => cdrReset);
 
-   comb : process (cdrReset, r, syncTrigCmd, timingBus, txSlave) is
+   comb : process (cdrReset, r, timingBus, txSlave) is
       variable v : RegType;
    begin
       -- Latch the current value
@@ -130,8 +129,8 @@ begin
                v.timingRunEnable := '0';
             end if;
 
-            -- Check for trigger
-            if (timingBus.syncCmd = syncTrigCmd) then
+            -- Check for trigger: op-code = [0x8:0xF]
+            if (timingBus.syncCmd(3) = '1') then
                -- Set the flag
                v.triggerDet := '1';
             end if;

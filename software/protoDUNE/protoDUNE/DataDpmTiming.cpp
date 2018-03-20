@@ -128,9 +128,6 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
 //   addRegisterLink(rl = new RegisterLink("PdtsEndpointTgrp",  0x810, Variable::Configuration,0,0x3));
 //   rl->getVariable()->setDescription("Drive's pdts_endpoint's tgrp port");
 
-//   addRegisterLink(rl = new RegisterLink("SyncTrigCmd",  0x814, Variable::Configuration,0,0xF));
-//   rl->getVariable()->setDescription("Set's the op-code for trigger detection");
-
 
    addRegister(new Register("CounterReset", baseAddress_ + 0xFF4));
    addRegister(new Register("SoftReset",    baseAddress_ + 0xFF8));
