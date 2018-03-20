@@ -1,5 +1,5 @@
 # Template setup_env.csh script. You should make a copy of this and 
-# rename it to setup_env.csh after checkout
+# rename it to setup_env.csh after checkout 
 
 # Base directory
 export BASE=${PWD}
