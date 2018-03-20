@@ -118,9 +118,9 @@
 /*    Setting the #define PROCESS_K_TYPE will select that mode            */
 /*                                                                        */
 /* ---------------------------------------------------------------------- */
-#define PROCESS_K_COPY        1 /* Simple copy, essentially *out++ = *in++*/
-#define PROCESS_K_DATAFLOW    2 /* Buffered copy using DATAFLOW           */
-#define PROCESS_K_COMPRESS    3 /* Compressed all                         */
+#define PROCESS_K_COPY     1   /* Simple copy, essentially *out++ = *in++ */
+#define PROCESS_K_DATAFLOW 2   /* Buffered copy using DATAFLOW            */
+#define PROCESS_K_COMPRESS 3   /* Compressed copy                         */
 /* ====================================================================== */
 
 
@@ -135,7 +135,7 @@
 /*  PROCESS_K_TYPE must be set to one of the above PROCESS_K_<xxxx> to    */
 /*  select the desired processing mode.                                   */
 /* ---------------------------------------------------------------------- */
-#define PROCESS_K_MODE PROCESS_K_COMPRESS
+#define PROCESS_K_MODE PROCESS_K_DATAFLOW /* Select dataflow              */
 /* ====================================================================== */
 
 
@@ -168,538 +168,237 @@ static void print_trailer (uint64_t tlr)
 
 #endif
 
+static void        copyCfg (ModuleConfig   &lcl,
+                            ModuleConfig   &gbl) __attribute__ ((unused));
 
-/* ----------------------------------------------------------------------- */
-/* CLASSES: Local                                                          */
-/* ----------------------------------------------------------------------- */
-
+static bool checkAndUpdate (uint64_t  &expected,
+                            uint64_t        got) __attribute__ ((unused));
 
 static void         commit (AxisOut  &axis, int &odx, bool write,
                             uint64_t  data, int user, int   last);
+/* ---------------------------------------------------------------------- */
 
 
-/* ----------------------------------------------------------------------- *//*!
- *
- *  \brief Typedef for the read frame status
- *
- *  \par
- *   This is a bit mask of conditions that would invalidate the frame
- *   data.  Currently there are
- *      - Bit 0: RunDisable
- *      - Bit 1: Flush
- *      - Bit 2: Start of frame marker missing
- *      - Bit 3: End   of frame marker missing
- *      - Bit 4: K28_5 character not seen
- *      - Bit 5: WIB sequence error
- *
- *   If either of these 4 bits  are set
- *      -# The data for this frame is consider invalid
- *       # Any in-progress packet should be flushed.
-\* ----------------------------------------------------------------------- */
-typedef ap_uint<32> ReadStatus_t;
 
-/* ----------------------------------------------------------------------- *//*!
+/* ---------------------------------------------------------------------- *//*!
  *
- *  \struct ReadFrame
- *  \brief  Structure to bind the read status with the frame's data
+ *   \brief  Make a local copy of the configuraion block
  *
-\* ----------------------------------------------------------------------- */
-struct ReadFrame
+ *   \param[out]  lcl The local  copy of the configuration block
+ *   \param[ in]  gbl The global copy of the configuration block.
+ *
+\* ---------------------------------------------------------------------- */
+static void copyCfg (ModuleConfig &lcl, ModuleConfig &gbl)
 {
-   ReadFrame () :
-      status (0),
-      write  (false),
-      last   (false)
-   {
-      return;
-   }
+    #pragma HLS PIPELINE
+    lcl      = gbl;
+    lcl.mode = MODE_K_COPY;
 
-   enum class WibOffset
-   {
-      ErrWibBeg        = 0x00,
-
-      // Errors from the WIB header words
-      ErrWibBeg0      = 0x00,
-      ErrWibComma     = 0x00, /*!< Comma character does not match         */
-      ErrWibVersion   = 0x01, /*!< Version number incorrect               */
-      ErrWibId        = 0x02, /*!< WibId (Crate.Slot.Fiber) incorrect     */
-      ErrWibRsvd      = 0x03, /*!< Reserved header bits are not 0         */
-      ErrWibErrors    = 0x04, /*!< Wib Errors field is not 0              */
-      ErrWibEnd0      = 0x04,
-      ErrWibCnt0      = ErrWibEnd0 - ErrWibBeg0 + 1,
-
-      ErrWibBeg1      = 0x05,
-      ErrWibTimestamp = 0x05, /*!< Unused bit                             */
-      ErrWibUnused6   = 0x06, /*!< Unused bit                             */
-      ErrWibUnused7   = 0x07, /*!< Unused bit                             */
-      ErrWibEnd1      = 0x07,
-      ErrWibCnt1      = ErrWibEnd1 - ErrWibBeg1 + 1,
-
-      ErrWibEnd       = 0x07,
-      ErrWibCnt       = ErrWibEnd  - ErrWibBeg  + 1
-   };
-   /* ------------------------------------------------------------------- */
-
-
-   /* ------------------------------------------------------------------- *//*!
-    *
-    *  \enum  CdOffset
-    *  \brief Maps out the bits of the cold data link status bits
-    *
-    */
-   enum class CdOffset
-   {
-      // Errors from the Colddata stream 0 header words
-      ErrCdBeg0      = 0x00,
-      ErrCdStrErr1   = 0x00,  /*!< Colddata link, stream err1 is not 0    */
-      ErrCdStrErr2   = 0x01,  /*!< Colddata link, stream err2 is not 0    */
-      ErrCdRsvd0     = 0x02,  /*!< Colddata link, reserved field is not 0 */
-      ErrCdChkSum    = 0x03,  /*!< Colddata link, checksum incorrect      */
-      ErrCdCvtCnt    = 0x04,  /*!< Colddata link, convert count mismatch  */
-      ErrCdEnd0      = 0x04,
-      ErrCdCnt0      = ErrCdEnd0 - ErrCdBeg0 + 1,
-
-      ErrCdBeg1      = 0x05,
-      ErrCdErrReg    = 0x05,  /*!< Colddata link, error register is not 0 */
-      ErrCdRsvd1     = 0x06,  /*!< Colddata link, reserved field is not 0 */
-      ErrCdHdrs      = 0x07,  /*!< Colddata link, error in hdr words      */
-      ErrCdEnd1      = 0x07,
-      ErrCdCnt1      = ErrCdEnd1 - ErrCdBeg1 + 1,
-      ErrCdEnd       = ErrCdEnd1,
-
-      ErrCdCnt       = ErrCdEnd1 - ErrCdBeg1 + 1
-
-   };
-   /* ------------------------------------------------------------------- */
-
-
-   /* ------------------------------------------------------------------- *//*!
-    *
-    *  \enum  StateOffset
-    *  \brief Maps out the bits of the frame state status bits
-    *
-    */
-   enum class StateOffset
-   {
-      StateBeg        = 0x00,
-      RunDisable      = 0x01, /*!< Run is disable                         */
-      Flush           = 0x02, /*!< Flush the packet data                  */
-      StateEnd        = 0x02,
-      StateCnt        = StateEnd - StateBeg + 1
-   };
-   /* ------------------------------------------------------------------- */
-
-
-   /* ------------------------------------------------------------------- *//*!
-    *
-    *  \enum  FrameSOffet
-    *  \brief Maps out the bits of the frame state status bits
-    *
-    */
-   enum class FrameOffset
-   {
-      ErrFrameBeg     = 0x00,
-      ErrSofM         = 0x01, /*!< Start of frame error, error            */
-      ErrSofU         = 0x02, /*!< Start of frame error, unexpected       */
-      ErrEofM         = 0x03, /*!< End   of frame error, missing          */
-      ErrEofU         = 0x04, /*!< End   of frame error, unexpected       */
-      ErrEofE         = 0x05, /*!< End   of frame error, error bit set    */
-      ErrFrameEnd     = 0x05,
-      ErrFrameCnt     = ErrFrameEnd - ErrFrameBeg + 1
-   };
-   /* ------------------------------------------------------------------- */
-
-
-   /* ------------------------------------------------------------------- *//*!
-    *
-    *  \enum Offset
-    *  \brief Maps out the bits in the status mask
-    */
-   enum Offset
-   {
-      // Errors from the WIB header words
-      ErrWibBeg0      = 0x00,
-      ErrWibComma     = 0x00, /*!< Comma character does not match         */
-      ErrWibVersion   = 0x01, /*!< Version number incorrect               */
-      ErrWibId        = 0x02, /*!< WibId (Crate.Slot.Fiber) incorrect     */
-      ErrWibRsvd      = 0x03, /*!< Reserved header bits are not 0         */
-      ErrWibErrors    = 0x04, /*!< Wib Errors field is not 0              */
-      ErrWibEnd0      = 0x04,
-
-      ErrWibBeg1      = 0x05,
-      ErrWibTimestamp = 0x05, /*!< Unused bit                             */
-      ErrWibUnused6   = 0x06, /*!< Unused bit                             */
-      ErrWibUnused7   = 0x07, /*!< Unused bit                             */
-      ErrWibEnd1      = 0x07,
-
-      // Errors from the Colddata stream 0 header words
-      ErrCd0Beg0      = 0x08,
-      ErrCd0StrErr1   = 0x08,  /*!< Colddata link 0, stream err1 is not 0   */
-      ErrCd0StrErr2   = 0x09,  /*!< Colddata link 0, stream err2 is not 0   */
-      ErrCd0Rsvd0     = 0x0a,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd0ChkSum    = 0x0b,  /*!< Colddata link 0, checksum incorrect     */
-      ErrCd0CvtCnt    = 0x0c,  /*!< Colddata link 0, convert count mismatch */
-      ErrCd0End0      = 0x0c,
-
-      ErrCd0Beg1      = 0x0d,
-      ErrCd0ErrReg    = 0x0d,  /*!< Colddata link 0, error register is not 0*/
-      ErrCd0Rsvd1     = 0x0e,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd0Hdrs      = 0x0f,  /*!< Colddata link 0, error in hdr words     */
-      ErrCd0End1      = 0x0f,
-
-      // Errors from the Colddata stream 1 header words
-      ErrCd1Beg0      = 0x10,
-      ErrCd1StrErr1   = 0x10,  /*!< Colddata link 0, stream err1 is not 0   */
-      ErrCd1StrErr2   = 0x11,  /*!< Colddata link 0, stream err2 is not 0   */
-      ErrCd1Rsvd0     = 0x12,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd1ChkSum    = 0x13,  /*!< Colddata link 0, checksum incorrect     */
-      ErrCd1CvtCnt    = 0x14,  /*!< Colddata link 0, convert count mismatch */
-      ErrCd1End0      = 0x14,
-
-      ErrCd1Beg1      = 0x15,
-      ErrCd1ErrReg    = 0x15,  /*!< Colddata link 0, error register is not 0*/
-      ErrCd1Rsvd1     = 0x16,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd1Hdrs      = 0x17,  /*!< Colddata link 0, error in hdr words     */
-      ErrCd1End1      = 0x17,
-
-      // Frame state
-      StateBeg        = 0x18,
-      RunDisable      = 0x18, /*!< Run is disable                           */
-      Flush           = 0x19, /*!< Flush the packet data                    */
-      StateEnd        = 0x19,
-      StateCnt        = StateEnd - StateBeg + 1,
-
-      // Frame errors
-      ErrFrameBeg     = 0x1a,
-      ErrSofM         = 0x1a, /*!< Start of frame error, error              */
-      ErrSofU         = 0x1b, /*!< Start of frame error, unexpected         */
-      ErrEofM         = 0x1c, /*!< End   of frame error, missing            */
-      ErrEofU         = 0x1d, /*!< End   of frame error, unexpected         */
-      ErrEofE         = 0x1e, /*!< End   of frame error, error bit set      */
-      ErrFrameEnd     = 0x1e
-   };
-   /* ---------------------------------------------------------------------- */
-
-
-
-
-
-
-   /* ---------------------------------------------------------------------- *//*!
-    *
-    *  \brief  Extract the state bits from the status word
-    *  \return The extracted state bits
-    *
-    *  \param[in]  status The target status word.
-   \*----------------------------------------------------------------------- */
-   static ap_uint<StateCnt> state (ReadStatus_t status)
-   {
-      #pragma HLS INLINE
-      return status (Offset::StateEnd, Offset::StateEnd);
-   }
-   /* ---------------------------------------------------------------------- */
-
-
-
-   /* ---------------------------------------------------------------------- *//*!
-     *
-     *  \brief Tests whether the frame was correctly read
-     *  \retval true, if it was correctly read
-     *  \retval false, if not
-     *
-     *  \param[in] status The read status
-     *                                                                        */
-    /* ---------------------------------------------------------------------- */
-    static bool isGoodFrame (ap_uint<32> status)
-    {
-       #pragma HLS INLINE
-       int sb = status >> static_cast<unsigned>(Offset::ErrFrameBeg);
-       return sb == 0;
-    }
-    /* ---------------------------------------------------------------------- */
-
-
-    /* ---------------------------------------------------------------------- *//*!
-     *
-     *  \brief Tests whether this frame is flushes the packet
-     *  \retval true,  if so
-     *  \retval false, if not
-     *
-     *  \param[in] status The read status
-     *
-     *  If either the run is disabled nor the frame flush is set, the
-     *  frame is considered the last frame in the packet.
-     *                                                                        */
-    /* ---------------------------------------------------------------------- */
-    static bool flushesPacket (ReadStatus_t status)
-    {
-       #pragma HLS INLINE
-       bool wf = status.test (static_cast<unsigned>(Offset::RunDisable))
-              |  status.test (static_cast<unsigned>(Offset::Flush));
-       return wf;
-    }
-
-    static bool isWibHdr0Bad (ReadStatus_t status)
-    {
-       #pragma HLS INLINE
-       return status (static_cast<unsigned>(Offset::ErrWibEnd0),
-                      static_cast<unsigned>(Offset::ErrWibBeg0));
-    }
-
-    static bool isWibHdr1Bad (ReadStatus_t status)
-    {
-       #pragma HLS INLINE
-       return status (static_cast<unsigned>(Offset::ErrWibEnd1),
-                      static_cast<unsigned>(Offset::ErrWibBeg1));
-    }
-
-    static bool isCd0Hdr0Bad (ReadStatus_t status)
-    {
-       #pragma HLS INLINE
-       return status (static_cast<unsigned>(Offset::ErrCd0End0),
-                      static_cast<unsigned>(Offset::ErrCd0Beg0));
-    }
-
-    static bool isCd0Hdr1Bad (ReadStatus_t status)
-    {
-       #pragma HLS INLINE
-       return status (static_cast<unsigned>(Offset::ErrCd0End1),
-                      static_cast<unsigned>(Offset::ErrCd0Beg1));
-    }
-
-    static bool isCd1Hdr0Bad (ReadStatus_t status)
-    {
-       #pragma HLS INLINE
-       return status (static_cast<unsigned>(Offset::ErrCd1End0),
-                      static_cast<unsigned>(Offset::ErrCd1Beg0));
-    }
-
-    static bool isCd1Hdr1Bad (ReadStatus_t status)
-    {
-       #pragma HLS INLINE
-       return status (static_cast<unsigned>(Offset::ErrCd1End1),
-                      static_cast<unsigned>(Offset::ErrCd1Beg1));
-    }
-
-
-    typedef uint64_t Data;
-    //typedef hls::stream<uint64_t> Data;
-
-   ReadStatus_t             status;  /*!< The frame's read status          */
-   bool                      write;  /*!< If true, output this frame       */
-   bool                       last;  /*!< This is the last frame in packet */
-   Data     d[MODULE_K_MAXSIZE_IB];  /*!< The frame's data. This data is
-                                          valid iff \a status == 0         */
-};
-/* ----------------------------------------------------------------------- */
-
-
-/* ----------------------------------------------------------------------- *//*!
- *
- * \struct ReadContext
- * \brief  Structure to contain the read context.
- *
- *  The context are variables that maintained across WIB frames
- */
-class ReadContext
-{
-public:
-   ReadContext () :
-      first (true),
-      begPkt(true),
-      mode     (0),
-      wibId    (0),
-      nframes  (0),
-      cvtCnt0  (0),
-      cvtCnt1  (0)
-  {
-      return;
-  }
-
-public:
-   bool           first; /*!< First time flag                                */
-   bool          begPkt; /*!< Beginning of a packet                          */
-   ap_uint<2>      mode; /*!< The processing mode                            */
-   ap_uint<11>    wibId; /*!< The crate, slot, fiber number                  */
-   ap_uint<10>  nframes; /*!< The number of frames promoted                  */
-   AxisWord_t   hdrs[6]; /*!< The 6 header words from the previous frame     */
-   uint16_t     cvtCnt0; /*!< The previous convert count from stream 0       */
-   uint16_t     cvtCnt1; /*!< The previous convert count from stream 1       */
-};
-/* ------------------------------------------------------------------------- */
-
-
-
-/* ------------------------------------------------------------------------ *//*!
- *
- * \struct HdrContext
- * \brief  Buffers the compressed headers till ready to emit
- *
-\* ------------------------------------------------------------------------- */
-struct HdrContext
-{
-public:
-   HdrContext () :
-      hdx (0),
-      edx (0)
-{
-      return;
+    return;
 }
+/* ---------------------------------------------------------------------- */
 
-   void reset ()
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief  Check that the first WIB word is as expected and update it
+ *          to the next expected word
+ *  \return True if in error
+ *
+ *  \param[in:out]  expected  The expected word.
+ *  \param[    in]       got  The received word.
+ *
+\* ---------------------------------------------------------------------- */
+static bool checkAndUpdate (uint64_t &expected, uint64_t got)
+{
+   #pragma HLS INLINE
+
+   bool err;
+
+   // Check only the lower 48-bits
+   got &= 0xffffffffffff;
+
+   // ------------------------------------------
+   // Check that the header word is as expected
+   // -----------------------------------------
+   if (expected)
    {
-      hdx = 0;
-      edx = 0;
+      if (got != expected) err = true;
+   }
+   else
+   {
+      err = false;
    }
 
+   ///std::cout << "Checking " << std::hex << got << " : " << expected << " " << err << " -> ";
 
-   void addHeader (uint64_t hdr)
-   {
-      hdrsBuf[hdx++] = hdr;
-   }
+   // -----------------------------------------------------
+   // Update the expected word to the next expected
+   //
+   // All the bit manipulation is to reorder the fields
+   // of the timestamp/sequence counters to be contigious
+   // so that they can be incremented
+   // ---------------------------------------------------
+   uint16_t convert_count = (got >> 32);
+   uint32_t   reset_count = (got >>  8) & 0xffffff;
+   ap_uint<40>        tmp = (ap_uint<40>)(reset_count << 16) | convert_count;
+   tmp                  += 1;
+   convert_count         = tmp & 0xffff;
+   reset_count           = tmp >> 16;
+   expected              = ((uint64_t)(convert_count) << 32)
+                         | (reset_count << 8)
+                         | WibFrame::K28_5;
+   ///std::cout << std::hex << expected << std::endl;
 
-   void addException (uint16_t exc)
-   {
-      ap_int<2> shift = edx & 0x3;
-
-      if (shift == 0) excBuf[edx] = 0;
-      excBuf[edx] |= static_cast<uint64_t>(exc << (shift<<4));
-      if (~shift) edx += 1;
-   }
-
-   void commit (AxisOut  &axis, int &odx, bool write, uint32_t status)
-   {
-      for (int idx = 0; idx < hdx; idx++)
-      {
-         ::commit (axis, odx, write, hdrsBuf[idx], 0, 0);
-      }
-
-
-      for (int idx = 0; idx < edx; idx++)
-      {
-         ::commit (axis, odx, write, excBuf[idx], 0, 0);
-      }
-
-      // Compose the summary word
-      uint64_t summary = (static_cast<uint64_t>(status) << 32) | (hdx << 16) | (edx << 0);
-      ::commit (axis, odx, write, summary, 0, 0);
-   }
-
-public:
-   int         hdx;   /*!< Header buffer index                            */
-   int         edx;   /*!< Exception buffer index                         */
-   uint64_t hdrsBuf[1024 * 6];
-   uint64_t excBuf[1024/4];
-};
-/* ------------------------------------------------------------------------- */
+   return err;
+}
+/* ---------------------------------------------------------------------- */
 
 
 
 /* ----------------------------------------------------------------------- *//*!
  *
- *  \struct WriteContext
- *  \brief  Structure to bind the write context with the output stream
+ *  \brief  If this is the first word, add the packet header
+ *
+ *  \param[   out]     mAxis  The output AXI stream
+ *  \param[in:out]       odx  The 64-bit packet index
+ *  \param[in    ] writeFlag  Write enable flags
+ *  \param[in    ] moduleIdx  Which module, \e i.e. which group of
+ *                            128 channels being service
  *
 \* ----------------------------------------------------------------------- */
-struct WriteContext
+static void prologue (AxisOut &mAxis, int &odx, bool writeFlag, int moduleIdx)
 {
-public:
-   WriteContext () :
-      odx     (0),
-      fdx     (0)
-   {
-      return;
-   }
+   #pragma HLS INLINE
+   #pragma HLS PIPELINE
 
-   void reset ()
+   #define WIB_VERSION VERSION_COMPOSE (0, 0, 0, 1)
+
+   if (odx == 0)
    {
+      // --------------------------------------------------------------
+      // Because the output packet maybe terminated at anytime, the
+      // size of the packet cannot be known at this time. This field
+      // in the record header will have to be filled in by the receiving
+      // software.
+      //
+      // For integrity checking, the module index will be stuffed
+      // into this unused field. Its kind of a kludge, but maybe useful.
+      // --------------------------------------------------------------
+      uint32_t  id = Identifier::identifier (Identifier::FrameType::DATA,
+                                             Identifier::DataType::WIB,
+                                             moduleIdx);
+
+      uint64_t      hdr = Header::header (id, WIB_VERSION);
+      print_header (hdr);
+      commit       (mAxis, odx, writeFlag, hdr, 2, 0);
+   }
+}
+/* ----------------------------------------------------------------------- */
+
+
+
+/* ----------------------------------------------------------------------- *//*!
+ *
+ *  \brief Does the processing after a full frame has been readin
+ *
+ *  \param[   out]     mAxis  The output AXI stream
+ *  \param[in:out]       odx  The 64-bit packet index
+ *  \param[in    ] writeFlag  Write enable flags
+ *  \param[in    ]   inhibit  A set of flags indicating the reasons for
+ *                            declaring flushing this packet.
+ *                               -# Bit 0 = RunDisabled
+ *                               -# BIt 1 = Flush set on the last word
+ *  \param[in   ]        cfg The module's configuration parameters
+ *  \param[  out]        gbl The module's status block. This is write-only
+ *                           copy filled in after the locally maintained
+ *                           status block has been updated.
+ *
+\* ----------------------------------------------------------------------- */
+static void epilogue (AxisOut    &mAxis,
+                      int          &odx,
+                      bool        write,
+                      bool      inhibit,
+                      bool      &output)
+{
+   #pragma HLS INLINE
+   #pragma HLS PIPELINE
+
+   bool wrote;
+
+   // --------------------------------------------
+   // OUTPUT TRAILER
+   // --------------
+   // Add the trailer and flush packet if either
+   //    1. Inhibit is set and have non-empty packet
+   //    2. reach the maximum
+   // --------------------------------------------
+   bool write_it = (inhibit && odx)
+                || (odx == (1 + 1024*(sizeof (WibFrame) / sizeof (uint64_t))));
+   if (write_it)
+   {
+      std::cout << "Outputting @ odx = " << odx << std::endl;
+
+      int   nbytes = odx * sizeof (uint64_t) + sizeof (Trailer);
+      uint32_t  id = Identifier::identifier (Identifier::FrameType::DATA,
+                                             Identifier::DataType::WIB,
+                                             nbytes);
+      uint64_t tlr = Trailer::trailer (id);
+      print_trailer (tlr);
+
+      commit (mAxis, odx, write, tlr, 0, 1);
       odx = 0;
-      fdx = 0;
-      hdr.reset ();
-      return;
+   }
+   else
+   {
    }
 
-public:
-    int         odx;   /*!< The output word index (count of output words)  */
-    int         fdx;   /*!< Frame index (count of frames)                  */
-    HdrContext  hdr;   /*!< The compressed header context                  */
-};
-/* ------------------------------------------------------------------------- */
+   output = write_it;
 
-
-
+   return;
+}
 /* ----------------------------------------------------------------------- */
-/* PROTOTYPES: Local                                                       */
-/* ----------------------------------------------------------------------- */
-static void          copyCfg (ModuleConfig   &lcl,
-                              ModuleConfig   &gbl) __attribute__ ((unused));
 
-static void printReadResults (ap_uint<2>           status,
-                              MonitorRead const  &monitor);
 
-static void    update_common (MonitorCommon       &gbl,
-                              MonitorCommon       &lcl,
-                              ModuleConfig const  &cfg);
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Commits 1 64-bit value to the output stream
+ *
+ *   \param[   out]  axis  The output AXI stream
+ *   \param[in:out]   odx  The output index
+ *   \param[    in] write  Flag to do the write (if false, no write)
+ *   \param[    in]  data  The 64-bit data to commit
+ *   \param[    in[  user  The value of the user field
+ *
+\* ---------------------------------------------------------------------- */
+static void commit (AxisOut &axis,
+                    int      &odx,
+                    bool    write,
+                    uint64_t data,
+                    int      user,
+                    int      last)
+{
+   #pragma HLS inline
+   #pragma HLS PIPELINE
 
-static void        configure (ModuleConfig const  &cfg,
-                              MonitorCfg          &gbl,
-                              MonitorCfg          &lcl,
-                              bool               allow);
+   if (write)
+   {
+      AxisOut_t out;
+      out.data = data;
+      out.keep = 0xFF;
+      out.strb = 0x0;
+      out.user = user;
+      out.last = last;
+      out.id   = 0x0;
+      out.dest = 0x0;
 
-static void       read_frame (ReadFrame        &frame,
-                              ReadContext        &ctx,
-                              AxisIn           &sAxis,
-                              ModuleConfig       &cfg,
-                              MonitorRead        &gbl,
-                              MonitorRead        &lcl);
+      axis.write (out);
+      odx         += 1;
+   }
 
-static void       read_frame (ReadFrame        &frame,
-                              ReadContext        &ctx,
-                              AxisIn           &sAxis);
-
-static void        read_wib0 (ReadStatus_t    &status,
-                              ReadFrame::Data      *d,
-                              AxisIn            &axis,
-                              AxisWord_t        *hdrs,
-                              bool             &first,
-                              ap_uint<11>      &wibId);
-
-static void       read_wib1 (ReadStatus_t    &status,
-                             ReadFrame::Data      *d,
-                             AxisIn            &axis,
-                             AxisWord_t        *hdrs);
-
-static void read_colddata_hdrs (ReadStatus_t &status,
-                                ReadFrame::Data   *d,
-                                AxisIn         &axis,
-                                AxisWord_t     *hdrs,
-                                uint16_t     &cvtCnt,
-                                int              off);
-
-static void read_colddata_data (ReadStatus_t &status,
-                                ReadFrame::Data   *d,
-                                AxisIn         &axis,
-                                bool       checkLast);
-
-static void      update_read (MonitorRead        &gbl,
-                              MonitorRead        &lcl,
-                              ModuleConfig const &cfg,
-                              ReadStatus_t     status);
-
-static void     write_frame (AxisOut           &mAxis,
-                             WriteContext        &ctx,
-                             ReadFrame         &frame,
-                             MonitorWrite        &gbl,
-                             MonitorWrite        &lcl);
-
-static void         prologue (AxisOut          &mAxis,
-                              int                &odx,
-                              bool          writeFlag,
-                              int           moduleIdx);
-
-static void         epilogue (AxisOut          &mAxis,
-                              uint64_t         status,
-                              int               &odx);
+   return;
+}
 /* ----------------------------------------------------------------------- */
 /* END: Common/Convenience routines                                        */
 /* ======================================================================= */
@@ -712,6 +411,7 @@ static void         epilogue (AxisOut          &mAxis,
 /* ----------------------------------------------------------------------- */
 
 
+
 /* ----------------------------------------------------------------------- */
 /* PROTOTYPES: Local                                                       */
 /* ----------------------------------------------------------------------- */
@@ -720,8 +420,8 @@ static void       copyFrame (AxisOut                        &mAxis,
                              AxisIn                         &sAxis,
                              ModuleIdx_t                 moduleIdx,
                              ModuleConfig                     &cfg,
-                             MonitorModule                    &gbl,
-                             MonitorModule                    &lcl);
+                             ModuleStatus                     &gbl,
+                             ModuleStatus                     &lcl);
 /* ----------------------------------------------------------------------- */
 
 
@@ -739,7 +439,7 @@ static void       copyFrame (AxisOut                        &mAxis,
  * \param[ in]     config  Configuration information including a flag
  *                         indicating that the system needs to be
  *                         configured or reconfigured.
- * \param[out]    monitor  Information that is used to monitor the
+ * \param[out]     status  Information that is used to monitor the
  *                         performance and internal workings of this
  *                         module.
 \* ----------------------------------------------------------------------- */
@@ -747,7 +447,7 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
                              AxisOut           &mAxis,
                              ModuleIdx_t    moduleIdx,
                              ModuleConfig      config,
-                             MonitorModule   &monitor)
+                             ModuleStatus     &status)
 {
 
     #pragma HLS INTERFACE ap_none port=moduleIdx
@@ -776,17 +476,19 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
    #pragma HLS DATA_PACK variable=config
 
 
-   static   MonitorModule  lclMonitor;
-   #pragma HLS RESOURCE variable=lclMonitor.read core=RAM_2P_LUTRAM
-   //#pragma HLS STREAM   variable=lclMontior off
+   static   ModuleStatus  lclStatus;
+   #pragma HLS RESOURCE variable=lclStatus.read core=RAM_2P_LUTRAM
+   //#pragma HLS STREAM   variable=lclStatus off
 
 
    static int  AxisOdx = 0;
-   copyFrame (mAxis, AxisOdx, sAxis, moduleIdx, config, monitor, lclMonitor);
+   copyFrame (mAxis, AxisOdx, sAxis, moduleIdx, config, status, lclStatus);
 
    return;
 }
 /* ----------------------------------------------------------------------- */
+
+
 
 
 /* ----------------------------------------------------------------------- *//*!
@@ -818,8 +520,8 @@ static void copyFrame (AxisOut          &mAxis,
                        AxisIn           &sAxis,
                        ModuleIdx_t   moduleIdx,
                        ModuleConfig       &cfg,
-                       MonitorModule      &gbl,
-                       MonitorModule      &lcl)
+                       ModuleStatus       &gbl,
+                       ModuleStatus       &lcl)
 {
    #pragma HLS INLINE
 
@@ -885,9 +587,7 @@ static void copyFrame (AxisOut          &mAxis,
 
     lcl.read.ntypes[Inhibit] += 1;
 
-    // !!! KLUDGE !!!
-    uint64_t status = 0;
-    bool output = epilogue (mAxis, status, odx, write, Inhibit);
+    bool output = epilogue (mAxis, odx, write, Inhibit);
     if (output) lcl.write.nwrote += 1;
 
    // -----------------------------------------
@@ -909,6 +609,51 @@ static void copyFrame (AxisOut          &mAxis,
 /* ----------------------------------------------------------------------- */
 
 
+/* ----------------------------------------------------------------------- */
+/* CLASSES: Local                                                          */
+/* ----------------------------------------------------------------------- *//*!
+ *
+ *  \brief Typedef for the read frame status
+ *
+ *  \par
+ *   This is a bit mask of conditions that would invalidate the frame
+ *   data.  Currently there are
+ *      - Bit 0: RunDisable
+ *      - Bit 1: Flush
+ *      - Bit 2: Start of frame marker missing
+ *      - Bit 3: End   of frame marker missing
+ *      - Bit 4: K28_5 character not seen
+ *      - Bit 5: WIB sequence error
+ *
+ *   If either of these 4 bits  are set
+ *      -# The data for this frame is consider invalid
+ *       # Any in-progress packet should be flushed.
+\* ----------------------------------------------------------------------- */
+typedef ap_uint<6> ReadStatus_t;
+/* ----------------------------------------------------------------------- */
+
+
+
+/* ----------------------------------------------------------------------- *//*!
+ *
+ *  \struct Frame
+ *  \brief  Structure to bind the read status with the frame's data
+ *
+\* ----------------------------------------------------------------------- */
+struct ReadFrame
+{
+   ReadStatus_t             status;  /*!< The frame's read status          */
+   uint64_t d[MODULE_K_MAXSIZE_IB];  /*!< The frame's data. This data is
+                                          valid iff \a status == 0         */
+};
+/* ----------------------------------------------------------------------- */
+
+
+struct WriteStatus
+{
+   int  nbytes;  /*!< The number of bytes written                          */
+   bool status;  /*!< The status of the write                              */
+};
 
 
 
@@ -916,10 +661,37 @@ static void copyFrame (AxisOut          &mAxis,
 /* ----------------------------------------------------------------------- */
 /* PROTOTYPES: Local                                                       */
 /* ----------------------------------------------------------------------- */
-#if 0
-static void    copy        (MonitorRead        &dst,
-                            MonitorRead        &src);
-#endif
+static void  update_common (StatusCommon       &gbl,
+                            StatusCommon       &lcl,
+                            ModuleConfig const &cfg);
+
+static void      configure (ModuleConfig const &cfg,
+                            Mode_t            &mode,
+                            StatusCfg          &gbl,
+                            StatusCfg          &lcl);
+
+static void     read_frame (ReadFrame        &frame,
+                            AxisIn           &sAxis);
+
+static void    update_read (StatusRead         &gbl,
+                            StatusRead         &lcl,
+                            ModuleConfig const &cfg,
+                            ReadStatus_t     status);
+
+static void    write_frame (AxisOut          &mAxis,
+                            int                &odx,
+                            ReadFrame        &frame,
+                            StatusWrite        &gbl,
+                            StatusWrite        &lcl,
+                            ModuleConfig const &cfg);
+
+static void   update_write (StatusWrite        &gbl,
+                            StatusWrite        &lcl,
+                            ModuleConfig const &cfg,
+                            WriteStatus     &status);
+
+static void printReadResults (ap_uint<2>     status,
+                              StatusRead const  &sr);
 /* ----------------------------------------------------------------------- */
 
 
@@ -934,10 +706,10 @@ static void    copy        (MonitorRead        &dst,
  *                         being processed. Channels typically arrive
  *                         and are processed in groups of 128. An RCE
  *                         currently service 256 channels or 2 groups
- * \param[ in]        cfg  Configuration information including a flag
+ * \param[ in]     config  Configuration information including a flag
  *                         indicating that the system needs to be
  *                         configured or reconfigured.
- * \param[out]    monitor  Information that is used to monitor the
+ * \param[out]     status  Information that is used to monitor the
  *                         performance and internal workings of this
  *                         module.
 \* ----------------------------------------------------------------------- */
@@ -945,16 +717,17 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
                              AxisOut           &mAxis,
                              ModuleIdx_t    moduleIdx,
                              ModuleConfig         cfg,
-                             MonitorModule   &monitor)
+                             ModuleStatus     &status)
 {
+
     #pragma HLS INTERFACE ap_none port=moduleIdx
 
     // This disables the FIFO interfaces for these variables
     //  -- Well, we tried, but this did not seem to do it
     //     The global parameters in the Solution Settting seem
     //     to take precedence.
-    #pragma HLS STREAM variable=cfg     off
-    #pragma HLS STREAM variable=monitor off
+    #pragma HLS STREAM variable=cfg    off
+    #pragma HLS STREAM variable=status off
 
 
    // Set the input and output ports as AXI4-StreaNm
@@ -963,60 +736,46 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 
 
    // Setup a AXI-Lite bus for status/configuration registers
-   #pragma HLS INTERFACE s_axilite port=cfg              bundle=BUS_A
-   #pragma HLS INTERFACE s_axilite port=monitor register bundle=BUS_A
-   #pragma HLS INTERFACE s_axilite port=return           bundle=BUS_A
+   #pragma HLS INTERFACE s_axilite port=cfg             bundle=BUS_A
+   #pragma HLS INTERFACE s_axilite port=status register bundle=BUS_A
+   #pragma HLS INTERFACE s_axilite port=return          bundle=BUS_A
 
-
-   #pragma HLS DATA_PACK variable=monitor.cfg
-   #pragma HLS DATA_PACK variable=monitor.read
-   #pragma HLS DATA_PACK variable=monitor.write
+   #pragma HLS DATA_PACK variable=status.common
+   #pragma HLS DATA_PACK variable=status.cfg
+   #pragma HLS DATA_PACK variable=status.read
+   #pragma HLS DATA_PACK variable=status.write
    #pragma HLS DATA_PACK variable=cfg
 
-   static ReadFrame     frame;
-   #pragma HLS STREAM   variable=frame off
 
-   static ReadContext   readCtx;
-   #pragma HLS STREAM variable=readCtx off
-   //#pragma HLS RESOURCE variable=readCtx core=RAM_2P_LUTRAM
+   static   ModuleStatus  lclStatus;
+   #pragma HLS RESOURCE variable=lclStatus.read core=RAM_2P_LUTRAM
+   #pragma HLS STREAM   variable=lclStatus off
 
 
-   static   MonitorModule  lclMonitor;
-   #pragma HLS STREAM   variable=lclMonitor off
-   #pragma HLS RESOURCE variable=lclMonitor.read.nWibErrs   core=RAM_2P_LUTRAM
-   #pragma HLS RESOURCE variable=lclMonitor.read.nStates    core=RAM_2P_LUTRAM
-   #pragma HLS RESOURCE variable=lclMonitor.read.nFrameErrs core=RAM_2P_LUTRAM
-
-
-   // Normally the chns array would be implemented as RAM_2P_LUTRAM
-   // But in the straight copy, this array is unused and is optimized away
-   ///#pragma HLS RESOURCE variable=lclCfg.chns  core=RAM_2P_LUTRAM
    ModuleConfig lclCfg;
+   #pragma HLS RESOURCE variable=cfg  core=RAM_2P_LUTRAM
    #pragma HLS STREAM   variable=lclCfg off
 
+   static ReadFrame     frame;
+   #pragma HLS RESOURCE variable=frame core=RAM_2P_LUTRAM
+   #pragma HLS STREAM   variable=frame off
 
-   static WriteContext writeCtx;
+   static Mode_t      Mode = MODE_K_COPY;
+   static int      AxisOdx = 0;
+   WriteStatus     writeStatus;
+
 
    #pragma HLS DATAFLOW
 
-   // Can only allow change modes on 1024 packet boundaries
-#if 0
-   bool allow = readCtx.nframes == 0;
-   if (allow)
-   {
-      readCtx.mode = lclCfg.mode;
-   }
-#endif
-   bool allow = true;
 
    copyCfg       (lclCfg, cfg);
-   configure     (lclCfg, monitor.cfg, lclMonitor.cfg, allow);
-   update_common (monitor.common,      lclMonitor.common, lclCfg);
+   configure     (lclCfg, Mode,        status.cfg, lclStatus.cfg);
+   update_common (status.common, lclStatus.common, lclCfg);
 
-   read_frame    (frame,  readCtx,  sAxis);
-   update_read   (monitor.read,     lclMonitor.read, lclCfg, frame.status);
+   read_frame    (frame, sAxis);
+   update_read   (status.read,     lclStatus.read, lclCfg, frame.status);
 
-   write_frame   (mAxis,  writeCtx, frame,  monitor.write, lclMonitor.write);
+   write_frame   (mAxis,  AxisOdx,         frame,  status.write, lclStatus.write, lclCfg);
 
 
    return;
@@ -1024,50 +783,301 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 /* ----------------------------------------------------------------------- */
 
 
-/* ----------------------------------------------------------------------- *//*!
+
+/* ---------------------------------------------------------------------- *//*!
  *
- *  \brief Copies the MonitorRead.
+ *  \brief  Updates the common/static status
  *
- *  \param[ in] dst  The destination MonitorRead class
- *  \param[out] src  The source MonitorRead class
+ *  \param[    in] init  Is this an initialization request *
+ *  \param[   out]  gbl  The module's global configuration status.
+ *                       This is updated with the local read status
+ *  \param[in:out]  lcl  The module's local  configuration status
+ *                    .  This is copied into the global configuration
+ *                       status after it has been updated.
  *
- *   While totally trivial, this makes implementing this as a DATAFLOW
- *   method easier.
-\* ----------------------------------------------------------------------- */
-void copy (MonitorRead &dst, MonitorRead &src)
+\* ---------------------------------------------------------------------- */
+static void update_common (StatusCommon        &gbl,
+                           StatusCommon        &lcl,
+                           ModuleConfig const  &cfg)
 {
-     #pragma HLS INLINE off
-     #pragma HLS PIPELINE
-     dst = src;
+     lcl.pattern = 0xabadcafe;
+     gbl         = lcl;
+
+     return;
 }
-/* ----------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------- */
 
 
 
-
-
-// TEMPLATE FOR WRITING COMPRESSED HEADERS
-#if 0
-static void write_frame (AxisOut           &axis,
-                         WriteContext       &ctx,
-                         ReadFrame        &frame,
-                         MonitorWrite       &gbl,
-                         MonitorWrite       &lcl)
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief  Configures the module
+ *
+ *  \param[     in]     cfg  The configuration block
+ *  \param[    out]    mode  The updated data processing mode
+ *  \param[   out]      gbl  The module's global configuration status.
+ *                           This is updated with the local read status
+ *  \param[in:out]      lcl  The module's local  configuration status
+ *                        .  This is copied into the global configuration
+ *                           status after it has been updated.
+ *
+\* ---------------------------------------------------------------------- */
+static void configure (ModuleConfig const  &cfg,
+                       Mode_t             &mode,
+                       StatusCfg           &gbl,
+                       StatusCfg           &lcl)
 {
-   ///#pragma HLS INLINE
-   if (ctx.odx == 0)
+   if (cfg.init)
    {
-      ctx.hdr.reset ();
+      lcl.ncfgs  += 1;
+   }
+
+   lcl.mode = mode;
+   gbl = lcl;
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief  Read and buffer the Wib Frame data
+ *
+ *  \param[   out] frame  A copy of the WIB data + status
+ *  \param[    in]  axis  The input WIB data
+ *  \param[    in]  init  Is this an initialization request
+ *  \param[   out]   gbl  The module's global read status. This is updated
+ *                        with the local read status
+ *  \param[in:out]   lcl  The module's local  read status.  This is copied
+ *                        into the global read status after it has been
+ *                        updated.
+ *
+ *  \par
+ *   The data is always copied but is valid iff the run enable bit in
+ *   the user field of the first word is set and the flush flag in
+ *   the user field of the last word is not set
+ *
+\* ---------------------------------------------------------------------- */
+static void read_frame (ReadFrame  &frame,
+                        AxisIn      &axis)
+{
+   ///static uint64_t   HeaderWord = 0x0;
+
+   AxisIn_t              in;
+   ReadStatus_t      status;
+
+   READFRAME_LOOP:
+   for (int idx = 0; idx < sizeof (WibFrame)/sizeof (uint64_t); idx++)
+   {
+      #pragma HLS PIPELINE
+
+      // Get the input word
+      in = axis.read ();
+
+      bool sof = in.user & static_cast<uint8_t>(AxisUserFirst::Sof);
+      bool eof = in.last & static_cast<uint8_t>(AxisLast::Eof);
+
+      // Check if this is the first word of the frame
+      if (idx == 0)
+      {
+          // First word
+
+         // Check the run enable bit
+         bool runEnable = in.user & static_cast<uint8_t>(AxisUserFirst::RunEnable);
+
+         status = (runEnable ? 0 : static_cast<uint16_t>(StatusRead::Mask::RunDisable))
+                | (sof       ? 0 : static_cast<uint16_t>(StatusRead::Mask::ErrSofM   ));
+
+         // Check that the first word is as expected
+         ///status |= checkAndUpdate (HeaderWord, in.data) ? 4 : 0;
+
+         status |= (((in.data & 0xff) == static_cast<uint8_t>(WibFrame::K28_5))
+                 ? 0
+                 : static_cast<uint16_t>(StatusRead::Mask::ErrK28_5));
+         //std::cout << "status(enable): " << status << " user:" << in.user << std::endl;
+      }
+      else
+      {
+         // This is not the first word..
+
+         // Should not see the SOF marker
+         status |= (sof ? static_cast<uint16_t>(StatusRead::Mask::ErrSofU) : 0);
+
+         // Check if this is the last word
+         if (idx != sizeof (WibFrame)/sizeof(uint64_t) -1)
+         {
+            // Not the last word, should not see EOF marker
+            status |= (eof ? static_cast<uint16_t>(StatusRead::Mask::ErrEofU) : 0);
+         }
+         else
+         {
+            // This is the last word
+
+            // Check the presence of flush and eof on the last input word
+            bool flush  = in.user & static_cast<uint16_t>(AxisUserLast::Flush);
+            bool eoferr = in.user & static_cast<uint16_t>(AxisUserLast::EofErr);
+
+            status     |= (flush  ? static_cast<uint16_t>(StatusRead::Mask::Flush ) :  0)
+                       |  (eof    ? 0 : static_cast<uint16_t>(StatusRead::Mask::ErrEofM))
+                       |  (eoferr ? static_cast<uint16_t>(StatusRead::Mask::ErrEofE) : 0);
+         }
+      }
+
+      // Always copy the data
+      frame.d[idx] = in.data;
    }
 
 
+   frame.status = status;
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief  Update the read portion of the status block
+ *
+ *  \param[   out]    gbl This will receive a copy of the locally
+ *                        maintained read status block after it has
+ *                        been updated
+ *  \param[in:out]    lcl The locally maintained copy of the read status
+ *                        block
+ * \param[in]         cfg The configuration block
+ * \param[in]      output Flag indicating whether the packet was written
+ * \param[in]      status The read status flags.  This is used to increment
+ *                        a counter corresponding to this status.
+ *
+\* ---------------------------------------------------------------------- */
+static void update_read (StatusRead         &gbl,
+                         StatusRead         &lcl,
+                         ModuleConfig const &cfg,
+                         ReadStatus_t     status)
+{
+
+   //std::cout << "status(flush): " << status << " user:" << in.user << std::endl;
+
+   if (cfg.init)
+   {
+      // Don't processs frames during a configuration request
+      lcl.nframes   = 0;
+      lcl.ntypes[0] = 0;
+      lcl.ntypes[1] = 0;
+      lcl.ntypes[2] = 0;
+      lcl.ntypes[3] = 0;
+      lcl.ntypes[4] = 0;
+      lcl.ntypes[5] = 0;
+      lcl.ntypes[6] = 0;
+      lcl.ntypes[7] = 0;
+   }
+   else
+   {
+      // Always update the status mask and count the total number of frames seen
+      lcl.mask     = status;
+      lcl.nframes += 1;
+
+
+      if (status & static_cast<uint16_t>(StatusRead::Mask::ErrSofM))
+      {
+         // Count frames missing  SOFt
+         lcl.ntypes[static_cast<int>(StatusRead::Type::ErrSofM)] += 1;
+      }
+      else
+      {
+         // SOF   was set
+
+         // A good frame is one with SOF and EOF set only on the proper words and no Eof Err
+         bool goodFrame = true;
+
+         // Unexpected SOF seen?
+         if (status & static_cast<uint16_t>(StatusRead::Mask::ErrSofU))
+         {
+            goodFrame = false;
+            lcl.ntypes[static_cast<int>(StatusRead::Type::ErrSofU)] += 1;
+         }
+
+         // Unexpected EOF seen?
+         if (status & static_cast<uint16_t>(StatusRead::Mask::ErrEofU))
+         {
+            goodFrame = false;
+            lcl.ntypes[static_cast<int>(StatusRead::Type::ErrSofU)] += 1;
+         }
+
+         // EOF missing on last word?
+         if (status & static_cast<uint16_t>(StatusRead::Mask::ErrEofM))
+         {
+            goodFrame = false;
+            lcl.ntypes[static_cast<int>(StatusRead::Type::ErrEofM)] += 1;
+         }
+
+         // EOF err set in the frame?
+         if (status & static_cast<uint16_t>(StatusRead::Mask::ErrEofE))
+         {
+            goodFrame = false;
+            lcl.ntypes[static_cast<int>(StatusRead::Type::ErrEofE)] += 1;
+         }
+
+
+         if (goodFrame)
+         {
+            // Only count if both SOF and EOF were properly seen
+            lcl.ntypes[status & 0x3] += 1;
+
+            // Only increment the counters associated with checking the integrity
+            // of the frame contents if this is not a FLUSH frame.
+            if ((status & static_cast<uint16_t>(StatusRead::Mask::Flush)) == 0)
+            {
+               if (status & static_cast<uint16_t>(StatusRead::Mask::ErrK28_5)) lcl.ntypes[static_cast<int>(StatusRead::Type::ErrK28_5)] += 1;
+               if (status & static_cast<uint16_t>(StatusRead::Mask::ErrSeq  )) lcl.ntypes[static_cast<int>(StatusRead::Type::ErrSeq  )] += 1;
+            }
+         }
+      }
+   }
+
+   printReadResults (status, lcl);
+
+
+   gbl = lcl;
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Writes the frame's data to the output packet. The packet will
+ *           be flushed if
+ *              -# Full
+ *              -# The run was disabled with output pending
+ *              -# A flush was requested
+ *
+ *   \param[   out]       axis  The output AXI stream
+ *   \param[in:out]        odx  The output packet index.
+ *   \param[in    ]      frame  The frame's data + status
+ *   \param[   out]     status  A returned flag indicating that a packet
+ *                              was written.
+ *
+\* ---------------------------------------------------------------------- */
+static void write_frame (AxisOut           &axis,
+                         int                &odx,
+                         ReadFrame        &frame,
+                         StatusWrite        &gbl,
+                         StatusWrite        &lcl,
+                         ModuleConfig const &cfg)
+
+{
+   ///#pragma HLS INLINE
 
    // Keep it real simple for now
    //bool write = !cfg.init && (cfg.mode == MODE_K_COPY);
    bool write = true;
-   bool valid = ReadFrame::isFrameWriteable (frame.status);
+   bool valid = (frame.status & 0x3) == 0;
 
-   unsigned hdrs = frame.status;
    // -------------------------------------------------
    // OUTPUT HEADER
    // -------------
@@ -1077,28 +1087,9 @@ static void write_frame (AxisOut           &axis,
    // --------------------------------------------------
    if (valid)
    {
-       prologue (axis, ctx.odx, write, 0);
+       prologue (axis, odx, write, 0);
    }
 
-   ReadStatus_t status = frame.status;
-
-   // Check if in compress header mode
-   //       If so, hdrExc and hdrExcMsk and a bit mask of those headers that must be saved to the exception block
-   //       If not, set these masks to 0, which will cause all the headers to be output in sequence
-   bool   compressHdrMode;
-   ap_uint<6>     hdrExc (0);  // Dense  map i,e.,  6 bits, one for each header word
-   ap_uint<30> hdrExcMsk (0);  // Sparse map i.e., 30 bits, one for each frame  word
-
-
-   if ((compressHdrMode = (cfg.mode == MODE_K_COMPRESSHDR)))
-   {
-      if (ReadFrame::isWibHdr0Bad (status)) { hdrExc.set (0); hdrExcMsk.set ( 0); }
-      if (ReadFrame::isWibHdr1Bad (status)) { hdrExc.set (1); hdrExcMsk.set ( 1); }
-      if (ReadFrame::isCd0Hdr0Bad (status)) { hdrExc.set (2); hdrExcMsk.set ( 2); }
-      if (ReadFrame::isCd0Hdr1Bad (status)) { hdrExc.set (3); hdrExcMsk.set ( 3); }
-      if (ReadFrame::isCd1Hdr0Bad (status)) { hdrExc.set (4); hdrExcMsk.set (16); }
-      if (ReadFrame::isCd1Hdr1Bad (status)) { hdrExc.set (5); hdrExcMsk.set (17); }
-   }
 
    // -------------------------------------------------------------------
    // OUTPUT BODY
@@ -1113,28 +1104,16 @@ static void write_frame (AxisOut           &axis,
       #pragma HLS PIPELINE
       uint64_t      d;
 
-      d = frame.d.read ();
+      d = frame.d[idx];
 
-      // Save to the HdrContext block or push to the output
-      if (hdrExcMsk.test (idx))
+      // --------------------------------------------------------------
+      // Only output the frame if valid and below the 64-bit word limit
+      // --------------------------------------------------------------
+      if (valid && odx < cfg.limit)
       {
-         ctx.hdr.addHeader(d);
-      }
-      else
-      {
-         // --------------------------------------------------------------
-         // Only output the frame if valid and below the 64-bit word limit
-         //  -------------------------------------------------------------
-         if (valid && ctx.odx < cfg.limit)
-         {
-            commit (axis, ctx.odx, write, d, 0, 0);
-          }
+         commit (axis, odx, write, d, 0, 0);
       }
    }
-
-   // If any, add this frame's exception
-   if (hdrExcMsk) ctx.hdr.addException ((hdrExc << 10) | ctx.fdx);
-
 
    // --------------------------------------------
    // OUTPUT TRAILER
@@ -1144,28 +1123,82 @@ static void write_frame (AxisOut           &axis,
    //    2. reach the maximum
    // --------------------------------------------
    bool output;
-   if (valid && (ctx.fdx == 1023))
-   {
-      if (compressHdrMode && valid && ctx.odx < cfg.limit)
-      {
-         ctx.hdr.commit (axis, ctx.odx, write, frame.status);
-      }
+   epilogue (axis, odx, write, !valid, output);
 
-      epilogue (axis, ctx.odx, write, !valid, output);
-   }
+   WriteStatus status;
+   status.nbytes = output ? odx * 8 : 0;
+   status.status = output;
 
-   {
-      WriteStatus status;
-      status.nbytes = output ? ctx.odx * 8 : 0;
-      status.status = output;
-
-      update_write  (gbl,  lcl,  cfg,  status);
-   }
+   update_write  (gbl,  lcl,  cfg,  status);
 
    return;
 }
 /* ---------------------------------------------------------------------- */
-#endif
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief  Update the write portion of the status block
+ *
+ *  \param[   out]    gbl This will receive a copy of the locally
+ *                        maintained write status block after it has
+ *                        been updated
+ *  \param[in:out]    lcl The locally maintained copy of the write status
+ *                        block
+ * \param[in]         cfg The configuration block
+ * \param[in] writeStatus The write status (count, # of bytes written, etc)
+ *
+\* ---------------------------------------------------------------------- */
+static void update_write  (StatusWrite         &gbl,
+                           StatusWrite         &lcl,
+                           ModuleConfig const &cfg,
+                           WriteStatus     &status)
+{
+    #pragma HLS INLINE
+    if (cfg.init)
+    {
+       lcl.nwrote = 1;
+    }
+    else if (status.status)
+    {
+       lcl.nwrote += 1;
+    }
+
+    gbl = lcl;
+
+    return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief  Print the status results of the readFrame method
+ *
+ *  \param[in] status  The 2-bit readFrame status word
+ *  \param[in]     sr  The read status monitor record
+\* ---------------------------------------------------------------------- */
+static void printReadResults (ap_uint<2> status, StatusRead const &sr)
+{
+   // If the readStatus was not successsful
+   if (status)
+   {
+      std::cout << "ReadStatus: " << status << std::endl
+                << "Types:      " << sr.ntypes[0]
+                <<            ' ' << sr.ntypes[1]
+                <<            ' ' << sr.ntypes[2]
+                <<            ' ' << sr.ntypes[3]
+                <<     "Err Sof " << sr.ntypes[4]
+                <<     "Err Eof " << sr.ntypes[5]
+                <<   "Err K28_5 " << sr.ntypes[6]
+                <<     "Err Seq " << sr.ntypes[7]
+                << std::endl;
+  }
+
+  return;
+}
 /* ---------------------------------------------------------------------- */
 /* END: PROCESS_K_DATAFLOW                                                */
 /* ====================================================================== */
@@ -1289,13 +1322,13 @@ public:
 
 
 
-static ReadStatus_t
-            process_frame (AxisIn                                              &axis,
-                           ModuleConfig                                          cfg,
-                           ReadContext                                          &ctx,
+static WibTimestamp_t
+            process_frame (AxisIn                                         &axis,
+                           ModuleConfig                                  config,
+                           GlobalContext                                  &gctx,
                            AdcIn_t     (*adcs)[MODULE_K_NCHANNELS][Packets::NSamples],
                            Histogram  (*hists)[MODULE_K_NCHANNELS],
-                           MonitorRead                                     &monitor);
+                           StatusRead                                  &status);
 
 static int    reconfigure (GlobalContext &gctx);
 
@@ -1357,15 +1390,6 @@ static void print_caption (int last)
 #define HIST_ENCODE_DEBUG 0
 #endif
 
-static void copy_frame    (AxisOut &mAxis, WriteContext &writeCtx,
-                           AxisIn  &sAxis,  ReadContext  &readCtx,
-                           ModuleConfig &lclCfg,
-                           MonitorModule &monitor, MonitorModule &lclMonitor)
-{
-   ReadFrame frame;
-   read_frame    (frame,  readCtx,  sAxis, lclCfg, monitor.read, lclMonitor.read);
-   write_frame   (mAxis,  writeCtx, frame,  monitor.write, lclMonitor.write);
-}
 
 
 /* ----------------------------------------------------------------------- *//*!
@@ -1381,15 +1405,15 @@ static void copy_frame    (AxisOut &mAxis, WriteContext &writeCtx,
  * \param[ in]     config  Configuration information including a flag
  *                         indicating that the system needs to be
  *                         configured or reconfigured.
- * \param[out]    monitor  Information that is used to monitor the
+ * \param[out]     status  Information that is used to monitor the
  *                         performance and internal workings of this
  *                         module.
 \* ----------------------------------------------------------------------- */
 void DuneDataCompressionCore(AxisIn            &sAxis,
                              AxisOut           &mAxis,
                              ModuleIdx_t    moduleIdx,
-                             ModuleConfig         cfg,
-                             MonitorModule   &monitor)
+                             ModuleConfig      config,
+                             ModuleStatus     &status)
 {
     #pragma HLS INTERFACE ap_none port=moduleIdx
 
@@ -1397,8 +1421,8 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
     //  -- Well, we tried, but this did not seem to do it
     //     The global parameters in the Solution Settting seem
     //     to take precedence.
-    #pragma HLS STREAM variable=cfg     off
-    #pragma HLS STREAM variable=monitor off
+    #pragma HLS STREAM variable=config off
+    #pragma HLS STREAM variable=status off
 
 
    // Set the input and output ports as AXI4-StreaNm
@@ -1407,56 +1431,43 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 
 
    // Setup a AXI-Lite bus for status/configuration registers
-   #pragma HLS INTERFACE s_axilite port=cfg              bundle=BUS_A
-   #pragma HLS INTERFACE s_axilite port=monitor register bundle=BUS_A
-   #pragma HLS INTERFACE s_axilite port=return           bundle=BUS_A
+   #pragma HLS INTERFACE s_axilite port=config          bundle=BUS_A
+   #pragma HLS INTERFACE s_axilite port=status register bundle=BUS_A
+   #pragma HLS INTERFACE s_axilite port=return          bundle=BUS_A
 
 
-   #pragma HLS DATA_PACK variable=monitor.cfg
-   #pragma HLS DATA_PACK variable=monitor.read
-   #pragma HLS DATA_PACK variable=monitor.write
-   #pragma HLS DATA_PACK variable=cfg
+   #pragma HLS DATA_PACK variable=status.cfg
+   //#pragma HLS DATA_PACK variable=status.read
+   #pragma HLS DATA_PACK variable=config
 
 
-    static ReadFrame     frame;
-    #pragma HLS STREAM   variable=frame off
-
-    static ReadContext   readCtx;
-    #pragma HLS STREAM variable=readCtx off
-    //#pragma HLS RESOURCE variable=readCtx core=RAM_2P_LUTRAM
+   static   ModuleStatus  lclStatus;
+   #pragma HLS RESOURCE variable=lclStatus.read core=RAM_2P_LUTRAM
+   //#pragma HLS STREAM   variable=lclStatus off
 
 
-    static Mode_t      Mode = MODE_K_COPY;
-    bool outputFlag;
-
-    static int AxisOdx = 0;
-
-    static   MonitorModule  lclMonitor;
-    #pragma HLS STREAM   variable=lclMonitor off
-    #pragma HLS RESOURCE variable=lclMonitor.read.nWibErrs   core=RAM_2P_LUTRAM
-    #pragma HLS RESOURCE variable=lclMonitor.read.nStates    core=RAM_2P_LUTRAM
-    #pragma HLS RESOURCE variable=lclMonitor.read.nFrameErrs core=RAM_2P_LUTRAM
+   ModuleConfig lclCfg;
+   #pragma HLS RESOURCE variable=lclCfg core=RAM_2P_LUTRAM
+   #pragma HLS STREAM   variable=lclCfg off
 
 
-    // Normally the chns array would be implemented as RAM_2P_LUTRAM
-    // But in the straight copy, this array is unused and is optimized away
-    ///#pragma HLS RESOURCE variable=lclCfg.chns  core=RAM_2P_LUTRAM
-    ModuleConfig lclCfg;
-    #pragma HLS STREAM   variable=lclCfg off
-    #pragma HLS RESOURCE variable=lclCfg.chns core=RAM_2P_LUTRAM
+   bool readStatus;
+   #pragma HLS RESOURCE variable=readStatus core=RAM_2P_LUTRAM
+   #pragma HLS STREAM   variable=readStatus
 
-   // Can only change modes on 1024 packet boundaries
-
-#if 1
-   if (readCtx.begPkt)
-    {
-       readCtx.mode = lclCfg.mode;
-    }
-#endif
+   static GlobalContext GCtx;
+   #pragma HLS RESET variable=GCtx.m_timestamp off
 
 
+   static Mode_t      Mode = MODE_K_COMPRESS;
+   bool outputFlag;
+
+   static int AxisOdx = 0;
+
+   #pragma HLS DATAFLOW
 
    PROCESS:
+#if 0
    switch (Mode)
    {
       case MODE_K_DUMP:
@@ -1467,29 +1478,19 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 
       case MODE_K_COPY:
       {
-#pragma HLS DATAFLOW
-         static WriteContext writeCtx;
-
-
-         copyCfg       (lclCfg, cfg);
-         configure     (lclCfg, monitor.cfg, lclMonitor.cfg, readCtx.begPkt);
-         update_common (monitor.common,      lclMonitor.common, lclCfg);
-
-         read_frame    (frame,  readCtx,  sAxis);
-         update_read   (monitor.read,     lclMonitor.read, lclCfg, frame.status);
-
-         write_frame   (mAxis,  writeCtx, frame,  monitor.write, lclMonitor.write);
-         /// copy_frame    (mAxis,  writeCtx, sAxis, readCtx, lclCfg, monitor, lclMonitor);
-
+         //static AxisIn_t      data[sizeof (WibFrame) / sizeof (AxisIn_t)];
+         //#pragma HLS RESOURCE variable=data core=RAM_2P_LUTRAM
+         //#pragma HLS STREAM   variable=data off
+         ///copyFrame (mAxis, odx, moduleIdx, processFlag, data);
          break;
       }
 
       case MODE_K_COMPRESS:
-      {
-         static GlobalContext GCtx;
-          #pragma HLS RESET variable=GCtx.m_timestamp off
+#endif
 
-         #pragma HLS DATAFLOW
+         #pragma DATAFLOW
+         /////rstatic ModuleStatus lclStatus;
+
          static Histogram                Histograms[MODULE_K_NCHANNELS];
          #pragma     HLS RESET           variable=Histograms off
          #pragma     HLS STREAM          variable=Histograms off
@@ -1518,25 +1519,35 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
                Histogram::set_id (Histograms, sizeof (Histograms) / sizeof (Histograms[1]));
                HistInit = false;
             }
-         )
+        )
 
-         ReadStatus_t status = process_frame (sAxis, cfg,         readCtx,
-                                              &Adcs, &Histograms, lclMonitor.read);
-         update_read   (monitor.read,     lclMonitor.read, lclCfg, status);
+         lclCfg = config;
+         WibTimestamp_t timestamp = process_frame (sAxis, config,      GCtx,
+                                                   &Adcs, &Histograms, lclStatus.read);
+
+         Packets::Pidx_t  pidx  = GCtx.m_packets.m_pidx;
+         WibId_t          wibId = GCtx.wibId (pidx);
+
+         //Packets::Pidx_t      pidx = GCtx.m_packets.m_pidx;
+         //WibTimestamp_t  timestamp = GCtx.timestamp  (pidx);
+
+         std::cout << "Timestamp = " << std::hex << timestamp << std::endl;
+
+         // If last time sample in the current packet, write the packet
+         //if (GCtx.m_packets.is_last (timestamp))
+
+        write_packet (mAxis,
+                      wibId,
+                      timestamp,
+                      Adcs,
+                      Histograms,
+                      moduleIdx);
 
 
-         if (readCtx.nframes & 0x3ff)
-         {
-            WibTimestamp_t timestamp = 0;
-            write_packet (mAxis,
-                          0,
-                          0,
-                          Adcs,
-                          Histograms,
-                          moduleIdx);
-         }
-      }
+
+#if 0
    }
+#endif
 
    return;
 }
@@ -1569,13 +1580,6 @@ static int reconfigure (GlobalContext &gctx)
 
 typedef ap_uint<48>           Adc48_t;
 
-static void process_colddata (Histogram (*hists)[MODULE_K_NCHANNELS],
-                               AdcIn_t   (*adcs )[MODULE_K_NCHANNELS][Packets::NSamples],
-                               ReadFrame::Data             *d,
-                               AdcIn_t                   *prv,
-                               Packets::Oidx_t         &oidx,
-                               int                     ichan);
-
 static inline void process4 (Histogram                 hists[4],
                              AdcIn_t adcs[4][Packets::NSamples],
                              AdcIn_t                     prv[4],
@@ -1584,13 +1588,13 @@ static inline void process4 (Histogram                 hists[4],
                              int                          ichan);
 
 
-static ReadStatus_t process_frame
+static WibTimestamp_t process_frame
            (AxisIn                                                   &axis,
             ModuleConfig                                            config,
-            ReadContext                                               &ctx,
+            GlobalContext                                            &gctx,
             AdcIn_t     (*adcs_buf)[MODULE_K_NCHANNELS][Packets::NSamples],
             Histogram                    (*histograms)[MODULE_K_NCHANNELS],
-            MonitorRead                                          &monitor)
+            StatusRead                                            &status)
 {
    static AdcIn_t Prv[128];
    #pragma HLS RESET           variable=Prv off
@@ -1600,58 +1604,27 @@ static ReadStatus_t process_frame
    // /* Check if have any data */
    // if (axis[0].user != 2) return false;
 
-   ReadStatus_t status = 0;
+   AxisIn_t              w0 = axis.read ();
+   std::cout << "W0 = " << std::hex << w0.data << std::endl;
 
-   ReadFrame::Data hdrs[6];
+   WibTimestamp_t timestamp = (w0.data >> 8);
+   Packets::Pidx_t     pidx = gctx.m_packets.m_pidx;
+   Packets::Oidx_t     oidx = (timestamp & 0x3ff);
+   gctx.m_timestamp[pidx]   =  timestamp;
 
-
-   // Wib Header Words 0 & 1
-    read_wib0 (status, hdrs + 0, axis, ctx.hdrs, ctx.first, ctx.wibId);
-    read_wib1 (status, hdrs + 1, axis, ctx.hdrs);
-
-    ctx.nframes += 1;
-
-   std::cout << "W0 = " << std::hex << hdrs[0] << std::endl;
-
-   //WibTimestamp_t timestamp = (w0.data >> 8);
-   //Packets::Pidx_t     pidx = gctx.m_packets.m_pidx;
-   //Packets::Oidx_t     oidx = (timestamp & 0x3ff);
-   //gctx.m_timestamp[pidx]   =  timestamp;
-
-   Packets::Oidx_t oidx = 0;
 
    Histogram (*hists)[MODULE_K_NCHANNELS]                    = histograms;
    AdcIn_t   (*adcs )[MODULE_K_NCHANNELS][Packets::NSamples] =   adcs_buf;
 
-   //gctx.m_wibId[pidx] = w1.data (gctx.m_wibId[pidx].length()-1, 0);
+   AxisIn_t  w1 = axis.read ();
+   gctx.m_wibId[pidx] = w1.data (gctx.m_wibId[pidx].length()-1, 0);
    int      idx = 2;
-
-   ReadFrame::Data d[12];
-   ReadFrame::Data h[ 2];
-   read_colddata_hdrs (status, h, axis, ctx.hdrs + 2, ctx.cvtCnt0, 0);
-   process_colddata   (hists, adcs, d, Prv, oidx, 0);
-
-   read_colddata_hdrs (status, h, axis, ctx.hdrs + 4, ctx.cvtCnt0, 0);
-   process_colddata   (hists, adcs, d, Prv, oidx, 64);
-
-   return status;
-}
-/* ---------------------------------------------------------------------- */
-
-
-static void process_colddata (Histogram (*hists)[MODULE_K_NCHANNELS],
-                               AdcIn_t   (*adcs )[MODULE_K_NCHANNELS][Packets::NSamples],
-                               ReadFrame::Data    *d,
-                               AdcIn_t          *prv,
-                               Packets::Oidx_t &oidx,
-                               int             ichan)
- {
 
    // -----------------------------------------------------------
    // This loops extracts 16 x 12 bit ADCs from 3 x 64-bit values
    // ------------------------------------------------------------
    SAMPLE_EXTRACT_LOOP:
-   for (int idx = 0; idx < 12/3; idx++)
+   for (int ichan = 0; ichan < MODULE_K_NCHANNELS;)
    {
       // ------------------------------------------------------------
       // The reading of the 5 axi stream limits the II to 5 and is
@@ -1662,40 +1635,48 @@ static void process_colddata (Histogram (*hists)[MODULE_K_NCHANNELS],
 
       HISTOGRAM_statement ((*hists)[ichan].printit = ichan == 0 ? true : false;)
 
+      if ((ichan & 0x3f) == 0)
+      {
+        // Discard the 2 words after each of the streams
+         axis.read ();
+         axis.read ();
+      }
 
       // --------
       // ADCs 0-3
       // --------
-      ap_uint<64>   a0 = *d++;
+      ap_uint<64>   a0 = axis.read ().data;
       Adc48_t    adcs4 = a0;
-      process4 (&(*hists)[ichan], &(*adcs)[ichan], &prv[ichan], oidx, adcs4, ichan);
+      process4 (&(*hists)[ichan], &(*adcs)[ichan], &Prv[ichan], oidx, adcs4, ichan);
       ichan += 4;
-
 
       // --------
       // ADCs 4-7
       // --------
-      ap_uint<64> a1 = *d++;
+      ap_uint<64> a1 = axis.read ().data;
       adcs4 = (a1(31,0), a0(63,48));
-      process4 (&(*hists)[ichan], &(*adcs)[ichan], &prv[ichan], oidx, adcs4, ichan);
+      process4 (&(*hists)[ichan], &(*adcs)[ichan], &Prv[ichan], oidx, adcs4, ichan);
       ichan += 4;
 
       // ---------
       // ADCs 8-11
       // ---------
-      ap_uint<64> a2 = *d++;
+      ap_uint<64> a2 = axis.read ().data;
       adcs4 = (a2 (15,0), a1(63,32));
-      process4 (&(*hists)[ichan], &(*adcs)[ichan], &prv[ichan], oidx, adcs4, ichan);
+      process4 (&(*hists)[ichan], &(*adcs)[ichan], &Prv[ichan], oidx, adcs4, ichan);
       ichan += 4;
 
       // ----------
       // ADCs 12-15
       // ----------
       adcs4 = a2 (63,16);
-      process4 (&(*hists)[ichan], &(*adcs)[ichan], &prv[ichan], oidx, adcs4, ichan);
+      process4 (&(*hists)[ichan], &(*adcs)[ichan], &Prv[ichan], oidx, adcs4, ichan);
       ichan += 4;
-      }
- }
+   }
+
+   return timestamp;
+}
+/* ---------------------------------------------------------------------- */
 
 
 
@@ -2148,7 +2129,7 @@ static void
 {
    #define COMPRESS_VERSION 0x10000000
 
-#if 0
+
    if (Packets::is_last (timestamp))
    {
       timestamp  = Packets::bof (timestamp);
@@ -2157,7 +2138,6 @@ static void
    {
       return;
    }
-#endif
 
    int   mdx = 0;
    uint64_t data;
@@ -2685,1212 +2665,3 @@ static void commit_last (AxisOut &axis,  int mdx)
 #error ERROR: PROCESS_K_MODE must be set to one of PROCESS_K_COPY, PROCESS_K_DATAFLOW or PROCESS_K_COMPRESS
 
 #endif
-
-/* ====================================================================== */
-/* IMPLEMENtATION: Common Routines                                        */
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *   \brief  Make a local copy of the configuraion block
- *
- *   \param[out]  lcl The local  copy of the configuration block
- *   \param[ in]  gbl The global copy of the configuration block.
- *
-\* ---------------------------------------------------------------------- */
-static void copyCfg (ModuleConfig &lcl, ModuleConfig &gbl)
-{
-    #pragma HLS PIPELINE
-    lcl      = gbl;
-    return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- */
-#ifndef __SYNTHESIS__
-#define WRITE_DATA_PRINT 1
-#endif
-/* ---------------------------------------------------------------------- */
-
-
-/* ---------------------------------------------------------------------- */
-#if WRITE_DATA_PRINT
-/* ---------------------------------------------------------------------- */
-static void print_write_data (int odx, uint64_t data)
-{
-   std::cout << "Writing[" << std::setw(5) << odx << "] = " << std::setw(16) << std::hex << data << std::endl;
-}
-/* ---------------------------------------------------------------------- */
-#else
-/* ---------------------------------------------------------------------- */
-#define print_write_data(_odx, _data)
-/* ---------------------------------------------------------------------- */
-#endif
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *   \brief  Commits 1 64-bit value to the output stream
- *
- *   \param[   out]  axis  The output AXI stream
- *   \param[in:out]   odx  The output index
- *   \param[    in] write  Flag to do the write (if false, no write)
- *   \param[    in]  data  The 64-bit data to commit
- *   \param[    in[  user  The value of the user field
- *
-\* ---------------------------------------------------------------------- */
-static void commit (AxisOut &axis,
-                    int      &odx,
-                    bool    write,
-                    uint64_t data,
-                    int      user,
-                    int      last)
-{
-   #pragma HLS inline
-   #pragma HLS PIPELINE
-
-   if (write)
-   {
-      AxisOut_t out;
-      out.data = data;
-      out.keep = 0xFF;
-      out.strb = 0x0;
-      out.user = user;
-      out.last = last;
-      out.id   = 0x0;
-      out.dest = 0x0;
-
-      print_write_data (odx, data);
-
-
-      axis.write (out);
-      odx         += 1;
-   }
-
-   return;
-}
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Updates the common/static status
- *
- *  \param[    in] init  Is this an initialization request *
- *  \param[   out]  gbl  The module's global configuration status.
- *                       This is updated with the local read status
- *  \param[in:out]  lcl  The module's local  configuration status
- *                    .  This is copied into the global configuration
- *                       status after it has been updated.
- *
-\* ---------------------------------------------------------------------- */
-static void update_common (MonitorCommon       &gbl,
-                           MonitorCommon       &lcl,
-                           ModuleConfig const  &cfg)
-{
-     lcl.pattern = 0xabadcafe;
-     gbl         = lcl;
-
-     return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Configures the module
- *
- *  \param[     in]     cfg  The configuration block
- *  \param[   out]      gbl  The module's global configuration status.
- *                           This is updated with the local read status
- *  \param[in:out]      lcl  The module's local  configuration status
- *                        .  This is copied into the global configuration
- *                           status after it has been updated.
- *
-\* ---------------------------------------------------------------------- */
-static void configure (ModuleConfig const  &cfg,
-                       MonitorCfg          &gbl,
-                       MonitorCfg          &lcl,
-                       bool               allow)
-{
-   // Only honor configuration requests if allowed and requested on allowable
-   if (cfg.init && allow)
-   {
-      lcl.ncfgs  += 1;
-   }
-
-   gbl = lcl;
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *   \brief Convenience method to launder a ReadFrame::Offset to an
- *          unsigned int for use in the bit set method.
- *
- *   \param[in:out] status  The read status bit mask
- *   \param[in]        val  Flag to set the bit to a 0 or a 1
- *   \param[in]        bit  The bit number to modify
- *
-\* ---------------------------------------------------------------------- */
-static void update (ReadStatus_t        &status,
-                    bool                    val,
-                    enum ReadFrame::Offset  bit)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   status.set (static_cast<unsigned>(bit), val);
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief Convenience method to clear of set the appropriate state bit.
- *
- *   \param[in:out] status  The read status bit mask
- *   \param[in]        val  Flag to set the bit to a 0 or a 1
- *   \param[in]        bit  The beginning state bitb
- *   \param[in]        off  The offset (0-3) to the appropriate state bit.
- *
- *    The four states are
- *       -0.  Normal, run in progress
- *        1.  Run disabled
- *        2.  Flush, the frame should be read and disposed of (not written
- *        3.  Disabled and Flush, the run is disabled and the frame should
- *            be flushed.
- *
-\* ---------------------------------------------------------------------- */
-static void update (ReadStatus_t        &status,
-                    bool                    val,
-                    enum ReadFrame::Offset  bit,
-                    int                     off)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   status |= val << static_cast<unsigned>(bit) + off;
-
-   /////  This was tried, but the synthesizer issues a warning that this
-   ////// construct may result in non-optimal results.
-   /////  status.set (static_cast<unsigned>(bit) + off, val);
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Evaluates any abnormal values in the first WIB header word
- *          and sets an appropriate flag bit in the read \a status.
- *
- *  \param[in:out] status  The read status bit mask
- *  \param[in]        hdr  The first WIB header word
- *  \param[in]      wibId  The WIB identity, \e i.e. the Crate.Slot.Fiber
- *                         number.  This is compared with the identity in
- *                         the \a hdr.
- *
-\* ---------------------------------------------------------------------- */
-static void eval_wib0 (ReadStatus_t &status, uint64_t hdr, uint16_t wibId)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   // Check that the first word is as expected
-   //    The Wib Comma    field must be WibFrame:K28_5
-   //    The Wib Version  field must be WibFrame::VersionNumber
-   //    The Wib Id       field must be wibId
-   //    The Wib Reserved field must be 0
-   //    The Wib Error field must be 0
-   bool wibErrCommaChar = WibFrame::commaChar(hdr) != WibFrame::K28_5;
-   bool wibErrVersion   = WibFrame::version  (hdr) != WibFrame::VersionNumber;
-   bool wibErrId        = WibFrame::id       (hdr) != wibId;
-   bool wibErrRsvd      = WibFrame::rsvd     (hdr) != 0;
-   bool wibErrErrors    = WibFrame::wibErrors(hdr) != 0;
-
-   update (status, wibErrCommaChar, ReadFrame::ErrWibComma);
-   update (status, wibErrVersion,   ReadFrame::ErrWibVersion);
-   update (status, wibErrId,        ReadFrame::ErrWibId);
-   update (status, wibErrRsvd,      ReadFrame::ErrWibRsvd);
-   update (status, wibErrErrors,    ReadFrame::ErrWibErrors);
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Evaluates any abnormal values in the second WIB header word
- *          and sets an appropriate flag bit in the read \a status.
- *
- *  \param[in:out] status  The read status bit mask
- *  \param[in]        hdr  The second WIB header word
- *  \param[in]        exp  The expected header word value
- *
- *
- *   Except for one mode 1, the header contains the timestamp.  The
- *   expected value, \a exp, has had the timestamp updated by the
- *   number of ticks between timesamples.  With this update, this it
- *   must match \a hdr.
- *
-\* ---------------------------------------------------------------------- */
-static void eval_wib1 (ReadStatus_t &status, uint64_t hdr, uint64_t prv)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   bool wibErrTimestamp = hdr != prv;
-   update (status, wibErrTimestamp, ReadFrame::Offset::ErrWibTimestamp);
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Evaluates any abnormal values in the first cold data header word
- *          and sets an appropriate flag bit in the read \a status.
- *
- *  \param[in:out] status  The read status bit mask
- *  \param[in]        hdr  The first WIB cold data link header word
- *  \param[in]  gotCvtCnt  The convert count that was previously extracted
- *                         from the header
- *  \param[in]  expCvtCnt  The expected convert count. This is based on
- *                         incrementing the previous convert count by 1.
- *  \param[in]        off  This is the bit offset to the base of the
- *                         appropriate cold data link; basically selects
- *                         the target cold data link.
- *
-\* ---------------------------------------------------------------------- */
-static void eval_colddata0 (ReadStatus_t &status,
-                            uint64_t         hdr,
-                            uint16_t   gotCvtCnt,
-                            uint16_t   expCvtCnt,
-                            int              off)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   // Check that the word is as expected
-   //       The Stream Err1 field must be 0
-   //       The Stream Err2 field must be 0
-   //       The Reserved    field must be 0
-   //       The Convert Count field must be expect convert count
-   //
-   // Note: This word also contains the checksums. Because the data that
-   //       went into forming the check sums is no longer present, this
-   //       field cannot be checked.
-   bool cdErrStreamErr1 = WibFrame::ColdData::streamErr1 (hdr) != 0;
-   bool cdErrStreamErr2 = WibFrame::ColdData::streamErr2 (hdr) != 0;
-   bool cdErrRsvd0      = WibFrame::ColdData::rsvd0      (hdr) != 0;
-   bool cdErrCvtCnt     = gotCvtCnt                            != expCvtCnt;
-
-   update (status, cdErrStreamErr1, ReadFrame::ErrCd0StrErr1, off);
-   update (status, cdErrStreamErr2, ReadFrame::ErrCd0StrErr2, off);
-   update (status, cdErrRsvd0,      ReadFrame::ErrCd0Rsvd0,   off);
-   update (status, cdErrCvtCnt,     ReadFrame::ErrCd0CvtCnt,  off);
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Evaluates any abnormal values in the second cold data header word
- *          and sets an appropriate flag bit in the read \a status.
- *
- *  \param[in:out] status  The read status bit mask
- *  \param[in]        hdr  The second WIB cold data link header word
- *  \param[in]        prv  The previous header word.
- *  \param[in]        off  This is the bit offset to the base of the
- *                         appropriate cold data link; basically selects
- *                         the target cold data link.
- *
-\* ---------------------------------------------------------------------- */
-static void eval_colddata1 (ReadStatus_t &status, uint64_t hdr, uint64_t prv, int off)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   bool cdErrErrReg = WibFrame::ColdData::errReg (hdr) != 0;
-   bool cdErrHdrs   = WibFrame::ColdData::hdrs   (hdr) != WibFrame::ColdData::hdrs (prv);
-   bool cdErrRsvd1  = WibFrame::ColdData::rsvd1  (hdr) != 0;
-
-   update (status, cdErrErrReg, ReadFrame::ErrCd0ErrReg, off);
-   update (status, cdErrRsvd1,  ReadFrame::ErrCd0Rsvd1,  off);
-   update (status, cdErrHdrs,   ReadFrame::ErrCd0Hdrs,   off);
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Reads and evaluates the first WIB header word
- *
- *  \param[in:out] status The read status word to be updated by an abnormal
- *                        conditions
- *  \param[out]         d Array to capture the header word
- *  \param[in]       axis The AXI stream to read the data from
- *  \param[in:out]   hdrs On input, this is the expected header value based
- *                        on the previous set. THis value is updated
- *                        based on the read header word
- * \param[in:out]   first A first time flag used to capture the WIB identity
- * \param[in:out]   wibId The WIB identity.  This is set on the first frame
- *                        and used as comparison value from then on.
- *
-\* ---------------------------------------------------------------------- */
-static void read_wib0 (ReadStatus_t &status,
-                       ReadFrame::Data   *d,
-                       AxisIn         &axis,
-                       AxisWord_t     *hdrs,
-                       bool          &first,
-                       ap_uint<11>   &wibId)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   AxisIn_t in = axis.read ();
-
-   // Check the state of Start and End Of Frame bits
-   bool    sof = in.user.test (static_cast<uint8_t>(AxisUserFirst::Sof));
-   bool    eof = in.last.test (static_cast<uint8_t>(AxisLast::     Eof));
-
-   // Check
-   //  1) Start Of Frame is not missing and
-   //  2) End   Of Frame is not present
-   if (!sof) status.set (ReadFrame::ErrSofM);
-   if ( eof) status.set (ReadFrame::ErrEofU);
-
-
-   // Check the run enable bit
-   // Note: The flush bit is only present on the last word in the frame
-   bool  runEnable = in.user.test (static_cast<uint8_t>(AxisUserFirst::RunEnable));
-   if  (!runEnable) status.set (ReadFrame::RunDisable);
-
-   // !!! KLUDGE !!!
-   // Seed the Wib Id with the first scene
-   // This is not a great idea
-   if (first)
-   {
-      first   = false;
-      wibId   = WibFrame::id (in.data);
-   }
-
-   //  Check that all the fields are as expected
-   eval_wib0 (status, in.data, wibId);
-
-   // Capture the header and use as the seed for the next frame
-   hdrs[0]   = in.data;
-   d   [0]   = in.data;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Reads and evaluates the second WIB header word, this is
- *          the timestamp.
- *
- *  \param[in:out] status The read status word to be updated by an abnormal
- *                        conditions
- *  \param[out]         d Array to capture the header word
- *  \param[in]       axis The AXI stream to read the data from
- *  \param[in:out]   hdrs On input, this is the expected header value based
- *                        on the previous set. THis value is updated
- *                        based on the read header word
- *
-\* ---------------------------------------------------------------------- */
-static void read_wib1 (ReadStatus_t &status,
-                       ReadFrame::Data   *d,
-                       AxisIn         &axis,
-                       AxisWord_t     *hdrs)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   // This is the timestamp
-   AxisIn_t in = axis.read ();
-
-   // Check the state of Start and End Of Frame bits
-   bool    sof = in.user.test (static_cast<uint8_t>(AxisUserFirst::Sof));
-   bool    eof = in.last.test (static_cast<uint8_t>(AxisLast     ::Eof));
-
-
-   // Should not see the SOF or EOF marker
-   if (sof) status.set (ReadFrame::ErrSofU);
-   if (eof) status.set (ReadFrame::ErrEofU);
-
-
-   //  Check that all the fields are as expected
-   eval_wib1 (status, in.data, hdrs[1]);
-
-   // Capture the header and update for use as the seed for the next frame
-   hdrs[1] = in.data + 25;
-   d   [1] = in.data;
-   //d.write_nb (in.data);
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- */
-static void read_colddata_hdrs (ReadStatus_t &status,
-                                ReadFrame::Data   *d,
-                                AxisIn         &axis,
-                                AxisWord_t     *hdrs,
-                                uint16_t  &expCvtCnt,
-                                int              off)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE II=2
-
-   // ---------------------------------------------------------------------
-   // Colddata link, word 0
-   //
-   AxisIn_t in = axis.read ();
-
-
-   // Check the state of Start and End Of Frame bits
-   bool    sof = in.user.test (static_cast<uint8_t>(AxisUserFirst::Sof));
-   bool    eof = in.last.test (static_cast<uint8_t>(AxisLast::     Eof));
-
-
-   // Should not see the SOF or EOF marker
-   if (sof) status.set (ReadFrame::ErrSofU);
-   if (eof) status.set (ReadFrame::ErrEofU);
-
-
-   // Extract the convert count,
-   // Check that all the fields are as expected
-   // Update the convert count to the new value
-   uint16_t gotCvtCnt = WibFrame::ColdData::cvtCnt (in.data);
-   eval_colddata0 (status, in.data, gotCvtCnt, expCvtCnt, off);
-   expCvtCnt  = gotCvtCnt + 1;
-
-
-   // Capture the header and update for use as the seed for the next frame
-   hdrs[0] = in.data;
-   d   [0] = in.data;
-   //
-   // ---------------------------------------------------------------------
-
-
-
-   // ---------------------------------------------------------------------
-   // Colddata link, word 1
-   //
-   in   = axis.read ();
-
-
-   // Check the state of Start and End Of Frame bits
-   sof  = in.user.test (static_cast<uint8_t>(AxisUserFirst::Sof));
-   eof  = in.last.test (static_cast<uint8_t>(AxisLast::     Eof));
-
-
-   // Should not see the SOF or EOF marker
-   if (sof) status.set (ReadFrame::ErrSofU);
-   if (eof) status.set (ReadFrame::ErrEofU);
-
-
-   // Check that all the fields are as expected
-   eval_colddata1 (status, in.data, hdrs[1], off);
-
-
-   // Capture the header and update for use as the seed for the next frame
-   hdrs[1] = in.data;
-   d   [1] = in.data;
-   // ---------------------------------------------------------------------
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- */
-static void read_colddata_data (ReadStatus_t &status,
-                                ReadFrame::Data   *d,
-                                AxisIn         &axis,
-                                bool       checkLast)
-{
-    #pragma HLS INLINE
-
-    AxisIn_t in;
-
-   // Capture the data
-   READCOLDDATA_LOOP:
-   for (int idx = 0; idx < 12; idx++)
-   {
-      // Get the input word, always copy the data
-      in     = axis.read ();
-      d[idx] = in.data;
-
-
-      // Check the state of Start and End Of Frame bits
-      bool sof = in.user.test (static_cast<uint8_t>(AxisUserFirst::Sof));
-      bool eof = in.last.test (static_cast<uint8_t>(AxisLast::     Eof));
-
-
-      // Should not see the SOF marker
-      if (sof) status.set (ReadFrame::ErrSofU);
-
-
-      // Check if this is not the last word
-      if (idx != 11 || !checkLast)
-      {
-         // Not the last word, should not see EOF marker
-         if (eof) status.set (ReadFrame::ErrEofU);
-      }
-      else
-      {
-         // Handle the very last word
-         // Check the presence of flush and eof on the last input word
-         bool flush  = in.user.test (static_cast<unsigned>(AxisUserLast::Flush));
-         bool eoferr = in.user.test (static_cast<unsigned>(AxisUserLast::EofErr));
-
-         if (flush ) status.set (ReadFrame::Flush);
-         if (!eof  ) status.set (ReadFrame::ErrEofM);
-         if (eoferr) status.set (ReadFrame::ErrEofE);
-         break;
-      }
-   }
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Reads and evaluates the two WIB cold data header words,
- *
- *  \param[in:out] status The read status word to be updated by an abnormal
- *                        conditions
- *  \param[out]         d Array to capture the header word
- *  \param[in]       axis The AXI stream to read the data from
- *  \param[in:out]   hdrs On input, this is the expected header value based
- *                        on the previous set. This value is updated
- *                        based on the read header word.
- *  \param[in:out] cvtCnt On input, the expect convert count, on output,
- *                        the updated convert count
- *  \param[in]        off  This is the bit offset to the base of the
- *                         appropriate cold data link; basically selects
- *                         the target cold data link.
- *
-\* ---------------------------------------------------------------------- */
-static void read_colddata (ReadStatus_t &status,
-                           ReadFrame::Data   *d,
-                           AxisIn         &axis,
-                           AxisWord_t     *hdrs,
-                           uint16_t     &cvtCnt,
-                           int              off)
-{
-   #pragma HLS INLINE off
-   read_colddata_hdrs (status, d,     axis, hdrs, cvtCnt, off);
-   read_colddata_data (status, d + 2, axis, off == 8);
-}
-/* ---------------------------------------------------------------------- */
-
-
-/* ---------------------------------------------------------------------- */
-#ifndef __SYNTHESIS__
-#define READ_FRAME_PRINT 1
-#endif
-/* ---------------------------------------------------------------------- */
-
-
-/* ---------------------------------------------------------------------- */
-#if WRITE_DATA_PRINT
-/* ---------------------------------------------------------------------- */
-static void print_read_frame (ReadFrame const &frame)
- {
-   for (int i = 0; i < 30; i++)
-   {
-      std::cout << "Frame.d[" << std::setw(5) << i << "] = " << std::setw(16) << std::hex << frame.d[i] << std::endl;
-   }
-}
-/* ---------------------------------------------------------------------- */
-#else
-/* ---------------------------------------------------------------------- */
-#define print_read_frame(_frame)
-/* ---------------------------------------------------------------------- */
-#endif
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Read and buffer the Wib Frame data
- *
- *  \param[   out] frame  A copy of the WIB data + status
- *  \param[    in]  axis  The input WIB data
- *  \param[    in]  init  Is this an initialization request
- *  \param[   out]   gbl  The module's global read status. This is updated
- *                        with the local read status
- *  \param[in:out]   lcl  The module's local  read status.  This is copied
- *                        into the global read status after it has been
- *                        updated.
- *
- *  \par
- *   The data is always copied but is valid iff the run enable bit in
- *   the user field of the first word is set and the flush flag in
- *   the user field of the last word is not set
- *
-\* ---------------------------------------------------------------------- */
-static void read_frame (ReadFrame     &frame,
-                        ReadContext     &ctx,
-                        AxisIn         &axis)
-{
-   ReadStatus_t status = 0;
-
-   // Wib Header Words 0 & 1
-   read_wib0     (status, frame.d, axis, ctx.hdrs, ctx.first, ctx.wibId);
-   read_wib1     (status, frame.d, axis, ctx.hdrs);
-
-   // Colddata links 0 & 1
-   read_colddata (status, frame.d +  2, axis, ctx.hdrs + 2, ctx.cvtCnt0, 0);
-   read_colddata (status, frame.d + 16, axis, ctx.hdrs + 4, ctx.cvtCnt1, 8);
-
-
-   frame.status = status;
-
-   print_read_frame (frame);
-
-
-   // Count the number of frames to be written
-   // A good frame is one with SOF and EOF set only on the proper words and no Eof Err
-   // Flush frames with nothing in the packet are not promoted.
-   // Flush frames in active packets are.  It is out to the receiver to dispose of these.
-   bool writeOutput = ReadFrame::isGoodFrame (status) &&
-                    ! ((ctx.nframes == 0) && status.test (static_cast<unsigned>(ReadFrame::Flush)));
-
-   if  (writeOutput)
-   {
-      ctx.nframes += 1;
-      frame.last   = ctx.begPkt = ctx.nframes == 0;
-
-      int nframes = ctx.nframes;
-      printf ("Frames.last = %d (%d)\n", frame.last, nframes);
-   }
-
-   frame.write = writeOutput;
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Read and buffer the Wib Frame data
- *
- *  \param[   out] frame  A copy of the WIB data + status
- *  \param[    in]  axis  The input WIB data
- *  \param[    in]  init  Is this an initialization request
- *  \param[   out]   gbl  The module's global read status. This is updated
- *                        with the local read status
- *  \param[in:out]   lcl  The module's local  read status.  This is copied
- *                        into the global read status after it has been
- *                        updated.
- *
- *  \par
- *   The data is always copied but is valid iff the run enable bit in
- *   the user field of the first word is set and the flush flag in
- *   the user field of the last word is not set
- *
-\* ---------------------------------------------------------------------- */
-static void read_frame (ReadFrame     &frame,
-                        ReadContext     &ctx,
-                        AxisIn         &axis,
-                        ModuleConfig    &cfg,
-                        MonitorRead     &gbl,
-                        MonitorRead     &lcl)
-{
-   #pragma HLS INLINE
-   //#pragma HLS PIPELINE
-
-   ReadStatus_t status = 0;
-
-   // Wib Header Words 0 & 1
-   read_wib0     (status, frame.d, axis, ctx.hdrs, ctx.first, ctx.wibId);
-   read_wib1     (status, frame.d, axis, ctx.hdrs);
-
-   // Colddata links 0 & 1
-   read_colddata (status, frame.d +  2, axis, ctx.hdrs + 2, ctx.cvtCnt0, 0);
-   read_colddata (status, frame.d + 16, axis, ctx.hdrs + 4, ctx.cvtCnt1, 8);
-
-   frame.status = status;
-
-    // Count the number of frames to be written
-    // A good frame is one with SOF and EOF set only on the proper words and no Eof Err
-    bool writeOutput = ReadFrame::isGoodFrame (status);
-    frame.write      = writeOutput;
-
-    if  (writeOutput)
-    {
-       ctx.nframes += 1;
-       frame.last   = ctx.nframes == 0
-                    | ReadFrame::flushesPacket (status);
-
-       // Don't write flushed frames
-       if (status.test (static_cast<unsigned>(ReadFrame::Flush))) frame.write = false;
-    }
-
-    update_read (gbl,  lcl, cfg, status);
-
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- */
-/* Local methods used by the update read method                           */
-/* ---------------------------------------------------------------------- */
-static void update_frame    (MonitorRead    &lcl,
-                             ReadStatus_t status);
-
-static void update_wib      (MonitorRead    &lcl,
-                             ReadStatus_t status);
-
-static void update_colddata (MonitorRead    &lcl,
-                             ReadStatus_t status,
-                             int            sOff,
-                             int            cOff);
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Update the read portion of the status block
- *
- *  \param[   out]    gbl This will receive a copy of the locally
- *                        maintained read status block after it has
- *                        been updated
- *  \param[in:out]    lcl The locally maintained copy of the read status
- *                        block
- * \param[in]         cfg The configuration block
- * \param[in]      output Flag indicating whether the packet was written
- * \param[in]      status The read status flags.  This is used to increment
- *                        a counter corresponding to this status.
- *
-\* ---------------------------------------------------------------------- */
-static void update_read (MonitorRead        &gbl,
-                         MonitorRead        &lcl,
-                         ModuleConfig const &cfg,
-                         ReadStatus_t     status)
-{
-#if PROCESS_K_MODE == PROCESS_K_COMPRESS
-   #pragma HLS INLINE  off
-#else
-    #pragma HLS INLINE off
-#endif
-
-   //std::cout << "status(flush): " << status << " user:" << in.user << std::endl;
-
-   if (cfg.init)
-   {
-      lcl.init ();
-   }
-   else
-   {
-      // Always update the status mask and count the total number of frames seen
-      lcl.mask     = status;
-      lcl.nframes += 1;
-
-      if (status.test (ReadFrame::ErrSofM))
-      {
-         // Count frames missing SOF
-         lcl.count(MonitorRead::FrameCounter::ErrSofM);
-      }
-      else
-      {
-         // SOF   was set
-         update_frame (lcl, status);
-
-         // A good frame is one with SOF and EOF set only on the proper words and no Eof Err
-         bool goodFrame = ReadFrame::isGoodFrame (status);
-         if  (goodFrame)
-         {
-            // Only count if both SOF and EOF were properly seen
-            lcl.count (ReadFrame::state (status));
-
-            // Only increment the counters associated with checking the integrity
-            // of the frame contents if this is not a FLUSH frame.
-            if (!status.test (static_cast<unsigned>(ReadFrame::Offset::Flush)))
-            {
-               // Wib Header word
-               update_wib (lcl, status);
-
-               // ColdData link 0 and 1
-               update_colddata (lcl,status, 0, 0);
-               update_colddata (lcl,status, 8, 8);
-            }
-         }
-      }
-   }
-
-   printReadResults (status, lcl);
-
-   gbl = lcl;
-
-   return;
-}
-/* ----------------------------------------------------------------------- */
-
-
-
-/* ----------------------------------------------------------------------- *//*!
- *
- *   \brief  Update the counters that monitor the status of the reading
- *           of the frame. By contrast, these are counters that have nothing
- *           to do with the data contents, only the integrity of the data
- *           transfer.
- *
- *  \param[in:out]    mon  The monitor class to update
- *  \param[in]     status  The status mask
- *
-\* ----------------------------------------------------------------------- */
-static void update_frame (MonitorRead &mon, ReadStatus_t status)
-{
-   //#pragma HLS PIPELINE
-   #pragma HLS INLINE
-
-   // Unexpected SOF seen?
-   mon.count (status.test (ReadFrame::  Offset::      ErrSofU),
-                           MonitorRead::FrameCounter::ErrSofU);
-
-   // Unexpected EOF seen?
-   mon.count (status.test (ReadFrame::  Offset::      ErrEofU),
-                           MonitorRead::FrameCounter::ErrEofU);
-
-   // EOF missing on last word?
-   mon.count (status.test (ReadFrame::  Offset::      ErrEofM),
-                           MonitorRead::FrameCounter::ErrEofM);
-
-   // EOF err set in the frame?
-   mon.count (status.test (ReadFrame::  Offset::      ErrEofE),
-                           MonitorRead::FrameCounter::ErrEofE);
-
-   return;
-}
-/* ----------------------------------------------------------------------- */
-
-
-
-/* ----------------------------------------------------------------------- *//*!
- *
- *   \brief  Update the counters that monitor the status of the reading
- *           of the cold data by the WIB
- *
- *  \param[in:out]    mon  The monitor class to update
- *  \param[in]     status  The status mask
- *
-\* ----------------------------------------------------------------------- */
-static void update_wib (MonitorRead &mon, ReadStatus_t status)
-{
-   //#pragma HLS PIPELINE
-   #pragma HLS INLINE
-
-   // Wib Header word 0
-   mon.count (status.test (ReadFrame::  Offset::    ErrWibComma),
-                           MonitorRead::WibCounter::ErrWibComma);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrWibId),
-                           MonitorRead::WibCounter::ErrWibId);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrWibVersion),
-                           MonitorRead::WibCounter::ErrWibVersion);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrWibRsvd),
-                           MonitorRead::WibCounter::ErrWibRsvd);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrWibErrors),
-                           MonitorRead::WibCounter::ErrWibErrors);
-
-
-   // Wib Header word 1
-   mon.count (status.test (ReadFrame::  Offset::    ErrWibTimestamp),
-                           MonitorRead::WibCounter::ErrWibTimestamp);
-
-   return;
-}
-/* ----------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *   \brief  Writes the frame's data to the output packet. The packet will
- *           be flushed if
- *              -# Full
- *              -# The run was disabled with output pending
- *              -# A flush was requested
- *
- *   \param[   out]       axis  The output AXI stream
- *   \param[in:out]        ctx  The output context
- *   \param[in    ]      frame  The frame's data + status
- *   \param[in:out]        gbl  The global write monitor
- *   \param[in:out]        lcl  The local  write nonitor
- *
-\* ---------------------------------------------------------------------- */
-static void write_frame (AxisOut           &axis,
-                         WriteContext       &ctx,
-                         ReadFrame        &frame,
-                         MonitorWrite       &gbl,
-                         MonitorWrite       &lcl)
-{
-   // -------------------------------------------------
-   // OUTPUT HEADER
-   // -------------
-   // Add output header to the output frame iff this is
-   //   1. the first output word of this packet ..and..
-   //   2. the processFlag is true.
-   // --------------------------------------------------
-   if (ctx.odx == 0)
-   {
-       prologue (axis, ctx.odx, frame.write, 0);
-   }
-
-
-   // -------------------------------------------------------------------
-   // OUTPUT BODY
-   // -----------
-   // While the data is not copied to the output packet is procesFlag is
-   // false, the copy loop always runs to ensure that the data stream is
-   // drained.
-   // -------------------------------------------------------------------
-   COPYFRAME_LOOP:
-   for (int idx = 0; idx < sizeof (WibFrame)/sizeof (uint64_t); idx++)
-   {
-      #pragma HLS PIPELINE
-      uint64_t          d;
-
-      d = frame.d[idx];
-      //d = frame.d.read ();
-      commit (axis, ctx.odx, frame.write, d, 0, 0);
-   }
-
-   if (frame.write) lcl.npromoted += 1;
-   else             lcl.ndropped  += 1;
-
-
-   // --------------------------------------------
-   // OUTPUT TRAILER
-   // --------------
-   // Add the trailer and flush packet if both
-   //   1) Have some data to flush
-   //   2) Instructed that this is the last packet
-   // --------------------------------------------
-   bool output;
-   if (ctx.odx && frame.last)
-   {
-      epilogue (axis, frame.status, ctx.odx);
-
-      lcl.nbytes   += ctx.odx * 8;
-      lcl.npackets += 1;
-      ctx.odx       = 0;
-   }
-
-   gbl = lcl;
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ----------------------------------------------------------------------- *//*!
- *
- *   \brief  Update the counters that monitor the status of the reading
- *           of the front end electronics
- *
- *  \param[in:out]    mon  The monitor class to update
- *  \param[in]     status  The status mask
- *
-\* ----------------------------------------------------------------------- */
-static void  update_colddata (MonitorRead    &mon,
-                              ReadStatus_t status,
-                              int            sOff,
-                              int            cOff)
-{
-   //#pragma HLS PIPELINE
-   #pragma HLS INLINE off
-
-   // ------------------------------------------------------------
-   // ColdData Header Word 0
-   //
-   mon.count (status.test (ReadFrame::  Offset::    ErrCd0StrErr1),
-                           MonitorRead::WibCounter::ErrCd0StrErr1);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrCd0StrErr2),
-                           MonitorRead::WibCounter::ErrCd0StrErr2);
-
-   mon.count (status.test (ReadFrame  ::Offset::    ErrCd0Rsvd0),
-                           MonitorRead::WibCounter::ErrCd0Rsvd0);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrCd0ChkSum),
-                           MonitorRead::WibCounter::ErrCd0ChkSum);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrCd0CvtCnt),
-                           MonitorRead::WibCounter::ErrCd0CvtCnt);
-   //
-   // ------------------------------------------------------------
-
-
-   // ------------------------------------------------------------
-   // ColdData Header Word 1
-   //
-   mon.count (status.test (ReadFrame::  Offset::    ErrCd0ErrReg),
-                           MonitorRead::WibCounter::ErrCd0ErrReg);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrCd0Rsvd1),
-                           MonitorRead::WibCounter::ErrCd0Rsvd1);
-
-   mon.count (status.test (ReadFrame::  Offset::    ErrCd0Hdrs),
-                           MonitorRead::WibCounter::ErrCd0Hdrs);
-   //
-   // ------------------------------------------------------------
-
-   return;
-}
-/* ----------------------------------------------------------------------- */
-
-
-
-/* ----------------------------------------------------------------------- *//*!
- *
- *  \brief  If this is the first word, add the packet header
- *
- *  \param[   out]     mAxis  The output AXI stream
- *  \param[in:out]       odx  The 64-bit packet index
- *  \param[in    ] writeFlag  Write enable flags
- *  \param[in    ] moduleIdx  Which module, \e i.e. which group of
- *                            128 channels being service
- *
-\* ----------------------------------------------------------------------- */
-static void prologue (AxisOut &mAxis, int &odx, bool writeFlag, int moduleIdx)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   #define WIB_VERSION VERSION_COMPOSE (0, 0, 0, 1)
-
-   if (odx == 0)
-   {
-      // --------------------------------------------------------------
-      // Because the output packet maybe terminated at anytime, the
-      // size of the packet cannot be known at this time. This field
-      // in the record header will have to be filled in by the receiving
-      // software.
-      //
-      // For integrity checking, the module index will be stuffed
-      // into this unused field. Its kind of a kludge, but maybe useful.
-      // --------------------------------------------------------------
-      uint32_t  id = Identifier::identifier (Identifier::FrameType::DATA,
-                                             Identifier::DataType::WIB,
-                                             moduleIdx);
-
-      uint64_t      hdr = Header::header (id, WIB_VERSION);
-      print_header (hdr);
-      commit       (mAxis, odx, writeFlag, hdr, 2, 0);
-   }
-}
-/* ----------------------------------------------------------------------- */
-
-
-
-/* ----------------------------------------------------------------------- *//*!
- *
- *  \brief Does the processing after a full frame has been readin
- *
- *  \param[   out]     mAxis  The output AXI stream
- *  \param[    in]    status  The summeary status
- *  \param[in:out]       odx  The 64-bit packet index
- *
-\* ----------------------------------------------------------------------- */
-static void epilogue (AxisOut    &mAxis,
-                      uint64_t   status,
-                      int          &odx)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   bool wrote;
-
-
-   std::cout << "Outputting @ odx = " << odx << std::endl;
-
-   int   nbytes = odx * sizeof (uint64_t) + sizeof (Trailer);
-   uint32_t  id = Identifier::identifier (Identifier::FrameType::DATA,
-                                          Identifier::DataType::WIB,
-                                          nbytes);
-   uint64_t tlr = Trailer::trailer (id);
-   print_trailer (tlr);
-
-   commit (mAxis, odx, true, status, 0, 0);
-   commit (mAxis, odx, true, tlr,    0, 1);
-
-   return;
-}
-/* ----------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Print the status results of the readFrame method
- *
- *  \param[in]  status  The 2-bit readFrame status word
- *  \param[in] monitor  The read monitor record
-\* ---------------------------------------------------------------------- */
-static void printReadResults (ap_uint<2> status, MonitorRead const &monitor)
-{
-   // If the readStatus was not successsful
-   if (status)
-   {
-      std::cout << "ReadStatus: " << status << std::endl
-                << "Types:      " << monitor[MonitorRead::StateCounter::Normal]
-                <<            ' ' << monitor[MonitorRead::StateCounter::RunDisabled]
-                <<            ' ' << monitor[MonitorRead::StateCounter::Flush]
-                <<            ' ' << monitor[MonitorRead::StateCounter::DisFlush]
-                <<       "Err SofM     " << monitor[MonitorRead::FrameCounter::ErrSofM]
-                <<       "Err SofU     " << monitor[MonitorRead::FrameCounter::ErrSofU]
-                <<       "Err EofM     " << monitor[MonitorRead::FrameCounter::ErrEofM]
-                <<       "Err EofU     " << monitor[MonitorRead::FrameCounter::ErrEofU]
-                <<       "Err EofE     " << monitor[MonitorRead::FrameCounter::ErrEofE]
-                <<   "Err_WibComma     " << monitor[MonitorRead::WibCounter  ::ErrWibComma]
-                <<   "Err WibTimestamp " << monitor[MonitorRead::WibCounter  ::ErrWibTimestamp]
-                << std::endl;
-  }
-
-  return;
-}

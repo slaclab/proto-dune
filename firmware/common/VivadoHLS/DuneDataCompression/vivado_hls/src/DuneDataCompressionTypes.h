@@ -51,8 +51,6 @@
 
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
-   2018.03.06 jjr Changed the symbolic definitions of the Axis control
-                  bits from masks to bit numbers.
    2016.05.03 jjr Added output limiting register to the configuration
    2015.11.28 jjr Added error counters for Start of Frame, End of Frame on
                   other than the expected words, i.e. first word for SOF
@@ -208,7 +206,6 @@ typedef     ap_axiu<64,4,1,1>  AxisIn_t;
 typedef     ap_axiu<64,4,1,1>  AxisOut_t;
 typedef hls::stream<AxisIn_t>  AxisIn;
 typedef hls::stream<AxisOut_t> AxisOut;
-typedef     ap_uint<64>        AxisWord_t;
 // tdata[063:00] = DMA Data
 // tKeep[007:00] = DMA Byte Enable
 // tStrb[007:00] = Not Used
@@ -241,8 +238,8 @@ typedef     ap_uint<64>        AxisWord_t;
 \* ---------------------------------------------------------------------- */
 enum class AxisUserFirst
 {
-   Sof       = 1,  /*!< Always set on the first word of the frame         */
-   RunEnable = 3   /*!< Run enable, effect means keep the data            */
+   Sof       = (1 << 1),  /*!< Always set on the first word of the frame  */
+   RunEnable = (1 << 3)   /*!< Run enable, effect means keep the data     */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -256,8 +253,8 @@ enum class AxisUserFirst
 \* ---------------------------------------------------------------------- */
 enum class AxisUserLast
 {
-   EofErr   = 0,  /*!< End of frame with errors                           */
-   Flush    = 2   /*!< Flush the output frame                             */
+   EofErr   = (1 << 0),  /*!< End of frame with errors                    */
+   Flush    = (1 << 2)   /*!< Flush the output frame                      */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -271,7 +268,7 @@ enum class AxisUserLast
 \* ---------------------------------------------------------------------- */
 enum class AxisLast
 {
-   Eof     = 0 /*!< End of frame word                                     */
+   Eof     = (1 << 0)  /*!< End of frame word                             */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -308,7 +305,7 @@ typedef ap_uint<1> ModuleIdx_t;
  *  \brief   The timestamp information in the WIB frame
  *
 \* ---------------------------------------------------------------------- */
-typedef ap_uint<64> WibTimestamp_t;
+typedef ap_uint<40> WibTimestamp_t;
 /* ---------------------------------------------------------------------- */
 
 
@@ -355,10 +352,10 @@ struct ChannelConfig {
 \* ---------------------------------------------------------------------- */
 enum MODE_K
 {
-   MODE_K_DUMP       = 0,  /*!< Read and dispose of the data              */
-   MODE_K_COPY       = 1,  /*!< Read and promote as is                    */
-   MODE_K_TRANSPOSE  = 2,  /*!< Transpose channel and time order          */
-   MODE_K_COMPRESS   = 3,  /*!< Compress the data                         */
+   MODE_K_DUMP      = 0,  /*!< Read and dispose of the data               */
+   MODE_K_COPY      = 1,  /*!< Read and promote as is                     */
+   MODE_K_TRANSPOSE = 2,  /*!< Transpose channel and time order           */
+   MODE_K_COMPRESS  = 3,  /*!< Compress the data                          */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -394,11 +391,11 @@ struct ModuleConfig {
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \struct MonitorCommon
+ *  \struct StatusCommon
  *  \brief Track status and statistics common to the module
  *
 \* ---------------------------------------------------------------------- */
-struct MonitorCommon
+struct StatusCommon
 {
    uint32_t   pattern; /*!< Recognizable bit pattern                      */
 };
@@ -407,11 +404,11 @@ struct MonitorCommon
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \struct MonitorCfg
+ *  \struct StatusCfg
  *  \brief Track status and statistics configuration requests
  *
 \* ---------------------------------------------------------------------- */
-struct MonitorCfg
+struct StatusCfg
 {
    uint32_t      mode; /*!< Last configured acquisition mode              */
    uint32_t     ncfgs; /*!< Number of configuration requests              */
@@ -419,242 +416,73 @@ struct MonitorCfg
 /* ---------------------------------------------------------------------- */
 
 
-
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \struct MonitorRead
+ *  \struct StatusRead
  *  \brief Track status and statistics for read method
  *
 \* ---------------------------------------------------------------------- */
-struct MonitorRead
+struct StatusRead
 {
-   explicit MonitorRead ()
+   /* ------------------------------------------------------------------- *//*!
+    *
+    *  \enum class Mask
+    *  \brief Maps out the bits in the status mask
+    */
+   enum class Mask
    {
-//      #pragma    HLS ARRAY_PARTITION variable=ntypes factor=4 dim=1
-   }
+      RunDisable = 1 << 0, /*!< Run is disable                            */
+      Flush      = 1 << 1, /*!< Flush the packet data                     */
+      ErrSofM    = 1 << 2, /*!< Start of frame error, error               */
+      ErrSofU    = 1 << 3, /*!< Start of frame error, unexpected          */
+      ErrEofM    = 1 << 4, /*!< End   of frame error, missing             */
+      ErrEofU    = 1 << 5, /*!< End   of frame error, unexpected          */
+      ErrEofE    = 1 << 6, /*!< End   of frame error, error bit set       */
+      ErrK28_5   = 1 << 7, /*!< K28_5 character error                     */
+      ErrSeq     = 1 << 8  /*!< WIB sequence error                        */
+   };
 
    /* ------------------------------------------------------------------- *//*!
     *
-    *  \enum  class Counter
+    *  \enum  class Type
     *  \brief The index of the counters of ntypes
     *
     */
-   enum class WibCounter
+   enum class Type
    {
-      // Errors from the WIB header words
-      ErrWibComma     = 0x00, /*!< Comma character does not match         */
-      ErrWibVersion   = 0x01, /*!< Version number incorrect               */
-      ErrWibId        = 0x02, /*!< WibId (Crate.Slot.Fiber) incorrect     */
-      ErrWibRsvd      = 0x03, /*!< Reserved header bits are not 0         */
-      ErrWibErrors    = 0x04, /*!< Wib Errors field is not 0              */
-      ErrWibTimestamp = 0x05, /*!< Unused bit                             */
-      ErrWibUnused6   = 0x06, /*!< Unused bit                             */
-      ErrWibUnused7   = 0x07, /*!< Unused bit                             */
+      Normal      =  0, /*!< Frames with Flush = 0, RunDisable = 0        */
+      RunDisabled =  1, /*!, Frames with Flush = 0, RunDisable = 1        */
+      Flush       =  2, /*!< Frames with Flush = 1, RunDisable = 0        */
+      DisFlush    =  3, /*!< Frames with Flush = 1, RunDisable = 1        */
 
-      // Errors from the Colddata stream 0 header words
-      ErrCd0StrErr1   = 0x08,  /*!< Colddata link 0, stream err1 is not 0   */
-      ErrCd0StrErr2   = 0x09,  /*!< Colddata link 0, stream err2 is not 0   */
-      ErrCd0Rsvd0     = 0x0a,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd0ChkSum    = 0x0b,  /*!< Colddata link 0, checksum incorrect     */
-      ErrCd0CvtCnt    = 0x0c,  /*!< Colddata link 0, convert count mismatch */
-      ErrCd0ErrReg    = 0x0d,  /*!< Colddata link 0, error register is not 0*/
-      ErrCd0Rsvd1     = 0x0e,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd0Hdrs      = 0x0f,  /*!< Colddata link 0, error in hdr words     */
-
-       // Errors from the Colddata stream 1 header words
-      ErrCd1StrErr1   = 0x10,  /*!< Colddata link 0, stream err1 is not 0   */
-      ErrCd1StrErr2   = 0x11,  /*!< Colddata link 0, stream err2 is not 0   */
-      ErrCd1Rsvd0     = 0x12,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd1ChkSum    = 0x13,  /*!< Colddata link 0, checksum incorrect     */
-      ErrCd1CvtCnt    = 0x14,  /*!< Colddata link 0, convert count mismatch */
-      ErrCd1ErrReg    = 0x15,  /*!< Colddata link 0, error register is not 0*/
-      ErrCd1Rsvd1     = 0x16,  /*!< Colddata link 0, reserved field is not 0*/
-      ErrCd1Hdrs      = 0x17,   /*!< Colddata link 0, error in hdr words    */
+      ErrSofM     =  4, /*!< Frames missing Sof marker on first user word */
+      ErrSofU     =  5, /*!< Frames with Sof marker on other than first   */
+      ErrEofM     =  6, /*!< Frames missing Eof marker on last word       */
+      ErrEofU     =  7, /*!< Frames with Eof marker on other than last    */
+      ErrEofE     =  8, /*!< Frames with Eof marker with error            */
+      ErrK28_5    =  9, /*!< Frames missing K28_5 character, first WIB    */
+      ErrSeq      = 10  /*!< Frames with improper sequence number         */
    };
-   typedef ap_uint<5> WibCounterIdx;
 
-
-   enum class StateCounter
-   {
-      // These bits are not promoted to the host
-      Normal          =  0x0, /*!< Frames with Flush = 0, RunDisable = 0    */
-      RunDisabled     =  0x1, /*!, Frames with Flush = 0, RunDisable = 1    */
-      Flush           =  0x2, /*!< Frames with Flush = 1, RunDisable = 0    */
-      DisFlush        =  0x3, /*!< Frames with Flush = 1, RunDisable = 1    */
-   };
-   typedef ap_uint<2> StateCounterIdx;
-
-   enum class FrameCounter
-   {
-      ErrSofM         =  0x0, /*!< Frames missing Sof marker on first user word */
-      ErrSofU         =  0x1, /*!< Frames with Sof marker on other than first   */
-      ErrEofM         =  0x2, /*!< Frames missing Eof marker on last word       */
-      ErrEofU         =  0x3, /*!< Frames with Eof marker on other than last    */
-      ErrEofE         =  0x4, /*!< Frames with Eof marker with error            */
-   };
-   typedef ap_uint<3> FrameCounterIdx;
-
-   /* ---------------------------------------------------------------------- *//*!<
-    *
-    *  brief  Conditionally increments the specified Wib Error counter
-    *
-    *  \param[in] increament If true, then increment the counter
-    *  \param[in]    counter Which counter to increment
-    *                                                                        */
-   /* ---------------------------------------------------------------------- */
-   uint32_t count (bool increment, WibCounter counter)
-   {
-      #pragma HLS INLINE
-      if (increment)
-      {
-         return nWibErrs[static_cast<unsigned>(counter)] += 1;
-      }
-      else
-      {
-         return nWibErrs[static_cast<unsigned>(counter)];
-      }
-   }
-   /* ---------------------------------------------------------------------- */
-
-
-   /* ---------------------------------------------------------------------- *//*!<
-    *
-    *  brief  Unconditionally increments the specified Wib Error counter
-    *
-    *  \param[in] counter Which counter to increment
-    *                                                                        */
-   /* ---------------------------------------------------------------------- */
-  void count (WibCounter counter)
-   {
-      #pragma HLS INLINE
-       nWibErrs[static_cast<unsigned>(counter)] += 1;
-   }
-   /* ---------------------------------------------------------------------- */
-
-
-
-  /* ---------------------------------------------------------------------- *//*!<
-   *
-   *  brief  Conditionally increments the specified Frame Error counter
-   *
-   *  \param[in] increament If true, then increment the counter
-   *  \param[in]        idx The index of the counter to increment
-   *                                                                        */
-  /* ---------------------------------------------------------------------- */
-  uint32_t count (bool increment, FrameCounter counter)
-  {
-     #pragma HLS INLINE
-     if (increment)
-     {
-        return nWibErrs[static_cast<unsigned>(counter)] += 1;
-     }
-     else
-     {
-        return nWibErrs[static_cast<unsigned>(counter)];
-     }
-  }
-  /* ---------------------------------------------------------------------- */
-
-
-  /* ---------------------------------------------------------------------- *//*!<
-   *
-   *  brief  Unconditionally increments the specified Frame Error counter
-   *
-   *  \param[in]  counter Which ounter to increment
-   *                                                                        */
-  /* ---------------------------------------------------------------------- */
- void count (FrameCounter counter)
-  {
-     #pragma HLS INLINE
-      nWibErrs[static_cast<unsigned>(counter)] += 1;
-  }
-  /* ---------------------------------------------------------------------- */
-
-
-
-   /* ---------------------------------------------------------------------- *//*!<
-     *
-     *  brief  Unconditionally increments the frame state counters
-     *
-     *  \param[in]  state  The index of the state counter to increment
-     *
-     *  There are 4 possible frame states
-     *     -0  Normal,               run  enabled, frame flush disabled
-     *     -1  Run disabled,         run disabled, frame flush disabled
-     *     -2  Flush,                run  enabled, frame flush enabled
-     *     -3  Run Disabled & Flush, run  disable, frame flush enabled
-     *
-     *                                                                        */
-    /* ---------------------------------------------------------------------- */
-   void count (StateCounterIdx state)
-   {
-      #pragma HLS INLINE
-      nStates[state] += 1;
-   }
-
-   unsigned operator[] (StateCounter counter) const
-   {
-      return nStates[static_cast<unsigned>(counter)];
-   }
-
-   unsigned operator[] (FrameCounter counter) const
-   {
-      return nFrameErrs[static_cast<unsigned>(counter)];
-   }
-
-   unsigned operator[] (WibCounter counter) const
-   {
-      return nWibErrs[static_cast<unsigned>(counter)];
-   }
-
-   void init ()
-   {
-      #pragma HLS INLINE
-
-      // Don't processs frames during a configuration request
-      WIBERRS_CLEAR_LOOP:
-      for (int idx = 0; idx < sizeof (nWibErrs) / sizeof (nWibErrs[0]); ++idx)
-      {
-         nWibErrs[idx] = 0;
-      }
-
-      for (int idx = 0; idx < sizeof (nStates) / sizeof (nStates[0]); ++idx)
-      {
-         nStates[idx] = 0;
-      }
-
-      for (int idx = 0; idx < sizeof (nFrameErrs) / sizeof (nFrameErrs[0]); ++idx)
-      {
-         nFrameErrs[idx] = 0;
-      }
-
-      nframes   = 0;
-      mask      = 0;
-   }
-
-   typedef ap_uint<32> Counter;
-   ap_uint<32>          mask; /* < Status mask                            */
-   uint32_t          nframes; /*!< Total number frames, this must be the
-                                   sum of the first 4                     */
-   Counter      nWibErrs[24]; /*!< Count of WIB errors                    */
-   Counter        nStates[4]; /*!< Count of Frame states (Run/Enabled     */
-   Counter     nFrameErrs[5]; /*!< Count of framing errors (Sof/Eof etc)  */
+   uint32_t       mask; /* < Status                                       */
+   uint32_t    nframes; /*!< Total number frames, this must be the sum
+                            of the first 4 words of ntypes                */
+   uint32_t ntypes[11]; /*!< Count of frame types                         */
 };
 /* ---------------------------------------------------------------------- */
 
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \struct MonitorWrite
+ *  \struct StatusMethod
  *  \brief Track status and statistics for write method
  *
 \* ---------------------------------------------------------------------- */
-struct MonitorWrite
+struct StatusWrite
 {
-   uint32_t    nbytes; /*!< Number of bytes written                       */
    uint32_t npromoted; /*!< Number WIB frame promoted to the output packet*/
    uint32_t  ndropped; /*!< Number WIB frames dropped                     */
-   uint32_t  npackets; /*!< Number of packets written                     */
+   uint32_t    nwrote; /*!< Number of packets written                     */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -663,16 +491,16 @@ struct MonitorWrite
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \struct MonitorModule
- *  \brief  The per module monitoring information
+ *  \struct StatusMOdule
+ *  \brief  The per module status information
  *
 \* ---------------------------------------------------------------------- */
-struct MonitorModule
+struct ModuleStatus
 {
-   MonitorCommon  common;   /*!< Status common to the module              */
-   MonitorCfg        cfg;   /*!< Configuration request status             */
-   MonitorRead      read;   /*!< Read frame status                        */
-   MonitorWrite    write;   /*!< Write packet status                      */
+   StatusCommon   common;   /*!< Status common to the module              */
+   StatusCfg         cfg;   /*!< Configuration request status             */
+   StatusRead       read;   /*!< Read frame status                        */
+   StatusWrite     write;   /*!< Write packet status                      */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -1321,8 +1149,6 @@ inline uint32_t Header::Version::version (uint8_t   major,
                                           uint8_t   patch,
                                           uint8_t release)
 {
-   #pragma HLS INLINE
-
    uint32_t w = ((uint32_t)major   << (int)Header::Version::Offset::MAJOR)
               | ((uint32_t)minor   << (int)Header::Version::Offset::MINOR)
               | ((uint32_t)patch   << (int)Header::Version::Offset::PATCH)
@@ -1336,16 +1162,12 @@ inline Header::Header (uint32_t identifier,
                        uint32_t    version) :
    m_ui64 (header (identifier, version))
 {
-   #pragma HLS INLINE
-
    return;
 }
 
 inline uint64_t Header::header (uint32_t identifier,
                                 uint32_t    version)
 {
-   #pragma HLS INLINE
-
    uint64_t w = ((uint64_t)version << 32) | identifier;
    return w;
 }
@@ -1354,8 +1176,6 @@ inline uint64_t Header::header  (enum Identifier::DataType    dataType,
                                  uint32_t                       nbytes,
                                  uint32_t                      version)
 {
-   #pragma HLS INLINE
-
    uint32_t id = Identifier::identifier (Identifier::FrameType::DATA,
                                          dataType,
                                          nbytes);
@@ -1369,8 +1189,6 @@ inline uint64_t Header::header  (enum Identifier::FrameType  frameType,
                                  uint32_t                       nbytes,
                                  uint32_t                      version)
 {
-   #pragma HLS INLINE
-
    uint32_t id = Identifier::identifier (frameType, dataType, nbytes);
    uint64_t w = header (id, version);
    return w;
@@ -1378,8 +1196,6 @@ inline uint64_t Header::header  (enum Identifier::FrameType  frameType,
 
 inline uint64_t Trailer::trailer (uint32_t identifier)
 {
-   #pragma HLS INLINE
-
    uint64_t w = ((uint64_t)(Trailer::Pattern) << 32) | identifier;
    return w;
 }

@@ -97,327 +97,6 @@ typedef uint32_t __u32;
 using namespace std;
 
 
-// -*-Mode: C++;-*-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  @file     mem_dcache.c
- *  @brief    Slimmed down versions of the SDK routines.  These only work
-              in an non-virtual environment
- *  @verbatim
- *                               Copyright 2013
- *                                    by
- *
- *                       The Board of Trustees of the
- *                    Leland Stanford Junior University.
- *                           All rights reserved.
- *
- *  @endverbatim
- *
- *  @par Facility:
- *  fmt
- *
- *  @author
- *  russell@slac.stanford.edu
- *
- *  @par Date created:
- *  2014.12.01
- *
- *  @par Last commit:
- *  \$Date: $ by \$Author: $.
- *
- *  @par Revision number:
- *  \$Revision: $
- *
- *  @par Location in repository:
- *  \$HeadURL: $
- *
- * @par Credits:
- * SLAC
- *
-\* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *\
-   
-   HISTORY
-   -------
-  
-   DATE       WHO WHAT
-   ---------- --- ---------------------------------------------------------
-   2014.12.01 jjr
-  
-\* ---------------------------------------------------------------------- */
-
-
-
-/* For both L1 and L2 caches. */
-#define CACHE_LINE_SIZE  32U
-#define CACHE_LINE_MASK  (~(CACHE_LINE_SIZE - 1U))
-
-#define LEVEL2_CLEAN_BY_PA      0x7b0
-#define LEVEL2_INVALIDATE_BY_PA 0x770
-
-
-
-
-
-uintptr_t mem_mapL2Controller ()
-{
-   int        fd = open("/dev/mem", O_RDWR);
-   uintptr_t ptr = (uintptr_t)mmap(NULL, 
-                                   4*1024,
-                                   PROT_READ|PROT_WRITE, 
-                                   MAP_PRIVATE, 
-                                   fd, 
-                                   0x1E00A000);
-
-   fprintf (stderr,
-            "L2 fd = %d adr = %8.8x\n", fd, (unsigned int)ptr);
-
-   return ptr;
-}
-
-static uintptr_t L2Base = mem_mapL2Controller ();
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief  Return address of the lowest cache address that \a adr belong to
-  \return Address of the lowest cache address that \a adr belong to
- 
-  \param[in] adr  The target physical address
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline uintptr_t lineFloor(void *adr) 
-{
-    return (uintptr_t)adr & CACHE_LINE_MASK;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief  Round \a adr to the next cache line address
-  \return The rounded address
-
-  \param[in] adr  The target physical address
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline uintptr_t lineCeil (void *adr) 
-{
-    return ((uintptr_t)adr + CACHE_LINE_SIZE - 1U) & CACHE_LINE_MASK;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief Cleans the specified range of physical address to the L2 cache
-  
-  \param[in] begAdr The beginning physical address
-  \param[in] endAdr The ending    physical address
-  \param[in] l2Base The base address of the L2 memory controller
-
-                                                                          */
-/* ---------------------------------------------------------------------- */
-void mem_dcacherange_clean (void              *begAdr, 
-                            void              *endAdr,
-                            register uintptr_t l2Base) 
-{
-    const uintptr_t beg = lineFloor (begAdr);
-    const uintptr_t end = lineCeil  (endAdr);
-
-
-    l2Base = L2Base;
-
-
-    /* Make all following CP15 cache operations act on the L1 Data cache. */
-    asm volatile
-    (
-        "mcr p15, 2, %0, c0, c0, 0 \n\t"
-        "isb                       \n\t"
-        : : "r"(0) : "memory"
-     );
-
-
-
-    /* Act on all specified cache lines. */
-    register uintptr_t adr;
-
-    for (adr = beg; adr < end; adr+= CACHE_LINE_SIZE) 
-    {
-#if 0
-        asm volatile
-        (
-             /* Clean L1 D-cache line to point of coherency.*/
-            "mcr p15, 0, %[adr], c7, c10, 1       \n\t" 
-
-             /* Clean L2 line. Atomic operation for PL310 L2CC.                 */
-            "str %[adr], [%[l2Base], %[l2Clean]]  \n\t" 
-                                                           
-            :
-            : [adr]     "r" (adr),
-              [l2Base]  "r" (l2Base),
-              [l2Clean] "i" (LEVEL2_CLEAN_BY_PA)
-            : "memory"
-        );
-#endif
-    }
-
-
-    asm volatile ("dsb"); /* Wait for completion. */
-    return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief Invalidates the specified range of physical address to the L2 cache
-  
-  \param[in] begAdr The beginning physical address
-  \param[in] endAdr The ending    physical address
-  \param[in] l2Base The base address of the L2 memory controller
-
-
-  \note
-   The begin and ending address must be exactly cache aligned. If not,
-   then the shards will be invalidated without a clean, meaning those
-   addresses will have whatever was in the memory.
-                                                                          */
-/* ---------------------------------------------------------------------- */
-void mem_dcacherange_invalidate (void              *begAdr, 
-                                 void              *endAdr,
-                                 register uintptr_t l2Base) 
-{
-    const uintptr_t beg = lineFloor (begAdr);
-    const uintptr_t end = lineCeil  (endAdr);
-
-
-    /* Make all following CP15 cache operations act on the L1 Data cache. */
-    /*
-    asm volatile
-    (
-        "mcr p15, 2, %0, c0, c0, 0 \n\t"
-        "isb                       \n\t"
-        : : "r"(0) : "memory"
-     );
-    */
-
-
-
-    /* Act on all specified cache lines. */
-    register uintptr_t adr;
-    for (adr = beg; adr < end; adr+= CACHE_LINE_SIZE) 
-    {
-
-       register uint64_t *ptr = (uint64_t *)adr;
-
-       ptr[-1] = 0x11111111abadbabeLL;
-       ptr[ 0] = 0x00000222deadbeefLL;
-       ptr[ 1] = 0x33333333abadcafeLL;
-#if 0
-
-        asm volatile
-        (
-             /* Clean L2 line. Atomic operation for PL310 L2CC.  */
-            "str %[adr], [%[l2Base], %[l2Inv]]  \n\t" 
-
-
-             /* Clean L1 D-cache line to point of coherency.*/
-            "mcr p15, 0, %[adr], c7, c6, 1       \n\t" 
-            :
-            : [adr]     "r" (adr),
-              [l2Base]  "r" (l2Base),
-              [l2Inv]   "i" (LEVEL2_INVALIDATE_BY_PA)
-            : "memory"
-        );
-#endif
-    }
-
-
-    asm volatile ("dsb"); /* Wait for completion. */
-    return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-static void invalidate (uint64_t *data, int nbytes)
-{
-   return;
-   uint64_t *d64;
-
-   // Last frame
-   d64 = data + nbytes/sizeof (uint64_t) - 1 - 30;
-   /*
-   fprintf (stderr, "Invalidating %p = %16.16" PRIx64 "\n",
-            (void *)d64, *d64);
-   */
-
-   static int First = 1;
-   if (First)
-   {
-      printf ("Wib Frame[last-1] = %p:%p\n"
-              "hdr:%16.16" PRIx64 "\n"
-              "ts[          0] = %16.16" PRIx64 "\n"
-              "ts[last-1:last] = %16.16" PRIx64 ":%16.16" PRIx64 "\n"
-              "tlr:%16.16" PRIx64 "\n", 
-              (void *)(d64-30), (void *)(d64),
-              data[0],
-              data[1], 
-              d64[-30], d64[0],
-              d64[30]);
-      First = 0;
-   }
-
-   int      idx;
-   uint64_t val;
-
-   d64 -= 30;
-   val  = 0x11111111LL;
-   for (idx = 0; idx < 30; idx++)
-   {
-      d64[idx] = val;
-      val     += 0x1111111111111111LL;
-   }
-
-   d64 += 30;
-   d64[0] = 0x11111111abadbabeLL;
-   d64[1] = 0x00000222deadbeefLL;
-   d64[2] = 0x33333333abadcafeLL;
-   d64[3] = 0x4545454545454545LL;
-   val    = 0x6767676767676767LL;
-   for (idx = 4; idx < 30; idx++)
-   {
-      d64[idx] = val;
-      val     += 0x1111111111111111LL;
-   }
-
-   d64[30] = 0xa5a5a5a5a5a5LL;
-   asm volatile ("dsb"); /* Wait for completion. */
-
-   static int Print = 1;
-   if (Print)
-   {
-      for (idx = 0; idx < 31; idx++)
-      {
-         printf ("d64[%2d] = %16.16" PRIx64 "\n", idx, d64[idx]);
-      }
-      Print = 0;
-   }
-
-   //mem_dcacherange_invalidate ((void *)d64, d64 + 7, L2Base);
-   return;
-}
-
-
-
 /* ---------------------------------------------------------------------- *//*!
 
    \class  TimingClockTicks
@@ -665,8 +344,7 @@ public:
                      " Error returning index:%d\n", index);
          }
 
-         invalidate (node->m_body.baseAddr64 (), node->m_body.size());
-         ssize_t iss = DaqDmaDevice::free (fd, index);
+         ssize_t iss = dmaRetIndex (fd, index);
          if (iss)
          {
             fprintf (stderr,
@@ -1465,8 +1143,7 @@ public:
                // --------------------------------------------------------
                int index = flnk->m_body.index ();
 
-               invalidate (flnk->m_body.baseAddr64 (), flnk->m_body.size());
-               DaqDmaDevice::free (fd, index);
+               dmaRetIndex (fd, index);
                list->m_remaining += 1;
 
                /**
@@ -1646,8 +1323,7 @@ public:
                   break;
                }
 
-               invalidate (node->m_body.baseAddr64 (), node->m_body.size());
-               DaqDmaDevice::free (fd, index);
+               dmaRetIndex (fd, index);
 
             }
             else
@@ -1678,8 +1354,10 @@ public:
       }
       else
       {
+         /**
          fprintf (stderr, "Free: back to dma pool index = %d\n", m_index);
-         DaqDmaDevice::free (fd, m_index);
+         **/
+         dmaRetIndex (fd, m_index);
       }
 
    }
@@ -2077,11 +1755,6 @@ public:
                           int              nbytes,
                           int                dest);
 
-   static void 
-       print_dataFrame   (void const        *data,
-                          int              nbytes,
-                          int                dest);
-
 public:
 
    /* ------------------------------------------------------------------- *//*!
@@ -2259,79 +1932,20 @@ inline void FrameDiagnostics::dump_dataFrame (void const *data,
                                               int       nbytes,
                                               int         dest)
 {
-
    if (!m_dataFrameDump[dest].declare ()) return;
 
-
-   print_dataFrame (data, nbytes, dest);
-
-   return;
-}
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief  Primitive hex dump of the received data frame
- *
- *  \param[in]   data The frame data
- *  \param[in] nbytes The number bytes in the data
- *  \param[in]   dest Which stream
- *
-\* ---------------------------------------------------------------------- */
-inline void FrameDiagnostics::print_dataFrame (void const *data, 
-                                               int       nbytes,
-                                               int         dest)
-{
-   uint64_t const *s = (uint64_t const *)data;
+   uint16_t const *s = (uint16_t const *)data;
    int            ns = nbytes / sizeof (*s);
 
-   printf ("Header: %16.16" PRIx64 "\n", s[0]);
-
-   uint64_t   prvTs = 0;
-   uint16_t prvCvt0 = 0;
-   uint16_t prvCvt1 = 0;
-   int      nframes = 0;
-
-   ns         -= 1;
-   for (int idx = 1; idx < ns; nframes += 1)
+   for (int idx = 0; idx < ns; idx++)
    {
-      printf ("\nd[%1d.%5d]:", dest, nframes);
-      for (int idy = 0; idy < 30; idy++)
-      {
-         if ((idy) && ((idy%4) == 0)) printf ("           ");
-         printf (" %16.16" PRIx64 "", s[idx]);
-         if ((idy%4) == 3) 
-         {
-            if (idy == 3)
-            {
-               uint64_t curTs   =  s[idx - 3 +  1];
-               uint16_t curCvt0 = (s[idx - 3 +  2] >> 48) & 0xffff;
-               uint16_t curCvt1 = (s[idx - 3 + 16] >> 48) & 0xffff;  
-               printf (" dt = %16.16" PRIx64 " : %4.4x : %4.4x\n", 
-                       curTs - prvTs, 
-                       (curCvt0 - prvCvt0),
-                       (curCvt1 - prvCvt1));
-
-               prvTs   = curTs;
-               prvCvt0 = curCvt0;
-               prvCvt1 = curCvt1;
-            }
-            else
-            {
-               putchar ('\n');
-            }
-         }
-
-         idx += 1;
-      }
+      if ((idx%16) == 0) printf ("d[%1d.%3d]:", dest, idx);
+      printf (" %4.4" PRIx16, s[idx]);
+      if ((idx%16) == 15) putchar ('\n');
    }
 
    // If have left off in the middle of a line
-   if (ns % 4) putchar ('\n');
-
-   // Tralier
-   printf ("Trailer: %16.16" PRIx64 "\n", s[ns]);
+   if (ns % 16) putchar ('\n');
 }
 /* ---------------------------------------------------------------------- */
 
@@ -2981,322 +2595,6 @@ void DaqBuffer::close () {
 
 
 
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief   Hokey routine to get the timestamp range of the packet.
-  \return  The  timestamp of the initial WIB frame
-
-  \param[in]  range The timestamp range of this packet
-  \param[in]    d64 64-bit pointer to the data packet
-  \param[in] nbytes The read length
-
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline void getTimestampRange (uint64_t     range[2],
-                                      uint64_t const   *d64,
-                                      uint32_t      nbytes)
-{
-   // -----------------------------------------------------------
-   // Skip header and locate the timestamp in the first WIB frame
-   // -----------------------------------------------------------
-   d64            += 1;
-   uint64_t  begin = d64[1];
-
-
-   // -----------------------------------------------------------
-   // Locate the last WIBframe and its timestamp. 
-   // Add the number of clock ticks per time sample to get the
-   // ending time.
-   // -----------------------------------------------------------
-   d64 += nbytes/sizeof (uint64_t) - 1 - 30 - 1;
-   uint64_t end = d64[1] + TimingClockTicks::PER_SAMPLE;
-
-
-   #if 0
-   fprintf (stderr,
-           "Beg %16.16" PRIx64 " End %16.16" PRIx64 " %16.16" PRIx64 
-           " %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
-            begin, end, d64[-1], d64[0], d64[1], d64[2]);
-   #endif
-
-
-   // -----------------------------------------------------------
-   // Store timestamp of the first sample in the first WIB frame
-   // and the last sample in the last WIB frame as the range
-   // -----------------------------------------------------------
-   range[0] = begin;
-   range[1] =   end;
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \struct WibPacketCtx
-  \brief  Context for one Wib Packet (this is typically 1024 Wib frames.
-                                                                          */
-/* ---------------------------------------------------------------------- */
-
-class WibPacketCtx
-{
-public:
-   explicit WibPacketCtx () { return; }
-
-   WibPacketCtx (uint64_t const   *d64,
-                 uint32_t       nbytes)
-   {
-      fill (d64, nbytes);
-   }
-
-   /* ------------------------------------------------------------------- *//*!
-
-     \struct WibFrameCtx
-     \brief  Context for one Wib Frame
-                                                                          */
-   /* ------------------------------------------------------------------- */
-   struct WibFrameCtx
-   {
-      uint64_t     ts;  /*!< Wib timestamp                                */
-      uint16_t   cvt0;  /*!< Colddata stream 0 convert count              */
-      uint16_t   cvt1;  /*!< Colddata stream 1 convert count              */
-   };
-   /* ------------------------------------------------------------------- */
-
-
-   WibFrameCtx frame[2];  /*!<  Beginning and ending context              */
-
-
-  /* -------------------------------------------------------------------- *//*!
-
-     \brief   Fills in the context block
-     \return  The  timestamp of the initial WIB frame
-
-     \param[in]  range The timestamp range of this packet
-     \param[in]    d64 64-bit pointer to the data packet
-     \param[in] nbytes The read length
-
-                                                                          */
-   /* ------------------------------------------------------------------- */
-   inline void fill (uint64_t const   *d64,
-                     uint32_t       nbytes)
-   {
-      // -----------------------------------------------------------
-      // Skip header and locate the timestamp in the first WIB frame
-      // -----------------------------------------------------------
-      d64          += 1;
-      frame[0].ts   = d64[ 1];
-      frame[0].cvt0 = (d64[ 2] >> 48) & 0xffff;
-      frame[0].cvt1 = (d64[16] >> 48) & 0xffff;
-
-      
-      // -----------------------------------------------------------
-      // Locate the last WIBframe and its timestamp. 
-      // Add the number of clock ticks per time sample to get the
-      // ending time.
-      // -----------------------------------------------------------
-      d64           += nbytes/sizeof (uint64_t) - 1 - 30 - 1;
-      frame[1].ts   = d64[ 1];
-      frame[1].cvt0 = (d64[ 2] >> 48) & 0xffff;
-      frame[1].cvt1 = (d64[16] >> 48) & 0xffff;
-
-      return;
-}
-/* ---------------------------------------------------------------------- */
-
-};
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief Reports on Wib packets that have too small a range to be covered
-         by 1024 Wib frames.
-
-  \param[in] frameCtx  Context of the previous packet
-  \param[in]     data  The data packet
-  \param[in]   rxSize  The size, in bytes, of the received data packet
-  \param[in]     dest  The AXI dma stream destination identifier, typically
-                       1 or 2
-  \param[in]    index  The AXI dam stream buffer index
-
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static void reportTooSmall (WibPacketCtx const          *prv,
-                            uint64_t     const         *data,
-                            int                       rxSize,
-                            int                         dest,
-                            int                        index,
-                            int                        count,
-                            uint64_t                tsRng[2],
-                            uint64_t                      dt)
-{
-   // ---------------------------------------------------
-   // Because the data is changing out from underneath,
-   // Must do as little as possible to gather the context
-   // This means no printing until it has been gathered.
-   // ---------------------------------------------------
-
-   WibPacketCtx cur (data, rxSize);
-
-   // ----------------------------------------------
-   // Use the reported timestamps.  
-   // The problem is the data is changing underneath
-   // ----------------------------------------------
-   cur.frame[0].ts = tsRng[0] - TimingClockTicks::PER_SAMPLE;
-   cur.frame[1].ts = tsRng[1] - TimingClockTicks::PER_SAMPLE;
-
-
-   // ----------------------------------------------------------------------
-   // Check if the last time matches the time in previous usage of this 
-   // DMA buffer Basically, is this is a stale timestamp.
-   // ----------------------------------------------------------------------
-   int status = ((prv->frame[1].ts   != cur.frame[1].ts  ) << 0) |
-                ((prv->frame[1].cvt0 != cur.frame[1].cvt0) << 1) |
-                ((prv->frame[1].cvt1 != cur.frame[1].cvt1) << 2);
-
-
-   {
-      int          nbad = 0;
-      struct Bad
-      {
-         WibPacketCtx::WibFrameCtx ctx[2];
-         uint32_t                  status;
-         uint32_t                     idx;
-      };
-      Bad bads[1024];
-      Bad *bad = bads;
-
-
-      uint64_t const *d64 = data + 1;
-      uint64_t      prvTs = tsRng[0];
-      uint16_t    prvCvt0 = (d64[ 2] >> 48) & 0xffff;
-      uint16_t    prvCvt1 = (d64[16] >> 48) & 0xffff;
-
-      d64 += 1023 * 30;
-      for (int idx = 1023; idx >=0; --idx, d64 -= 30)
-      {
-         uint64_t   curTs =  d64[1];
-         uint16_t curCvt0 = (d64[ 2] >> 48) & 0xffff;
-         uint16_t curCvt1 = (d64[16] >> 48) & 0xffff;
-         int status = ((prvTs   != curTs  ) << 0) |
-                      ((prvCvt0 != curCvt0) << 1) |
-                      ((prvCvt1 != curCvt1) << 2);
-
-         if (status)
-         {
-            bad->status      = status;
-            bad->idx         =    idx;
-
-            bad->ctx[0].ts   =   prvTs;
-            bad->ctx[0].cvt0 = prvCvt0;
-            bad->ctx[0].cvt1 = prvCvt1;
-
-            bad->ctx[1].ts   =   curTs;
-            bad->ctx[1].cvt0 = curCvt0;
-            bad->ctx[1].cvt1 = curCvt1;
-
-            nbad += 1;
-            bad  += 1;
-         }
-
-         prvTs   = curTs   - TimingClockTicks::PER_SAMPLE;
-         prvCvt0 = curCvt0 - 1;
-         prvCvt1 = curCvt1 - 1;
-      }
-
-
-      bad = bads;
-      for (int idx = 0;  idx < nbad;  idx++, bad++)
-      {
-         int status = bad->status;
-
-         printf ("rxRun:Error mismatch data[.%4d.%4d] prv:cur "
-                 "%16.16" PRIx64 " %c= %16.16" PRIx64 " "
-                 "%4.4" PRIx16 " %c= %4.4" PRIx16     " "
-                 "%4.4" PRIx16 " %c= %4.4" PRIx16 "\n",
-                 bad->idx, idx,  
-                 bad->ctx[0].ts,   (status & 1) ? '!' : '=', bad->ctx[1].ts,
-                 bad->ctx[0].cvt0, (status & 2) ? '!' : '=', bad->ctx[1].cvt0, 
-                 bad->ctx[0].cvt1, (status & 4) ? '!' : '=', bad->ctx[1].cvt1);
-      }
-
-   }
-    
-
-   
-
-
-   // ---------------------------------------------
-   // Check if the value of the timestamp is stable
-   // --------------------------------------------- 
-   uint64_t ts[2];
-   uint64_t curTs = cur.frame[1].ts;
-   int      nchgs = 0;
-   uint64_t  last = curTs;
-   uint64_t chgs[50];
-   for (int idx = 0; idx < 100000; idx++)
-   {
-      getTimestampRange (ts, data, rxSize);
-      if (ts[1] != last)
-      {
-         if (nchgs > (int) (sizeof (chgs) / sizeof (chgs[0]))) break;
-         chgs[nchgs++] = ts[1];
-         last         =  ts[1];
-      }
-   }
-
-
-   printf ("rxRun:Error timespan %d "
-           "%16.16" PRIx64 " < %9d %16.16" PRIx64 ":%16.16" PRIx64 ""
-           " cvt[beg:end] s0.%4.4" PRIx16 ":%4.4" PRIx16 " s1.%4.4" PRIx16 ":%4.4" PRIx16 "\n",
-           count,
-           dt, TimingClockTicks::PER_FRAME, 
-           cur.frame[0].ts,   cur.frame[1].ts,
-           cur.frame[0].cvt0, cur.frame[1].cvt0,
-           cur.frame[0].cvt1, cur.frame[1].cvt1);
-
-   // ------------------------------------------------------
-   // Was the data from the previous instance of this buffer
-   // ------------------------------------------------------
-   char const *string = status ? "Stale" : "Not Stale";
-   printf ("rxRun:Error %s data[%d] prv:cur "
-           "%16.16" PRIx64 " %c= %16.16" PRIx64 " "
-           "%4.4" PRIx16 " %c= %4.4" PRIx16     " "
-           "%4.4" PRIx16 " %c= %4.4" PRIx16 "\n",
-           string, index,  
-           prv->frame[1].ts,   (status & 1) ? '!' : '=', cur.frame[1].ts,
-           prv->frame[1].cvt0, (status & 2) ? '!' : '=', cur.frame[1].cvt0, 
-           prv->frame[1].cvt1, (status & 4) ? '!' : '=', cur.frame[1].cvt1);
-
-
-   for (int idx = 0; idx < nchgs; idx++)
-   {
-      printf ("rxRun:Error last timestamp changed[%d] %16.16" PRIx64 "->%16.16" PRIx64 "\n",
-             idx, curTs, chgs[idx]);
-   }
-
-
-   // --------------------------
-   // Dump the entire data frame
-   // --------------------------
-   FrameDiagnostics::print_dataFrame ((void *)data, rxSize, dest);
-   getTimestampRange (ts, data, rxSize);
-
-   if (tsRng[1] != ts[1])
-   {
-      printf ("rxRun:Error last timestamp changed[FINAL] %16.16" PRIx64 "->%16.16" PRIx64 "\n",
-              tsRng[1], ts[1]);
-   }
-   
-   return;
-}
-
-
-
 
 /* ---------------------------------------------------------------------- *//*!
 
@@ -3380,6 +2678,55 @@ void DaqDmaDevice::vet ()
 
 
 
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Hokey routine to get the timestamp range of the packet.
+  \return  The  timestamp of the initial WIB frame
+
+  \param[in]  range The timestamp range of this packet
+  \param[in]    d64 64-bit pointer to the data packet
+  \param[in] nbytes The read length
+
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static inline void getTimestampRange (uint64_t     range[2],
+                                      uint64_t const   *d64,
+                                      uint32_t      nbytes)
+{
+   // -----------------------------------------------------------
+   // Skip header and locate the timestamp in the first WIB frame
+   // -----------------------------------------------------------
+   d64            += 1;
+   uint64_t  begin = d64[1];
+
+
+   // -----------------------------------------------------------
+   // Locate the last WIBframe and its timestamp. 
+   // Add the number of clock ticks per time sample to get the
+   // ending time.
+   // -----------------------------------------------------------
+   d64 += nbytes/sizeof (uint64_t) - 1 - 30 - 1;
+   uint64_t end = d64[1] + TimingClockTicks::PER_SAMPLE;
+
+
+   #if 0
+   fprintf (stderr,
+           "Beg %16.16" PRIx64 " End %16.16" PRIx64 " %16.16" PRIx64 
+           " %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
+            begin, end, d64[-1], d64[0], d64[1], d64[2]);
+   #endif
+
+
+   // -----------------------------------------------------------
+   // Store timestamp of the first sample in the first WIB frame
+   // and the last sample in the last WIB frame as the range
+   // -----------------------------------------------------------
+   range[0] = begin;
+   range[1] =   end;
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
 
 
 
@@ -3884,8 +3231,6 @@ static void postEventAndReset (CommQueue     *queue,
                                Event         *event,
                                LatencyList *latency)
 {
-   static void *Last = NULL;
-
    // Get the list of contributors
    uint32_t ctbs = ((1 << MAX_DEST) - 1) & ~event->m_ctbs;
 
@@ -3903,14 +3248,11 @@ static void postEventAndReset (CommQueue     *queue,
 
    event->m_ctbs = ctbs;
 
-
-   if (Last == (void *)event)
-   {
-      fprintf (stderr,
-               "Posting %p ctbs = %4.4" PRIx32 ":%d\n", 
-               (void *)(event), event->m_ctbs, event->m_nctbs);
-   }
-   Last = (void *) event;
+   /**
+   fprintf (stderr,
+           "Posting %p ctbs = %4.4" PRIx32 ":%d\n", 
+            (void *)(event), event->m_ctbs, event->m_nctbs);
+   **/
 
    queue->push (event);
 
@@ -4397,6 +3739,7 @@ void DaqBuffer::rxRun ()
                prvTime[dest] = curTime;
             }
             #endif
+
             diag.check_dataFrame (data,
                                   rxSize,
                                   dest,
@@ -4424,7 +3767,6 @@ void DaqBuffer::rxRun ()
             // --------------------------------------------
             uint64_t   *dbeg = data;
             uint64_t   *dend = data + (rxSize - sizeof (*dend)) / sizeof (*data);
-#if 1 /// !!! KLUDGE
             uint32_t tlrSize = *reinterpret_cast<uint32_t const *>(dend) 
                              & 0xffffff;
 
@@ -4432,29 +3774,17 @@ void DaqBuffer::rxRun ()
             // ---------------------------------------------------
             // Check if the read size matches the anticipated size
             // ---------------------------------------------------
-            static WibPacketCtx PrvCtxA[808];
             if (tlrSize != _rxSize)
             {
-               uint64_t timestampRange[2];
-               getTimestampRange (timestampRange, data, rxSize);
                fprintf (stderr, 
                         "rxRun:Error: Frame[%d.%d] %16.16" PRIx64 " -> " 
                         "%16.16" PRIx64 " %8.8" PRIx32 "\n", 
                         dest, index, *dbeg, *dend, _rxSize);
                
                _counters._rxErrors++;
-
-               reportTooSmall (&PrvCtxA[index], 
-                               data, rxSize, dest, index, 
-                               _counters._rxCount,
-                               timestampRange, 0);
-                  exit (-1);
-
                _dataDma.free (index);
                continue;
             }
-            PrvCtxA[index].fill (data, rxSize);
-#endif
 
             // Patch in the length, sans the trailer
             uint32_t nbytes = rxSize - sizeof (uint64_t);
@@ -4463,7 +3793,6 @@ void DaqBuffer::rxRun ()
 
             uint64_t timestampRange[2];
             fb = &fbs[index];
-
 
             /**
             if ( ((void *)fb == (void *)&latency[0]) ||
@@ -4482,46 +3811,11 @@ void DaqBuffer::rxRun ()
 
             int64_t dt = timestampRange[1] - timestampRange[0];
 
-            static WibPacketCtx PrvCtx[808];
             if (dt != TimingClockTicks::PER_FRAME)
             {
                fb->m_body.addStatus (FrameBuffer::Missing);
-
-               // You can have a bigger time span, but not a smaller one.
-               if (dt < TimingClockTicks::PER_FRAME)
-               {
-                  reportTooSmall (&PrvCtx[index], 
-                                  data, rxSize, dest, index, 
-                                  _counters._rxCount,
-                                  timestampRange, dt);
-                  exit (-1);
-               }
-
             }
-            PrvCtx[index].fill (data, rxSize);
 
-#if 0
-#if         1
-            invalidate (data, rxSize);
-            usleep (15*1000);
-            _dataDma.free (index);
-#else
-            {
-               invalidate (data, rxSize);
-               static int PrvIndex = -1;
-               if (PrvIndex != -1)
-               {
-                  _dataDma.free (PrvIndex);                  
-               }
-               PrvIndex = index;
-               usleep (15*1000);
-            }
-#endif
-
-
-            continue;   
-            printf ("Should never get hear\n");
-#endif
 
             // Set the size, sans the trailer
             fb->m_body.setSize       (nbytes);
@@ -4550,21 +3844,12 @@ void DaqBuffer::rxRun ()
 
                if (triggerTime >= 0)
                {
-                  static uint64_t LastTriggerTime = 0;
-                  int64_t dt      = triggerTime - LastTriggerTime;
-                  LastTriggerTime = triggerTime;
-
-                  if (dt == 0)
-                  {
-                  fprintf (stderr, 
-                           "rxRun: Software trigger active[%d:%d] = %16.16" PRIx64 " dt = %8.8" PRId64 " "
-                           "rng = %16.16" PRIx64 ":%16.16" PRIx64 "\n",
-                           dest, index,
-                           triggerTime, dt,
-                           timestampRange[0], timestampRange[1]);
-                  }
-
                   /**
+                  fprintf (stderr, 
+                           "rxRun: Software trigger active[%d] = %16.16" PRIx64 "\n",
+                           dest,
+                           triggerTime);
+
                   fprintf (stderr,
                            "rxRun: Time Range: %16.16" PRIx64 " :  %16.16" PRIx64 "\n",
                            timestampRange[0],
@@ -4622,22 +3907,21 @@ void DaqBuffer::rxRun ()
                int32_t action = event->evaluate (fb, dest);
                latency[dest].check (fb, 12, "rxRun:evaluate (after )\n");
 
-
-#if 0
+               /**
                {
-                  fprintf (stderr, 
-                  "rxRun: Adding[%d] index = %d fb = %p event = %p"
+                  fprintf (stderr, "rxRun: Adding[%d] %d fb = %p event = %p"
                            "action = %2.2" PRIx32 "\n", 
-                           dest, index, (void *)fb, (void *)event,
+                           dest, InCnt[dest]++, (void *)fb, (void *)event,
                            action);
                }
-#endif
+               **/
 
 
                if (action & Event::ACTION_M_POST)
                {
-
-//                  fprintf (stderr, "rxRun: Posting event = %p\n", (void *)event);
+                  /**
+                  fprintf (stderr, "rxRun: Posting event = %p\n", (void *)event);
+                  **/
                   postEventAndReset (_txReqQueue, event, latency);
                   trgActive   = false;
                   event       = NULL;
@@ -4649,17 +3933,17 @@ void DaqBuffer::rxRun ()
 
                if (action & Event::ACTION_M_FREE)
                {
-//                  fprintf (stderr, "rxRun: Freeing[%d] = %d\n",
-//                           dest, index);
                   _dataDma.free (index);
                   continue;
                }
 
                if (action & Event::ACTION_M_ADDTOLATENCY)
                {
-//                  fprintf (stderr,
-//                           "rxRun: AddToLatency[%d] index = %d %p\n",
-//                           dest, index, (void *)fb);
+                  /**
+                  fprintf (stderr,
+                           "rxRun: [%d] AddToLatency(before) %p\n",
+                           dest, (void *)fb);
+                  **/
                   latency[dest].check (fb, 12, "AddToLatency(before)");
                   latency[dest].replace (fb, dataFd);
                   continue;
@@ -5560,11 +4844,10 @@ void DaqBuffer::txRun ()
       unsigned int mctbs = nctbs;
       int dataRecordSize = 0;
 
-
-      /*
+      /**
       fprintf (stderr, "Got Event %p ctbs:%8.8x nctbs:%d\n", 
                event, ctbs, event->m_nctbs);
-      */
+      **/
       
 
       uint32_t (*streamStart)[MAX_TPCSTREAMSIZE] 
