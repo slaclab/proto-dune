@@ -15,7 +15,7 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
-// 2018.03.26 jjj Release 1.2.0-0
+// 2018.03.26 jjr Release 1.2.0-0
 //                Modify TimingMsg to match the V4 firmware
 // 2018.02.05 jjr Release 1.1.0-0
 //                1) Fixed to run at higher rates. 
