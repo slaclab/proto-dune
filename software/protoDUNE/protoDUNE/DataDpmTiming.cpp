@@ -114,22 +114,19 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
    rl->getVariable()->setDescription("true = forces the WIB receiver to generate flush frames, false = run mode");     
    rl->getVariable()->setTrueFalse(); 
    
-//   addRegisterLink(rl = new RegisterLink("CdrEdgeSel",  0x804, Variable::Configuration,0,0x1));
+//   addRegisterLink(rl = new RegisterLink("CdrEdgeSel",  baseAddress_ + 0x804, Variable::Configuration,0,0x1));
 //   rl->getVariable()->setTrueFalse();
 //   rl->getVariable()->setDescription("false = using IDDR's rising edge sample, true = using IDDR's falling edge sample");
 
-//   addRegisterLink(rl = new RegisterLink("CdrDataInv",  0x808, Variable::Configuration,0,0x1));
+//   addRegisterLink(rl = new RegisterLink("CdrDataInv",  baseAddress_ + 0x808, Variable::Configuration,0,0x1));
 //   rl->getVariable()->setTrueFalse();
 //   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
 
-//   addRegisterLink(rl = new RegisterLink("PdtsEndpointAddr",  0x80C, Variable::Configuration,0,0xFF));
-//   rl->getVariable()->setDescription("Drive's pdts_endpoint's addr port");
+   addRegisterLink(rl = new RegisterLink("PdtsEndpointAddr",  baseAddress_ + 0x80C, Variable::Configuration,0,0xFF));
+   rl->getVariable()->setDescription("Drive's pdts_endpoint's addr port");
 
-//   addRegisterLink(rl = new RegisterLink("PdtsEndpointTgrp",  0x810, Variable::Configuration,0,0x3));
-//   rl->getVariable()->setDescription("Drive's pdts_endpoint's tgrp port");
-
-//   addRegisterLink(rl = new RegisterLink("SyncTrigCmd",  0x814, Variable::Configuration,0,0xF));
-//   rl->getVariable()->setDescription("Set's the op-code for trigger detection");
+   addRegisterLink(rl = new RegisterLink("PdtsEndpointTgrp",  baseAddress_ + 0x810, Variable::Configuration,0,0x3));
+   rl->getVariable()->setDescription("Drive's pdts_endpoint's tgrp port");
 
 
    addRegister(new Register("CounterReset", baseAddress_ + 0xFF4));

@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmTiming.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2018-03-08
+-- Last update: 2018-03-20
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -94,7 +94,6 @@ architecture mapping of ProtoDuneDpmTiming is
    signal timingMsgDrop   : sl;
    signal timingRunEnable : sl;
    signal triggerDet      : sl;
-   signal syncTrigCmd     : slv(3 downto 0);
 
    signal pdtsEndpointAddr : slv(7 downto 0);
    signal pdtsEndpointTgrp : slv(1 downto 0);
@@ -253,7 +252,6 @@ begin
          triggerDet       => triggerDet,
          pdtsEndpointAddr => pdtsEndpointAddr,
          pdtsEndpointTgrp => pdtsEndpointTgrp,
-         syncTrigCmd      => syncTrigCmd,
          -- AXI-Lite Interface (axilClk domain)
          axilClk          => axilClk,
          axilRst          => axilRst,
@@ -276,7 +274,6 @@ begin
          TPD_G => TPD_G)
       port map (
          softRst         => softRst,
-         syncTrigCmd     => syncTrigCmd,
          -- Timing Interface (cdrClk domain)
          cdrClk          => cdrClk,
          cdrRst          => cdrRst,
