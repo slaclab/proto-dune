@@ -299,7 +299,7 @@ int main (int argc, char *const argv[])
    AxisOut                          mAxis;
    ModuleIdx_t              moduleIdx = 3;
    ModuleConfig                    config;
-   ModuleStatus                    status;
+   MonitorModule                    status;
 
    static Waveform wfs[1] = { { 100, 110, 0x210 } };
 
@@ -380,19 +380,21 @@ class Source
 public:
    Source ();
 
-   void                    add_header (uint32_t id, uint32_t version);
-   void                    add_trailer(uint32_t id, int       nbytes);
+   void                    add_header (uint32_t id,     uint32_t version);
+   void                    add_trailer(uint64_t status, uint32_t id, int       nbytes);
    void                    fill_frame (uint64_t                      timestamp,
                                        uint16_t  const adcs[MODULE_K_NCHANNELS],
                                        int                           runEnable,
                                        int                               flush);
-   void              fill_dummy_frame (int     first,
-                                       int     flush);
-   void              fill_empty_frame (int  runEnable,
-                                       int      flush);
-   void         fill_runDisable_frame ();
-   void              fill_flush_frame ();
-   void fill_runDisableAndFlush_frame ();
+   void              fill_dummy_frame (uint64_t timestamp,
+                                       int          first,
+                                       int         flush);
+   void              fill_empty_frame (uint64_t timestamp,
+                                       int      runEnable,
+                                       int         flush);
+   void         fill_runDisable_frame (uint64_t timestamp);
+   void              fill_flush_frame (uint64_t timestamp);
+   void fill_runDisableAndFlush_frame (uint64_t timestamp);
    void                        commit (uint64_t    w,
                                        int      user,
                                        int      last);
@@ -482,26 +484,28 @@ void Source::add_header (uint32_t id, uint32_t version)
 {
    uint64_t header  = Header::header (id, version);
 
-   commit (m_chk, header, (int)AxisUserFirst::Sof, 0);
+   commit (m_chk, header, (1 << (int)AxisUserFirst::Sof), 0);
 
    return;
 }
 
 
 // Add the trailer to the check stream
-void Source::add_trailer (uint32_t id, int nbytes)
+void Source::add_trailer (uint64_t status, uint32_t id, int nbytes)
 {
    uint64_t tlr = Trailer::trailer (id | nbytes + sizeof (tlr));
-   commit (m_chk, tlr, 0, (int)AxisLast::Eof);
+   commit (m_chk, status, 0, 0);
+   commit (m_chk, tlr,    0, (1 << (int)AxisLast::Eof));
    return;
 }
 
 
-void Source::fill_dummy_frame (int     first,
-                               int     flush)
+void Source::fill_dummy_frame (uint64_t timestamp,
+                               int          first,
+                               int          flush)
 {
    int     iaxis = 0;
-   int      last = (int)AxisLast::Eof;
+   int      last = (1 << (int)AxisLast::Eof);
    uint16_t data = 0xfff;
 
 
@@ -512,7 +516,7 @@ void Source::fill_dummy_frame (int     first,
       adcs[idx] = 0xf00 | idx;
    }
 
-   fill_frame (0, adcs, 0, flush);
+   fill_frame (timestamp, adcs, 0, flush);
 
    return;
 }
@@ -526,11 +530,11 @@ void Source::fill_dummy_frame (int     first,
  *         a run disable.
  *                                                                        */
 /* ---------------------------------------------------------------------- */
-inline void Source::fill_runDisable_frame ()
+inline void Source::fill_runDisable_frame (uint64_t timestamp)
 {
-   int first = (int)AxisUserFirst::Sof;
+   int first = (1 << (int)AxisUserFirst::Sof);
    int flush = 0;
-   fill_dummy_frame (first, flush);
+   fill_dummy_frame (timestamp, first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -542,13 +546,13 @@ inline void Source::fill_runDisable_frame ()
  *         a frame flush
  *                                                                                 */
 /* ---------------------------------------------------------------------- */
-inline void Source::fill_flush_frame ()
+inline void Source::fill_flush_frame (uint64_t timestamp)
 {
-   int first =  (int)AxisUserFirst::Sof
-             |  (int)AxisUserFirst::RunEnable;
-   int flush = (int)AxisUserLast::Flush;
+   int first = (1 << (int)AxisUserFirst::Sof)
+             | (1 << (int)AxisUserFirst::RunEnable);
+   int flush = (1 << (int)AxisUserLast ::Flush);
 
-   fill_dummy_frame (first, flush);
+   fill_dummy_frame (timestamp, first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -561,12 +565,12 @@ inline void Source::fill_flush_frame ()
  *         a run disable and flush
  *                                                                        */
 /* ---------------------------------------------------------------------- */
-inline void Source::fill_runDisableAndFlush_frame ()
+inline void Source::fill_runDisableAndFlush_frame (uint64_t timestamp)
 {
-   int first = (int)AxisUserFirst::Sof;
-   int flush = (int)AxisUserLast::Flush;
+   int first = (1 << (int)AxisUserFirst::Sof);
+   int flush = (1 << (int)AxisUserLast::Flush);
 
-   fill_dummy_frame (first, flush);
+   fill_dummy_frame (timestamp, first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -579,14 +583,15 @@ inline void Source::fill_runDisableAndFlush_frame ()
  *  \param[ in]     flush   Flush flag
  *                                                                        */
 /* ---------------------------------------------------------------------- */
-inline void Source::fill_empty_frame (int  runEnable,
-                                      int      flush)
+inline void Source::fill_empty_frame (uint64_t timestamp,
+                                      int      runEnable,
+                                      int          flush)
 {
-   int first = (int)AxisUserFirst::Sof
-             | (runEnable ? (int)AxisUserFirst::RunEnable : 0);
-   flush     = flush ? (int)AxisUserLast::Flush : 0;
+   int first = (1 << (int)AxisUserFirst::Sof)
+             | (runEnable ? (1 << (int)AxisUserFirst::RunEnable) : 0);
+   flush     = flush      ? (1 << (int)AxisUserLast ::Flush)     : 0;
 
-   fill_dummy_frame (first, flush);
+   fill_dummy_frame (timestamp, first, flush);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -608,6 +613,7 @@ void Source::fill_frame (uint64_t                      timestamp,
                          int                           runEnable,
                          int                               flush)
 {
+   static uint16_t CvtCnt = 0x100;
    static const WibFrame::Crate Crate (1);
    static const WibFrame::Slot  Slot  (2);
    static const WibFrame::Fiber Fiber (3);
@@ -615,12 +621,12 @@ void Source::fill_frame (uint64_t                      timestamp,
    static const WibFrame::Id id = WibFrame::id (Crate, Slot, Fiber);
    int iaxis = 0;
 
-   int first =              (int)AxisUserFirst::Sof
-             | (runEnable ? (int)AxisUserFirst::RunEnable : 0);
+   int first =              (1 << (int)AxisUserFirst::Sof)
+             | (runEnable ? (1 << (int)AxisUserFirst::RunEnable) : 0);
 
    int last  = 0;
 
-   flush  = flush ? (int)AxisUserLast::Flush : 0;
+   flush  = flush ? (1 << (int)AxisUserLast::Flush) : 0;
 
    if (flush) printf ("Nonzero flush = %d\n", flush);
 
@@ -637,7 +643,7 @@ void Source::fill_frame (uint64_t                      timestamp,
    uint64_t w1 = WibFrame::w1 (timestamp);
    commit (w1, 0, 0);
 
-   WibFrame::ColdData::ConvertCount cvt_cnt = timestamp/500;
+   WibFrame::ColdData::ConvertCount cvt_cnt = CvtCnt++;
 
 
    uint16_t const *in = (uint16_t const *)adcs;
@@ -651,7 +657,7 @@ void Source::fill_frame (uint64_t                      timestamp,
       WibFrame::ColdData::ErrWord      err (0);
       WibFrame::ColdData::ChecksumWord csA (0);
       WibFrame::ColdData::ChecksumWord csB (0);
-      uint64_t s0 = WibFrame::ColdData::s0 (0, 0, 0, timestamp);
+      uint64_t s0 = WibFrame::ColdData::s0 (0, 0, 0, cvt_cnt);
       commit (s0, 0, 0);
 
 
@@ -674,12 +680,12 @@ void Source::fill_frame (uint64_t                      timestamp,
          if (left <= 12)
          {
             /// If on the last word...
-            ///if (icolddata == 1 && iadc == 63) { user = flush;  last = (int)AxisLast::Eof; }
-            ///if (user) printf ("Non-zero user = %d (last = %d)\n", user, last);
+            if (icolddata == 1 && iadc == 63) { user = flush;  last = (1 << (int)AxisLast::Eof); }
+            ////if (user) printf ("Non-zero user = %d (last = %d)\n", user, last);
             commit (sdat, user, last);
 
-            std::cout << "WibIdx:" << std::setw (2) << iaxis
-                      << "  "   << std::setw(16) << std::hex << sdat << std::endl;
+            ////std::cout << "WibIdx:" << std::setw (2) << iaxis
+            ////          << "  "   << std::setw(16) << std::hex << sdat << std::endl;
 
             sdat   = adc >> left;
             shift  = 12 - left;
@@ -719,74 +725,156 @@ static void  transpose (uint16_t       *samples,
 
 static void  print (AxisOut &mAxis);
 
-static bool differ (ModuleStatus const &s0,
-                    ModuleStatus const &s1)
+static void update (MonitorModule &status, bool output_packet)
+{
+      status.read.nframes    += 1;
+      status.read.nStates[0] += 1;
+      status.write.npromoted += 1;
+      status.write.npackets  += output_packet;
+
+}
+
+
+static bool differ (MonitorModule const &s0,
+                    MonitorModule const &s1)
 {
    // NOTE: types[0] is not checked.  This is the normal
    //       frame counter and would cause a difference
    //        every time.
-   if (s0.common.pattern != s1.common.pattern) return true;
-   if (s0.cfg.ncfgs      != s1.cfg.ncfgs     ) return true;
-   if (s0.cfg.mode       != s1.cfg.mode      ) return true;
-   if (s0.read.ntypes[1] != s1.read.ntypes[1]) return true;
-   if (s0.read.ntypes[2] != s1.read.ntypes[2]) return true;
-   if (s0.read.ntypes[3] != s1.read.ntypes[3]) return true;
-   if (s0.write.nwrote   != s1.write.nwrote  ) return true;
+   if (s0.common.pattern  != s1.common.pattern ) return true;
+   if (s0.cfg.ncfgs       != s1.cfg.ncfgs      ) return true;
+   if (s0.cfg.mode        != s1.cfg.mode       ) return true;
+   if (s0.read.mask       != 0                 ) return true;
+   if (s0.read.nStates[0] != s1.read.nStates[0]) return true;
+   if (s0.read.nStates[1] != s1.read.nStates[1]) return true;
+   if (s0.read.nStates[2] != s1.read.nStates[2]) return true;
+   if (s0.read.nStates[3] != s1.read.nStates[3]) return true;
+   if (s0.write.npackets  != s1.write.npackets ) return true;
 
+
+   for (unsigned idx = 0; idx < sizeof (s0.read.nWibErrs) / sizeof (s1.read.nWibErrs[0]); idx++)
+   {
+      if (s0.read.nWibErrs[idx] != s1.read.nWibErrs[idx]) return true;
+   }
 
    return false;
 }
 
-static void print_status (ModuleStatus const &s0,
-                          ModuleStatus const &s1,
-                          int            isample)
+static void print_status (MonitorModule const &s0,
+                          MonitorModule const &s1,
+                          int             isample)
 {
    printf ("New status at sample   : %6u\n"
-         "          C ommon.pattern: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                 Cfg.mode: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                   .ncfgs: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         " Read.ntypes[     Normal]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[   Disabled]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[      Flush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[DisAndFlush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrSofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrSofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrEofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrEofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrEofE]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[   ErrK28_5]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[     ErrSeq]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "          Write.npromoted: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                .ndropped: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                  .nwrote: %8.8" PRIx32 " -> %8.8" PRIx32 "\n",
+         "               Common.pattern: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                     Cfg.mode: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                       .ncfgs: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         " Read                 .status: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                     .nframes: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "     .state [         Normal]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [       Disabled]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [          Flush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [    DisAndFlush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "            [        ErrSofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrSofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrEofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrEofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrEofE]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "     .wib   [       ErrComma]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [   ErrVersionId]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [          ErrId]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrRsvd]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrErrors]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [ErrWibTimestamp]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        Unused6]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        Unused7]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "    .cd     [     ErrStrErr1]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [     ErrStrErr2]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [       ErrRsvd0]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrChkSum]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrCvtCnt]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrErrReg]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [       ErrRsvd1]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrHdrs]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "              Write.npromoted: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                    .ndropped: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                    .npackets: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                      .nbytes: %8.8" PRIx32 " -> %8.8" PRIx32 "\n",
             isample,
-            s0.common.pattern, s1.common.pattern,
-            s0.cfg.mode,       s1.cfg.mode,
-            s0.cfg.ncfgs,      s1.cfg.ncfgs,
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::     Normal)], s1.read.ntypes[static_cast<int>(StatusRead::Type::     Normal)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::RunDisabled)], s1.read.ntypes[static_cast<int>(StatusRead::Type::RunDisabled)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::      Flush)], s1.read.ntypes[static_cast<int>(StatusRead::Type::      Flush)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::   DisFlush)], s1.read.ntypes[static_cast<int>(StatusRead::Type::   DisFlush)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofM)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofM)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofU)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofU)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofM)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofM)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofU)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofU)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofE)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofE)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::   ErrK28_5)], s1.read.ntypes[static_cast<int>(StatusRead::Type::   ErrK28_5)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::     ErrSeq)], s1.read.ntypes[static_cast<int>(StatusRead::Type::     ErrSeq)],
-            s0.write.npromoted,s1.write.npromoted,
-            s0.write.ndropped, s1.write.ndropped,
-            s0.write.nwrote,   s1.write.nwrote);
+
+            s0.common.pattern,                                   s1.common.pattern,
+            s0.cfg.mode,                                         s1.cfg.mode,
+            s0.cfg.ncfgs,                                        s1.cfg.ncfgs,
+
+            s0.read.mask.to_uint (),                             s1.read.mask.to_uint (),
+            s0.read.nframes,                                     s1.read.nframes,
+            s0.read[MonitorRead::StateCounter::         Normal], s1.read[MonitorRead::StateCounter::         Normal],
+            s0.read[MonitorRead::StateCounter::    RunDisabled], s1.read[MonitorRead::StateCounter::    RunDisabled],
+            s0.read[MonitorRead::StateCounter::          Flush], s1.read[MonitorRead::StateCounter::          Flush],
+            s0.read[MonitorRead::StateCounter::       DisFlush], s1.read[MonitorRead::StateCounter::       DisFlush],
+
+            s0.read[MonitorRead::FrameCounter::        ErrSofM], s1.read[MonitorRead::FrameCounter::        ErrSofM],
+            s0.read[MonitorRead::FrameCounter::        ErrSofU], s1.read[MonitorRead::FrameCounter::        ErrSofU],
+            s0.read[MonitorRead::FrameCounter::        ErrEofM], s1.read[MonitorRead::FrameCounter::        ErrEofM],
+            s0.read[MonitorRead::FrameCounter::        ErrEofU], s1.read[MonitorRead::FrameCounter::        ErrEofU],
+            s0.read[MonitorRead::FrameCounter::        ErrEofE], s1.read[MonitorRead::FrameCounter::        ErrEofE],
+
+            s0.read[MonitorRead::WibCounter::      ErrWibComma], s1.read[MonitorRead::WibCounter::      ErrWibComma],
+            s0.read[MonitorRead::WibCounter::    ErrWibVersion], s1.read[MonitorRead::WibCounter::    ErrWibVersion],
+            s0.read[MonitorRead::WibCounter::         ErrWibId], s1.read[MonitorRead::WibCounter::         ErrWibId],
+            s0.read[MonitorRead::WibCounter::       ErrWibRsvd], s1.read[MonitorRead::WibCounter::       ErrWibRsvd],
+            s0.read[MonitorRead::WibCounter::     ErrWibErrors], s1.read[MonitorRead::WibCounter::     ErrWibErrors],
+            s0.read[MonitorRead::WibCounter::  ErrWibTimestamp], s1.read[MonitorRead::WibCounter::  ErrWibTimestamp],
+            s0.read[MonitorRead::WibCounter::    ErrWibUnused6], s1.read[MonitorRead::WibCounter::    ErrWibUnused6],
+            s0.read[MonitorRead::WibCounter::    ErrWibUnused7], s1.read[MonitorRead::WibCounter::    ErrWibUnused7],
+
+            s0.read[MonitorRead::WibCounter::    ErrCd0StrErr1], s1.read[MonitorRead::WibCounter::    ErrCd0StrErr1],
+            s0.read[MonitorRead::WibCounter::    ErrCd1StrErr1], s1.read[MonitorRead::WibCounter::    ErrCd1StrErr1],
+
+            s0.read[MonitorRead::WibCounter::    ErrCd0StrErr2], s1.read[MonitorRead::WibCounter::    ErrCd0StrErr2],
+            s0.read[MonitorRead::WibCounter::    ErrCd1StrErr2], s1.read[MonitorRead::WibCounter::    ErrCd1StrErr2],
+
+            s0.read[MonitorRead::WibCounter::      ErrCd0Rsvd0], s1.read[MonitorRead::WibCounter::      ErrCd0Rsvd0],
+            s0.read[MonitorRead::WibCounter::      ErrCd1Rsvd0], s1.read[MonitorRead::WibCounter::      ErrCd1Rsvd0],
+
+            s0.read[MonitorRead::WibCounter::     ErrCd0ChkSum], s1.read[MonitorRead::WibCounter::     ErrCd0ChkSum],
+            s0.read[MonitorRead::WibCounter::     ErrCd1ChkSum], s1.read[MonitorRead::WibCounter::     ErrCd1ChkSum],
+
+            s0.read[MonitorRead::WibCounter::     ErrCd0CvtCnt], s1.read[MonitorRead::WibCounter::     ErrCd0CvtCnt],
+            s0.read[MonitorRead::WibCounter::     ErrCd1CvtCnt], s1.read[MonitorRead::WibCounter::     ErrCd1CvtCnt],
+
+            s0.read[MonitorRead::WibCounter::     ErrCd0ErrReg], s1.read[MonitorRead::WibCounter::     ErrCd0ErrReg],
+            s0.read[MonitorRead::WibCounter::     ErrCd1ErrReg], s1.read[MonitorRead::WibCounter::     ErrCd1ErrReg],
+
+            s0.read[MonitorRead::WibCounter::      ErrCd0Rsvd1], s1.read[MonitorRead::WibCounter::      ErrCd0Rsvd1],
+            s0.read[MonitorRead::WibCounter::      ErrCd1Rsvd1], s1.read[MonitorRead::WibCounter::      ErrCd1Rsvd1],
+
+            s0.read[MonitorRead::WibCounter::       ErrCd0Hdrs], s1.read[MonitorRead::WibCounter::       ErrCd0Hdrs],
+            s0.read[MonitorRead::WibCounter::       ErrCd1Hdrs], s1.read[MonitorRead::WibCounter::       ErrCd1Hdrs],
+
+            s0.write.npromoted,                                  s1.write.npromoted,
+            s0.write.ndropped,                                   s1.write.ndropped,
+            s0.write.npackets,                                   s1.write.npackets,
+            s0.write.nbytes,                                     s1.write.nbytes);
 
 
       return;
 }
 
 
+static void update (MonitorModule  &status,
+                    bool     output_packet);
+
+
 static int check (MyStreamOut             &mAxis,
                   MyStreamOut             &sAxis,
-                 ModuleStatus       &last_status,
-                 ModuleStatus            &status,
+                 MonitorModule      &last_status,
+                 MonitorModule           &status,
                  int                     isample);
 
 /* ---------------------------------------------------------------------- *//*!
@@ -803,14 +891,15 @@ static int check (MyStreamOut             &mAxis,
 /* ---------------------------------------------------------------------- */
 int main (int argc, char const *argv[])
 {
-#  define NSLICES 2
+#  define NSLICES 1
 
     Source                             src;
     MyStreamOut              mAxis ("Out");
     ModuleIdx_t              moduleIdx = 1;
     ModuleConfig                    config;
-    ModuleStatus                    status;
-    ModuleStatus               last_status;
+    MonitorModule                   status;
+    MonitorModule              last_status;
+    int                        test_status;
 
 
    unsigned int                     run =                       15660;
@@ -821,15 +910,22 @@ int main (int argc, char const *argv[])
 
    sprintf (filename, FileTemplate, dir, run, run);
 
-
    uint64_t timestamp = 0;
+
+   uint32_t version = 1;
+   uint32_t hdr_id  = Identifier::identifier (Identifier::FrameType::DATA,
+                                              Identifier::DataType::WIB,
+                                              0);
 
    // This is suppose to do the configuration
    config.init  = true;
    config.mode  = MODE_K_COPY;
    config.limit = 1 + 30 * 1024 + 1;
    memset (&last_status, 0, sizeof (last_status));
-   src.fill_runDisableAndFlush_frame ();
+
+   // Add the header to the check stream
+   src.add_header (hdr_id, version);
+   src.fill_runDisableAndFlush_frame (timestamp);
    DuneDataCompressionCore (src.m_src, mAxis, moduleIdx, config, status);
 
    // Drain the check stream
@@ -839,12 +935,11 @@ int main (int argc, char const *argv[])
    last_status = status;
    config.init = false;
 
-   ////return 0;  //////   !!! KLUDGE !!!
 
-   uint32_t version = 1;
-   uint32_t hdr_id  = Identifier::identifier (Identifier::FrameType::DATA,
-                                              Identifier::DataType::WIB,
-                                              0);
+
+
+
+   uint32_t summary;
 
    // ------------------
    // Open the test file
@@ -866,6 +961,8 @@ int main (int argc, char const *argv[])
    unsigned int nchannels = sizeof (adcs[0]) / sizeof (adcs[0][0]);
    for (int its = 0; its < NSLICES; its++)
    {
+      summary = 0;
+
       // -------------------
       // Read one time slice
       // -------------------
@@ -905,10 +1002,12 @@ int main (int argc, char const *argv[])
          ///flush     = (isample == 32) || (isample == 1023);
          ///runEnable = (isample != 64);
 
+         timestamp += 25;
+
          if (flush | (runEnable == 0))
          {
             printf ("Sample[%4u] Flush:%d runEnable:%d\n", isample, flush, runEnable);
-            src.fill_empty_frame (flush, runEnable);
+            src.fill_empty_frame (timestamp, flush, runEnable);
          }
          else
          {
@@ -917,19 +1016,35 @@ int main (int argc, char const *argv[])
          }
 
          DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, status);
+         update (last_status, isample == 1023);
 
-         if (differ (last_status, status))
+
+         static int Count = 0;
+         if (differ (last_status, status) || isample == 1023)
          {
-            print_status (last_status, status, isample);
+            if (Count < 5)
+            {
+               print_status (last_status, status, isample);
+            }
+            Count += 1;
             last_status = status;
          }
 
-         timestamp += 500;
+         summary |= status.read.mask;
       }
 
+      print_status (last_status, status, 0xffff);
+
+
       // Add trailer to the check frame
-      src.add_trailer (hdr_id, nbytes);
-      check (mAxis, src.m_chk, last_status, status, its * 1024);
+      src.add_trailer (summary, hdr_id, nbytes);
+      test_status = check (mAxis, src.m_chk, last_status, status, its * 1024);
+
+      if (test_status)
+      {
+         printf ("Failed\n");
+         break;
+      }
 
 
       //write_packet   (fd, mAxis);
@@ -940,10 +1055,14 @@ int main (int argc, char const *argv[])
       printf ("NEXT\n");
    }
 
-   if (!    mAxis.empty())  std::cout << "mAxis is not empty" << std::endl;
-   if (!src.m_src.empty())  std::cout << "sAxis is not empty" << std::endl;
+   if (!    mAxis.empty()) { test_status = -2; std::cout << "mAxis is not empty" << std::endl; }
+   if (!src.m_src.empty()) { test_status = -3; std::cout << "sAxis is not empty" << std::endl; }
 
-   return 0;
+   if (test_status == 0)
+   {
+      printf ("Passed\n");
+   }
+   return test_status;
 }
 /* ---------------------------------------------------------------------- */
 
@@ -961,11 +1080,12 @@ int main (int argc, char const *argv[])
 \* ---------------------------------------------------------------------- */
 static int check (MyStreamOut             &mAxis,
                   MyStreamOut             &sAxis,
-                 ModuleStatus       &last_status,
-                 ModuleStatus            &status,
+                 MonitorModule      &last_status,
+                 MonitorModule           &status,
                  int                     isample)
 {
    int idx = 0;
+   int nerrs = 0;
 
    while (1)
    {
@@ -982,18 +1102,20 @@ static int check (MyStreamOut             &mAxis,
 
          if (error)
          {
-            std::cout << std::dec << std::setw ( 5) << "Eror: Data @" << idx
+            std::cout << std::dec << std::setw ( 5) << "Error: Data @" << idx
                       << std::dec << std::setw ( 2) << " User: " << dst.user
                                                     << " Last: " << dst.last
                       << std::hex << std::setw ( 4) << " Keep: " << dst.keep
-                      << std::hex << std::setw (16) << " Data: " << dst.data
+                      << std::hex << std::setw (16) << " Data: " << dst.data << " : " << src.data
                       << std::endl;
+            nerrs+= 1;
+            if (nerrs >= 100) return -1;
          }
 
          // Bit 1 of the user field must be set on the first word
          if ( (idx == 0) && (((dst.user & 2) == 0) || ((src.user & 2) == 0)) )
          {
-            std::cout << std::dec << std::setw ( 5) << "Eror: User 1 bit clear @" << idx
+            std::cout << std::dec << std::setw ( 5) << "Error: User 1 bit clear @" << idx
                       << std::dec << std::setw ( 2) << " User: " << dst.user
                                                     << " Last: " << dst.last
                       << std::hex << std::setw ( 4) << " Keep: " << dst.keep
@@ -1005,7 +1127,7 @@ static int check (MyStreamOut             &mAxis,
          // Bit 1 of the user field must be clear all but the first word
          if ( (idx != 0) && ( (dst.user & 2) || (src.user & 2)) )
          {
-            std::cout << std::dec << std::setw ( 5) << "Eror: User 1 bit set @" << idx
+            std::cout << std::dec << std::setw ( 5) << "Error: User 1 bit set @" << idx
                       << std::dec << std::setw ( 2) << " User: " << dst.user
                                                     << " Last: " << dst.last
                       << std::hex << std::setw ( 4) << " Keep: " << dst.keep
@@ -1014,9 +1136,9 @@ static int check (MyStreamOut             &mAxis,
             return -1;
          }
 
-         if (dst.last & (int)AxisLast::Eof)
+         if (dst.last.test(static_cast<unsigned>(AxisLast::Eof)))
          {
-            if (src.last & (int)AxisLast::Eof)
+            if (src.last.test (static_cast<unsigned>(AxisLast::Eof)))
             {
                // Check that both are now empty
                dst_empty = mAxis.empty ();
@@ -1028,14 +1150,14 @@ static int check (MyStreamOut             &mAxis,
                }
                else if (dst_empty)
                {
-                  std::cout << "Eror: destination empty, but source not @ "
+                  std::cout << "Error: destination empty, but source not @ "
                             << std::dec << std::setw (5) << idx << std::endl;
                   return -1;
                }
                else
                {
-                  std::cout << "Eror: source empty, but destination not @ "
-                                << std::dec << std::setw (5) << idx << std::endl;
+                  std::cout << "Error: source empty, but destination not @ "
+                            << std::dec << std::setw (5) << idx << std::endl;
                   return -1;
                }
             }
@@ -1044,7 +1166,7 @@ static int check (MyStreamOut             &mAxis,
       else if (dst_empty || src_empty)
       {
          // This should not happen, dst.user or dst.last should signal the end
-         std::cout << "Eror:Premature empty: dst:src" << dst_empty << ':' << src_empty
+         std::cout << "Error:Premature empty: dst:src[" << idx << ']' << dst_empty << ':' << src_empty
                    << std::endl;
          break;
       }
