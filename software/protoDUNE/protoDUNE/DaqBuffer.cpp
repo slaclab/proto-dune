@@ -15,6 +15,8 @@
 // 
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2018.03.26 jjr Release 1.2.0-0
+//                Modify TimingMsg to match the V4 firmware
 // 2018.02.05 jjr Release 1.1.0-0
 //                1) Fixed to run at higher rates. 
 //                2) Added error bit when a packet drops frames to the
@@ -163,15 +165,25 @@ public:
 
      \enum  Type
      \brief Enumerate the message types
+
+      This is a 4 bit field which more properly may be thought of as two
+      3-bit fields depending on the state of bit 3
+
+          - Bit 3 == 0,  the low 3 bits are the command type
+          - Bit 3 == 1,  the low 3 bits are the trigger type
                                                                           */
    /* ------------------------------------------------------------------- */
    enum Type
    {
-      SpillStart = 0,  /*!< Start of spill                                */
-      SpillEnd   = 1,  /*!< End   of spill                                */
-      Calib      = 2,  /*!< Calibration trigger                           */
-      Trigger    = 3,  /*!< Physics trigger                               */
-      TimeSync   = 4   /*!< Timing resynchonization request               */
+      TimeSync   = 0,  /*!< Timing resynchonization request               */
+      Echo       = 1,  /*!< Echo message to measure the time delay        */
+      SpillStart = 2,  /*!< Start of spill                                */
+      SpillStop  = 3,  /*!< End   of spill                                */
+      RunStart   = 4,  /*!< Start of run                                  */
+      RunStop    = 5,  /*!< End   of run                                  */
+      Rsvd6      = 6,  /*!< Reserved                                      */
+      Rsvd7      = 7,  /*!< Reserved                                      */
+      Trigger    = 8,  /*!< All values >= 8 are triggers                  */
    };
    /* ------------------------------------------------------------------- */
 
@@ -202,8 +214,6 @@ public:
    };
    /* ------------------------------------------------------------------- */
 
- 
-
 public:
    uint64_t timestamp () const { return m_timestamp; }
    uint32_t  sequence () const { return  m_sequence; }
@@ -211,13 +221,18 @@ public:
    int          state () const { return (m_tsw >> 4) & 0xf; }
    bool    is_trigger () const 
    { 
-      return (m_tsw & 0xff) == ((Running << 4) | Trigger);
+
+      // -----------------------------------------------------
+      // Demand timing system to be running and the type >= 8
+      // The easiest test for a trigger (type >= 8), is to
+      // check bit 3 of the type field.
+      // -----------------------------------------------------
+      return (m_tsw & 0xf8) == ((Running << 4) | Trigger);
    };
 
 
    static TimingMsg *from (void *p) { return reinterpret_cast<TimingMsg *>(p); }
    static TimingMsg const *from (void const *p) { return reinterpret_cast<TimingMsg const *>(p); }
-
 
 
 public:
@@ -5057,11 +5072,11 @@ void DaqBuffer::txRun ()
                ret = sendmsg(_txFd,&msg,0);
                if (ret != (int32_t)txSize)
                {
-                  fprintf (stderr, "Resend failed %d != %d\n", ret, (int)txSize);
+                  fprintf (stderr, "Resend failed %d != %d\n", (int)ret, (int)txSize);
                }
                else
                {
-                  fprintf (stderr, "Resend succeeded %d == %d\n", ret, (int)txSize);
+                  fprintf (stderr, "Resend succeeded %d == %d\n", (int)ret, (int)txSize);
                }
 
                /// --------------------------------

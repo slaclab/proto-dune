@@ -29,6 +29,8 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2018.03.26  jjr  Release 1.2.0-0
+//                  Modify TimingMsg to match the V4 firmware
 // 2017.02.06  jjr  Version 1.1.0-0
 //                  Add methods to individually specific the opening and
 //                  enabling of a DMA device
@@ -699,7 +701,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01010000;
+      static const uint32_t SoftwareVersion = 0x01020000;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;
