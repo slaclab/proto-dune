@@ -30,7 +30,6 @@ entity ProtoDuneDpmWibRxFramer is
    generic (
       TPD_G            : time            := 1 ns;
       AXI_CLK_FREQ_G   : real            := 125.0E+6;  -- units of Hz
-      AXI_ERROR_RESP_G : slv(1 downto 0) := AXI_RESP_DECERR_C;
       CASCADE_SIZE_G   : positive        := 1);
    port (
       -- AXI-Lite Interface (axilClk domain)
@@ -492,8 +491,7 @@ begin
    U_Reg : entity work.ProtoDuneDpmWibRxFramerReg
       generic map (
          TPD_G            => TPD_G,
-         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G)
       port map (
          -- Status/Configuration Interface (clk domain)
          clk             => clk,

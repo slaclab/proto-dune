@@ -34,7 +34,6 @@ entity ProtoDuneDpmTiming is
    generic (
       TPD_G            : time             := 1 ns;
       CASCADE_SIZE_G   : positive         := 1;
-      AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
       -- Timing Interface (wibClk domain)
@@ -231,8 +230,7 @@ begin
    --------------------------
    U_TimingReg : entity work.ProtoDuneDpmTimingReg
       generic map (
-         TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+         TPD_G            => TPD_G)
       port map (
          -- WIB Interface (wibClk domain)
          wibClk           => wibClk,

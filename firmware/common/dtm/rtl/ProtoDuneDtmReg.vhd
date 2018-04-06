@@ -26,8 +26,7 @@ use work.ProtoDuneDtmPkg.all;
 
 entity ProtoDuneDtmReg is
    generic (
-      TPD_G            : time            := 1 ns;
-      AXI_ERROR_RESP_G : slv(1 downto 0) := AXI_RESP_DECERR_C);
+      TPD_G            : time            := 1 ns);
    port (
       -- Status/Configuration Interface
       cdrClk          : in  sl;
@@ -113,7 +112,7 @@ begin
       axiSlaveRegister(regCon, x"FFC", 0, v.cntRst);
 
       -- Closeout the transaction
-      axiSlaveDefault(regCon, v.axilWriteSlave, v.axilReadSlave, AXI_ERROR_RESP_G);
+      axiSlaveDefault(regCon, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
       -- Synchronous Reset
       if (axilRst = '1') then

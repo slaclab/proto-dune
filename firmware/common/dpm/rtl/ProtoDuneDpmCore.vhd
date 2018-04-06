@@ -28,7 +28,6 @@ entity ProtoDuneDpmCore is
       TPD_G            : time             := 1 ns;
       CASCADE_SIZE_G   : positive         := 1;
       AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
-      AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
       -- AXI-Lite Interface (axilClk domain)
@@ -132,7 +131,6 @@ begin
          TPD_G              => TPD_G,
          NUM_SLAVE_SLOTS_G  => 1,
          NUM_MASTER_SLOTS_G => NUM_AXIL_MASTERS_C,
-         DEC_ERROR_RESP_G   => AXI_ERROR_RESP_G,
          MASTERS_CONFIG_G   => XBAR_CONFIG_C)
       port map (
          axiClk              => axilClk,
@@ -152,7 +150,6 @@ begin
    U_Timing : entity work.ProtoDuneDpmTiming
       generic map (
          TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
          AXI_BASE_ADDR_G  => XBAR_CONFIG_C(TIMING_INDEX_C).baseAddr)
       port map (
          -- Timing Interface (clk domain)
@@ -192,7 +189,6 @@ begin
    U_Emu : entity work.ProtoDuneDpmEmu
       generic map (
          TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
          AXI_BASE_ADDR_G  => XBAR_CONFIG_C(EMU_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
@@ -223,7 +219,6 @@ begin
          TPD_G            => TPD_G,
          CASCADE_SIZE_G   => CASCADE_SIZE_G,
          AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
          AXI_BASE_ADDR_G  => XBAR_CONFIG_C(WIB_INDEX_C).baseAddr)
       port map (
          -- Stable clock and reset reference
@@ -269,7 +264,6 @@ begin
          TPD_G            => TPD_G,
          CASCADE_SIZE_G   => CASCADE_SIZE_G,
          AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
          AXI_BASE_ADDR_G  => XBAR_CONFIG_C(HLS_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
@@ -294,7 +288,6 @@ begin
    U_Eth : entity work.ProtoDuneDpmEth
       generic map (
          TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
          AXI_BASE_ADDR_G  => XBAR_CONFIG_C(RSSI_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)

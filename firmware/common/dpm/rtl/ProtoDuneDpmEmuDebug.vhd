@@ -38,7 +38,6 @@ entity ProtoDuneDpmEmuDebug is
       TPD_G            : time             := 1 ns;
       SIM_START_G      : sl               := '0';
       DEFAULT_CNT_G    : sl               := '0';
-      AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
       -- AXI-Lite Interface (axilClk domain)
@@ -108,8 +107,7 @@ begin
       generic map (
          TPD_G            => TPD_G,
          SIM_START_G      => SIM_START_G,
-         DEFAULT_CNT_G    => DEFAULT_CNT_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+         DEFAULT_CNT_G    => DEFAULT_CNT_G)
       port map (
          -- Status/Configuration Interface (clk domain)
          clk             => clk,

@@ -186,8 +186,7 @@ begin
    -----------
    U_App : entity work.ProtoDuneDtmCore
       generic map (
-         TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_RESP_OK_C)
+         TPD_G            => TPD_G)
       port map (
          -- RTM Low Speed
          dtmToRtmLsP     => dtmToRtmLsP,

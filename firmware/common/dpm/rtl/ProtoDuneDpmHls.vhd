@@ -32,7 +32,6 @@ entity ProtoDuneDpmHls is
       TPD_G            : time             := 1 ns;
       CASCADE_SIZE_G   : positive         := 1;
       AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
-      AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
       -- AXI-Lite Interface (axilClk domain)
@@ -92,7 +91,6 @@ begin
          TPD_G              => TPD_G,
          NUM_SLAVE_SLOTS_G  => 1,
          NUM_MASTER_SLOTS_G => (WIB_SIZE_C+1),
-         DEC_ERROR_RESP_G   => AXI_ERROR_RESP_G,
          MASTERS_CONFIG_G   => genAxiLiteConfig((WIB_SIZE_C+1), AXI_BASE_ADDR_G, 24, 16))
       port map (
          axiClk              => axilClk,
@@ -206,8 +204,7 @@ begin
    U_Mon : entity work.ProtoDuneDpmHlsMon
       generic map(
          TPD_G            => TPD_G,
-         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G)
       port map(
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
