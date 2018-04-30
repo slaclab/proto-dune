@@ -274,6 +274,7 @@ struct _Errors
    uint32_t seqNum;  /*!< Number of sequence errors                       */
    uint32_t datSiz;  /*!< Number of bad sizes                             */
    uint32_t datVal;  /*!< Number of times data packet had a bad data value*/
+   uint32_t damTpc;  /*!< Number of times TPC had damaged type            */
 };
 /* ---------------------------------------------------------------------- */
 typedef struct _Errors Errors;
