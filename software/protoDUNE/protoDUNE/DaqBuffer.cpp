@@ -5126,6 +5126,15 @@ void DaqBuffer::txRun ()
          }
       } else if ( (_config._blowOffTxEth == 0) && (_config._enableRssi == 1) )
       {
+         int32_t ret;
+         uint32_t flags = axisSetFlags(2,0,0);// axisSetFlags(fuser=2(SOF),luser=0,cont=0)
+         uint32_t tdest = 0x0; // tdest = 0x0
+         
+         for (unsigned int idx = 0; idx < msg.msg_iovlen; idx++) {
+            uint8_t     *ptr = (uint8_t *)msg_iov[idx].iov_base;
+            ret = dmaWrite(_dataDma._fd,ptr,msg_iov[idx].iov_len,flags,tdest);
+            if ( ret < 0 ) fprintf (stderr,"RSSI Write error!\n");
+         }
          
       }
 
@@ -5313,3 +5322,4 @@ void DaqBuffer::setConfig (uint32_t blowOffDmaData,
 void DaqBuffer::setRunMode ( RunMode mode ) {
    _config._runMode        = mode;
 }
+
