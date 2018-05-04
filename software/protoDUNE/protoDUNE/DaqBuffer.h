@@ -661,6 +661,7 @@ public:
       RunMode         _runMode;  /*!< The run mode                       */      
       uint32_t _blowOffDmaData;  /*!< If non-zero, pitch incoming data   */
       uint32_t   _blowOffTxEth;  /*!< If non-zero, do not transmit       */
+      uint32_t   _enableRssi;    /*!< Select FW RSSI or SW TCP           */      
       int32_t      _pretrigger;  /*!< Pretrigger time (usecs)            */
       int32_t     _posttrigger;  /*!< Postrigger time (usecs)            */
       uint32_t         _period;  /*!< Software trigger period            */ 
@@ -786,6 +787,7 @@ private:
       void setConfig ( 
             uint32_t blowOffDmaData,
             uint32_t blowOffTxEth,
+            uint32_t enableRssi,            
             uint32_t pretrigger,
             uint32_t duration,
             uint32_t period);

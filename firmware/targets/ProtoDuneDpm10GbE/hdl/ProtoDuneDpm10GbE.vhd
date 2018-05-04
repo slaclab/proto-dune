@@ -214,7 +214,6 @@ begin
       generic map (
          TPD_G            => TPD_G,
          CASCADE_SIZE_G   => 8,
-         AXI_ERROR_RESP_G => AXI_RESP_OK_C,
          AXI_BASE_ADDR_G  => x"A0000000")
       port map (
          -- AXI-Lite Interface (axilClk domain)

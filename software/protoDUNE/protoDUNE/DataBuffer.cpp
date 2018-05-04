@@ -124,6 +124,7 @@ void DataBuffer::hardReset ()
    Variable *v;
    v = getVariable("BlowOffDmaData"); v->set("False");
    v = getVariable("BlowOffTxEth");   v->set("False");
+   v = getVariable("EnableRssi");     v->set("False");   
    v = getVariable("PreTrigger");     v->setInt(2500);
    v = getVariable("Duration");       v->setInt(5000);
    v = getVariable("DaqHost");        v->set("");
@@ -306,7 +307,8 @@ void DataBuffer::writeConfig ( bool )
 {
    uint32_t blowOffDmaData = cv_.v[ConfigurationVariables::BlowOffDmaData]->getInt ();
    uint32_t blowOffTxData  = cv_.v[ConfigurationVariables::BlowOffTxEth  ]->getInt ();
-
+   uint32_t enableRssi     = cv_.v[ConfigurationVariables::EnableRssi    ]->getInt ();
+   
    uint32_t pretrigger     = cv_.v[ConfigurationVariables::PreTrigger]->getInt();
    uint32_t duration       = cv_.v[ConfigurationVariables::Duration  ]->getInt();
    uint32_t period         = cv_.v[ConfigurationVariables::Period    ]->getInt();
@@ -314,6 +316,7 @@ void DataBuffer::writeConfig ( bool )
 
    daqBuffer_->setConfig (blowOffDmaData, 
                           blowOffTxData, 
+                          enableRssi,                          
                           pretrigger, 
                           duration,
                           period);
@@ -456,6 +459,7 @@ DataBuffer::ConfigurationVariables::ConfigurationVariables (Device *device)
    static const string sRunMode        ("RunMode");
    static const string sBlowOffDmaData ("BlowOffDmaData");
    static const string sBlowOffTxEth   ("BlowOffTxEth");   
+   static const string sEnableRssi     ("EnableRssi");     
    static const string sPreTrigger     ("PreTrigger");
    static const string sDuration       ("Duration");
    static const string sPeriod         ("Period");
@@ -480,6 +484,11 @@ DataBuffer::ConfigurationVariables::ConfigurationVariables (Device *device)
    var->setTrueFalse();
    var->set("False"); 
    v[BlowOffTxEth] = var;
+   
+   device->addVariable(var = new Variable (sEnableRssi, Variable::Configuration));  
+   var->setTrueFalse();
+   var->set("False"); 
+   v[EnableRssi] = var;   
 
 
    // Default event window to 2.5msecs before trigger

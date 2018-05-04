@@ -30,8 +30,7 @@ use work.RceG3Pkg.all;
 entity ProtoDuneDpmHlsMon is
    generic (
       TPD_G            : time            := 1 ns;
-      AXI_CLK_FREQ_G   : real            := 125.0E+6;  -- units of Hz
-      AXI_ERROR_RESP_G : slv(1 downto 0) := AXI_RESP_DECERR_C);
+      AXI_CLK_FREQ_G   : real            := 125.0E+6);  -- units of Hz
    port (
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
@@ -161,7 +160,7 @@ begin
       axiSlaveRegister(regCon, x"FFC", 0, v.hardRst);
 
       -- Closeout the transaction
-      axiSlaveDefault(regCon, v.axilWriteSlave, v.axilReadSlave, AXI_ERROR_RESP_G);
+      axiSlaveDefault(regCon, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
       -- Synchronous Reset
       if (axilRst = '1') then

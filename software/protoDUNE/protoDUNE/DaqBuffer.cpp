@@ -2293,6 +2293,7 @@ void DaqBuffer::hardReset () {
    _config._runMode         = RunMode::IDLE;
    _config._blowOffDmaData  =     0;
    _config._blowOffTxEth    =     0;
+   _config._enableRssi      =     0;   
    _config._pretrigger      =  5000;
    _config._posttrigger     =  5000;
    _config._period          = 1000 * 1000;
@@ -5018,7 +5019,7 @@ void DaqBuffer::txRun ()
       // Transmit the data
       // -----------------
       int disconnect_wait = 10;
-      if (_config._blowOffTxEth == 0)
+      if ( (_config._blowOffTxEth == 0) && (_config._enableRssi == 0) )
       {
          ssize_t ret;
          if ( (_txFd < 0)  || 
@@ -5128,9 +5129,19 @@ void DaqBuffer::txRun ()
             _txSize             = txSize;
             _counters._txTotal += txSize;
          }
+      } else if ( (_config._blowOffTxEth == 0) && (_config._enableRssi == 1) )
+      {
+         int32_t ret;
+         uint32_t flags = axisSetFlags(2,0,0);// axisSetFlags(fuser=2(SOF),luser=0,cont=0)
+         uint32_t tdest = 0x0; // tdest = 0x0
+         
+         for (unsigned int idx = 0; idx < msg.msg_iovlen; idx++) {
+            uint8_t     *ptr = (uint8_t *)msg_iov[idx].iov_base;
+            ret = dmaWrite(_dataDma._fd,ptr,msg_iov[idx].iov_len,flags,tdest);
+            if ( ret < 0 ) fprintf (stderr,"RSSI Write error!\n");
+         }
+         
       }
-
-
 
       // ------------------------------------------------------------------
       // Free all the nodes of this event
@@ -5284,6 +5295,7 @@ void DaqBuffer::disableTx () {
    \param[in]  blowOffTxEth   A flag indicating to return the event
                               immediately after reception in the transmit
                               task.
+   \param[in]  enableRssi     A flag for selecting FW RSSI or SW TCP                              
    \param[in]  pretrigger     The number of usecs before the trigger to
                               open the event window
    \param[in]  duration       The duration, in usecs, of the event window
@@ -5297,12 +5309,14 @@ void DaqBuffer::disableTx () {
 /* ---------------------------------------------------------------------- */
 void DaqBuffer::setConfig (uint32_t blowOffDmaData,
                            uint32_t   blowOffTxEth,
+                           uint32_t     enableRssi,                           
                            uint32_t     pretrigger,
                            uint32_t       duration,
                            uint32_t         period)
 {
    _config._blowOffDmaData  = blowOffDmaData;
    _config._blowOffTxEth    = blowOffTxEth;
+   _config._enableRssi      = enableRssi;   
    _config._pretrigger      = TimingClockTicks::from_usecs (pretrigger);
    _config._posttrigger     = TimingClockTicks::from_usecs (duration - pretrigger);
    _config._period          = TimingClockTicks::from_usecs (period);
@@ -5313,3 +5327,4 @@ void DaqBuffer::setConfig (uint32_t blowOffDmaData,
 void DaqBuffer::setRunMode ( RunMode mode ) {
    _config._runMode        = mode;
 }
+

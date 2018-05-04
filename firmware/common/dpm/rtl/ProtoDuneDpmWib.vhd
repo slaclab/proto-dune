@@ -33,7 +33,6 @@ entity ProtoDuneDpmWib is
       TPD_G            : time             := 1 ns;
       CASCADE_SIZE_G   : positive         := 1;
       AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
-      AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
       -- Stable clock and reset reference
@@ -157,7 +156,6 @@ begin
          TPD_G              => TPD_G,
          NUM_SLAVE_SLOTS_G  => 1,
          NUM_MASTER_SLOTS_G => (2*WIB_SIZE_C),
-         DEC_ERROR_RESP_G   => AXI_ERROR_RESP_G,
          MASTERS_CONFIG_G   => genAxiLiteConfig((2*WIB_SIZE_C), AXI_BASE_ADDR_G, 24, 16))
       port map (
          axiClk              => axilClk,
@@ -220,7 +218,6 @@ begin
          generic map (
             TPD_G            => TPD_G,
             AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-            AXI_ERROR_RESP_G => AXI_ERROR_RESP_G,
             CASCADE_SIZE_G   => CASCADE_SIZE_G)
          port map (
             -- AXI-Lite Port (axilClk domain)
@@ -261,8 +258,7 @@ begin
             BRAM_EN_G        => true,
             REG_EN_G         => true,
             DATA_WIDTH_G     => 32,
-            RAM_ADDR_WIDTH_G => 8,
-            AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+            RAM_ADDR_WIDTH_G => 8)
          port map (
             -- Data to store in ring buffer
             dataClk         => clock,

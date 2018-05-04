@@ -28,7 +28,6 @@ use work.EthMacPkg.all;
 entity ProtoDuneDpmEth is
    generic (
       TPD_G            : time             := 1 ns;
-      AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");   
    port (
       -- AXI-Lite Interface (axilClk domain)
@@ -92,8 +91,7 @@ begin
    --------------------
    U_AxiLiteAsync : entity work.AxiLiteAsync
       generic map (
-         TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+         TPD_G            => TPD_G)
       port map (
          -- Slave Port
          sAxiClk         => axilClk,
@@ -118,7 +116,6 @@ begin
          TPD_G              => TPD_G,
          NUM_SLAVE_SLOTS_G  => 1,
          NUM_MASTER_SLOTS_G => AXIL_MASTERS_C,
-         DEC_ERROR_RESP_G   => AXI_ERROR_RESP_G,
          MASTERS_CONFIG_G   => genAxiLiteConfig(AXIL_MASTERS_C, AXI_BASE_ADDR_G, 24, 16))
       port map (
          axiClk              => ethClk,
@@ -144,8 +141,7 @@ begin
          SERVER_SIZE_G    => 1,
          SERVER_PORTS_G   => RSSI_PORTS_C,
          -- UDP Client Generics
-         CLIENT_EN_G      => false,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+         CLIENT_EN_G      => false)
       port map (
          -- Local Configurations
          localMac           => localMac,
@@ -184,7 +180,6 @@ begin
             2                => X"FF"),      -- TDEST 0xFF routed to TX/RX PRBS modules        
          CLK_FREQUENCY_G     => 156.25E+6,
          TIMEOUT_UNIT_G      => 1.0E-3,      -- In units of seconds
-         AXI_ERROR_RESP_G    => AXI_ERROR_RESP_G,
          SERVER_G            => true,
          RETRANSMIT_ENABLE_G => true,
          BYPASS_CHUNKER_G    => false,
@@ -262,7 +257,6 @@ begin
    U_SsiPrbsTx : entity work.SsiPrbsTx
       generic map (
          TPD_G                      => TPD_G,
-         AXI_ERROR_RESP_G           => AXI_ERROR_RESP_G,
          CASCADE_SIZE_G             => 1,
          FIFO_ADDR_WIDTH_G          => 9,
          FIFO_PAUSE_THRESH_G        => 2**8,
@@ -292,7 +286,6 @@ begin
    U_SsiPrbsRx : entity work.SsiPrbsRx
       generic map (
          TPD_G                     => TPD_G,
-         AXI_ERROR_RESP_G          => AXI_ERROR_RESP_G,
          CASCADE_SIZE_G            => 1,
          FIFO_ADDR_WIDTH_G         => 9,
          FIFO_PAUSE_THRESH_G       => 2**8,

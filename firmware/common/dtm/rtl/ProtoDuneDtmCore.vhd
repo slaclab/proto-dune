@@ -32,7 +32,6 @@ entity ProtoDuneDtmCore is
    generic (
       TPD_G            : time             := 1 ns;
       AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
-      AXI_ERROR_RESP_G : slv(1 downto 0)  := AXI_RESP_DECERR_C;
       AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
    port (
       -- RTM Low Speed
@@ -165,7 +164,6 @@ begin
          TPD_G              => TPD_G,
          NUM_SLAVE_SLOTS_G  => 1,
          NUM_MASTER_SLOTS_G => NUM_AXIL_MASTERS_C,
-         DEC_ERROR_RESP_G   => AXI_ERROR_RESP_G,
          MASTERS_CONFIG_G   => XBAR_CONFIG_C)
       port map (
          axiClk              => axilClk,
@@ -184,8 +182,7 @@ begin
    ------------------------
    U_Reg : entity work.ProtoDuneDtmReg
       generic map (
-         TPD_G            => TPD_G,
-         AXI_ERROR_RESP_G => AXI_ERROR_RESP_G)
+         TPD_G            => TPD_G)
       port map (
          -- Status/Configuration Interface
          cdrClk          => cdrClk,

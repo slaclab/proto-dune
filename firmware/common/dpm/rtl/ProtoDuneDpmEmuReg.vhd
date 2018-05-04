@@ -28,8 +28,7 @@ entity ProtoDuneDpmEmuReg is
    generic (
       TPD_G            : time            := 1 ns;
       SIM_START_G      : sl              := '0';
-      DEFAULT_CNT_G    : sl              := '0';
-      AXI_ERROR_RESP_G : slv(1 downto 0) := AXI_RESP_DECERR_C);
+      DEFAULT_CNT_G    : sl              := '0');
    port (
       -- Status/Configuration Interface (clk domain)
       clk             : in  sl;
@@ -148,7 +147,7 @@ begin
       axiSlaveRegister(regCon, x"FFC", 0, v.hardRst);
 
       -- Closeout the transaction
-      axiSlaveDefault(regCon, v.axilWriteSlave, v.axilReadSlave, AXI_ERROR_RESP_G);
+      axiSlaveDefault(regCon, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
       -- Synchronous Reset
       if (axilRst = '1') then

@@ -89,8 +89,9 @@ public:
          Period           = 5,
          DaqPort          = 6,
          DaqHost          = 7,
+         EnableRssi       = 8,
 
-         ConfigurationCnt = 8
+         ConfigurationCnt = 9
       };
 
       Variable *v[ConfigurationCnt];
