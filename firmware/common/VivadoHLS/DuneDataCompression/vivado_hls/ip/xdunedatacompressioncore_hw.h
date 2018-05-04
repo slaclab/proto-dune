@@ -36,77 +36,131 @@
 //        bit 31~0 - cfg[159:128] (Read/Write)
 // 0x24 : Data signal of cfg
 //        bit 31~0 - cfg[191:160] (Read/Write)
-// 0x28 : reserved
-// 0x2c : Data signal of status_common_pattern
-//        bit 31~0 - status_common_pattern[31:0] (Read)
-// 0x30 : Control signal of status_common_pattern
-//        bit 0  - status_common_pattern_ap_vld (Read/COR)
+// 0x28 : Data signal of cfg
+//        bit 31~0 - cfg[223:192] (Read/Write)
+// 0x2c : reserved
+// 0x30 : Data signal of monitor_common_pattern
+//        bit 31~0 - monitor_common_pattern[31:0] (Read)
+// 0x34 : Control signal of monitor_common_pattern
+//        bit 0  - monitor_common_pattern_ap_vld (Read/COR)
 //        others - reserved
-// 0x34 : Data signal of status_cfg
-//        bit 31~0 - status_cfg[31:0] (Read)
-// 0x38 : Data signal of status_cfg
-//        bit 31~0 - status_cfg[63:32] (Read)
-// 0x3c : Control signal of status_cfg
-//        bit 0  - status_cfg_ap_vld (Read/COR)
+// 0x38 : Data signal of monitor_cfg
+//        bit 31~0 - monitor_cfg[31:0] (Read)
+// 0x3c : Data signal of monitor_cfg
+//        bit 31~0 - monitor_cfg[63:32] (Read)
+// 0x40 : Control signal of monitor_cfg
+//        bit 0  - monitor_cfg_ap_vld (Read/COR)
 //        others - reserved
-// 0x40 : Data signal of status_read
-//        bit 31~0 - status_read[31:0] (Read)
-// 0x44 : Data signal of status_read
-//        bit 31~0 - status_read[63:32] (Read)
-// 0x48 : Data signal of status_read
-//        bit 31~0 - status_read[95:64] (Read)
-// 0x4c : Data signal of status_read
-//        bit 31~0 - status_read[127:96] (Read)
-// 0x50 : Data signal of status_read
-//        bit 31~0 - status_read[159:128] (Read)
-// 0x54 : Data signal of status_read
-//        bit 31~0 - status_read[191:160] (Read)
-// 0x58 : Data signal of status_read
-//        bit 31~0 - status_read[223:192] (Read)
-// 0x5c : Data signal of status_read
-//        bit 31~0 - status_read[255:224] (Read)
-// 0x60 : Data signal of status_read
-//        bit 31~0 - status_read[287:256] (Read)
-// 0x64 : Data signal of status_read
-//        bit 31~0 - status_read[319:288] (Read)
-// 0x68 : Data signal of status_read
-//        bit 31~0 - status_read[351:320] (Read)
-// 0x6c : Data signal of status_read
-//        bit 31~0 - status_read[383:352] (Read)
-// 0x70 : Data signal of status_read
-//        bit 31~0 - status_read[415:384] (Read)
-// 0x74 : Control signal of status_read
-//        bit 0  - status_read_ap_vld (Read/COR)
+// 0x44 : Data signal of monitor_read_summary
+//        bit 31~0 - monitor_read_summary[31:0] (Read)
+// 0x48 : Data signal of monitor_read_summary
+//        bit 31~0 - monitor_read_summary[63:32] (Read)
+// 0x4c : Data signal of monitor_read_summary
+//        bit 31~0 - monitor_read_summary[95:64] (Read)
+// 0x50 : Data signal of monitor_read_summary
+//        bit 31~0 - monitor_read_summary[127:96] (Read)
+// 0x54 : Data signal of monitor_read_summary
+//        bit 31~0 - monitor_read_summary[159:128] (Read)
+// 0x58 : Data signal of monitor_read_summary
+//        bit 31~0 - monitor_read_summary[191:160] (Read)
+// 0x5c : Control signal of monitor_read_summary
+//        bit 0  - monitor_read_summary_ap_vld (Read/COR)
 //        others - reserved
-// 0x78 : Data signal of status_write
-//        bit 31~0 - status_write[31:0] (Read)
-// 0x7c : Data signal of status_write
-//        bit 31~0 - status_write[63:32] (Read)
-// 0x80 : Data signal of status_write
-//        bit 31~0 - status_write[95:64] (Read)
-// 0x84 : Control signal of status_write
-//        bit 0  - status_write_ap_vld (Read/COR)
+// 0x60 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[31:0] (Read)
+// 0x64 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[63:32] (Read)
+// 0x68 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[95:64] (Read)
+// 0x6c : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[127:96] (Read)
+// 0x70 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[159:128] (Read)
+// 0x74 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[191:160] (Read)
+// 0x78 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[223:192] (Read)
+// 0x7c : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[255:224] (Read)
+// 0x80 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[287:256] (Read)
+// 0x84 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[319:288] (Read)
+// 0x88 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[351:320] (Read)
+// 0x8c : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[383:352] (Read)
+// 0x90 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[415:384] (Read)
+// 0x94 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[447:416] (Read)
+// 0x98 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[479:448] (Read)
+// 0x9c : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[511:480] (Read)
+// 0xa0 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[543:512] (Read)
+// 0xa4 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[575:544] (Read)
+// 0xa8 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[607:576] (Read)
+// 0xac : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[639:608] (Read)
+// 0xb0 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[671:640] (Read)
+// 0xb4 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[703:672] (Read)
+// 0xb8 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[735:704] (Read)
+// 0xbc : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[767:736] (Read)
+// 0xc0 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[799:768] (Read)
+// 0xc4 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[831:800] (Read)
+// 0xc8 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[863:832] (Read)
+// 0xcc : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[895:864] (Read)
+// 0xd0 : Data signal of monitor_read_errs
+//        bit 31~0 - monitor_read_errs[927:896] (Read)
+// 0xd4 : Control signal of monitor_read_errs
+//        bit 0  - monitor_read_errs_ap_vld (Read/COR)
+//        others - reserved
+// 0xd8 : Data signal of monitor_write
+//        bit 31~0 - monitor_write[31:0] (Read)
+// 0xdc : Data signal of monitor_write
+//        bit 31~0 - monitor_write[63:32] (Read)
+// 0xe0 : Data signal of monitor_write
+//        bit 31~0 - monitor_write[95:64] (Read)
+// 0xe4 : Data signal of monitor_write
+//        bit 31~0 - monitor_write[127:96] (Read)
+// 0xe8 : Control signal of monitor_write
+//        bit 0  - monitor_write_ap_vld (Read/COR)
 //        others - reserved
 // (SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
 
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_AP_CTRL                    0x00
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_GIE                        0x04
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_IER                        0x08
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_ISR                        0x0c
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_DATA                   0x10
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_DATA                   192
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_COMMON_PATTERN_DATA 0x2c
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_STATUS_COMMON_PATTERN_DATA 32
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_COMMON_PATTERN_CTRL 0x30
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_CFG_DATA            0x34
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_STATUS_CFG_DATA            64
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_CFG_CTRL            0x3c
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_READ_DATA           0x40
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_STATUS_READ_DATA           416
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_READ_DATA_          0x68
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_STATUS_READ_DATA           416
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_READ_CTRL           0x74
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_WRITE_DATA          0x78
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_STATUS_WRITE_DATA          96
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_STATUS_WRITE_CTRL          0x84
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_AP_CTRL                     0x00
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_GIE                         0x04
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_IER                         0x08
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_ISR                         0x0c
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_DATA                    0x10
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_DATA                    224
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA 0x30
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_COMMON_PATTERN_DATA 32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_CTRL 0x34
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_DATA            0x38
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_CFG_DATA            64
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_CTRL            0x40
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_DATA   0x44
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_SUMMARY_DATA   192
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_CTRL   0x5c
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA      0x60
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_ERRS_DATA      928
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA_     0x88
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_ERRS_DATA      928
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_CTRL      0xd4
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_DATA          0xd8
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_DATA          128
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_CTRL          0xe8
 

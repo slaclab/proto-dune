@@ -34,10 +34,10 @@ static int get_nbits   (int                                 nsignificant,
  *   \parampin]  ebins The original histogram bins that were encoded
  *
 \* ---------------------------------------------------------------------- */
-static bool hist_check (int                                        ihist,
-                        BitStream64                                &bs64,
-                        int                                        ebits,
-                        Histogram::Entry_t const ebins[Histogram::NBins])
+bool hist_check (int                                        ihist,
+                 BitStream64                                &bs64,
+                 int                                        ebits,
+                 Histogram::Entry_t const ebins[Histogram::NBins])
 
  {
    // ------------------------------------
@@ -147,12 +147,12 @@ int hist_decode (uint16_t bins[Histogram::NBins], BitStream64 &bs64, int tbits)
    int idx = 0;
    int left = 1023;
 
-   while (1)
+   int n64 = (tbits + 63) / 64;
+   for (idx = 0; idx < n64; idx++)
    {
       uint64_t dat;
       bool okay = bs64.m_out.read_nb (buf[idx]);
       if (!okay) break;
-      idx += 1;
    }
 
    BfuPosition_t position = 0;

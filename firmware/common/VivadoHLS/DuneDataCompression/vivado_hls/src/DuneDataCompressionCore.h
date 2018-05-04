@@ -72,6 +72,6 @@ void DuneDataCompressionCore(AxisIn                        &sAxis,
                              AxisOut                       &mAxis,
                              ModuleIdx_t                moduleIdx,
                              ModuleConfig                  config,
-                             ModuleStatus                 &status);
+                             MonitorModule               &monitor);
 #endif
 

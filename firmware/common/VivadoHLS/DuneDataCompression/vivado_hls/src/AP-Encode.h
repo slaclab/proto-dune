@@ -82,7 +82,7 @@ typedef ap_uint<4>           APE_cvcnt_t;
 /* ---------------------------------------------------------------------- *//*!
  *
  *  \struct  APE_instruction
- *  \brief  The data/instructions needed to encode an ADC value
+ *  \brief  The data/instructions needed to encode an symbol value
  *
 \* ---------------------------------------------------------------------- */
 struct APE_instruction
@@ -147,8 +147,8 @@ struct _APE_etx
   BitStream64           ba; /*!< Output bit array (main)                  */
   BitStream64           oa; /*!< Output bit array (overflow)              */
   unsigned int    tofollow; /*!< Used when lo,hi straddle the .5 boundary */
+  int                nhist; /*!< Number of bits in the encoded histogram  */
 
-  BitStream64          xba; /*!< Check output bit array                   */
   BitStream64          xoa; /*!< Check overflow bit array                 */
 };
 /* ---------------------------------------------------------------------- */
@@ -193,14 +193,14 @@ public:
 /* ---------------------------------------------------------------------- */
 #define APE_checkerStatement(_statement) _statement
 /* ---------------------------------------------------------------------- */
-bool encode_check (APE_etx                          &etx,
-                   Histogram                       &hist,
-                   AdcIn_t const adcs[Packets::NSamples]);
+bool encode_check (APE_etx                            &etx,
+                   Histogram const                   &hist,
+                   Symbol_t  const syms[PACKET_K_NSAMPLES]);
 /* ---------------------------------------------------------------------- */
 #else
 /* ---------------------------------------------------------------------- */
 #define APE_checkerStatement(_statement)
-#define encode_check(_etx, _hist, _adcs)
+#define encode_check(_etx, _hist,_syms) failure
 
 /* ---------------------------------------------------------------------- */
 #endif   /* APE_CHECKER                                                   */
@@ -253,7 +253,6 @@ static int inline APE_start (APE_etx &etx)
    etx.cv.m_hi   = APC_K_HI;
    etx.tofollow  = 0;
 
-   etx.xba.m_idx = 0;
    etx.xoa.m_idx = 0;
 
    return 0;
@@ -286,9 +285,7 @@ static int inline APE_finish (APE_etx &etx)
 
    uint32_t buf = compose (bit, 1, tofollow);
    etx.ba.insert  (buf, 1 + tofollow);
-   etx.xba.insert (buf, 1 + tofollow);
-
-   ///etx.ba.flush ();
+   etx.ba.flush   ();
 
    //   printf ("Total bits = %u\n", etx->ba.m_idx);
    // Return the number of bits
@@ -316,8 +313,8 @@ static int inline APE_finish (APE_etx &etx)
 
   \fn    int  APE_encode (APE_etx              *etx,
                           APE_table_t  const *table,
-                          AdcIn_t      const  *adcs,
-                          int                 nadcs)
+                          Symbol_t     const  *syms,
+                          int                 nsymss)
 
   \brief          Encodes an array of symbols
   \return         Number of symbols remaining to be encoded. If this is
@@ -325,46 +322,48 @@ static int inline APE_finish (APE_etx &etx)
 
   \param     etx  The encoding context
   \param   table  The encoding table
-  \param    adcs  The array of adsc to encode
-  \param   nadcs  The number of adcs
+  \param    syms  The array  of symbols to encode
+  \param   nsyms  The number of symbols
                                                                           */
 /* ---------------------------------------------------------------------- */
-static __inline int APE_encode  (APE_etx              &etx,
-                                 Histogram           &hist,
-                                 AdcIn_t      const  *adcs,
-                                 int                 nadcs)
+static int APE_encode  (APE_etx              &etx,
+                        Histogram    const  &hist,
+                        Symbol_t     const  *syms,
+                        int                 nsyms)
 {
    Histogram::Table table[Histogram::NBins+1];
    APE_start (etx);
+
+   printf ("Number of symbols = %d\n", nsyms);
+
 
    //static APE_instruction   instructions[1024];
    //APE_instruction *instruction = instructions;
 
    hist.encode (etx.ba, table);
+   etx.nhist = etx.ba.m_idx;
    ///APE_dumpStatement (hist.print (0));
 
 
    int    npending   = etx.tofollow;
    APE_cv         cv = etx.cv;
-   AdcIn_t       prv = *adcs++;
 
 
    // DEBUGGING/DIAGNOSITC
    APE_checkerStatement (APE_checker chk (npending));
-   APE_checkerStatement (AdcIn_t const *adcs_beg = adcs - 1);
+   APE_checkerStatement (Histogram::Symbol_t const *syms_beg = syms - 1);
 
 
    APE_ENCODE_LOOP:
-   while (--nadcs > 0)
+   while (--nsyms >= 0)
    {
       //////#pragma HLS ALLOCATION instances=insert limit=1 function
-      #pragma HLS PIPELINE II=1
+      #pragma HLS PIPELINE II=2
+      /////#pragma HLS UNROLL factor=2
 
        Histogram::Symbol_t ovr;
-       AdcIn_t             cur = *adcs++;
-       Histogram::Symbol_t sym = hist.symbol (cur, prv);
-       Histogram::Idx_t    idx = hist.idx    (sym, ovr);
-       prv = cur;
+       Histogram::Symbol_t sym = *syms++;
+       Histogram::Idx_t    idx = hist.idx (sym, ovr);
 
        cv.scale (table[idx], table[idx+1]);
 
@@ -493,7 +492,7 @@ static __inline int APE_encode  (APE_etx              &etx,
        uint32_t ebits;
        int     nebits;
        APE_dumpStatement (int npending_save = npending);
-       //bool   finish = (idx == 0) || (nadcs == 1);
+       //bool   finish = (idx == 0) || (nsyms == 1);
        if (nsame) /// || finish)
        {
           bits  = lo >> (lo.length () - nsame);
@@ -508,7 +507,6 @@ static __inline int APE_encode  (APE_etx              &etx,
           ebits  = compose (bits, nsame, npending);
           nebits = nsame + npending;
           etx.ba.insert  (ebits, nebits);
-          etx.xba.insert (ebits, nebits);
 #endif
           // -----------------------------------------------
           // If finishing up for either because we are done
@@ -566,7 +564,7 @@ static __inline int APE_encode  (APE_etx              &etx,
        // ------------------------------
        // Diagnostic print out and check
        // ------------------------------
-       APE_dumpStatement   (dump (1023 - nadcs, sym, cv_scaled, nsame, bits,
+       APE_dumpStatement   (dump (1023 - nsyms, sym, cv_scaled, nsame, bits,
                                   npending_save, cv,    nebits, ebits));
        APE_checkerStatement (chk.check (cv, npending, nebits, ebits));
    }
@@ -577,12 +575,7 @@ static __inline int APE_encode  (APE_etx              &etx,
    etx.tofollow  = npending;
    APE_finish (etx);
 
-   // -----------------------------------------
-   // Executed only if APE_CHECKER is non-zero
-   // -----------------------------------------
-    encode_check (etx, hist, adcs_beg);
-
-   return nadcs;
+   return nsyms;
 }
 /* ---------------------------------------------------------------------- */
 
@@ -1041,19 +1034,19 @@ bool APE_checker::check (APE_cv const &cv,
  *
  *  \brief Debugging print out
  *
- *  \param[in]          iadc The index of the ADC that was encoded
+ *  \param[in]         isym  The index of the symbol that was encoded
  *  \param[in]          sym  The symbol being encoded.  This is a surrogate
  *                           for the ADC.
  *  \param[in]    cv_scaled  The code values after being scaled, but before
  *                           being reduced
  *  \param[in] npending_org  The number of pending bits that were forced out
  *  \param[in]   cv_reduced  The code values after being reduced
- *  \param[in]       nebits  The number of bits that this ADC commits to
+ *  \param[in]       nebits  The number of bits that this symbol commits to
  *                           tge output stream
- *  \param[in]        ebits  The bit pattern that this ADC commits to the
+ *  \param[in]        ebits  The bit pattern that this symbol commits to the
  *                           output stream
 \* ---------------------------------------------------------------------- */
-static void dump (int                 iadc,
+static void dump (int                 isym,
                   uint16_t             sym,
                   APE_cv const  &cv_scaled,
                   int                nsame,
@@ -1064,7 +1057,7 @@ static void dump (int                 iadc,
                   uint32_t           ebits)
 {
    std::cout
-   << "Sym["   << std::setw (3) << std::hex     << iadc << "] = "
+   << "Sym["   << std::setw (3) << std::hex     << isym << "] = "
    << std::setw (4) << sym
    << " Cv "   << std::setw (5) << cv_scaled.m_lo << ':'
    << std::setw (5) << cv_scaled.m_hi
@@ -1097,41 +1090,16 @@ static void dump (int                 iadc,
 
 #if     APE_CHECKER
 #include "AP-Decode.h"
-static bool decode_data (uint16_t dadcs[PACKET_K_NSAMPLES], BitStream64 &bs, Histogram &hist, AdcIn_t const adcs[PACKET_K_NSAMPLES])
+static bool decode_data (uint16_t dsyms[PACKET_K_NSAMPLES], BitStream64 &bs, Histogram const &hist, Symbol_t const syms[PACKET_K_NSAMPLES])
 {
-   uint64_t buf[256];
-   int       idx = 0;
-
-   // Copy the data
-   while (1)
-   {
-      uint64_t dat;
-      bool okay = bs.m_out.read_nb (dat);
-      if (!okay) break;
-      buf[idx++] = dat;
-
-      APD_dumpStatement
-      (
-      std::cout << "buf[" << std::dec << std::setw(4) << (idx - 1) << "] = "
-                << std::setw (16) << std::hex << dat << std::endl;
-      );
-   }
-
-   // Grab the shard (if any)
-   int cur_idx = bs.bidx();
-   if (cur_idx != 0)
-   {
-      buf[idx++] = bs.m_cur << (0x40 - cur_idx);
-   }
-
-   bs.m_idx = 0;
+    uint64_t buf[1];  /// !!! KLUDGE !!!  -- need proper initialization for an unaligned bit stream
 
    // Copy the data
    APD_table_t table[Histogram::NBins + 2];
    int  cnt  = hist.m_lastgt0 + 1;
    table[0]  = cnt;
    int total = 0;
-   for (idx = 1; idx <= hist.m_lastgt0+2; idx++)
+   for (int idx = 1; idx <= hist.m_lastgt0+2; idx++)
    {
       table[idx] = total;
       total     += hist.m_bins[idx-1];
@@ -1141,26 +1109,26 @@ static bool decode_data (uint16_t dadcs[PACKET_K_NSAMPLES], BitStream64 &bs, His
    APD_dtx dtx;
    APD_start (&dtx, buf, 0);
 
-   int prv = adcs[0];
-   for (idx = 1; idx < PACKET_K_NSAMPLES; idx++)
+   int prv = syms[0];
+   for (int idx = 1; idx < PACKET_K_NSAMPLES; idx++)
    {
       APD_dumpStatement (std::cout << "Sym[" << std::hex << std::setw(5) << idx << "] = ");
 
-      uint16_t cur = adcs[idx];
+      uint16_t cur = syms[idx];
       Histogram::Symbol_t sym = Histogram::symbol (cur, prv);
 
       // !!! KLUDGE !!! -- This is needed until I correctly decode the overflow symbols
       Histogram::Symbol_t ovr;
       sym = Histogram::idx (sym, ovr);
 
-      dadcs[idx-1] = APD_decode (&dtx, table);
-      if (dadcs[idx-1] != sym)
+      dsyms[idx-1] = APD_decode (&dtx, table);
+      if (dsyms[idx-1] != sym)
       {
          std::cout << "Error @" << std::hex << idx << std::endl;
          return true;
       }
 
-      prv = adcs[idx];
+      prv = syms[idx];
    }
 
    APD_finish (&dtx);
@@ -1168,16 +1136,43 @@ static bool decode_data (uint16_t dadcs[PACKET_K_NSAMPLES], BitStream64 &bs, His
 }
 
 
-bool encode_check (APE_etx &etx, Histogram &hist, AdcIn_t const adcs[Packets::NSamples])
-{
-   uint16_t dadcs[PACKET_K_NSAMPLES];
-   bool failure = decode_data (dadcs, etx.xba, hist, adcs);
 
-   // If failed, repeat to debug
-   while (failure)
+bool hist_check (int                                        ihist,
+                 BitStream64                                &bs64,
+                 int                                        ebits,
+                 Histogram::Entry_t const ebins[Histogram::NBins]);
+
+
+bool encode_check (APE_etx &etx, Histogram const &hist, Symbol_t const syms[PACKET_K_NSAMPLES])
+{
+   BitStream64 xba;
+   XStream     cba;
+
+   xba.m_cur = etx.ba.m_cur;
+   xba.m_idx = etx.ba.m_idx;
+
+   int idx = 0;
+   while (1)
    {
-      APE_encode  (etx, hist, adcs, Packets::NSamples);
-      decode_data (dadcs, etx.xba, hist, adcs);
+      uint64_t dat;
+      bool okay = etx.ba.m_out.read_nb (dat);
+      if (!okay) break;
+      xba.m_out.write (dat);
+      cba.write (dat);
+      idx += 1;
+   }
+
+   bool hist_failure = hist_check (0, xba, etx.nhist, hist.m_bins);
+
+   uint16_t dsyms[PACKET_K_NSAMPLES];
+   bool failure = decode_data (dsyms, xba, hist, syms);
+
+
+   // Push this all back from whence it came
+   for (int idy = 0; idy < idx; idy++)
+   {
+      uint64_t dat;
+      etx.ba.m_out.write_nb (cba.read_nb(dat));
    }
 
    return failure;

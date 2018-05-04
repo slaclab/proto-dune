@@ -2720,7 +2720,7 @@ static inline void getTimestampRange (uint64_t     range[2],
    // Add the number of clock ticks per time sample to get the
    // ending time.
    // -----------------------------------------------------------
-   d64 += nbytes/sizeof (uint64_t) - 1 - 30 - 1;
+   d64 += nbytes/sizeof (uint64_t) - 1 - 30 - 1 - 1;
    uint64_t end = d64[1] + TimingClockTicks::PER_SAMPLE;
 
 
@@ -3452,7 +3452,7 @@ void DaqBuffer::rxRun ()
    // ------------------------------------------------------------------
    static uint32_t FreqReceived   = -1;
    static uint32_t FreqTimingDump = -1;
-   static uint32_t FreqDataDump   = -1;
+   static uint32_t FreqDataDump   =  1;
    static uint32_t FreqDataCheck  = -1;
 
 
@@ -3785,6 +3785,11 @@ void DaqBuffer::rxRun ()
             uint32_t tlrSize = *reinterpret_cast<uint32_t const *>(dend) 
                              & 0xffffff;
 
+
+            /// !!! KLUDGE !!!
+            /// Got the size wrong in the firmware
+            /// Will correct next firmware build
+            ////tlrSize += 8;
 
             // ---------------------------------------------------
             // Check if the read size matches the anticipated size

@@ -58,11 +58,12 @@
 
 \* ---------------------------------------------------------------------- */
 
-#include "DuneDataCompressionPacket.h"
+#include "Parameters.h"
 
 class BitStream64;
 
 #ifndef __SYNTHESIS__
+#define HISTOGRAM_DEBUG 1
 #define HISTOGRAM_statement(_statement)  _statement
 #else
 #define HISTOGRAM_statement(_statement)
@@ -88,14 +89,16 @@ class BitStream64;
  *   maximum bin rolling over to 0, this will be detected when the
  *   integrated histogram is formed.
 \* ----------------------------------------------------------------------- */
-#define HISTOGRAM_K_NBINS     64
+#define HISTOGRAM_K_NBINS     32
 
 #if     HISTOGRAM_K_NBINS == 128
 #define HISTOGRAM_K_NBITS      7
 #elif   HISTOGRAM_K_NBINS ==  64
 #define HISTOGRAM_K_NBITS      6
+#elif    HISTOGRAM_K_NBINS == 32
+#define HISTOGRAM_K_NBITS      5
 #else
-#error HISTOGRAM_K_NBINS is not one of 64 or 128
+#error HISTOGRAM_K_NBINS is not one of 32, 64 or 128
 #endif
 
 
@@ -128,7 +131,7 @@ public:
    typedef ap_uint<Histogram::NETableBits + Histogram::NBits> ESize_t;
    typedef ap_uint<Histogram::NBins>                        BitMask_t;
    typedef ap_uint<Histogram::NBits>                            Idx_t;
-   typedef ap_uint<PACKET_B_ADC  + 1>                        Symbol_t;
+   typedef ap_uint<ADC_B_NBITS  + 1>                        Symbol_t;
    typedef Entry_t                                              Table;
 public:
    Histogram ();
@@ -138,7 +141,7 @@ public:
    void         clear              ();
    static void  clear              (Histogram hists[], int nhists);
    void         bump               (Symbol_t sym);
-   void         encode             (BitStream64 &bs64, Table table[NBins+1]);
+   void         encode             (BitStream64 &bs64, Table table[NBins+1]) const;
 
    uint32_t                   size () const;
    uint32_t     integrate_and_size ();
@@ -211,6 +214,7 @@ public:
 \* ---------------------------------------------------------------------- */
 inline Histogram::Histogram ()
 {
+   /*
    #pragma HLS RESET variable=m_bins    off
    #pragma HLS RESET variable=m_omask   off
    #pragma HLS RESET variable=m_lastgt0 off
@@ -218,6 +222,7 @@ inline Histogram::Histogram ()
    #pragma HLS RESET variable=m_lastgt2 off
    #pragma HLS RESET variable=m_min     off
    #pragma HLS RESET variable=m_max     off
+   */
 
    #pragma HLS RESOURCE variable=m_omask   core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_lastgt0 core=RAM_2P_LUTRAM
@@ -226,12 +231,16 @@ inline Histogram::Histogram ()
    #pragma HLS RESOURCE variable=m_min     core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_max     core=RAM_2P_LUTRAM
 
+   /*
    #pragma HLS RESET variable=m_cbins    off
    #pragma HLS RESET variable=m_comask   off
    #pragma HLS RESET variable=m_clastgt0 off
    #pragma HLS RESET variable=m_clastgt1 off
    #pragma HLS RESET variable=m_clastgt2 off
    #pragma HLS RESET variable=m_cmin     off
+   #pragma HLS RESET variable=m_cnobits off
+   //#pragma HLS RESET variable=m_cmax     off
+   */
 
 
    #pragma HLS RESOURCE variable=m_comask   core=RAM_2P_LUTRAM
@@ -239,8 +248,12 @@ inline Histogram::Histogram ()
    #pragma HLS RESOURCE variable=m_clastgt1 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt2 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_cmin     core=RAM_2P_LUTRAM
+   #pragma HLS RESOURCE variable=m_cnobits  core=RAM_2P_LUTRAM
 
-   #pragma HLS ARRAY_PARTITION variable=m_bins cyclic factor=2 dim=1
+
+   #pragma HLS ARRAY_PARTITION variable=m_bins cyclic  factor=2 dim=1
+   #pragma HLS ARRAY_PARTITION variable=m_cbins cyclic factor=2 dim=1
+
 
    init ();
    return;
@@ -277,6 +290,7 @@ inline void Histogram::clear ()
    m_clastgt2 = m_lastgt2 =  0;
    m_cmin     = m_min     = (1 << m_min.length () - 1);
                 m_max     =  0;
+   m_cnobits  = 0;
 
 #if 0
    HISTOGRAM_CLEAR_LOOP:
@@ -292,7 +306,8 @@ inline void Histogram::clear ()
 /* ---------------------------------------------------------------------- */
 
 
-HISTOGRAM_statement(
+/* ---------------------------------------------------------------------- */
+HISTOGRAM_statement (
 /* ---------------------------------------------------------------------- *//*!
  *
  *  \brief Set the histogram identifier
@@ -312,6 +327,7 @@ inline void  Histogram::set_id (Histogram hists[], int nhists)
 }
 /* ---------------------------------------------------------------------- */
 )
+/* ---------------------------------------------------------------------- */
 
 
 /* ---------------------------------------------------------------------- *//*!

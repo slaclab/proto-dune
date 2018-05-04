@@ -7,11 +7,17 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x01000055
+export PRJ_VERSION = 0x03000055
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
-# 2018/03/20 0x01000055 jjr  Testing new version of HLS - this adds more error
+# 2018/03/29 0x03000055 jjr  Remove tagging bits, correct sizeof the promoted
+#                            data to include the new 64-bit status word.
+# 2018/03/28 0x02000055 jjr  Added tagging bits to top bits of the monitor
+#                            read variables to try to see where the values
+#                            are going. This version is back to using the
+#                            DATA_PACK on monitor.
+# 2018/03/27 0x01000055 jjr  Testing new version of HLS - this adds more error
 #                            detection is incorporating a more comptatible 
 #                            model of the straight WIB frame copy with the way
 #                            compression will be done.

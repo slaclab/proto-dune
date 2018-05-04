@@ -208,20 +208,20 @@ static void hist_encode_bte (BitStream64 &bs, Histogram &hist, int r0);
  *          At entry 3, there are  0xe entries left, so need 4 bits to encode 0x2
  *          At entry 4, there are  0xc entries left, so need 4 bits to enocde 0x5
  */
-void Histogram::encode (BitStream64 &bs64, Table table[NBins+1])
+void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
 {
-   #pragma HLS PIPELINE
-   #pragma HLS INLINE
+
+   #pragma HLS INLINE off
 
    static int Version (0);
 
 
    // DEBUGGING ONLY STREAM
-   HIST_ENCODE_CHECK_statement (BitStream64 CheckStream;)
+   HIST_ENCODE_CHECK_statement (BitStream64 CheckStream; CheckStream.setName ("Hist"); )
 
 
    // Debug only
-   bool debug = false;
+   bool debug = true;
 
 
    Histogram::Acc_t left = PACKET_K_NSAMPLES -1;
@@ -458,7 +458,7 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1])
    #if HIST_ENCODE_CHECK
    {
       int ebits = CheckStream.flush ();
-      hist_check (m_id, CheckStream, ebits, m_cbins);
+      hist_check (m_id, CheckStream, ebits, m_bins);  ///!!!  m_cbins);
    }
    #endif
 
