@@ -6,161 +6,147 @@
 // ==============================================================
 
 // BUS_A
-// 0x00 : Control signals
-//        bit 0  - ap_start (Read/Write/COH)
-//        bit 1  - ap_done (Read/COR)
-//        bit 2  - ap_idle (Read)
-//        bit 3  - ap_ready (Read)
-//        bit 7  - auto_restart (Read/Write)
-//        others - reserved
-// 0x04 : Global Interrupt Enable Register
-//        bit 0  - Global Interrupt Enable (Read/Write)
-//        others - reserved
-// 0x08 : IP Interrupt Enable Register (Read/Write)
-//        bit 0  - Channel 0 (ap_done)
-//        bit 1  - Channel 1 (ap_ready)
-//        others - reserved
-// 0x0c : IP Interrupt Status Register (Read/TOW)
-//        bit 0  - Channel 0 (ap_done)
-//        bit 1  - Channel 1 (ap_ready)
-//        others - reserved
-// 0x10 : Data signal of cfg
-//        bit 31~0 - cfg[31:0] (Read/Write)
-// 0x14 : Data signal of cfg
-//        bit 31~0 - cfg[63:32] (Read/Write)
-// 0x18 : Data signal of cfg
-//        bit 31~0 - cfg[95:64] (Read/Write)
-// 0x1c : Data signal of cfg
-//        bit 31~0 - cfg[127:96] (Read/Write)
-// 0x20 : Data signal of cfg
-//        bit 31~0 - cfg[159:128] (Read/Write)
-// 0x24 : Data signal of cfg
-//        bit 31~0 - cfg[191:160] (Read/Write)
-// 0x28 : Data signal of cfg
-//        bit 31~0 - cfg[223:192] (Read/Write)
-// 0x2c : reserved
-// 0x30 : Data signal of monitor_common_pattern
-//        bit 31~0 - monitor_common_pattern[31:0] (Read)
-// 0x34 : Control signal of monitor_common_pattern
-//        bit 0  - monitor_common_pattern_ap_vld (Read/COR)
-//        others - reserved
-// 0x38 : Data signal of monitor_cfg
-//        bit 31~0 - monitor_cfg[31:0] (Read)
-// 0x3c : Data signal of monitor_cfg
-//        bit 31~0 - monitor_cfg[63:32] (Read)
-// 0x40 : Control signal of monitor_cfg
-//        bit 0  - monitor_cfg_ap_vld (Read/COR)
-//        others - reserved
-// 0x44 : Data signal of monitor_read_summary
-//        bit 31~0 - monitor_read_summary[31:0] (Read)
-// 0x48 : Data signal of monitor_read_summary
-//        bit 31~0 - monitor_read_summary[63:32] (Read)
-// 0x4c : Data signal of monitor_read_summary
-//        bit 31~0 - monitor_read_summary[95:64] (Read)
-// 0x50 : Data signal of monitor_read_summary
-//        bit 31~0 - monitor_read_summary[127:96] (Read)
-// 0x54 : Data signal of monitor_read_summary
-//        bit 31~0 - monitor_read_summary[159:128] (Read)
-// 0x58 : Data signal of monitor_read_summary
-//        bit 31~0 - monitor_read_summary[191:160] (Read)
-// 0x5c : Control signal of monitor_read_summary
-//        bit 0  - monitor_read_summary_ap_vld (Read/COR)
-//        others - reserved
-// 0x60 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[31:0] (Read)
-// 0x64 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[63:32] (Read)
-// 0x68 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[95:64] (Read)
-// 0x6c : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[127:96] (Read)
-// 0x70 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[159:128] (Read)
-// 0x74 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[191:160] (Read)
-// 0x78 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[223:192] (Read)
-// 0x7c : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[255:224] (Read)
-// 0x80 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[287:256] (Read)
-// 0x84 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[319:288] (Read)
-// 0x88 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[351:320] (Read)
-// 0x8c : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[383:352] (Read)
-// 0x90 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[415:384] (Read)
-// 0x94 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[447:416] (Read)
-// 0x98 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[479:448] (Read)
-// 0x9c : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[511:480] (Read)
-// 0xa0 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[543:512] (Read)
-// 0xa4 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[575:544] (Read)
-// 0xa8 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[607:576] (Read)
-// 0xac : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[639:608] (Read)
-// 0xb0 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[671:640] (Read)
-// 0xb4 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[703:672] (Read)
-// 0xb8 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[735:704] (Read)
-// 0xbc : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[767:736] (Read)
-// 0xc0 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[799:768] (Read)
-// 0xc4 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[831:800] (Read)
-// 0xc8 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[863:832] (Read)
-// 0xcc : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[895:864] (Read)
-// 0xd0 : Data signal of monitor_read_errs
-//        bit 31~0 - monitor_read_errs[927:896] (Read)
-// 0xd4 : Control signal of monitor_read_errs
-//        bit 0  - monitor_read_errs_ap_vld (Read/COR)
-//        others - reserved
-// 0xd8 : Data signal of monitor_write
-//        bit 31~0 - monitor_write[31:0] (Read)
-// 0xdc : Data signal of monitor_write
-//        bit 31~0 - monitor_write[63:32] (Read)
-// 0xe0 : Data signal of monitor_write
-//        bit 31~0 - monitor_write[95:64] (Read)
-// 0xe4 : Data signal of monitor_write
-//        bit 31~0 - monitor_write[127:96] (Read)
-// 0xe8 : Control signal of monitor_write
-//        bit 0  - monitor_write_ap_vld (Read/COR)
-//        others - reserved
+// 0x000 : Control signals
+//         bit 0  - ap_start (Read/Write/COH)
+//         bit 1  - ap_done (Read/COR)
+//         bit 2  - ap_idle (Read)
+//         bit 3  - ap_ready (Read)
+//         bit 7  - auto_restart (Read/Write)
+//         others - reserved
+// 0x004 : Global Interrupt Enable Register
+//         bit 0  - Global Interrupt Enable (Read/Write)
+//         others - reserved
+// 0x008 : IP Interrupt Enable Register (Read/Write)
+//         bit 0  - Channel 0 (ap_done)
+//         bit 1  - Channel 1 (ap_ready)
+//         others - reserved
+// 0x00c : IP Interrupt Status Register (Read/TOW)
+//         bit 0  - Channel 0 (ap_done)
+//         bit 1  - Channel 1 (ap_ready)
+//         others - reserved
+// 0x010 : Data signal of cfg_init
+//         bit 31~0 - cfg_init[31:0] (Read/Write)
+// 0x014 : reserved
+// 0x018 : Data signal of cfg_mode
+//         bit 31~0 - cfg_mode[31:0] (Read/Write)
+// 0x01c : reserved
+// 0x020 : Data signal of cfg_limit
+//         bit 31~0 - cfg_limit[31:0] (Read/Write)
+// 0x024 : reserved
+// 0x100 : Data signal of monitor_common_pattern
+//         bit 31~0 - monitor_common_pattern[31:0] (Read)
+// 0x104 : Control signal of monitor_common_pattern
+//         bit 0  - monitor_common_pattern_ap_vld (Read/COR)
+//         others - reserved
+// 0x108 : Data signal of monitor_cfg_m_mode
+//         bit 31~0 - monitor_cfg_m_mode[31:0] (Read)
+// 0x10c : Control signal of monitor_cfg_m_mode
+//         bit 0  - monitor_cfg_m_mode_ap_vld (Read/COR)
+//         others - reserved
+// 0x110 : Data signal of monitor_cfg_m_ncfgs
+//         bit 31~0 - monitor_cfg_m_ncfgs[31:0] (Read)
+// 0x114 : Control signal of monitor_cfg_m_ncfgs
+//         bit 0  - monitor_cfg_m_ncfgs_ap_vld (Read/COR)
+//         others - reserved
+// 0x118 : Data signal of monitor_read_summary_mask_V
+//         bit 31~0 - monitor_read_summary_mask_V[31:0] (Read)
+// 0x11c : Control signal of monitor_read_summary_mask_V
+//         bit 0  - monitor_read_summary_mask_V_ap_vld (Read/COR)
+//         others - reserved
+// 0x120 : Data signal of monitor_read_summary_nframes
+//         bit 31~0 - monitor_read_summary_nframes[31:0] (Read)
+// 0x124 : Control signal of monitor_read_summary_nframes
+//         bit 0  - monitor_read_summary_nframes_ap_vld (Read/COR)
+//         others - reserved
+// 0x200 : Data signal of monitor_write_nbytes
+//         bit 31~0 - monitor_write_nbytes[31:0] (Read)
+// 0x204 : Control signal of monitor_write_nbytes
+//         bit 0  - monitor_write_nbytes_ap_vld (Read/COR)
+//         others - reserved
+// 0x208 : Data signal of monitor_write_npromoted
+//         bit 31~0 - monitor_write_npromoted[31:0] (Read)
+// 0x20c : Control signal of monitor_write_npromoted
+//         bit 0  - monitor_write_npromoted_ap_vld (Read/COR)
+//         others - reserved
+// 0x210 : Data signal of monitor_write_ndropped
+//         bit 31~0 - monitor_write_ndropped[31:0] (Read)
+// 0x214 : Control signal of monitor_write_ndropped
+//         bit 0  - monitor_write_ndropped_ap_vld (Read/COR)
+//         others - reserved
+// 0x218 : Data signal of monitor_write_npackets
+//         bit 31~0 - monitor_write_npackets[31:0] (Read)
+// 0x21c : Control signal of monitor_write_npackets
+//         bit 0  - monitor_write_npackets_ap_vld (Read/COR)
+//         others - reserved
+// 0x080 ~
+// 0x0ff : Memory 'cfg_chns_disabled' (128 * 1b)
+//         Word n : bit [ 0: 0] - cfg_chns_disabled[4n]
+//                  bit [ 8: 8] - cfg_chns_disabled[4n+1]
+//                  bit [16:16] - cfg_chns_disabled[4n+2]
+//                  bit [24:24] - cfg_chns_disabled[4n+3]
+//                  others      - reserved
+// 0x130 ~
+// 0x13f : Memory 'monitor_read_summary_nStates' (4 * 32b)
+//         Word n : bit [31:0] - monitor_read_summary_nStates[n]
+// 0x140 ~
+// 0x15f : Memory 'monitor_read_errs_nFrameErrs' (5 * 32b)
+//         Word n : bit [31:0] - monitor_read_errs_nFrameErrs[n]
+// 0x180 ~
+// 0x1ff : Memory 'monitor_read_errs_nWibErrs' (24 * 32b)
+//         Word n : bit [31:0] - monitor_read_errs_nWibErrs[n]
 // (SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
 
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_AP_CTRL                     0x00
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_GIE                         0x04
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_IER                         0x08
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_ISR                         0x0c
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_DATA                    0x10
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_DATA                    224
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA 0x30
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_COMMON_PATTERN_DATA 32
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_CTRL 0x34
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_DATA            0x38
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_CFG_DATA            64
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_CTRL            0x40
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_DATA   0x44
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_SUMMARY_DATA   192
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_CTRL   0x5c
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA      0x60
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_ERRS_DATA      928
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA_     0x88
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_ERRS_DATA      928
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_CTRL      0xd4
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_DATA          0xd8
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_DATA          128
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_CTRL          0xe8
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_AP_CTRL                           0x000
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_GIE                               0x004
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_IER                               0x008
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_ISR                               0x00c
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_INIT_DATA                     0x010
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_INIT_DATA                     32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_MODE_DATA                     0x018
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_MODE_DATA                     32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_LIMIT_DATA                    0x020
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_LIMIT_DATA                    32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA       0x100
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_COMMON_PATTERN_DATA       32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_CTRL       0x104
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_MODE_DATA           0x108
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_CFG_M_MODE_DATA           32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_MODE_CTRL           0x10c
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_NCFGS_DATA          0x110
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_CFG_M_NCFGS_DATA          32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_NCFGS_CTRL          0x114
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_MASK_V_DATA  0x118
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_SUMMARY_MASK_V_DATA  32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_MASK_V_CTRL  0x11c
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NFRAMES_DATA 0x120
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_SUMMARY_NFRAMES_DATA 32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NFRAMES_CTRL 0x124
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NBYTES_DATA         0x200
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_NBYTES_DATA         32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NBYTES_CTRL         0x204
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NPROMOTED_DATA      0x208
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_NPROMOTED_DATA      32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NPROMOTED_CTRL      0x20c
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NDROPPED_DATA       0x210
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_NDROPPED_DATA       32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NDROPPED_CTRL       0x214
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NPACKETS_DATA       0x218
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_NPACKETS_DATA       32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NPACKETS_CTRL       0x21c
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_CHNS_DISABLED_BASE            0x080
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_CHNS_DISABLED_HIGH            0x0ff
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_WIDTH_CFG_CHNS_DISABLED                1
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_DEPTH_CFG_CHNS_DISABLED                128
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NSTATES_BASE 0x130
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NSTATES_HIGH 0x13f
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_WIDTH_MONITOR_READ_SUMMARY_NSTATES     32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_DEPTH_MONITOR_READ_SUMMARY_NSTATES     4
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NFRAMEERRS_BASE 0x140
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NFRAMEERRS_HIGH 0x15f
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_WIDTH_MONITOR_READ_ERRS_NFRAMEERRS     32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_DEPTH_MONITOR_READ_ERRS_NFRAMEERRS     5
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NWIBERRS_BASE   0x180
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NWIBERRS_HIGH   0x1ff
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_WIDTH_MONITOR_READ_ERRS_NWIBERRS       32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_DEPTH_MONITOR_READ_ERRS_NWIBERRS       24
 

@@ -83,32 +83,38 @@ static void populate (RegisterLink *rlArray[],
 */
 
 
-#define MONITOR_COMMON_PATTERN  (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA >> 2)
+#define MONITOR_CFG_INIT         \
+   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_INIT_DATA          >> 2))
 
-#define MONITOR_CFG(_offset)          \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_DATA          >> 2)+_offset)
+#define MONITOR_CFG_MODE \
+   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_MODE_DATA        >> 2))
+
+#define MONITOR_CFG_NCFGS \
+   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_NCFGS_DATA       >> 2))
+
+#define MONITOR_COMMON_PATTERN \
+   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA    >> 2))
 
 #define MONITOR_READ_SUMMARY(_offset) \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_DATA >> 2)+_offset)
+((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_MASK_V_DATA >> 2)+_offset)
 
 #define MONITOR_READ_NSTATES(_offset) \
-   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_DATA >> 2)+(2+_offset))
+   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NSTATES_BASE >> 2)+(2+_offset))
 
 #define MONITOR_READ_ERRS(_offset)    \
 ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA    >> 2)+_offset)
 
 #define MONITOR_READ_NFRAMEERRS(_offset)    \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA    >> 2)+_offset)
+((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NFRAMEERRS_BASE >> 2)+_offset)
 
 #define MONITOR_READ_NWIBERRS(_offset)    \
-   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA >> 2)+ (5+_offset))
-
-
-#define MONITOR_WRITE(_offset)         \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_DATA        >> 2)+_offset)
+((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NWIBERRS_BASE >> 2)+ (_offset))
 
 
 /*
+#define MONITOR_WRITE(_offset)         \
+((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_DATA        >> 2)+_offset)
+
 #define MONITOR_READ_NWIBERRS(_offset)   \
 ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_NWIBERRS_BASE  >> 2)+_offset)
 
@@ -200,8 +206,8 @@ DataCompression::Registers::Registers (Device       *device,
       //  INDEX          NAME         OFFSET                  N32  POLLENABLE
       //  --------       ------------ ----------------        ---  ----------
       [Ca_Pattern] = { "Ca_Pattern",  MONITOR_COMMON_PATTERN,   1,      true },
-      [Cfg_Mode  ] = { "Cfg_Mode",    MONITOR_CFG (0)       ,   1,      true },
-      [Cfg_NCfgs ] = { "Cfg_NCfgs",   MONITOR_CFG (1)       ,   1,      true },
+      [Cfg_Mode  ] = { "Cfg_Mode",    MONITOR_CFG_MODE      ,   1,      true },
+      [Cfg_NCfgs ] = { "Cfg_NCfgs",   MONITOR_CFG_NCFGS     ,   1,      true },
    };
 
 
@@ -734,12 +740,12 @@ DataCompression::Write::Registers::Registers (Device       *device,
 {
    static const Svd_t Svd[] =
    {
-      //  INDEX           NAME        OFFSET             N32  POLLENABLE
-      //  ---------       -------     ------------------ ---  ----------
-      [Wr_NBytes   ] = { "NBytes",    MONITOR_WRITE (0),   1,      true },
-      [Wr_NPromoted] = { "NPromoted", MONITOR_WRITE (1),   1,      true },
-      [Wr_NDropped ] = { "NDropped",  MONITOR_WRITE (2),   1,      true },
-      [Wr_NPackets ] = { "NPackets",  MONITOR_WRITE (3),   1,      true }
+      //  INDEX           NAME        OFFSET                  N32  POLLENABLE
+      //  ---------       -------     ------------------      ---  ----------
+      [Wr_NBytes   ] = { "NBytes",    MONITOR_WRITE_NBYTES,     1,      true },
+      [Wr_NPromoted] = { "NPromoted", MONITOR_WRITE_NPROMOTED,  1,      true },
+      [Wr_NDropped ] = { "NDropped",  MONITOR_WRITE_NDROPPED,   1,      true },
+      [Wr_NPackets ] = { "NPackets",  MONITOR_WRITE_NPACKETS,   1,      true }
  
    };
 

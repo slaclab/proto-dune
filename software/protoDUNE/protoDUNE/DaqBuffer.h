@@ -68,6 +68,7 @@
 #include <mqueue.h>
 #include <pthread.h>
 #include <queue>
+#include <poll.h>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -124,6 +125,8 @@ struct DaqHeader
 /*---------------------------------------------------------------------- */
 
 
+
+
 /* ---------------------------------------------------------------------- *//*!
 
    \class DaqDmaDevice
@@ -134,14 +137,21 @@ class DaqDmaDevice
 {
 public:
    DaqDmaDevice ();
-   int     open    (char const *name, uint8_t const *dests, int ndests);
-   int     enable  (uint8_t const *dests, int ndests);
-   int     enable  ();
-   int     map     ();
-   ssize_t free    (int index);
-   void    vet     ();
-   int     unmap   ();
-   int     close   ();
+   int      open         (char const *name, uint8_t const *dests, int ndests);
+   int      enable       (uint8_t const *dests, int ndests);
+   int      enable       ();
+   int      map          ();
+
+   uint32_t allocateWait ();
+   ssize_t  free         (int  index);
+
+   void     wait         ();
+   void     vet          ();
+   int      unmap        ();
+   int      close        ();
+
+   static uint32_t allocateWait (int32_t fd);
+   static void     wait         (int32_t fd);
 
 public:
    static const uint32_t TUserEOFE = 0x1;
@@ -273,6 +283,100 @@ inline int DaqDmaDevice::map ()
 
       return 0;
    }
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Waits for a write buffer in the DMA pool to become available
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void DaqDmaDevice::wait (int32_t fd)
+{
+   struct pollfd pollWrite;
+
+   pollWrite.fd      = fd;
+   pollWrite.events  = POLLOUT;
+   pollWrite.revents = 0;
+   
+   int n = poll (&pollWrite, 1, -1);
+   if (n != 1)
+   {
+      fprintf (stderr, "RSSI Poll error = %d\n", n);
+      exit (-1);
+   }
+
+   if (!(pollWrite.revents & POLLOUT))
+   {
+      fprintf (stderr, "RSSI Poll did not return write ready %8.8x\n", 
+               pollWrite.revents);
+      exit (-1);
+   }
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief Waits for a write buffer in the DMA pool to become available
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void DaqDmaDevice::wait ()
+{
+   wait (_fd);
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Allocate a writeable buffer with a wait (blocker)
+  \return Index of the allocated buffer
+
+  \param[in] fd  The file descriptor of the DMA driver
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint32_t DaqDmaDevice::allocateWait (int32_t fd)
+{
+   uint32_t index = dmaGetIndex (fd);
+
+   printf ("Index = %8.8x errno = %d\n", index, errno);
+
+
+   // --------------------------------------
+   // !!! KLUDGE !!!
+   // --------------
+   // dmaGetIndex returns -1 and errno = 1.
+   // Not sure if that is the intent or not.
+   // --------------------------------------
+   if ((int)index < 0)
+   {
+      wait (fd);
+      index = dmaGetIndex (fd);
+   }
+
+   return index;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Allocate a writeable buffer with a wait (blocker)
+  \return Index of the allocated buffer
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint32_t DaqDmaDevice::allocateWait ()
+{
+   return allocateWait (_fd);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -661,7 +765,7 @@ public:
       RunMode         _runMode;  /*!< The run mode                       */      
       uint32_t _blowOffDmaData;  /*!< If non-zero, pitch incoming data   */
       uint32_t   _blowOffTxEth;  /*!< If non-zero, do not transmit       */
-      uint32_t   _enableRssi;    /*!< Select FW RSSI or SW TCP           */      
+      uint32_t     _enableRssi;  /*!< Select FW RSSI or SW TCP           */      
       int32_t      _pretrigger;  /*!< Pretrigger time (usecs)            */
       int32_t     _posttrigger;  /*!< Postrigger time (usecs)            */
       uint32_t         _period;  /*!< Software trigger period            */ 

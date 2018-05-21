@@ -212,7 +212,6 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
     #pragma HLS DATA_PACK variable=monitor.cfg
     #pragma HLS DATA_PACK variable=monitor.read.summary
     #pragma HLS DATA_PACK variable=monitor.read.errs
-
     #pragma HLS DATA_PACK variable=monitor.write
     #pragma HLS DATA_PACK variable=cfg
     #endif
