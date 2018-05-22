@@ -252,7 +252,7 @@ static int copy_test (int               fd,
          if (differ (expMonitor, monitor) || isample == (PACKET_K_NSAMPLES-1))
          {
             static int Count = 0;
-            if (Count < 5)
+            if (Count < 32)
             {
                print_monitor (expMonitor, monitor, ipacket, isample);
             }
@@ -594,8 +594,8 @@ static void print_monitor (MonitorModule const &s0,
                            int             isample)
 {
    printf ("New status at packet.sample: %3u.%4u\n"
-         "               Common.pattern: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                     Cfg.mode: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         " Common              .pattern: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         " Cfg                    .mode: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "                       .ncfgs: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
 
          " Read                 .status: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
@@ -606,7 +606,7 @@ static void print_monitor (MonitorModule const &s0,
          "            [          Flush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "            [    DisAndFlush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
 
-         "            [        ErrSofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "     .frame [        ErrSofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "            [        ErrSofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "            [        ErrEofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "            [        ErrEofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
@@ -630,7 +630,7 @@ static void print_monitor (MonitorModule const &s0,
          "            [       ErrRsvd1]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "            [        ErrHdrs]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
 
-         "              Write.npromoted: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         " Write             .npromoted: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "                    .ndropped: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "                    .npackets: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
          "                      .nbytes: %8.8" PRIx32 " -> %8.8" PRIx32 "\n",

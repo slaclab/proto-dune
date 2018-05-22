@@ -1,6 +1,51 @@
 #ifndef _WIBFRAME_READ_H_
 #define _WIBFRAME_READ_H_
 
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  @file     WibFrame-Read.h.cpp
+ *  @brief    Class to read and monitor incoming WIB frames
+ *  @verbatim
+ *                               Copyright 2013
+ *                                    by
+ *
+ *                       The Board of Trustees of the
+ *                    Leland Stanford Junior University.
+ *                           All rights reserved.
+ *
+ *  @endverbatim
+ *
+ *  @par Facility:
+ *  DUNE
+ *
+ *  @author
+ *  russell@slac.stanford.edu
+ *
+ *  @par Date created:
+ *  2018.05.22
+ *
+ * @par Credits:
+ * SLAC
+ *
+\* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *\
+
+   HISTORY
+   -------
+
+   DATE       WHO WHAT
+   ---------- --- ---------------------------------------------------------
+   2018.05.22 jjr Corrected extration of the run state.  The error
+                  extracted only the last bit (the run disable bit.
+                  Since this was almost always 0, the state appeared to
+                  be 0, i.e. Normal even if the flush bit was set.
+   2018.05.22 jjr Add documentation header
+
+\* ---------------------------------------------------------------------- */
+
 #include "ap_int.h"
 
 /* ----------------------------------------------------------------------- *//*!
@@ -234,7 +279,7 @@ public:
    static ap_uint<StateCnt> state (ReadStatus_t status)
    {
       #pragma HLS INLINE
-      return status (Offset::StateEnd, Offset::StateEnd);
+      return status (Offset::StateEnd, Offset::StateBeg);
    }
    /* ---------------------------------------------------------------------- */
    ap_uint<StateCnt> state () const
