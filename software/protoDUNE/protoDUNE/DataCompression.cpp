@@ -73,14 +73,8 @@ static void populate (RegisterLink *rlArray[],
  |        Write :  Counters and status words that monitor the frame writes|
  |                                                                        |
 \* ---------------------------------------------------------------------- */
-/*
-#define MONITOR_COMMON_PATTERN  (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA >> 2)
-#define MONITOR_CFG_MODE        (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_MODE_DATA       >> 2)
-#define MONITOR_CFG_NCFGS       (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_NCFGS_DATA      >> 2)
-
-#define MONITOR_READ_MASK       (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_MASK_V_DATA    >> 2)
-#define MONITOR_READ_NFRAMES    (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_NFRAMES_DATA   >> 2)
-*/
+#define MONITOR_COMMON_PATTERN \
+   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA    >> 2))
 
 
 #define MONITOR_CFG_INIT         \
@@ -92,17 +86,12 @@ static void populate (RegisterLink *rlArray[],
 #define MONITOR_CFG_NCFGS \
    ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_NCFGS_DATA       >> 2))
 
-#define MONITOR_COMMON_PATTERN \
-   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA    >> 2))
 
 #define MONITOR_READ_SUMMARY(_offset) \
 ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_MASK_V_DATA >> 2)+_offset)
 
 #define MONITOR_READ_NSTATES(_offset) \
-   ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NSTATES_BASE >> 2)+(2+_offset))
-
-#define MONITOR_READ_ERRS(_offset)    \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_DATA    >> 2)+_offset)
+((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NSTATES_BASE >> 2)+(_offset))
 
 #define MONITOR_READ_NFRAMEERRS(_offset)    \
 ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NFRAMEERRS_BASE >> 2)+_offset)
@@ -110,20 +99,6 @@ static void populate (RegisterLink *rlArray[],
 #define MONITOR_READ_NWIBERRS(_offset)    \
 ((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_ERRS_NWIBERRS_BASE >> 2)+ (_offset))
 
-
-/*
-#define MONITOR_WRITE(_offset)         \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_DATA        >> 2)+_offset)
-
-#define MONITOR_READ_NWIBERRS(_offset)   \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_NWIBERRS_BASE  >> 2)+_offset)
-
-#define MONITOR_READ_NSTATES(_offset)   \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_NSTATES_BASE   >> 2)+_offset)
-
-#define MONITOR_READ_NFRAMEERRS(_offset)   \
-((XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_NFRAMEERRS_BASE >> 2)+_offset)
-*/
 
 #define MONITOR_WRITE_NBYTES    (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NBYTES_DATA    >> 2)
 #define MONITOR_WRITE_NPROMOTED (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NPROMOTED_DATA >> 2)
@@ -311,7 +286,7 @@ DataCompression::Read::Registers::Registers (Device       *device,
       //  INDEX         NAME                  OFFSET         N32  POLLENABLE
       //  --------      ---------  ------------------------  ---  ----------
       [Rd_Status ] = { "Status",   MONITOR_READ_SUMMARY(0),   1,      true },
-      [Rd_NFrames] = { "NFrames",  MONITOR_READ_SUMMARY(1),   1,      true },
+      [Rd_NFrames] = { "NFrames",  MONITOR_READ_SUMMARY(2),   1,      true },
    };
 
 
@@ -350,7 +325,7 @@ DataCompression::Read::FrameErrs::FrameErrs (uint32_t linkConfig,
    sr_ (this, baseAddress, addrSize)
 {
    // Description
-   desc_ = "DataCompressionMonitroReadFrameErrs object";
+   desc_ = "DataCompressionMonitorReadFrameErrs object";
 
    // Enable polling
    pollEnable_ = true;   
