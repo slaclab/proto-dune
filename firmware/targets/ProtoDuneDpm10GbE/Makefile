@@ -5,10 +5,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000056
+export PRJ_VERSION = 0x00000057
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/05/23 0x00000057 llr  Updating to latest SURF in pre-release, which an RSSI update
 # 2018/05/18 0x00000056 llr  Updating to latest SURF (v1.8.4), which has a RSSI bug fix
 # 2018/04/06 0x00000055 llr  Updating to latest SURF (v1.7.4), which has a RSSI bug fix
 # 2018/03/20 0x00000054 llr  Hard-coding timing trigger detect to op-code [0x8:0xF] (v4a5 tag)
