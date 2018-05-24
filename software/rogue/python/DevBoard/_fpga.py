@@ -34,23 +34,19 @@ class Fpga(pr.Device):
         #############
         # Add devices
         #############
-        self.add(udp.UdpEngineServer(
-            offset = 0xA4000000,
-            expand = False,
-        ))
         
         self.add(rssi.RssiCore(
             offset = 0xA4010000,
-            expand = False,
+            # expand = False,
         ))          
         
         self.add(ssi.SsiPrbsTx(
             offset = 0xA4020000,
-            expand = False,
+            # expand = False,
         )) 
 
-        self.add(ssi.SsiPrbsRx(
-            offset = 0xA4030000,
-            expand = False,
-        ))
+        # self.add(ssi.SsiPrbsRx(
+            # offset = 0xA4030000,
+            # expand = False,
+        # ))
         

@@ -85,10 +85,10 @@ prbsRx = pyrogue.utilities.prbs.PrbsRx(name='PrbsRx')
 pyrogue.streamConnect(vcPrbs,prbsRx)
 rootTop.add(prbsRx)  
     
-# Connect to FW RX PRBS
-prbTx = pyrogue.utilities.prbs.PrbsTx(name="PrbsTx")
-pyrogue.streamConnect(prbTx, vcPrbs)
-rootTop.add(prbTx)  
+# # Connect to FW RX PRBS
+# prbTx = pyrogue.utilities.prbs.PrbsTx(name="PrbsTx")
+# pyrogue.streamConnect(prbTx, vcPrbs)
+# rootTop.add(prbTx)  
     
 # Connect the SW RSSI monitor
 rootTop.add(rudp)    
