@@ -43,6 +43,7 @@ public:
    bool         getCopyFlag     () const { return         m_copy; }
    int          getNsdump       () const { return       m_nsdump; }
    int          getNedump       () const { return       m_nedump; }
+   int          getDisplay      () const { return      m_display; }
    char const  *getOfilename    () const { return    m_ofilename; }
    int32_t      getLoggingLevel () const { return m_loggingLevel; }
    char const  *getLoggingName  () const { return  m_loggingName; }
@@ -61,6 +62,7 @@ public:
    int             m_nframes;
    int              m_nsdump;
    int              m_nedump;
+   int             m_display;
    bool               m_copy;
    bool              m_quiet;
    int32_t    m_loggingLevel;
@@ -89,6 +91,7 @@ public:
    Receiver (RssiConnection *connection, 
              int             nsdump = 0,
              int             nedump = 0,
+             int           ndisplay = 0,
              bool      copyFlag = false, 
              int          outputFd = -1);
 
@@ -97,26 +100,24 @@ public:
    void acceptFrame (boost::shared_ptr<rogue::interfaces::stream::Frame> frame);
 
 
+   /* ------------------------------------------------------------------- *//*!
+
+      \brief Class to monitor and accumulate statistics about the 
+             reception of incoming frames
+                                                                          */
+   /* ------------------------------------------------------------------- */
    class Statistics
    {
    public:
       Statistics ();
       Statistics (Statistics volatile &stats);
 
-      static void gettime (struct timespec *ts)
-      {
-            clock_gettime (CLOCK_MONOTONIC_COARSE, ts);
-      }
 
-      static void gettime (struct timespec volatile *ts)
-      {
-            clock_gettime (CLOCK_MONOTONIC_COARSE, 
-                           const_cast<struct timespec *>(ts));
-      }
-
+   public:
+      static void    gettime (struct timespec          *ts);
+      static void    gettime (struct timespec volatile *ts);
       static int64_t subtime (struct timespec const *start,
                               struct timespec const  *stop);
-
 
    public:
       struct timespec m_time;  /*!< The timestamp of these statistics     */
@@ -126,12 +127,16 @@ public:
       uint32_t    m_packDrop;  /*!< Number of dropped packets             */
       uint32_t    m_rssiDrop;  /*!< Number of dropped rssi packets        */
    };
+   /* ------------------------------------------------------------------- */
+
 
 public:
    RssiConnection *m_connection;  /*!< The connection                     */
    Statistics volatile  m_stats;  /*!< The shared statistics              */
    int                 m_nsdump;  /*!< # 64-bit words to dump(non-erring) */
    int                 m_nedump;  /*!< # 64-bit words to dump(erring)     */
+   int                m_display;  /*!< Current value of display countdown */
+   int           m_displayCount;  /*!< Refresh display countdown value    */
    bool                  m_copy;  /*!< Copy flag, set true, if fd >= 0    */
    int                     m_fd;  /*!< Output file descriptor             */
 };
@@ -194,35 +199,36 @@ int main (int argc, char **argv)
 {
    Parameters prms (argc, argv);
 
-   uint32_t v = 32;
-   printf ("%8" PRIx32 "\n", v);
-
    prms.echo ();
 
    char const      *daqHost = prms.getIp       (); ///"192.168.2.110";
    int              nframes = prms.getNframes  ();
    int               nsdump = prms.getNsdump   ();
    int               nedump = prms.getNedump   ();
+   int             ndisplay = prms.getDisplay  ();
    bool            copyFlag = prms.getCopyFlag ();
    char const    *ofilename = prms.getOfilename();
    int32_t     loggingLevel = prms.getLoggingLevel ();
    int                   fd = ofilename ? create_file (ofilename) : -1;
-    
+
   
    if (loggingLevel > 0)
    {
       rogue::Logging::setLevel (loggingLevel);
    }
 
+
    RssiConnection connection (daqHost, nframes);
 
 
    // Create a receiver and connect to channel 0 of the packetizer
-   boost::shared_ptr<Receiver> receiver = boost::make_shared<Receiver>(&connection, 
-                                                                            nsdump,
-                                                                            nedump,
-                                                                          copyFlag, 
-                                                                                fd);
+   boost::shared_ptr<Receiver> 
+          receiver = boost::make_shared<Receiver>(&connection, 
+                                                  nsdump,
+                                                  nedump,
+                                                  ndisplay,
+                                                  copyFlag, 
+                                                  fd);
    connection.connect (receiver);
 
 
@@ -264,23 +270,25 @@ int main (int argc, char **argv)
                                                                           */
 /* ---------------------------------------------------------------------- */
 Parameters::Parameters (int argc, char *const argv[]) :
-   m_ip          (NULL),
-   m_ofilename   (NULL),
-   m_refresh        (1),
-   m_nframes       (64),
-   m_nsdump         (0),
-   m_nedump         (0),
-   m_copy       (false),
-   m_quiet      (false),
-   m_loggingLevel  (-1),
-   m_loggingName (NULL)
+   m_ip           (NULL),
+   m_ofilename    (NULL),
+   m_refresh         (1),
+   m_nframes        (64),
+   m_nsdump          (0),
+   m_nedump          (0),
+   m_display         (0),
+   m_copy        (false),
+   m_quiet       (false),
+   m_loggingLevel   (-1),
+   m_loggingName ("-- None --")
 {
    int c;
 
-   while ( (c = getopt (argc, argv, "ce:n:o:l:s:q")) != EOF)
+   while ( (c = getopt (argc, argv, "cd:e:n:o:l:s:q")) != EOF)
    {
       if      (c == 's') { m_nsdump       = strtol (optarg, NULL, 0);         }
-      if      (c == 'e') { m_nedump       = strtol (optarg, NULL, 0);         }
+      else if (c == 'd') { m_display      = strtol (optarg, NULL, 0);         }
+      else if (c == 'e') { m_nedump       = strtol (optarg, NULL, 0);         }
       else if (c == 'n') { m_nframes      = strtol (optarg, NULL, 0);         }
       else if (c == 'c') { m_copy         = true;                             }
       else if (c == 'o') { m_ofilename    = optarg;                           }
@@ -334,7 +342,7 @@ uint32_t Parameters::getLoggingLevel (char const *levelSpec,
    if      (l == 'C') { level = rogue::Logging::Critical; *name = "Critical"; }
    else if (l == 'E') { level = rogue::Logging::Error;    *name = "Error";    }
    else if (l == 'W') { level = rogue::Logging::Warning;  *name = "Warning";  }
-   else if (l == 'I') {level = rogue::Logging::Info;      *name = "Info";     }
+   else if (l == 'I') { level = rogue::Logging::Info;     *name = "Info";     }
    else if (l == 'D') { level = rogue::Logging::Debug;    *name = "Debug";    }
    else
    {
@@ -369,11 +377,13 @@ void Parameters::echo () const
    << "  Sender's          IP: "  << m_ip                    << std::endl
    << "  # of receive  frames: "  << m_nframes               << std::endl
    << "  # words to dump (ok): "  << m_nsdump                << std::endl
-   << "  # words to dump(err): "  << m_nsdump                << std::endl
-   << "  refresh rate        : "  << m_refresh << " secs"    << std::endl
+   << "  # words to dump(err): "  << m_nedump                << std::endl
+   << "  Display             : "  << m_display               << std::endl
+   << "  Refresh rate        : "  << m_refresh << " secs"    << std::endl
    << "  Copy  incoming  data: "  << (m_copy ? "Yes" : "No") << std::endl
    << "  Logging level       : "  << m_loggingName           << std::endl
-   << "  Output file name    : "  << (m_ofilename ? m_ofilename : "-- None --") << std::endl
+   << "  Output file name    : "  << (m_ofilename ? m_ofilename : "-- None --") 
+   << std::endl
    << std::endl;
 
 
@@ -394,9 +404,10 @@ void Parameters::reportUsage ()
    using namespace std;
    cout 
 << "Usage:" << endl
-<< "$ rssi_receiver [ce:ln:os:r:] ip" << endl
+<< "$ rssi_receiver [cd:e:ln:os:r:] ip" << endl
 << "  where:" << std::endl
 << "      c:  If present, the frame data is copied into a temporary buffer"   << endl
+<< "      d:  Display every nth event, default = 0, do not display"           << endl
 << "      e:  Number of 64-bit words to dump for erroring frames"             << endl
 << "      s:  Number of 64-bit words to dump for non-erroring frames"         << endl
 << "      n:  The number of incoming frames to buffer, default = 64"          << endl
@@ -479,6 +490,7 @@ static int create_file (char const *filename)
                          non-erring frames
   \param[in]     nedump  The number of 64-bit words to dump for
                          erring frames
+  \param[in]   ndisplay  Display every nth frame (0 = never)
   \param[in]   copyFlag  Flags indicating whether to copy the data or not
   \param[in]   outputFd  If >= 0, a file descriptor to write the output to
                                                                           */
@@ -486,12 +498,15 @@ static int create_file (char const *filename)
 inline Receiver::Receiver (RssiConnection *connection, 
                            int                 nsdump,
                            int                 nedump,
+                           int               ndisplay,
                            bool              copyFlag,
                            int               outputFd) :
    m_connection (connection),
    m_stats                (),
    m_nsdump         (nsdump),
    m_nedump         (nedump),
+   m_display      (ndisplay),
+   m_displayCount (ndisplay),
    m_copy         (copyFlag),
    m_fd           (outputFd)
 {
@@ -535,8 +550,10 @@ void Receiver::
    rogue::interfaces::stream::Frame::iterator beg = frame->beginRead();
    rogue::interfaces::stream::Frame::iterator end = frame->endRead();
 
+   m_display -= 1;
+
    // Copy to buffer
-   if (m_copy || m_nsdump || m_nedump || m_fd >= 0)
+   if (m_copy || m_nsdump || m_nedump || m_fd >= 0 || m_display == 0)
    {
       ///std::cout << "Copying nbytes: " << nbytes << std::endl;
       uint8_t * buff = (uint8_t *)malloc (nbytes);
@@ -552,6 +569,7 @@ void Receiver::
          printf ("Error : Unsynched frame %8.8" PRIx32 "bytes\n",
                  (unsigned int)nbytes);
          dump (d, m_nedump);
+         m_display += 1;
       }
       else
       {
@@ -573,9 +591,9 @@ void Receiver::
             }
          }
 
-         if (0)
+         if (m_display == 0)
          {
-
+            m_display =  m_displayCount;
             print_hdr    (header[0]);
             print_id     (data);
             print_record (data, ndata);
@@ -627,6 +645,43 @@ inline Receiver::Statistics::Statistics (Receiver::Statistics volatile &stats) :
    m_rssiDrop (stats.m_rssiDrop)
 {
    m_time = const_cast<const struct timespec &>(stats.m_time);
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Get the current monotonic increasing time
+
+  \param[out]  ts  The returned struct timespec
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void Receiver::Statistics::gettime (struct timespec *ts)
+{
+   clock_gettime (CLOCK_MONOTONIC_COARSE, ts);
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Get the current monotonic increasing time
+
+  \param[out]  ts  The returned struct timespec
+
+  \note
+   The twist here is that the output timespec is volatile.  This just
+   hides the ugly cast.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void Receiver::Statistics::gettime (struct timespec volatile *ts)
+{
+   clock_gettime (CLOCK_MONOTONIC_COARSE, 
+                  const_cast<struct timespec *>(ts));
    return;
 }
 /* ---------------------------------------------------------------------- */

@@ -108,35 +108,6 @@
 
 
 
-
-
-/* ====================================================================== */
-/*                                                                        */
-/*    These enumerate the possible processing modes                       */
-/*    Setting the #define PROCESS_K_TYPE will select that mode            */
-/*                                                                        */
-/* ---------------------------------------------------------------------- */
-#define PROCESS_K_COPY        1 /* Simple copy, essentially *out++ = *in++*/
-#define PROCESS_K_DATAFLOW    2 /* Buffered copy using DATAFLOW           */
-#define PROCESS_K_COMPRESS    3 /* Compressed all                         */
-/* ====================================================================== */
-
-
-
-/* ====================================================================== */
-/* !!!                                                                !!! */
-/* !!! --- HERE BE THE #DEFINE USED TO SELECT THE PROCESSING MODE --- !!! */
-/* !!!                                                                !!! */
-/* ====================================================================== */
-/*                                                                        */
-/*  CRITICAL:                                                             */
-/*  PROCESS_K_TYPE must be set to one of the above PROCESS_K_<xxxx> to    */
-/*  select the desired processing mode.                                   */
-/* ---------------------------------------------------------------------- */
-#define PROCESS_K_MODE PROCESS_K_DATAFLOW
-/* ====================================================================== */
-
-
 #include "hls_stream.h"
 #include "DuneDataCompressionCore.h"
 #include "WibFrame-Read.h"

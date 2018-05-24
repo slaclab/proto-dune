@@ -39,7 +39,7 @@ public:
    size_t sendTcp  (int fd, size_t txSize);
    size_t sendRssi (int fd, size_t txSize);
 
-private:
+public:
    size_t      m_iovlen;
 
    struct msghdr    m_msg;

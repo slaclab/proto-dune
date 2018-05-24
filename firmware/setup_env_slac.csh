@@ -1,6 +1,6 @@
 
 # Setup the Xilinx software 
-source /afs/slac/g/reseng/xilinx/vivado_2016.4/Vivado/2016.4/settings64.csh
+source /afs/slac/g/reseng/xilinx/vivado_2018.1/Vivado/2018.1/settings64.csh
 
 # Setup the VCS software
 source  /afs/slac.stanford.edu/g/reseng/synopsys/vcs-mx/M-2017.03-1/settings.csh

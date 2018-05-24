@@ -4638,6 +4638,22 @@ void DaqBuffer::txRun ()
       txMsg.increaseLast (sizeof (*trailer));
 
 
+      // !!! KLUDGE !!! DEBUGGING
+      {
+         static int Counter = 0;
+         uint64_t *p = (uint64_t *)ho + 4;
+         for (int idx = 0; idx < 16; idx++)
+         {
+            int frIdx = txMsg.m_rssi_iov[idx].iov_idx;
+            uint64_t t = Counter;
+            t <<= 32;
+            t  |= idx << 16;
+            t  |= frIdx;
+            p[idx] = t;
+         }
+         Counter += 1;
+      }
+
       // -------------------------------------------------
       // Each completed packet consists of 
       //    1) A header record 

@@ -303,7 +303,7 @@ public:
     static bool isGoodFrame (ap_uint<32> status)
     {
        #pragma HLS INLINE
-       int sb = status >> static_cast<unsigned>(Offset::ErrFrameBeg);
+       unsigned int sb = status >> static_cast<unsigned>(Offset::ErrFrameBeg);
        return sb == 0;
     }
     /* ---------------------------------------------------------------------- */
