@@ -80,15 +80,8 @@ rootTop = pr.Root(name='System',description='Front End Board')
 srp = rogue.protocols.srp.SrpV3()
 pr.streamConnectBiDir(vcSrp,srp)  
 
-# Connect to FW TX PRBS
-prbsRx = pyrogue.utilities.prbs.PrbsRx(name='PrbsRx')
-pyrogue.streamConnect(vcPrbs,prbsRx)
-rootTop.add(prbsRx)  
-    
-# # Connect to FW RX PRBS
-# prbTx = pyrogue.utilities.prbs.PrbsTx(name="PrbsTx")
-# pyrogue.streamConnect(prbTx, vcPrbs)
-# rootTop.add(prbTx)  
+# Loopback the PRBS data
+pyrogue.streamConnect(vcPrbs,vcPrbs)
     
 # Connect the SW RSSI monitor
 rootTop.add(rudp)    
