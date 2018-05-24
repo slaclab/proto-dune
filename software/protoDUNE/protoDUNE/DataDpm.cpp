@@ -91,7 +91,7 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    addDevice(d = new DataDpmEmu(     linkConfigApp, 0xA2000000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataDpmTiming(  linkConfigApp, 0xA3000000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new UdpReg(         linkConfigApp, 0xA4000000, 0, this, 4));d->pollEnable(false); d->hideAllVariables(); d->hideAllCommands();
-   addDevice(d = new RssiReg(        linkConfigApp, 0xA4010000, 0, this, 4));d->pollEnable(false); d->hideAllCommands();
+   addDevice(d = new RssiReg(        linkConfigApp, 0xA4010000, 0, this, 4));d->pollEnable(false); d->hideAllCommands(); d->pollEnable(true);
    //addDevice(d = new PrbsTx(       linkConfigApp, 0xA4020000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
    //addDevice(d = new PrbsRx(       linkConfigApp, 0xA4030000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
 }
