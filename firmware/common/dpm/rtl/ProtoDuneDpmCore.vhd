@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-05
+-- Last update: 2018-05-24
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -25,10 +25,10 @@ use work.ProtoDuneDpmPkg.all;
 
 entity ProtoDuneDpmCore is
    generic (
-      TPD_G            : time             := 1 ns;
-      CASCADE_SIZE_G   : positive         := 1;
-      AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
-      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
+      TPD_G           : time             := 1 ns;
+      CASCADE_SIZE_G  : positive         := 1;
+      AXI_CLK_FREQ_G  : real             := 125.0E+6;  -- units of Hz
+      AXI_BASE_ADDR_G : slv(31 downto 0) := x"A0000000");
    port (
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
@@ -121,7 +121,31 @@ architecture mapping of ProtoDuneDpmCore is
    signal rssiMaster : AxiStreamMasterType;
    signal rssiSlave  : AxiStreamSlaveType;
 
+   signal dmaObMasters : AxiStreamMasterArray(1 downto 0);
+   signal dmaObSlaves  : AxiStreamSlaveArray(1 downto 0);
+
 begin
+
+   ---------------
+   -- DEMUX Module
+   ---------------        
+   U_DeMux : entity work.AxiStreamDeMux
+      generic map (
+         TPD_G          => TPD_G,
+         NUM_MASTERS_G  => 2,
+         MODE_G         => "ROUTED",
+         TDEST_ROUTES_G => (0 => "0000000-", 1 => "0000001-"),
+         PIPE_STAGES_G  => 1)
+      port map (
+         -- Clock and reset
+         axisClk      => dmaClk,
+         axisRst      => dmaRst,
+         -- Slave
+         sAxisMaster  => dmaObMaster,
+         sAxisSlave   => dmaObSlave,
+         -- Masters
+         mAxisMasters => dmaObMasters,
+         mAxisSlaves  => dmaObSlaves);
 
    --------------------
    -- AXI-Lite Crossbar
@@ -149,8 +173,8 @@ begin
    --------------------------
    U_Timing : entity work.ProtoDuneDpmTiming
       generic map (
-         TPD_G            => TPD_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(TIMING_INDEX_C).baseAddr)
+         TPD_G           => TPD_G,
+         AXI_BASE_ADDR_G => XBAR_CONFIG_C(TIMING_INDEX_C).baseAddr)
       port map (
          -- Timing Interface (clk domain)
          wibClk          => clk,
@@ -188,8 +212,8 @@ begin
    -----------------------
    U_Emu : entity work.ProtoDuneDpmEmu
       generic map (
-         TPD_G            => TPD_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(EMU_INDEX_C).baseAddr)
+         TPD_G           => TPD_G,
+         AXI_BASE_ADDR_G => XBAR_CONFIG_C(EMU_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
@@ -216,10 +240,10 @@ begin
    -----------------------
    U_Wib : entity work.ProtoDuneDpmWib
       generic map (
-         TPD_G            => TPD_G,
-         CASCADE_SIZE_G   => CASCADE_SIZE_G,
-         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(WIB_INDEX_C).baseAddr)
+         TPD_G           => TPD_G,
+         CASCADE_SIZE_G  => CASCADE_SIZE_G,
+         AXI_CLK_FREQ_G  => AXI_CLK_FREQ_G,
+         AXI_BASE_ADDR_G => XBAR_CONFIG_C(WIB_INDEX_C).baseAddr)
       port map (
          -- Stable clock and reset reference
          clk             => clk,
@@ -233,7 +257,7 @@ begin
          axilWriteSlave  => axilWriteSlaves(WIB_INDEX_C),
          -- RTM Interface
          ref250ClkP      => dtmRefClkP,
-         ref250ClkN      => dtmRefClkN,         
+         ref250ClkN      => dtmRefClkN,
          -- ref250ClkP      => ref250ClkP,
          -- ref250ClkN      => ref250ClkN,
          dpmToRtmHsP     => dpmToRtmHsP,
@@ -261,10 +285,10 @@ begin
    -----------------------
    U_Hls : entity work.ProtoDuneDpmHls
       generic map (
-         TPD_G            => TPD_G,
-         CASCADE_SIZE_G   => CASCADE_SIZE_G,
-         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(HLS_INDEX_C).baseAddr)
+         TPD_G           => TPD_G,
+         CASCADE_SIZE_G  => CASCADE_SIZE_G,
+         AXI_CLK_FREQ_G  => AXI_CLK_FREQ_G,
+         AXI_BASE_ADDR_G => XBAR_CONFIG_C(HLS_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
@@ -276,6 +300,9 @@ begin
          -- WIB Interface (axilClk domain)
          wibMasters      => wibMasters,
          wibSlaves       => wibSlaves,
+         -- DMA Loopback Path Interface (dmaClk domain)
+         loopbackMaster  => dmaObMasters(1),
+         loopbackSlave   => dmaObSlaves(1),         
          -- AXI Stream Interface (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,
@@ -287,8 +314,8 @@ begin
    ----------------------------   
    U_Eth : entity work.ProtoDuneDpmEth
       generic map (
-         TPD_G            => TPD_G,
-         AXI_BASE_ADDR_G  => XBAR_CONFIG_C(RSSI_INDEX_C).baseAddr)
+         TPD_G           => TPD_G,
+         AXI_BASE_ADDR_G => XBAR_CONFIG_C(RSSI_INDEX_C).baseAddr)
       port map (
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
@@ -300,8 +327,8 @@ begin
          -- AXI Stream Interface (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,
-         dmaObMaster     => dmaObMaster,
-         dmaObSlave      => dmaObSlave,
+         dmaObMaster     => dmaObMasters(0),
+         dmaObSlave      => dmaObSlaves(0),
          -- User ETH interface (userEthClk domain)
          ethClk          => ethClk,
          ethRst          => ethRst,

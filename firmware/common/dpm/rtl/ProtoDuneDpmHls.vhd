@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHls.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2018-02-09
+-- Last update: 2018-05-24
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -29,10 +29,10 @@ use work.RceG3Pkg.all;
 
 entity ProtoDuneDpmHls is
    generic (
-      TPD_G            : time             := 1 ns;
-      CASCADE_SIZE_G   : positive         := 1;
-      AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
-      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
+      TPD_G           : time             := 1 ns;
+      CASCADE_SIZE_G  : positive         := 1;
+      AXI_CLK_FREQ_G  : real             := 125.0E+6;  -- units of Hz
+      AXI_BASE_ADDR_G : slv(31 downto 0) := x"A0000000");
    port (
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
@@ -44,6 +44,9 @@ entity ProtoDuneDpmHls is
       -- WIB Interface (axilClk domain)
       wibMasters      : in  AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
       wibSlaves       : out AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+      -- DMA Loopback Path Interface (dmaClk domain)
+      loopbackMaster  : in  AxiStreamMasterType;
+      loopbackSlave   : out AxiStreamSlaveType;
       -- AXI Stream Interface (dmaClk domain)
       dmaClk          : in  sl;
       dmaRst          : in  sl;
@@ -70,8 +73,8 @@ architecture mapping of ProtoDuneDpmHls is
    signal ssiMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal ssiSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
-   signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-   signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+   signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C downto 0);
+   signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C downto 0);
 
    attribute dont_touch                 : string;
    attribute dont_touch of ibHlsMasters : signal is "TRUE";
@@ -198,13 +201,17 @@ begin
 
    end generate GEN_LINK;
 
+   -- Connect the loopback module
+   dmaIbMasters(WIB_SIZE_C) <= loopbackMaster;
+   loopbackSlave            <= dmaIbSlaves(WIB_SIZE_C);
+
    ----------------------               
    -- AXIS Monitor Module
    ----------------------             
    U_Mon : entity work.ProtoDuneDpmHlsMon
       generic map(
-         TPD_G            => TPD_G,
-         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G)
+         TPD_G          => TPD_G,
+         AXI_CLK_FREQ_G => AXI_CLK_FREQ_G)
       port map(
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
@@ -227,7 +234,7 @@ begin
    U_Mux : entity work.AxiStreamMux
       generic map (
          TPD_G                => TPD_G,
-         NUM_SLAVES_G         => WIB_SIZE_C,
+         NUM_SLAVES_G         => (WIB_SIZE_C+1),
          MODE_G               => "INDEXED",
          ILEAVE_EN_G          => true,
          ILEAVE_ON_NOTVALID_G => false,

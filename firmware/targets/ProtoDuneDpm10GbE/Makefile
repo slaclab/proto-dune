@@ -5,10 +5,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000057
+export PRJ_VERSION = 0x00000058
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/05/24 0x00000058 llr  Adding DMA[0].TDEST[3] loopback path
 # 2018/05/23 0x00000057 llr  Adding SRPv3 interface to ProtoDuneDpmEth for debugging RSSI
 # 2018/05/18 0x00000056 llr  Updating to latest SURF (v1.8.4), which has a RSSI bug fix
 # 2018/04/06 0x00000055 llr  Updating to latest SURF (v1.7.4), which has a RSSI bug fix
