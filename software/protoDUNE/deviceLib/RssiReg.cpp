@@ -109,30 +109,43 @@ RssiReg::RssiReg ( uint32_t linkConfig, uint32_t baseAddress, uint32_t index, De
    rl->getVariable(4)->setDescription("SSI Frame length too long");
    rl->getVariable(5)->setDescription("Connection to peer timed out. Timeout defined in generic PEER_CONN_TIMEOUT_G (Default: 1000 ms)");
    rl->getVariable(6)->setDescription("Client rejected the connection (parameters out of range), Server proposed new parameters (parameters out of range)");
+   rl->setPollEnable(true);   
 
    addRegisterLink(rl = new RegisterLink("ValidSegCnt", baseAddress_ + 0x44, Variable::Status));
    rl->getVariable()->setDescription("Number of valid segments [31:0]. The value rests to 0 when new connection open is requested.");   
+   rl->setPollEnable(true);   
    
    addRegisterLink(rl = new RegisterLink("DropSegCnt",  baseAddress_ + 0x48, Variable::Status));
    rl->getVariable()->setDescription("Number of dropped segments [31:0]. The value rests to 0 when new connection open is requested.");
+   rl->setPollEnable(true);   
    
    addRegisterLink(rl = new RegisterLink("RetransmitCnt",  baseAddress_ + 0x4C, Variable::Status));
    rl->getVariable()->setDescription("Counts all retransmission requests within the active connection");   
+   rl->setPollEnable(true);   
    
    addRegisterLink(rl = new RegisterLink("ReconnectCnt",  baseAddress_ + 0x50, Variable::Status));
    rl->getVariable()->setDescription("Counts all reconnections from reset");   
+   rl->setPollEnable(true);   
    
    addRegisterLink(rl = new RegisterLink("IbFrameRate",  baseAddress_ + 0x54, Variable::Status));
    rl->getVariable()->setDescription("Inbound Frame Rate (in units of Hz)");    
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);   
    
    addRegisterLink(rl = new RegisterLink("ObFrameRate",  baseAddress_ + 0x58, Variable::Status));
    rl->getVariable()->setDescription("Outbound Frame Rate (in units of Hz)");   
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);   
    
    addRegisterLink(rl = new RegisterLink("IbBandwidth",  baseAddress_ + 0x5C, 2, Variable::Status));
    rl->getVariable()->setDescription("Inbound Bandwidth (in units of bytes per second)");    
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);   
    
    addRegisterLink(rl = new RegisterLink("ObBandwidth",  baseAddress_ + 0x64, 2, Variable::Status));
-   rl->getVariable()->setDescription("Outbound Bandwidth (in units of bytes per second)");      
+   rl->getVariable()->setDescription("Outbound Bandwidth (in units of bytes per second)");
+	rl->getVariable()->setComp(0,1,0,"");
+   rl->setPollEnable(true);      
 
    // Variables
    getVariable("Enabled")->setHidden(true);
