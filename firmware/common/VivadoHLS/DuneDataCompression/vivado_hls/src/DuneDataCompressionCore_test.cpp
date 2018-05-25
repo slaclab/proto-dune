@@ -139,7 +139,11 @@ static void print_monitor (MonitorModule const         &s0,
 
 #define NPACKETS 1
 
-
+#if PROCESS_K_MODE == PROCESS_K_DATAFLOW
+#define MODE MODE_K_COPY
+#else
+#define MODE MODE_K_COMPRESS
+#endif
 
 /* ---------------------------------------------------------------------- *//*!
   \process Processes all the data from the specified file
@@ -175,10 +179,11 @@ int main (int argc, char const *argv[])
    int fd = open_file (filename);
 
 
+
    // -----------------------
    // Set the processing mode
    // -----------------------
-   int   mode = MODE_K_COPY;
+   int   mode = MODE;
    int status = (mode == MODE_K_COPY)
               ?     copy_test (fd, filename, headerId, version)
               : compress_test (fd, filename, headerId, version);
@@ -211,6 +216,7 @@ static int copy_test (int               fd,
    int                        test_status;
 
 
+   std::cout << "MODE = COPY" << std::endl;
    uint64_t timestamp = 0xab000000;
 
    configure_hls (src, mAxis, moduleIdx, headerId, version, timestamp, config, monitor);
@@ -310,6 +316,9 @@ static int compress_test (int               fd,
    MonitorModule               expMonitor;
    MonitorModule                  monitor;
    int                        test_status;
+
+   std::cout << "MODE = COMPRESS" << std::endl;
+
 
    uint64_t timestamp = 0;
 

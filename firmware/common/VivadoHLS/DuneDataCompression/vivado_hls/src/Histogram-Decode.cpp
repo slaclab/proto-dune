@@ -160,13 +160,13 @@ int hist_decode (uint16_t bins[Histogram::NBins], BitStream64 &bs64, int tbits)
 
    _bfu_put (bfu, buf[0], 0);
 
-
-   int nbits;
    int nsignificant = 2;
    int cnts;
 
    int version  = _bfu_extractR(bfu, buf, position, 2);
-   int lastgt1  = _bfu_extractR(bfu, buf, position, 6);
+   int nbins    = _bfu_extractR(bfu, buf, position, 8);
+   int nbits    = 32 - __builtin_clz (nbins);
+   int lastgt1  = _bfu_extractR(bfu, buf, position, 8);
    nbits        = 32 - __builtin_clz (lastgt1);
    int lastgt2  = _bfu_extractR(bfu, buf, position, nbits);
 

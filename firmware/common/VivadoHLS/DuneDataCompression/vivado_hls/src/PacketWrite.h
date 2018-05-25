@@ -144,7 +144,7 @@ write_syms_print (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES])
    {
       int ichan = List[ilist];
 
-      std::cout << "Dumping Adc Channel: " << std::hex << std::setw (3)
+      std::cout << "Dumping Adc Channel: " << std::hex << std::setw (5)
        << ichan << std::endl;
 
       Symbol_t const *a = syms[ichan];

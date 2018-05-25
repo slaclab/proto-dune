@@ -237,6 +237,7 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
    // This seems unlikely.  That would require a histogram of 2**15 bins
    //
    // Format version = 0  (2 bits)
+   //              nbins  (8 bits)
    //           last > 1  (Size in bits of lastgt1)
    //           last > 2  (No more than the actual bits in last > 1
    //
@@ -248,11 +249,12 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
    Histogram::Idx_t lastgt2 = m_clastgt2;
    int             nlastgt2 = lastgt1.length () - lastgt1.countLeadingZeros ();
    int                nbits = lastgt1.length () + nlastgt2;
-   uint32_t            bits = (Version << nbits)
-                            | ((uint32_t)lastgt1  << nlastgt2)
+   uint32_t            bits = (Version             << (nbits + 8))
+                            | ((HISTOGRAM_K_NBINS) << nbits)
+                            | ((uint32_t)lastgt1   << nlastgt2)
                             | ((uint32_t)lastgt2);
-   nbits        += 2;
-   int          diff;
+   nbits += 10;
+   int    diff;
 
    // ----------------------------------------------------------------
    // This insert of these bits into the output stream is deferred 
