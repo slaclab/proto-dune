@@ -41,9 +41,7 @@ dpmTest.start(
     pollEn   = True,
     initRead = True,
     pyroGroup= 'rce', 
-#    pyroHost = 'localhost', 
-    pyroHost = '192.168.2.111',     
-#    pyroNs='localhost',
+    pyroAddr = '192.168.2.111', # RCE IP   
 )
 
 # Close window and stop polling

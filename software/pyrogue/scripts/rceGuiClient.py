@@ -24,9 +24,10 @@ import sys
 # Set host= to the address of a network interface to secificy the network to use
 # Set ns= to the address of the nameserver(optional)
 client = pyrogue.PyroClient(
-    group= 'rce', 
-    ns   = '192.168.2.111',
-)
+    group = 'rce', 
+    host  = '192.168.2.1', # Local IP
+    ns    = '192.168.2.111', # RCE IP
+) 
 
 # Create GUI
 appTop = PyQt4.QtGui.QApplication(sys.argv)
