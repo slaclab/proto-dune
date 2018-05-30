@@ -205,7 +205,7 @@ static void process_frame
 
    static AdcIn_t Prv[MODULE_K_NCHANNELS];
    #pragma HLS RESET           variable=Prv off
-   #pragma HLS ARRAY_PARTITION variable=Prv cyclic factor=16 dim=1
+   #pragma HLS ARRAY_PARTITION variable=Prv cyclic factor= 8 ///complete ////factor=16 dim=1
 
 
    ReadStatus_t      status = frame.m_status;
@@ -248,7 +248,7 @@ static void process_frame
    uint64_t              w0 = d[0];
    std::cout << "W0[" << std::hex << NFrames << ']' << w0 << std::endl;
 
-   int      idx = 2;
+   //int      idx = 2;
 
    uint64_t *hdrs = out.hdrs;
 
@@ -263,11 +263,54 @@ static void process_frame
    // ---------------------------------
    hdrs[2] = d[2];
    hdrs[3] = d[3];
-   process_colddata (&syms[ 0], &hists[ 0], &Prv[ 0], d+ 4, iframe,  0);
+   //process_colddata (&syms[ 0], &hists[ 0], &Prv[ 0], d+ 4, iframe,  0);
 
    hdrs[4] = d[14];
    hdrs[5] = d[15];
-   process_colddata (&syms[64], &hists[64], &Prv[64], d+18, iframe, 64);
+   //process_colddata (&syms[64], &hists[64], &Prv[64], d+18, iframe, 64);
+
+
+
+   PROCESS_COLDDATA_EXTRACT_LOOP:
+   ap_uint<8*12> adcs8[16];
+   #pragma HLS ARRAY_PARTITION variable=adcs8 factor=2 cyclic
+   //#pragma HLS RESOURCE        variable=adcs4 core=RAM_2P_LUTRAM
+
+   int idx = 4;
+   for (int odx = 0; odx < 16; odx++)
+   {
+      #pragma HLS PIPELINE
+      ap_uint<64> a0 = d[idx++];
+      ap_uint<64> a1 = d[idx++];
+
+      adcs8[odx++] =   (a1(31,0), a0);
+
+      ap_uint<64> a2 = d[idx++];
+
+      adcs8[odx++] = (a2, a1(63,32));
+
+      if (odx == 16) idx += 2;
+   }
+
+   PROCESS_COLDDATA_LOOP:
+   for (int ichan  = 0; ichan < 128; ichan += 4)
+   {
+      #pragma HLS PIPELINE II=2
+      //#pragma HLS UNROLL factor=2
+
+      ap_uint<8*12> adc8 = adcs8[ichan >> 3];
+
+      ap_uint<4*12> adc4 = adc8;
+      process4 (&syms[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
+      ichan += 4;
+
+      adc4 = adc8 >> 48;
+      process4 (&syms[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
+
+
+   }
+
+
 
    print_adcs (syms, iframe);
 
@@ -312,7 +355,35 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
                               int                                beg_chan)
 {
    #pragma HLS INLINE
+   #pragma HLS PIPELINE
 
+   ap_uint<4*12> adcs4[16];
+   int idx = 0;
+
+   PROCESS_COLDDATA_EXTRACT_LOOP:
+   for (int odx = 0; odx < 16; odx++)
+   {
+      #pragma HLS PIPELINE
+      ap_uint<64> a0 = d[idx++];
+      adcs4[odx++] = a0;
+
+      ap_uint<64> a1 = d[idx++];
+      adcs4[odx++] =   (a1(31,0), a0(63,48));
+
+      ap_uint<64> a2 = d[idx++];
+      adcs4[odx++] = (a2 (15,0), a1(63,32));
+
+      adcs4[odx++] = a2 (63,16);
+   }
+
+   PROCESS_COLDDATA_LOOP:
+   for (int ichan  = 0; ichan < 64; ichan += 4)
+   {
+      #pragma HLS PIPELINE
+      process4 (&syms[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
+   }
+
+#if 0
    int idx = 0;
    PROCESS_COLDDATA_LOOP:
    for (int ichan = 0; ichan < MODULE_K_NCHANNELS/2;)
@@ -322,7 +393,7 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
       // is the best one can do. This rids the output of carried
       // dependency warnings.
       // ------------------------------------------------------------
-      #pragma HLS PIPELINE II=1
+      #pragma HLS PIPELINE II=2
 
       HISTOGRAM_statement (hists[ichan].printit = ichan == 0 ? true : false;)
 
@@ -358,6 +429,7 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
       process4 (&syms[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
       ichan += 4;
    }
+#endif
 
    return;
 

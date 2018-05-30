@@ -150,7 +150,6 @@ public:
    static    Idx_t idx             (Symbol_t symbol, Symbol_t &ovr);
 
 public:
-
    BitMask_t        m_omask; /*!< Bit mask of non-zero entries            */
    Idx_t          m_lastgt0; /*!> Index of tje last entry with counts > 0 */
    Idx_t          m_lastgt1; /*!< Index of the last entry with counts > 1 */
@@ -224,12 +223,14 @@ inline Histogram::Histogram ()
    #pragma HLS RESET variable=m_max     off
    */
 
+   /*
    #pragma HLS RESOURCE variable=m_omask   core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_lastgt0 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_lastgt1 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_lastgt2 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_min     core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_max     core=RAM_2P_LUTRAM
+   */
 
    /*
    #pragma HLS RESET variable=m_cbins    off
@@ -239,18 +240,20 @@ inline Histogram::Histogram ()
    #pragma HLS RESET variable=m_clastgt2 off
    #pragma HLS RESET variable=m_cmin     off
    #pragma HLS RESET variable=m_cnobits off
-   //#pragma HLS RESET variable=m_cmax     off
+   #pragma HLS RESET variable=m_cmax     off
    */
 
-
+   /*
    #pragma HLS RESOURCE variable=m_comask   core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt0 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt1 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt2 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_cmin     core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_cnobits  core=RAM_2P_LUTRAM
+*/
 
-
+   //#pragma HLS RESOURCE        variable=m_bins  core=RAM_2P_LUTRAM
+   //#pragma HLS RESOURCE        variable=m_cbins core=RAM_2P_LUTRAM
    #pragma HLS ARRAY_PARTITION variable=m_bins cyclic  factor=2 dim=1
    #pragma HLS ARRAY_PARTITION variable=m_cbins cyclic factor=2 dim=1
 
@@ -454,7 +457,8 @@ static void bump_print (int                           bin,
 inline void Histogram::bump (Symbol_t sym)
 {
 #  pragma HLS INLINE
-#  pragma HLS PIPELINE
+#  pragma HLS PIPELINE II=2
+
 
    int bin;
 
@@ -503,17 +507,18 @@ inline void Histogram::bump (Symbol_t sym)
    // ----------------------------------------------------------
    if (m_omask.test (bin))
    {
-      // Yes, bump it
-      cnts = m_bins[bin];
+      cnts  = m_bins[bin];
    }
    else
    {
-      // No, set cnts=1 and mark this bin as occupied
+      // No, set cnts=0 and mark this bin as occupied
       cnts = 0;
       m_omask.set (bin);
+
    }
 
    m_comask = m_omask;
+
 
    // -------------------------------------------------------------------
    // Keep track of the last bins with counts > 1 and counts > 3 (2 bits)
@@ -523,9 +528,9 @@ inline void Histogram::bump (Symbol_t sym)
    if ( (cnts >= 1) && (bin > m_lastgt1)) m_clastgt1 = m_lastgt1 = bin;
    if ( (cnts >= 3) && (bin > m_lastgt2)) m_clastgt2 = m_lastgt2 = bin;
 
-   cnts         += 1;
-   m_bins[bin]  = cnts;
-   m_cbins[bin] = cnts;
+    cnts        += 1;
+    m_bins[bin]  = cnts;
+    m_cbins[bin] = cnts;
 
    return;
 }

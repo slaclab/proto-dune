@@ -452,8 +452,8 @@ public:
 class ReadFrame
 {
 public:
-   ReadFrame () :
-      m_status (0)
+   ReadFrame () ////:
+      ////m_status (0)
   {
       return;
   }

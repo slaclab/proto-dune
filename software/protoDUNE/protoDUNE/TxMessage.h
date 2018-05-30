@@ -18,10 +18,16 @@ class TxMessage
 {
 public:
    TxMessage (void *name);
+   TxMessage (void *name, uint32_t tdest);
 
 public:
    void add (int iovidx, void *base,                 size_t len, uint32_t flags);
    void add (int iovidx, void *base, uint32_t index, size_t len, uint32_t flags);
+
+   void addt(int iovidx, void *base,                 size_t len, uint32_t flags,
+                                                                 uint32_t tdest);
+   void addt(int iovidx, void *base, uint32_t index, size_t len, uint32_t flags,
+                                                                 uint32_t tdest);
 
    void init          ();
    void terminateRssi ();
@@ -47,6 +53,8 @@ public:
 
    RssiHdr          m_rssi;
    RssiIovec        m_rssi_iov[NIOVECS];
+
+   uint32_t         m_tdest;
 };
 /* ---------------------------------------------------------------------- */
 
@@ -76,6 +84,37 @@ TxMessage   <NIOVECS>::TxMessage (void * name)
    m_rssi.rssi_iovlen   = 0;
    m_rssi.rssi_iov      = m_rssi_iov;
 
+   m_tdest              = 0;
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \class TxMessage
+  \brief Encapsulates enough information to send the data either via a
+         TCP/IP sendmsg or the RSSI DMA methods
+                                                                          */
+/* ---------------------------------------------------------------------- */
+template<int NIOVECS>
+TxMessage   <NIOVECS>::TxMessage (void * name, uint32_t tdest) 
+{
+   m_iovlen           = 0;
+
+   m_msg.msg_name       = name;
+   m_msg.msg_namelen    = sizeof (struct sockaddr_in);
+   m_msg.msg_iov        = m_msg_iov;
+   m_msg.msg_iovlen     = 0;
+   m_msg.msg_control    = NULL;
+   m_msg.msg_controllen = 0;
+   m_msg.msg_flags      = 0;
+
+   m_rssi.rssi_iovlen   = 0;
+   m_rssi.rssi_iov      = m_rssi_iov;
+
+   m_tdest              = tdest;
    return;
 }
 /* ---------------------------------------------------------------------- */
@@ -97,7 +136,7 @@ void TxMessage<NIOVECS>::add (int iovidx, void *base, size_t len, uint32_t flags
    // -----------------------------
    // RSSI - send by buffer address
    // -----------------------------
-   m_rssi_iov[iovidx].construct (base, len, flags);
+   m_rssi_iov[iovidx].construct (base, len, flags, m_tdest);
 
    return;
 }
@@ -107,7 +146,11 @@ void TxMessage<NIOVECS>::add (int iovidx, void *base, size_t len, uint32_t flags
 
 /* ---------------------------------------------------------------------- */
 template  <int NIOVECS>
-void TxMessage<NIOVECS>::add (int iovidx, void *base, uint32_t idx, size_t len, uint32_t flags)
+void TxMessage<NIOVECS>::add (int     iovidx, 
+                              void     *base, 
+                              uint32_t   idx, 
+                              size_t     len, 
+                              uint32_t flags)
 {
    // ----------------
    // Standard sendmsg
@@ -118,7 +161,62 @@ void TxMessage<NIOVECS>::add (int iovidx, void *base, uint32_t idx, size_t len, 
    // --------------------
    // RSSI - send by index
    // --------------------
-   m_rssi_iov[iovidx].construct (idx, len, flags);
+   m_rssi_iov[iovidx].construct (idx, len, flags, m_tdest);
+
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+
+
+/* ---------------------------------------------------------------------- */
+template  <int NIOVECS>
+void TxMessage<NIOVECS>::addt (int     iovidx, 
+                               void     *base, 
+                               size_t     len,
+                               uint32_t flags,
+                               uint32_t tdest)
+{
+   // ----------------
+   // Standard sendmsg
+   // ----------------
+   m_msg_iov[iovidx].iov_base = base;
+   m_msg_iov[iovidx].iov_len  =  len;
+
+   
+   // -----------------------------
+   // RSSI - send by buffer address
+   // -----------------------------
+   m_rssi_iov[iovidx].construct (base, len, flags, tdest);
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+template  <int NIOVECS>
+void TxMessage<NIOVECS>::addt (int     iovidx,
+                               void     *base, 
+                               uint32_t   idx,
+                               size_t     len,
+                               uint32_t flags,
+                               uint32_t tdest)
+{
+   // ----------------
+   // Standard sendmsg
+   // ----------------
+   m_msg_iov[iovidx].iov_base = base;
+   m_msg_iov[iovidx].iov_len  =  len;
+   
+   // --------------------
+   // RSSI - send by index
+   // --------------------
+   m_rssi_iov[iovidx].construct (idx, len, flags, tdest);
 
 
    return;

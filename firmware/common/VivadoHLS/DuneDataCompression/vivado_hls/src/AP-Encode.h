@@ -358,8 +358,7 @@ static int APE_encode  (APE_etx              &etx,
    while (--nsyms >= 0)
    {
       //////#pragma HLS ALLOCATION instances=insert limit=1 function
-      #pragma HLS PIPELINE II=2
-      /////#pragma HLS UNROLL factor=2
+      #pragma HLS PIPELINE II=1
 
        Histogram::Symbol_t ovr;
        Histogram::Symbol_t sym = *syms++;

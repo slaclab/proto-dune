@@ -243,7 +243,7 @@ inline void RssiIovec::construct (void *base, size_t len, uint32_t flags)
   \param[in]   len  The number of bytes in the buffer to be sent
   \param[in] flags  The Axis flags.  This must contain an SOF for the first 
                     buffer and a continuation flags for all but the last buffer
-  \param[in] tdest  The destination channel
+
                                                                           */
 /* ---------------------------------------------------------------------- */
 inline void RssiIovec::construct (uint32_t idx, size_t len, uint32_t flags)

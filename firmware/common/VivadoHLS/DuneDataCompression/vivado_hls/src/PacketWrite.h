@@ -328,10 +328,13 @@ static inline void
                    Histogram      const             hists[MODULE_K_NCHANNELS])
 {
    #pragma HLS INLINE
-   //#pragma HLS PIPELINE
+   #pragma HLS PIPELINE
 
 
    #define NSERIAL ((NCHANS + NPARALLEL -1)/NPARALLEL)
+
+   APE_etx                  etx[NPARALLEL];
+   #pragma     HLS ARRAY_PARTITION variable=etx complete dim=1
 
 
 
@@ -347,12 +350,10 @@ static inline void
    WRITE_SYMS_CHANNEL_LOOP:
    for (int ichan = 0; ichan < NCHANS; ichan += NPARALLEL)
    {
+       #pragma HLS UNROLL
+       ////#pragma HLS DATAFLOW
 
       //write_symsN (mAxis, bdx, data, odx, &syms[ichan], &hists[ichan], ichan);
-
-
-      APE_etx                  etx[NPARALLEL];
-      #pragma     HLS ARRAY_PARTITION variable=etx complete dim=1
 
       //ChannelSize   sizes[MODULE_K_NCHANNELS];
 
@@ -554,6 +555,7 @@ static void pack (AxisOut                           &mAxis,
                   BitStream64                          &bs)
 {
     #pragma HLS INLINE off
+//    #pragma HLS PIPELINE
 
    // Get the index of the first bit in this stream
    ap_uint<6> bbeg = bdx;

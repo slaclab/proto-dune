@@ -2510,7 +2510,8 @@ bool DaqBuffer::open (string devPath)
    {
       fputs ("ESTABLSH DMA INTERFACES\n", stderr);
 
-      static const uint8_t DataDests[2] = {0, 1};
+      // Enable the loopback tdests
+      static const uint8_t DataDests[3] = {0, 1, 2};
       bool success = construct (_dataDma,
                                 "/dev/axi_stream_dma_2",
                                 "Data",
@@ -3786,6 +3787,32 @@ void DaqBuffer::rxRun ()
 
             rxSize = dmaReadIndex (dataFd, &index, &flags, NULL, &dest);
 
+            // ------------------
+            // Check for loopback
+            // ------------------
+            if (dest == 2)
+            {
+               fprintf (stderr, "Loopback index = %4.4x flags = %2.2x size = %u\n",
+                        index, (unsigned)flags, (unsigned)rxSize);
+
+               // If this is the first of a sequence
+               if ((flags == 0x10002))
+               {
+                  uint64_t *data = reinterpret_cast<decltype(data)>
+                                                  (_dataDma._map[index]);
+
+                  for (int idx = 0; idx < 8; idx++)
+                  {
+                     if ((idx & 0x3) == 0) fprintf (stderr, " %2.2x", idx);
+                     fprintf (stderr, " %16.16" PRIx64 "", data[idx]);
+                     if ((idx & 0x3) == 3) fprintf (stderr, "\n");
+                  }
+               }
+               _dataDma.free (index);
+               continue;
+            }
+
+
             if (index >= _dataDma._bCount)
             {
                fprintf (stderr, "rxRun:Error received out of range index= %d > %d\n",
@@ -4552,8 +4579,10 @@ void DaqBuffer::txRun ()
    // Construct the transmitter class
    // This contains enough information to
    // send the data via TCP/IP or RSSI
+   // tdest = 0 for RSSI
+   // tdest = 2 for Loopback
    // -----------------------------------
-   TxMsg txMsg (&_txServerAddr);
+   TxMsg txMsg (&_txServerAddr, 2);
 
 
    // ---------------------------

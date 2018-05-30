@@ -20,7 +20,7 @@
 #endif
 
 #if !defined(HIST_ENCODE_CHECK) || defined(__SYNTHESIS__)
-#define HIST_ENCODE_CHECK 1
+#define HIST_ENCODE_CHECK 0
 #endif
 
 #ifndef HIST_ENCODE_BTE
@@ -211,7 +211,7 @@ static void hist_encode_bte (BitStream64 &bs, Histogram &hist, int r0);
 void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
 {
 
-   #pragma HLS INLINE off
+   #pragma HLS INLINE
 
    static int Version (0);
 
@@ -229,6 +229,24 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
 
    // This is for debug purposes only
    HistEncodeSchemeDeclare (encoding_scheme);
+
+   // !!! KLUDGE TO BYPASS ENCODING
+   {
+      int total = 0;
+      int ibin  = 0;
+      for (ibin = 0; ; ibin++)
+      {
+         table[ibin] = total;
+         if (ibin >= NBins) break;
+
+         Histogram::Entry_t cnts = m_comask.test (ibin)
+                                 ? m_cbins[ibin]
+                                 : Histogram::Entry_t (0);
+         total += cnts;
+      }
+
+      return;
+   }
 
    // -----------------------------------------------------------------------------
    // Format the header

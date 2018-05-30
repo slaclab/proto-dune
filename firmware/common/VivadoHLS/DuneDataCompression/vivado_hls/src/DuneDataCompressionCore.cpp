@@ -298,8 +298,8 @@ typedef Histogram::Symbol_t Symbol_t;
  |  If the timing changes, then this '8' should be adjusted accordingly
 */
 #if  MODULE_K_NCHANNELS == 128
-#define NPARALLEL    8
-#define NHISTPORTS   8
+#define NPARALLEL    4
+#define NHISTPORTS  16
 #define NADCPORTS   16
 #else
 #error  "MODULE_K_NCHANNELS  must be 128 channels"
@@ -443,13 +443,13 @@ static void handle_packet (AxisOut                   &mAxis,
    #pragma HLS DATAFLOW
 
     Histogram hists[MODULE_K_NCHANNELS];
-    #pragma     HLS STREAM           variable=hists Off
-    #pragma     HLS RESOURCE         variable=hists          core=RAM_2P_LUTRAM
+    #pragma     HLS STREAM           variable=hists off
      PRAGMA_HLS(HLS ARRAY_PARTITION  variable=hists cyclic factor=NHISTPORTS dim=1)
+
 
     Symbol_t   syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES];
     #pragma     HLS STREAM           variable=syms off
-    #pragma     HLS RESOURCE         variable=syms          core=RAM_2P_BRAM
+    #pragma     HLS RESOURCE         variable=syms         core=RAM_2P_BRAM
      PRAGMA_HLS(HLS ARRAY_PARTITION  variable=syms  cyclic factor=NADCPORTS  dim=1)
 
      PacketContext PktCtx;
@@ -574,7 +574,7 @@ static void acquire_frame (AxisIn                                        &sAxis,
    #pragma HLS ARRAY_PARTITION variable=frame.m_dat.d cyclic factor=2
 
    frame.read        (sAxis);
-   lclMonitor.update (config, gblMonitor, frame.m_status);
+   ////lclMonitor.update (config, gblMonitor, frame.m_status);
    process_frame     (frame, iframe, config, pktCtx, hists, syms);
 }
 /* ----------------------------------------------------------------------- */
@@ -597,7 +597,7 @@ static void process_packet
 {
    #pragma HLS INLINE off
 
-    write_packet  (mAxis,  pktCtx, hists, syms, moduleIdx);
+   write_packet  (mAxis,  pktCtx, hists, syms, moduleIdx);
 
    return;
 }

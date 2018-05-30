@@ -5,10 +5,12 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000057
+export PRJ_VERSION = 0x01000058
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/05/25 0x01000058 jjr  Adding DMA[0].TDEST[3] loopback path, rebuilding
+#                            test version
 # 2018/05/22 0x00000057 jjr  Building with updated versions of the underlying
 #                            RSSI firmware. 
 # 2018/05/04 0x00000056 jjr  Incorporate the changes listed in the test 

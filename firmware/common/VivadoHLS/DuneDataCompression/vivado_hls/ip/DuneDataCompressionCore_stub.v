@@ -1,7 +1,7 @@
-// Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.
+// Copyright 1986-2018 Xilinx, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
-// Tool Version: Vivado v.2016.4 (lin64) Build 1756540 Mon Jan 23 19:11:19 MST 2017
-// Date        : Tue May 22 18:02:30 2018
+// Tool Version: Vivado v.2018.1 (lin64) Build 2188600 Wed Apr  4 18:39:19 MDT 2018
+// Date        : Fri May 25 09:14:42 2018
 // Host        : rdusr219.slac.stanford.edu running 64-bit Red Hat Enterprise Linux Server release 6.9 (Santiago)
 // Command     : write_verilog -force -mode synth_stub
 //               /u1/DUNE/cob_nfs/russell/proto-dune/firmware/common/VivadoHLS/DuneDataCompression/vivado_hls/ip/DuneDataCompressionCore_stub.v
