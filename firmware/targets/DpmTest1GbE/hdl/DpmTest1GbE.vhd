@@ -175,8 +175,17 @@ begin
    ethTxM(0)           <= iethTxM(0);
    iethRxP(0)          <= ethRxP(0);
    iethRxM(0)          <= ethRxM(0);
-   iethRxP(3 downto 1) <= (others => '0');
-   iethRxM(3 downto 1) <= (others => '0');         
+   
+   U_UnusedGt : entity work.Gtxe2ChannelDummy
+      generic map (
+         TPD_G   => TPD_G,
+         WIDTH_G => 3)
+      port map (
+         refClk => axilClk,
+         gtRxP  => iethRxP(3 downto 1),
+         gtRxN  => iethRxM(3 downto 1),
+         gtTxP  => iethTxP(3 downto 1),
+         gtTxN  => iethTxM(3 downto 1));    
 
    ------------------
    -- DMA Channel = 0
