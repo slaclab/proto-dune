@@ -5,7 +5,7 @@
 -- Author     : Larry Ruckman  <ruckman@slac.stanford.edu>
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-02
+-- Last update: 2018-05-29
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -70,10 +70,10 @@ end DpmTest1GbE;
 
 architecture TOP_LEVEL of DpmTest1GbE is
 
-   signal iethRxP : slv(3 downto 0);
-   signal iethRxM : slv(3 downto 0);
-   signal iethTxP : slv(3 downto 0);
-   signal iethTxM : slv(3 downto 0);
+   signal iethRxP : slv(3 downto 0) := x"0";
+   signal iethRxM : slv(3 downto 0) := x"F";
+   signal iethTxP : slv(3 downto 0) := x"0";
+   signal iethTxM : slv(3 downto 0) := x"F";
 
    signal dmaClk    : slv(2 downto 0);
    signal dmaClkRst : slv(2 downto 0);
@@ -170,22 +170,22 @@ begin
          userEthUdpIbSlave  => ibMacSlave,
          userEthUdpObMaster => obMacMaster,
          userEthUdpObSlave  => obMacSlave);
-         
-   ethTxP(0)           <= iethTxP(0);
-   ethTxM(0)           <= iethTxM(0);
-   iethRxP(0)          <= ethRxP(0);
-   iethRxM(0)          <= ethRxM(0);
-   
+
+   ethTxP(0)  <= iethTxP(0);
+   ethTxM(0)  <= iethTxM(0);
+   iethRxP(0) <= ethRxP(0);
+   iethRxM(0) <= ethRxM(0);
+
    U_UnusedGt : entity work.Gtxe2ChannelDummy
       generic map (
          TPD_G   => TPD_G,
          WIDTH_G => 3)
       port map (
          refClk => axilClk,
-         gtRxP  => iethRxP(3 downto 1),
-         gtRxN  => iethRxM(3 downto 1),
-         gtTxP  => iethTxP(3 downto 1),
-         gtTxN  => iethTxM(3 downto 1));    
+         gtRxP  => ethRxP(3 downto 1),
+         gtRxN  => ethRxM(3 downto 1),
+         gtTxP  => ethTxP(3 downto 1),
+         gtTxN  => ethTxM(3 downto 1));
 
    ------------------
    -- DMA Channel = 0
@@ -233,9 +233,9 @@ begin
    dmaClkRst(2) <= ref200Rst;
    U_App : entity work.ProtoDuneDpmCore
       generic map (
-         TPD_G            => TPD_G,
-         CASCADE_SIZE_G   => 8,
-         AXI_BASE_ADDR_G  => x"A0000000")
+         TPD_G           => TPD_G,
+         CASCADE_SIZE_G  => 8,
+         AXI_BASE_ADDR_G => x"A0000000")
       port map (
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
