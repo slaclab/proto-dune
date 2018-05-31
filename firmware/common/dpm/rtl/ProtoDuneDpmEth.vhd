@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEth.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-11-01
--- Last update: 2018-05-23
+-- Last update: 2018-05-30
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -182,8 +182,9 @@ begin
    U_RSSI : entity work.RssiCoreWrapper
       generic map (
          TPD_G               => TPD_G,
-         MAX_SEG_SIZE_G      => 1024,
-         SEGMENT_ADDR_SIZE_G => 7,
+         APP_ILEAVE_EN_G     => false,  -- false: packVer = 1 (non-interleaving), true: packVer = 2 (interleaving)
+         MAX_SEG_SIZE_G      => 8192,   -- Using Jumbo frames
+         SEGMENT_ADDR_SIZE_G => bitSize(8192/8),
          APP_STREAMS_G       => APP_STREAMS_C,
          APP_STREAM_ROUTES_G => (
             0                => "0-------",  -- TDEST [0x00:0x7F] routed to DMA
