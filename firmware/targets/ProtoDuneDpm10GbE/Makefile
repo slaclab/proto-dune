@@ -5,32 +5,10 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x01000058
+export PRJ_VERSION = 0x00000055
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
-# 2018/05/25 0x01000058 jjr  Adding DMA[0].TDEST[3] loopback path, rebuilding
-#                            test version
-# 2018/05/22 0x00000057 jjr  Building with updated versions of the underlying
-#                            RSSI firmware. 
-# 2018/05/04 0x00000056 jjr  Incorporate the changes listed in the test 
-#                            versions + moved the information previously in
-#                            the first word to the end of transmitted data so
-#                            the DMA for the RSSI can just move the FPGA sent
-#                            data without having to copy it to get rid of that
-#                            initial word.
-#                            TEST VERSIONS -- not for release
-# 2018/03/29 0x03000055 jjr  Remove tagging bits, correct sizeof the promoted
-#                            data to include the new 64-bit status word.
-# 2018/03/28 0x02000055 jjr  Added tagging bits to top bits of the monitor
-#                            read variables to try to see where the values
-#                            are going. This version is back to using the
-#                            DATA_PACK on monitor.
-# 2018/03/27 0x01000055 jjr  Testing new version of HLS - this adds more error
-#                            detection is incorporating a more comptatible 
-#                            model of the straight WIB frame copy with the way
-#                            compression will be done.
-#
 # 2018/04/06 0x00000055 llr  Updating to latest SURF (v1.7.4), which has a RSSI bug fix
 # 2018/03/20 0x00000054 llr  Hard-coding timing trigger detect to op-code [0x8:0xF] (v4a5 tag)
 # 2018/03/15 0x00000053 llr  Updating to timing v4 protocol (v4a5 tag)
