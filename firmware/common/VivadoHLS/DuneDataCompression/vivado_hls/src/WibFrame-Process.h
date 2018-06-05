@@ -109,6 +109,159 @@ static void print_adcs (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLE
 /* ======================================================================== */
 
 
+class HeaderContext
+{
+public:
+   HeaderContext () :
+      m_hdx (0),
+      m_edx (0)
+   {
+      return;
+   }
+
+   void reset ()
+   {
+      m_hdx = 0;
+      m_edx = 0;
+   }
+
+
+   void addHeader (uint64_t hdr)
+   {
+      m_hdrsBuf[m_hdx++] = hdr;
+   }
+
+   void addException (ap_uint<6> excMask, ap_uint<10> nframe)
+   {
+      ap_uint<16> exc = (excMask, nframe);
+      ap_int<2> shift =   m_edx & 0x3;
+
+      if (shift == 0) m_excBuf[m_edx] = 0;
+
+      m_excBuf[m_edx] |= static_cast<uint64_t>(exc << (shift<<4));
+
+      if (~shift) m_edx += 1;
+   }
+
+
+   void evaluate (ReadStatus_t const status,
+                  int                iframe,
+                  uint64_t             wib0,
+                  uint64_t             wib1,
+                  uint64_t             cd00,
+                  uint64_t             cd01,
+                  uint64_t             cd10,
+                  uint64_t             cd11)
+   {
+      return;
+      ap_uint<6> exceptions = 0;
+      if ( (iframe == 0) || ReadStatus::isWibHdr0Bad (status))
+      {
+         addHeader (wib0);
+         exceptions |= 1 << 0;
+      }
+
+      if ( (iframe == 0) || ReadStatus::isWibHdr1Bad (status))
+      {
+         addHeader (wib1);
+         exceptions |= 1 << 1;
+      }
+
+      if ( (iframe == 0) || ReadStatus::isCd0Hdr0Bad (status))
+      {
+         addHeader (cd00);
+         exceptions |= 1 << 2;
+      }
+
+      if ((iframe == 0) || ReadStatus::isCd0Hdr1Bad (status))
+      {
+         addHeader (cd01);
+         exceptions |= 1 << 3;
+      }
+
+      if ((iframe == 0) || ReadStatus::isCd1Hdr0Bad (status))
+      {
+         addHeader (cd10);
+         exceptions |= 1 << 4;
+      }
+
+      if ( (iframe == 0) || ReadStatus::isCd1Hdr1Bad (status))
+      {
+         addHeader (cd11);
+         exceptions |= 1 << 5;
+      }
+
+      if (iframe != 0 && exceptions)
+      {
+         addException (exceptions, iframe);
+      }
+   }
+
+
+   void commit (AxisOut  &axis, int &odx, bool first, bool write, uint32_t status) const
+   {
+      #pragma HLS INLINE
+      #pragma HLS PIPELINE
+
+      return;
+
+      const static int HeaderFmt   = 3; // Generic Header Format = 3
+      const static int HdrsRecType = 4; // TpcStream Record Subtype = 4;
+
+
+      // -------------------------------------------------------------------------------
+      // Compose the record header word
+      //    status(32) | exception count(8) | length (16) | RecType(4) | HeaderFormat(4)
+      // -------------------------------------------------------------------------------
+      uint64_t recHeader = (static_cast<uint64_t>(status) << 32)
+                         | (m_edx << 24) | ((m_edx + m_hdx) << 8) | (HdrsRecType << 4) | (HeaderFmt << 0);
+      ::commit (axis, odx, write, recHeader,  first ? (1 << (int)AxisUserFirst::Sof) : 0, 0);
+
+
+      // Write out the exception buffer
+      HEADER_CONTEXT_EXC_LOOP:
+      for (int idx = 0; idx < m_edx; idx++)
+      {
+         #pragma HLS LOOP_TRIPCOUNT min=0 avg=1 max=256
+         ::commit (axis, odx, write, m_excBuf[idx], 0, 0);
+      }
+
+      // Write out the headers
+      HEADER_CONTEXT_HDR_LOOP:
+      for (int idx = 0; idx < m_hdx; idx++)
+      {
+         #pragma HLS LOOP_TRIPCOUNT min=6 avg=6 max=1024
+         ::commit (axis, odx, write, m_hdrsBuf[idx], 0, 0);
+      }
+
+      return;
+   }
+
+public:
+   int                                 m_hdx;   /*!< Header buffer index     */
+   int                                 m_edx;   /*!< Exception buffer index  */
+   ReadStatus_t                     m_status;
+   uint64_t m_hdrsBuf[6 * PACKET_K_NSAMPLES];   /*!< Buffer for header words */
+   uint64_t m_excBuf[(6 * PACKET_K_NSAMPLES)
+                   / (sizeof (uint64_t)
+                   /  sizeof (uint16_t))];     /*!< Buffer for exceptions    */
+};
+/* ------------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \class PacketContext
+ *  \brief This contains the data common to all channels in a frame
+ *         plus some bookkeepping variables
+ *
+\* ----------------------------------------------------------------------- */
+ struct PacketContext
+ {
+    uint32_t                    status; /*!< The summary status            */
+ };
+ /* ---------------------------------------------------------------------- */
+
 
 
  /* ----------------------------------------------------------------------- *//*!
@@ -197,6 +350,7 @@ static void process_frame
             (ReadFrame        const                        &frame,
              ap_uint<PACKET_B_NSAMPLES>                    iframe,
              ModuleConfig     const                       &config,
+             HeaderContext                                &hdrCtx,
              PacketContext                                &pktCtx,
              Histogram                  hists[MODULE_K_NCHANNELS],
              Symbol_t syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES])
@@ -210,10 +364,6 @@ static void process_frame
 
    ReadStatus_t      status = frame.m_status;
    ReadFrame::Data const *d = frame.m_dat.d;
-   ProcessFrame         out;
-
-
-   static ap_int<PACKET_B_NSAMPLES> NFrames;
 
 #if 0
    // --------------------------------------------------------------------
@@ -230,53 +380,44 @@ static void process_frame
       pktCtx.nframes = iframe;
       return;
    }
+#endif
 
-
-   #pragma HLS RESOURCE        variable=out.syms core=RAM_2P_BRAM
-   #pragma HLS ARRAY_PARTITION variable=out.syms cyclic factor=32
 
 
    if (iframe == 0)
    {
-      pktCtx.wibId     = d[0] >> 8;
-      pktCtx.timestamp = d[1];
+      pktCtx.status  = status = ReadStatus::errsOnFirst (status);
+      hdrCtx.reset ();
    }
-   pktCtx.nframes = iframe;
+   else
+   {
+      pktCtx.status |= status;
+   }
 
-#endif
+   hdrCtx.m_status = pktCtx.status;
 
-   uint64_t              w0 = d[0];
-   std::cout << "W0[" << std::hex << NFrames << ']' << w0 << std::endl;
+   // -------------------------------------------------------
+   // Add the headers that do agree with the expected values
+   // This always adds the headers for iframe = 0
+   // Accumulate the 'OR' of all the status bits
+   // Note the frame number
+   // -------------------------------------------------------
+   hdrCtx.evaluate (status, iframe, d[0], d[1], d[2], d[3], d[16], d[17]);
 
-   //int      idx = 2;
+   std::cout << "W0[" << std::hex << iframe << ']' << d[0] << std::endl;
 
-   uint64_t *hdrs = out.hdrs;
 
-   // --------------------
-   // The WIB header words
-   // --------------------
-   hdrs[0] = d[0];
-   hdrs[1] = d[1];
 
-   // ---------------------------------
-   // Process the two cold data streams.
-   // ---------------------------------
-   hdrs[2] = d[2];
-   hdrs[3] = d[3];
-   //process_colddata (&syms[ 0], &hists[ 0], &Prv[ 0], d+ 4, iframe,  0);
-
-   hdrs[4] = d[14];
-   hdrs[5] = d[15];
    //process_colddata (&syms[64], &hists[64], &Prv[64], d+18, iframe, 64);
 
 
-
-   PROCESS_COLDDATA_EXTRACT_LOOP:
+   int             idx = 4;
    ap_uint<8*12> adcs8[16];
    #pragma HLS ARRAY_PARTITION variable=adcs8 factor=2 cyclic
+
    //#pragma HLS RESOURCE        variable=adcs4 core=RAM_2P_LUTRAM
 
-   int idx = 4;
+   PROCESS_COLDDATA_EXTRACT_LOOP:
    for (int odx = 0; odx < 16; odx++)
    {
       #pragma HLS PIPELINE
@@ -292,7 +433,7 @@ static void process_frame
       if (odx == 16) idx += 2;
    }
 
-   PROCESS_COLDDATA_LOOP:
+   PROCESS_COLDDATA_PROCESS_LOOP:
    for (int ichan  = 0; ichan < 128; ichan += 4)
    {
       #pragma HLS PIPELINE II=2
@@ -306,11 +447,7 @@ static void process_frame
 
       adc4 = adc8 >> 48;
       process4 (&syms[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
-
-
    }
-
-
 
    print_adcs (syms, iframe);
 

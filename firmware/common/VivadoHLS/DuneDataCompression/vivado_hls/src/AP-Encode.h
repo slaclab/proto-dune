@@ -285,7 +285,7 @@ static int inline APE_finish (APE_etx &etx)
 
    uint32_t buf = compose (bit, 1, tofollow);
    etx.ba.insert  (buf, 1 + tofollow);
-   etx.ba.flush   ();
+   //etx.ba.flush   ();
 
    //   printf ("Total bits = %u\n", etx->ba.m_idx);
    // Return the number of bits
@@ -340,7 +340,8 @@ static int APE_encode  (APE_etx              &etx,
    //static APE_instruction   instructions[1024];
    //APE_instruction *instruction = instructions;
 
-   hist.encode (etx.ba, table);
+   // Setup the APE decoding context
+   hist.encode (etx.ba, table, *syms++);
    etx.nhist = etx.ba.m_idx;
    ///APE_dumpStatement (hist.print (0));
 
@@ -368,6 +369,11 @@ static int APE_encode  (APE_etx              &etx,
 
        if (idx == 0)
        {
+
+          if (nsyms <= 1)
+          {
+             printf ("Wait here\n");
+          }
           etx.oa.insert (ovr, hist.m_cnobits);
        }
 
@@ -633,7 +639,7 @@ static inline uint32_t compose (APE_cv_t bits, int nbits, int npending)
       else
       {
          // Leading bit is 1, must clear it
-         bits ^= 1 << nbits;
+         bits.clear (nbits); // ^= 1 << nbits;
       }
    }
 
@@ -833,8 +839,9 @@ inline void APE_cv::reduce_hi (APE_cvcnt_t nreduce, APE_cv_t hi_mask)
    // This method is allows the timing to be met.
    // ---------------------------------------------------------
    APE_xscv_t r (1 << 12);    // Set the sign bit
+   APE_xscv_t tmp = m_hi.reverse ();
 
-   r    |= m_hi.reverse ();   // Or in the reversed value
+   r    |= tmp;  ///m_hi.reverse ();   // Or in the reversed value
    r   >>= nreduce;           // Shift and drag sign bit
 
    m_hi  = r;                 // Discard the sign bit
@@ -1086,94 +1093,3 @@ static void dump (int                 isym,
 #endif
 /* ---------------------------------------------------------------------- */
 
-
-#if     APE_CHECKER
-#include "AP-Decode.h"
-static bool decode_data (uint16_t dsyms[PACKET_K_NSAMPLES], BitStream64 &bs, Histogram const &hist, Symbol_t const syms[PACKET_K_NSAMPLES])
-{
-    uint64_t buf[1];  /// !!! KLUDGE !!!  -- need proper initialization for an unaligned bit stream
-
-   // Copy the data
-   APD_table_t table[Histogram::NBins + 2];
-   int  cnt  = hist.m_lastgt0 + 1;
-   table[0]  = cnt;
-   int total = 0;
-   for (int idx = 1; idx <= hist.m_lastgt0+2; idx++)
-   {
-      table[idx] = total;
-      total     += hist.m_bins[idx-1];
-   }
-   ///table[idx] = PACKET_K_NSAMPLES - 1;
-
-   APD_dtx dtx;
-   APD_start (&dtx, buf, 0);
-
-   int prv = syms[0];
-   for (int idx = 1; idx < PACKET_K_NSAMPLES; idx++)
-   {
-      APD_dumpStatement (std::cout << "Sym[" << std::hex << std::setw(5) << idx << "] = ");
-
-      uint16_t cur = syms[idx];
-      Histogram::Symbol_t sym = Histogram::symbol (cur, prv);
-
-      // !!! KLUDGE !!! -- This is needed until I correctly decode the overflow symbols
-      Histogram::Symbol_t ovr;
-      sym = Histogram::idx (sym, ovr);
-
-      dsyms[idx-1] = APD_decode (&dtx, table);
-      if (dsyms[idx-1] != sym)
-      {
-         std::cout << "Error @" << std::hex << idx << std::endl;
-         return true;
-      }
-
-      prv = syms[idx];
-   }
-
-   APD_finish (&dtx);
-   return false;
-}
-
-
-
-bool hist_check (int                                        ihist,
-                 BitStream64                                &bs64,
-                 int                                        ebits,
-                 Histogram::Entry_t const ebins[Histogram::NBins]);
-
-
-bool encode_check (APE_etx &etx, Histogram const &hist, Symbol_t const syms[PACKET_K_NSAMPLES])
-{
-   BitStream64 xba;
-   XStream     cba;
-
-   xba.m_cur = etx.ba.m_cur;
-   xba.m_idx = etx.ba.m_idx;
-
-   int idx = 0;
-   while (1)
-   {
-      uint64_t dat;
-      bool okay = etx.ba.m_out.read_nb (dat);
-      if (!okay) break;
-      xba.m_out.write (dat);
-      cba.write (dat);
-      idx += 1;
-   }
-
-   bool hist_failure = hist_check (0, xba, etx.nhist, hist.m_bins);
-
-   uint16_t dsyms[PACKET_K_NSAMPLES];
-   bool failure = decode_data (dsyms, xba, hist, syms);
-
-
-   // Push this all back from whence it came
-   for (int idy = 0; idy < idx; idy++)
-   {
-      uint64_t dat;
-      etx.ba.m_out.write_nb (cba.read_nb(dat));
-   }
-
-   return failure;
-}
-#endif

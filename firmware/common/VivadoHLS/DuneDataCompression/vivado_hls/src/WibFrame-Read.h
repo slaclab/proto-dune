@@ -209,6 +209,7 @@ public:
       ErrWibUnused7   = 0x07, /*!< Unused bit                             */
       ErrWibEnd1      = 0x07,
 
+
       // Errors from the Colddata stream 0 header words
       ErrCd0Beg0      = 0x08,
       ErrCd0StrErr1   = 0x08,  /*!< Colddata link 0, stream err1 is not 0   */
@@ -223,6 +224,7 @@ public:
       ErrCd0Rsvd1     = 0x0e,  /*!< Colddata link 0, reserved field is not 0*/
       ErrCd0Hdrs      = 0x0f,  /*!< Colddata link 0, error in hdr words     */
       ErrCd0End1      = 0x0f,
+
 
       // Errors from the Colddata stream 1 header words
       ErrCd1Beg0      = 0x10,
@@ -253,7 +255,14 @@ public:
       ErrEofM         = 0x1c, /*!< End   of frame error, missing            */
       ErrEofU         = 0x1d, /*!< End   of frame error, unexpected         */
       ErrEofE         = 0x1e, /*!< End   of frame error, error bit set      */
-      ErrFrameEnd     = 0x1e
+      ErrFrameEnd     = 0x1e,
+
+      // These are errors that can be evaluated on the first frame in a packet
+      // Basically the ones with known values
+      ErrOnFirst      = ErrWibComma   | ErrWibVersion | ErrWibRsvd | ErrWibErrors
+                      | ErrCd0StrErr1 | ErrCd0StrErr2 | ErrCd0Rsvd0
+                      | ErrCd1StrErr1 | ErrCd1StrErr2 | ErrCd1Rsvd0
+                      | ErrSofM       | ErrSofU       | ErrEofM    | ErrEofU | ErrEofE
    };
    /* ---------------------------------------------------------------------- */
 
@@ -342,6 +351,13 @@ public:
     }
     /* ---------------------------------------------------------------------- */
 
+
+    static ReadStatus_t errsOnFirst (ReadStatus_t status)
+    {
+       // Keep only the errors that are legitimate on the first frame
+       status &= ErrOnFirst;
+       return status;
+    }
 
     /* ---------------------------------------------------------------------- */
     static bool isWibHdr0Bad (ReadStatus_t status)

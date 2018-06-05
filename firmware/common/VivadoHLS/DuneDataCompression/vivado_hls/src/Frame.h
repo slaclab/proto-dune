@@ -889,6 +889,50 @@ static inline void epilogue (AxisOut    &mAxis,
 /* ----------------------------------------------------------------------- */
 
 
+/* ----------------------------------------------------------------------- *//*!
+ *
+ *  \brief Does the processing after a full frame has been readin
+ *
+ *  \param[   out]     mAxis  The output AXI stream
+ *  \param[in:out]       odx  The 64-bit packet index
+ *  \param[    in] frameType  The frame type (eg Identifier::FrameType::DATA)
+ *  \param[    in]    status  The summeary status
+ *
+ *
+\* ----------------------------------------------------------------------- */
+static inline void epilogue (AxisOut                &mAxis,
+                             int                      &odx,
+                             Identifier::DataType dataType,
+                             uint32_t               status)
+{
+   #pragma HLS INLINE
+
+   #define PACKET_VERSION VERSION_COMPOSE (1, 0, 0, 0)
+
+
+   std::cout << "Outputting @ odx = " << odx << std::endl;
+
+   uint64_t   statusId;
+   int   nbytes = odx * sizeof (uint64_t) + sizeof (statusId) + sizeof (Trailer);
+    uint32_t  id = Identifier::identifier (Identifier::FrameType::DATA, dataType, nbytes);
+
+
+   statusId   = status;
+   statusId <<=     32;
+   statusId  |=     id;
+
+
+   uint64_t tlr = Trailer::trailer (PACKET_VERSION);
+   print_trailer (tlr);
+
+
+   commit (mAxis, odx, true, statusId, 0, 0);
+   commit (mAxis, odx, true, tlr,      0, 1);
+
+   return;
+}
+/* ----------------------------------------------------------------------- */
+
 /* ----------------------------------------------------------------------- */
 #ifndef __SYNTHESIS__
 /* ----------------------------------------------------------------------- */

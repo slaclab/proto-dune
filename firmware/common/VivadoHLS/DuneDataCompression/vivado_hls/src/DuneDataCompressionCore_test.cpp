@@ -348,7 +348,7 @@ static int compress_test (int               fd,
       // Compress the packet
       // -------------------
       DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, monitor);
-      return 0;
+
 
 
       // ------------------------------

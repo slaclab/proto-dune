@@ -237,29 +237,13 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 #define PRAGMA_HLS(x) PRAGMA_SUB(x)
 
 
-#ifndef __SYNTHESIS__
-#define HIST_ENCODE_DEBUG 0
-#endif
-
-
 #include "DuneDataCompressionHistogram.h"
 typedef Histogram::Symbol_t Symbol_t;
 
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \class PacketContext
- *  \brief This contains the data common to all channels in a frame
- *         plus some bookeepping variables
- *
-\* ---------------------------------------------------------------------- */
- struct PacketContext
- {
-    bool                     valid; /*!< The last frame was valid          */
-    WibFrame::Id             wibId; /*!< Crate.Slot.Fiber of WIB           */
-    WibFrame::Timestamp  timestamp; /*!< Timestamp of initial frame        */
-    ap_uint<10>            nframes; /*!< Number of frames accumulated      */
- };
- /* ---------------------------------------------------------------------- */
+
+
+#include "WibFrame-Process.h"
+
 
 
 
@@ -278,7 +262,6 @@ typedef Histogram::Symbol_t Symbol_t;
  /* ---------------------------------------------------------------------- */
 
 
-#include "WibFrame-Process.h"
 
 
 
@@ -322,7 +305,7 @@ static void
 
 static void
  acquire_packet (AxisIn                                               &sAxis,
-                 PacketContext                                       &pktCtx,
+                 HeaderContext                                       &hdrCtx,
                  Symbol_t        syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                  Histogram                         hists[MODULE_K_NCHANNELS],
                  ModuleIdx_t                                       moduleIdx,
@@ -332,7 +315,7 @@ static void
 
 static void
  process_packet (AxisOut                                              &mAxis,
-                 PacketContext const                                 &pktCtx,
+                 HeaderContext const                                 &hdrCtx,
                  Symbol_t  const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                  Histogram const                   hists[MODULE_K_NCHANNELS],
                  ModuleIdx_t                                       moduleIdx,
@@ -341,6 +324,7 @@ static void
 
 static void
  acquire_frame (AxisIn                                                &sAxis,
+                HeaderContext                                        &hdrCtx,
                 PacketContext                                        &pktCtx,
                 Symbol_t         syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                 Histogram                          hists[MODULE_K_NCHANNELS],
@@ -452,15 +436,15 @@ static void handle_packet (AxisOut                   &mAxis,
     #pragma     HLS RESOURCE         variable=syms         core=RAM_2P_BRAM
      PRAGMA_HLS(HLS ARRAY_PARTITION  variable=syms  cyclic factor=NADCPORTS  dim=1)
 
-     PacketContext PktCtx;
+     HeaderContext HdrCtx;
 
     // -------------------------------------------------
     // Set histogram identifiers, strictly for debugging
     // -------------------------------------------------
     HISTOGRAM_statement (Histogram::set_id (hists, sizeof (hists) / sizeof (hists));)
 
-    acquire_packet (sAxis, PktCtx, syms, hists, moduleIdx, config, monitorRead);
-    process_packet (mAxis, PktCtx, syms, hists, moduleIdx, config, monitorWrite);
+    acquire_packet (sAxis, HdrCtx, syms, hists, moduleIdx, config, monitorRead);
+    process_packet (mAxis, HdrCtx, syms, hists, moduleIdx, config, monitorWrite);
 
     return;
  }
@@ -493,7 +477,7 @@ static void handle_packet (AxisOut                   &mAxis,
  *                         module.
 \* ----------------------------------------------------------------------- */
 void acquire_packet (AxisIn                                        &sAxis,
-                     PacketContext                                &pktCtx,
+                     HeaderContext                                &hdrCtx,
                      Symbol_t syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                      Histogram                  hists[MODULE_K_NCHANNELS],
                      ModuleIdx_t                                moduleIdx,
@@ -508,11 +492,12 @@ void acquire_packet (AxisIn                                        &sAxis,
    // -------------------------------------------
    static MonitorRead lclMonitor;
 
+   PacketContext pktCtx;
 
    ACQUIRE_LOOP:
    for (int idx = 0; idx < PACKET_K_NSAMPLES; idx++)
    {
-      acquire_frame (sAxis,   pktCtx, syms, hists, moduleIdx,
+      acquire_frame (sAxis,  hdrCtx, pktCtx, syms, hists, moduleIdx,
                      config, monitor,   lclMonitor,      idx);
    }
 
@@ -557,6 +542,7 @@ void acquire_packet (AxisIn                                        &sAxis,
  *
 \* ----------------------------------------------------------------------- */
 static void acquire_frame (AxisIn                                        &sAxis,
+                           HeaderContext                                &hdrCtx,
                            PacketContext                                &pktCtx,
                            Symbol_t syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                            Histogram                  hists[MODULE_K_NCHANNELS],
@@ -575,7 +561,7 @@ static void acquire_frame (AxisIn                                        &sAxis,
 
    frame.read        (sAxis);
    ////lclMonitor.update (config, gblMonitor, frame.m_status);
-   process_frame     (frame, iframe, config, pktCtx, hists, syms);
+   process_frame     (frame, iframe, config, hdrCtx, pktCtx, hists, syms);
 }
 /* ----------------------------------------------------------------------- */
 
@@ -588,7 +574,7 @@ static void acquire_frame (AxisIn                                        &sAxis,
 /* ----------------------------------------------------------------------- */
 static void process_packet
            (AxisOut                                                  &mAxis,
-            PacketContext const                                     &pktCtx,
+            HeaderContext const                                     &hdrCtx,
             Symbol_t      const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
             Histogram     const                   hists[MODULE_K_NCHANNELS],
             ModuleIdx_t                                           moduleIdx,
@@ -597,7 +583,7 @@ static void process_packet
 {
    #pragma HLS INLINE off
 
-   write_packet  (mAxis,  pktCtx, hists, syms, moduleIdx);
+   write_packet  (mAxis,  hdrCtx, hists, syms, moduleIdx);
 
    return;
 }

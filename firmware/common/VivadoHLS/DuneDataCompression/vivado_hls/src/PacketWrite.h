@@ -1,71 +1,8 @@
 
 #include "Parameters.h"
 
-class HeaderContext
-{
-public:
-   HeaderContext () :
-      m_hdx (0),
-      m_edx (0)
-   {
-      return;
-   }
-
-   void reset ()
-   {
-      m_hdx = 0;
-      m_edx = 0;
-   }
-
-
-   void addHeader (uint64_t hdr)
-   {
-      m_hdrsBuf[m_hdx++] = hdr;
-   }
-
-   void addException (ap_uint<6> excMask, ap_uint<10> nframe)
-   {
-      ap_uint<16> exc = (excMask, nframe);
-      ap_int<2> shift =   m_edx & 0x3;
-
-      if (shift == 0) m_excBuf[m_edx] = 0;
-
-      m_excBuf[m_edx] |= static_cast<uint64_t>(exc << (shift<<4));
-
-      if (~shift) m_edx += 1;
-   }
-
-   void commit (AxisOut  &axis, int &odx, bool write, uint32_t status)
-   {
-      for (int idx = 0; idx < m_hdx; idx++)
-      {
-         ::commit (axis, odx, write, m_hdrsBuf[idx], 0, 0);
-      }
-
-
-      for (int idx = 0; idx < m_edx; idx++)
-      {
-         ::commit (axis, odx, write, m_excBuf[idx], 0, 0);
-      }
-
-      // Compose the summary word
-      uint64_t summary = (static_cast<uint64_t>(status) << 32) | (m_hdx << 16) | (m_edx << 0);
-      ::commit (axis, odx, write, summary, 0, 0);
-   }
-
-public:
-   int                                 m_hdx;   /*!< Header buffer index     */
-   int                                 m_edx;   /*!< Exception buffer index  */
-   uint64_t m_hdrsBuf[6 * PACKET_K_NSAMPLES];   /*!< Buffer for header words */
-   uint64_t m_excBuf[(6 * PACKET_K_NSAMPLES)
-                   / (sizeof (uint64_t)
-                   /  sizeof (uint16_t))];     /*!< Buffer for exceptions    */
-};
-/* ------------------------------------------------------------------------- */
-
-
 static void  write_packet (AxisOut                                                  &mAxis,
-                           PacketContext                                           &pktCtx,
+                           HeaderContext                                           &hdrCtx,
                            Histogram      const                   hists[MODULE_K_NCHANNELS],
                            Symbol_t       const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                            ModuleIdx_t                                           moduleIdx);
@@ -97,7 +34,6 @@ public:
    {
       odx = 0;
       fdx = 0;
-      hdr.reset ();
       return;
    }
 
@@ -193,9 +129,7 @@ static void write_syms_encode_chan (int ichan)
 
 static inline void
        write_syms (AxisOut                                             &mAxis,
-                   int                                                   &mdx,
-                   uint64_t                                             &data,
-                   int                                                   &odx,
+                   int                                                   &bdx,
                    Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                    Histogram   const                hists[MODULE_K_NCHANNELS]);
 
@@ -261,45 +195,61 @@ static void    write_overflow  (AxisOut      &mAxis,
  *
 \* ---------------------------------------------------------------------- */
 static void  write_packet (AxisOut                                                   &mAxis,
-                           PacketContext const                                      &pktCtx,
+                           HeaderContext const                                      &hdrCtx,
                            Histogram     const                    hists[MODULE_K_NCHANNELS],
                            Symbol_t      const  syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                            ModuleIdx_t                                            moduleIdx)
 {
    #define COMPRESS_VERSION 0x10000000
-   #define HLS INLINE off
+   #define HLS INLINE
 
-   int   mdx = 0;
-   uint64_t data;
 
-   uint32_t frameId  = Frame::V0::identifier (Frame::V0::DataType::COMPRESSED);
-   uint64_t hdr = Frame::V0::header (frameId);
-   commit (mAxis, mdx, true, hdr,       0x2, 0);
-   commit (mAxis, mdx, true, pktCtx.wibId,     0x0, 0);
-   commit (mAxis, mdx, true, pktCtx.timestamp, 0x0, 0);
+   int             odx = 0;
+   ReadStatus_t status = hdrCtx.m_status;
 
-   write_syms (mAxis, mdx, data, mdx, syms, hists);
+   // -----------------------------------------------------------------------
+   // Output the WIB header information.  For packets with no errors,
+   // this consist of just the header words (6 of them) from the first
+   // WIB packet. For these packets, the rest can be generated from these
+   // For packets with WIB frames in error, the header words in disagreement
+   // are included.  An exception index, consisting of
+   //    1) an index of which WIB frame is in error
+   //    2) a bit mask indicating which of the 6 words are in error
+   // allows reconstruction of the WIB frame.
+   // -----------------------------------------------------------------------
+   hdrCtx.commit (mAxis, odx, true, true, status);
 
-   /*
-    *  Set end-of-frame marker
-    *
-    *  !!! WARNING !!!
-    *  The receiver must 'backfill' the length in the
-    *  header because mAxis is only sequentially accessible
-    */
-   uint64_t tlr = Frame::V0::trailer (frameId, mdx << 3);
-   commit (mAxis, mdx, true,  tlr, 0x0, 0x1);
+
+   int bdx = odx << 6;
+   write_syms (mAxis, bdx, syms, hists);
+
+
+   // -----------------------------------------------------------------
+   // The header has been removed. Before, information in this header
+   // was consumed by the receiver and then stripped by sending only
+   // the data after the header. This does not work for RSSI which
+   // cannot send starting at an offset.  The  information needed by
+   // the host side has been moved to the end. Since the length of
+   // the DMA is known, the receiver can locate it.  It is effectively
+   // discarded by limiting the RSSI transaction to not include this
+   // word.
+   // ----------------------------------------------------------------
+   odx = (bdx + 63) >> 6;
+   epilogue (mAxis, odx, Identifier::DataType::COMPRESSED, status);
+
 
    return;
 }
 /* ---------------------------------------------------------------------- */
 
+#define CHECKER 1
 
+#ifdef __SYNTHESIS__
+#undef  CHECKER
+#endif
 
-static void write_symsN (AxisOut                                     &mAxis,
-                         int                                           &bdx,
-                         uint64_t                                     &data,
-                         int                                           &odx,
+static void write_symsN (AxisOut                                    &mAxis,
+                         int                                          &bdx,
                          Symbol_t const syms[NPARALLEL][PACKET_K_NSAMPLES],
                          Histogram      const             hists[NPARALLEL],
                          int                                         ichan);
@@ -321,31 +271,20 @@ static void write_symsN (AxisOut                                     &mAxis,
 \* ---------------------------------------------------------------------- */
 static inline void
        write_syms (AxisOut                                             &mAxis,
-                   int                                                   &mdx,
-                   uint64_t                                             &data,
-                   int                                                   &odx,
+                   int                                                   &bdx,
                    Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
                    Histogram      const             hists[MODULE_K_NCHANNELS])
 {
    #pragma HLS INLINE
    #pragma HLS PIPELINE
 
-
    #define NSERIAL ((NCHANS + NPARALLEL -1)/NPARALLEL)
 
    APE_etx                  etx[NPARALLEL];
    #pragma     HLS ARRAY_PARTITION variable=etx complete dim=1
 
-
-
    uint64_t       buf;
    write_syms_print (syms);
-
-
-   // ------------------------------------
-   // Transform 64-bit index to bit index
-   // ------------------------------------
-   int bdx = mdx << 6;
 
    WRITE_SYMS_CHANNEL_LOOP:
    for (int ichan = 0; ichan < NCHANS; ichan += NPARALLEL)
@@ -353,7 +292,7 @@ static inline void
        #pragma HLS UNROLL
        ////#pragma HLS DATAFLOW
 
-      //write_symsN (mAxis, bdx, data, odx, &syms[ichan], &hists[ichan], ichan);
+      //write_symsN (mAxis, bdx, &syms[ichan], &hists[ichan], ichan);
 
       //ChannelSize   sizes[MODULE_K_NCHANNELS];
 
@@ -367,10 +306,8 @@ static inline void
 /* ---------------------------------------------------------------------- */
 
 
-static void write_symsN (AxisOut                                     &mAxis,
-                         int                                           &bdx,
-                         uint64_t                                     &data,
-                         int                                           &odx,
+static void write_symsN (AxisOut                                    &mAxis,
+                         int                                          &bdx,
                          Symbol_t const syms[NPARALLEL][PACKET_K_NSAMPLES],
                          Histogram      const             hists[NPARALLEL],
                          int                                         ichan)
@@ -428,13 +365,15 @@ static __inline void encodeN (APE_etx                              *etx,
 
       HISTOGRAM_statement (hists[ichan].print ());
 
+      etx[idx].ba.m_idx = 0;
+      etx[idx].oa.m_idx = 0;
 
       // ------------------------------------------------
       // Encode the histogram, bot syms and the overflow
       // ------------------------------------------------
       APE_encode (etx[idx], hists[ichan], syms[ichan], PACKET_K_NSAMPLES);
 
-#if 0
+#if CHECKER
       // -----------------------------------------
       // Executed only if APE_CHECKER is non-zero
       // -----------------------------------------
@@ -686,4 +625,139 @@ static void write_overflow (AxisOut  &mAxis,
    return;
 }
 /* ---------------------------------------------------------------------- */
+#endif
+
+
+#if       CHECKER
+#define   APD_DUMP  1
+#include "AP-Decode.h"
+static bool decode_data (uint16_t      dsyms[PACKET_K_NSAMPLES],
+                         BFU                              &ebfu,
+                         uint64_t  const                  *ebuf,
+                         BFU                              &obfu,
+                         uint64_t const                   *obuf,
+                         Histogram const                  &hist,
+                         Symbol_t const syms[PACKET_K_NSAMPLES])
+{
+   // Integrate the histogram
+   APD_table_t table[Histogram::NBins + 2];
+   int  cnt  = hist.m_lastgt0 + 1;
+   table[0]  = cnt;
+   int total = 0;
+   for (int idx = 1; idx <= hist.m_lastgt0+2; idx++)
+   {
+      table[idx] = total;
+      total     += hist.m_bins[idx-1];
+   }
+
+   uint16_t bins[Histogram::NBins];
+   int     nbins;
+   int       prv;
+   int   novrflw;
+   int       sym;
+   int eposition = hist_decode (bins, &nbins, &sym, &novrflw, ebfu, ebuf);
+
+
+   APD_dtx dtx;
+   APD_start (&dtx, ebuf, eposition);
+
+   int oposition = _bfu_get_pos (obfu);
+
+   int Nerrs = 0;
+   for (int idy = 0; ; idy++)
+   {
+      dsyms[idy] = sym;
+      APD_dumpStatement (std::cout << "Sym[" << idy << "] = " << syms[idy] << " : " << dsyms[idy] <<  std::hex << std::setw(5) << std::endl);
+
+
+      if (dsyms[idy] != syms[idy])
+      {
+         std::cout << "Error @" << std::hex << idy << std::endl;
+         if (Nerrs++ > 20) return true;
+      }
+
+      if (idy == PACKET_K_NSAMPLES -1)
+      {
+         break;
+      }
+
+      sym = APD_decode (&dtx, table);
+      if (sym == 0)
+      {
+         // Have overflow
+         int ovr = _bfu_extractR (obfu, obuf, oposition, novrflw);
+         sym = nbins + ovr;
+      }
+   }
+
+
+   APD_finish (&dtx);
+   return Nerrs != 0;
+}
+
+
+
+static int copy (uint64_t *buf, BitStream64 &bs)
+{
+   // Copy the data into a temporary bit stream
+   int idx = 0;
+   while (1)
+   {
+      uint64_t dat;
+      bool okay = bs.m_out.read_nb (buf[idx]);
+      if (!okay) break;
+      idx += 1;
+   }
+
+   // Get the last one
+   // This is kind of cheating. It believes that
+   // bs.m_cur is not going to change between this
+   // copy and the restore.
+   int left = bs.m_idx & 0x3f;
+   if (left)
+   {
+      uint64_t last =  bs.m_cur << (0x40 - left);
+      buf[idx] = last;
+   }
+
+   return idx;
+}
+
+void restore (BitStream64 &bs, uint64_t *buf, int nbuf)
+{
+   // Push this all back from whence it came
+   for (int idx = 0; idx < nbuf; idx++)
+   {
+      bs.m_out.write_nb (buf[idx++]);
+   }
+
+   return;
+}
+
+bool encode_check (APE_etx &etx, Histogram const &hist, Symbol_t const syms[PACKET_K_NSAMPLES])
+{
+   static uint64_t ebuf[PACKET_K_NSAMPLES/(sizeof (uint64_t) / sizeof (int16_t)) + Histogram::NBins * 10/64 + 10];
+   static uint64_t obuf[PACKET_K_NSAMPLES/(sizeof (uint64_t) / sizeof (int16_t))];
+
+
+   // Copy the data into a temporary bit stream
+   int ecnt = copy (ebuf, etx.ba);
+   int ocnt = copy (obuf, etx.oa);
+
+
+   BFU ebfu;
+   _bfu_put (ebfu, ebuf[0], 0);
+
+   BFU obfu;
+   _bfu_put (obfu, obuf[0], 0);
+
+   uint16_t dsyms[PACKET_K_NSAMPLES];
+   bool failure = decode_data (dsyms, ebfu, ebuf, obfu, obuf, hist, syms);
+
+   restore (etx.ba, ebuf, ecnt);
+   restore (etx.oa, obuf, ocnt);
+
+
+   return failure;
+}
 #endif

@@ -1,6 +1,10 @@
 #include "DuneDataCompressionHistogram.h"
 #include "BitStream64.h"
 
+#include <cstdio>
+
+#define HIST_ENCODE_CHECK 1
+#define HIST_ENCODE_DEBUG 1
 
 // -----------------------------------------------------------------------
 //
@@ -15,17 +19,14 @@
 //   HIST_ENCODE_CHECK    Checks the encoding of the histogram
 //
 // -----------------------------------------------------------------------
-#if !defined(HIST_ENCODE_DEBUG) || defined(__SYNTHESIS__)
+#if !defined(HIST_ENCODE_DEBUG)
 #define HIST_ENCODE_DEBUG 0
 #endif
 
-#if !defined(HIST_ENCODE_CHECK) || defined(__SYNTHESIS__)
+#if !defined(HIST_ENCODE_CHECK)
 #define HIST_ENCODE_CHECK 0
 #endif
 
-#ifndef HIST_ENCODE_BTE
-#define HIST_ENCODE_BTE 0
-#endif
 
 #if      HIST_ENCODE_CHECK
 #undef   HIST_DECODE_CHECK
@@ -40,68 +41,16 @@
 // ---------------------------------------------------
 #if     defined(__SYNTHESIS__)
 #undef  HIST_ENCODE_DEBUG
-#undef  HIST_DECODE_DEBUG
 #undef  HIST_ENCODE_CHECK
+#undef  HIST_DECODE_CHECK
 #endif
 // ---------------------------------------------------
 
 
-/* ---------------------------------------------------------------------- */
-#ifdef HIST_ENCODE_DEBUG
-/* ---------------------------------------------------------------------- */
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \enum  HistEncodeScheme
- *  \brief Enumerates the scheme used to encode a particular histogram bin
- *
-\* ---------------------------------------------------------------------- */
-enum HistEncodeScheme
-{
-   HES_K_DIFF = 0,   /*!< Differences                                     */
-   HES_K_FX2  = 1,   /*!< Fixed 2 bit encoding                            */
-   HES_K_FX1  = 2,   /*!< Fixed 1 bit encoding                            */
-   HES_K_BT   = 3,   /*!< Binary tree encoding                            */
-};
-/* ---------------------------------------------------------------------- */
-
-
-static void         hist_encode_print (bool              debug,
-                                       HistEncodeScheme scheme,
-                                       int                ibin,
-                                       int                diff,
-                                       int               nbits,
-                                       uint32_t           bits,
-                                       uint64_t            cur,
-                                       int32_t             idx,
-                                       int                left);
-
-static void hist_encode_summary_print (bool              debug,
-                                       int               nbits,
-                                       int                left);
-
-
-#define HistEncodeSchemeDeclare(_name)       HistEncodeScheme _name
-#define HistEncodeSchemeSet(_name, _scheme) _name = _scheme
-
-#else
-
-#define hist_encode_print(_debug, _scheme, _ibin, _diff,       \
-                          _nbits, _bits,    _cur,  _idx,  _left)
-
-#define hist_encode_summary_print(_debug, _nbits, _left)
-
-#define HistEncodeSchemeDeclare(_name)
-#define HistEncodeSchemeSet(_name, _scheme)
-
-/* ---------------------------------------------------------------------- */
-#endif  /* HIST_DEBUG                                                     */
-/* ---------------------------------------------------------------------- */
-
 
 
 /* ---------------------------------------------------------------------- */
-#ifdef  HIST_ENCODE_CHECK
+#if     HIST_ENCODE_CHECK
 #define HISTOGORAM_DECODE_CHECK
 #include "Histogram-Decode.cpp"
 #define HIST_ENCODE_CHECK_statement(_statement) _statement
@@ -115,19 +64,26 @@ static void hist_encode_summary_print (bool              debug,
 /* ---------------------------------------------------------------------- */
 
 
-/* ---------------------------------------------------------------------- */
-#if HIST_ENCODE_BTE
-/* ---------------------------------------------------------------------- */
-static void hist_encode_bte (BitStream64 &bs, Histogram &hist, int r0);
-/* ---------------------------------------------------------------------- */
+
+#if HIST_ENCODE_DEBUG
+
+ static void hist_encode_print (int          ibin,
+                                unsigned int bits,
+                                int         nbits,
+                                int          cnts,
+                                int          left,
+                                int         tbits)
+{
+    std::cout <<    "Bin: " << std::setw(2) << ibin
+              <<  " Cnts: " << std::setw(4) << std::hex << bits
+              << " Nbits: " << std::setw(2) << std::dec << nbits
+              << " Total: " << std::setw(4) << std::hex << cnts
+              << "  Left: " << std::setw(4) << std::hex << left
+              << " Tbits: " << std::setw(4) << std::dec << tbits << std::endl;
+}
 #else
-/* ---------------------------------------------------------------------- */
-#define     hist_encode_bte(_bs, _hist, _r0)
-/* ---------------------------------------------------------------------- */
-#endif /* HIST_ENCODE_BTE                                                 */
-/* ---------------------------------------------------------------------- */
-
-
+#define hist_encode_print(_ibin, _bits, _nbits, _cnts, _left, _tbits)
+#endif
 
 
 /* ---------------------------------------------------------------------- *//*!
@@ -208,13 +164,12 @@ static void hist_encode_bte (BitStream64 &bs, Histogram &hist, int r0);
  *          At entry 3, there are  0xe entries left, so need 4 bits to encode 0x2
  *          At entry 4, there are  0xc entries left, so need 4 bits to enocde 0x5
  */
-void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
+void Histogram::encode (BitStream64 &bs64, Table table[NBins+1], AdcIn_t first) const
 {
-
    #pragma HLS INLINE
+   #pragma HLS PIPELINE
 
-   static int Version (0);
-
+   static int Format (0);
 
    // DEBUGGING ONLY STREAM
    HIST_ENCODE_CHECK_statement (BitStream64 CheckStream; CheckStream.setName ("Hist"); )
@@ -227,258 +182,72 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
    Histogram::Acc_t left = PACKET_K_NSAMPLES -1;
    HISTOGRAM_statement (if (debug) print ());
 
-   // This is for debug purposes only
-   HistEncodeSchemeDeclare (encoding_scheme);
 
-   // !!! KLUDGE TO BYPASS ENCODING
+   ap_uint<10> total = 0;
+   int         ibin  = 0;
+   int         prv   = 0;
+   int         tbits = 0;
+   int         mbits = m_cmaxcnt.length () - m_cmaxcnt.countLeadingZeros ();
+   int      firstAdc = first;
+
+   // The header is
+   //   4 bits = Format type
+   //   8 bits = Number of bins - 1
+   //   4 bits = Number of bits in the maximum entry
+   //  12 bits = First ADC value
+   //   4 bits = Number of bits in the maximum overflow symbol (-#histogram bins - 2)
+   //
+   // ----------------------------------------------
+   ap_uint<4+12+4+8+4> bits =  (Format                << 28)   // 28   4
+                            | ((Histogram::NBins - 1) << 20)   // 20,  8
+                            |  (mbits                 << 16)   // 16,  4
+                            |  (firstAdc              <<  4)   //  4, 12
+                            |  (m_cnobits             <<  0);  //  0,  4
+   int     nbits = 4 + 12 + 4 + 8 + 4;
+   HISTOGRAM_ENCODE_LOOP:
+   for (ibin = 0; ibin <= NBins+1 ; ibin++)
    {
-      int total = 0;
-      int ibin  = 0;
-      for (ibin = 0; ; ibin++)
-      {
-         table[ibin] = total;
-         if (ibin >= NBins) break;
+#pragma HLS PIPELINE II=1
+      ap_uint<10> left = PACKET_K_NSAMPLES - 1 - total;
+      table[ibin] = total;
+      tbits      += nbits;
 
-         Histogram::Entry_t cnts = m_comask.test (ibin)
-                                 ? m_cbins[ibin]
-                                 : Histogram::Entry_t (0);
-         total += cnts;
-      }
+      hist_encode_print (ibin, bits, nbits, table[ibin], left, tbits);
 
-      return;
-   }
 
-   // -----------------------------------------------------------------------------
-   // Format the header
-   //
-   // Note this could fail if the nbits > 32.
-   // This seems unlikely.  That would require a histogram of 2**15 bins
-   //
-   // Format version = 0  (2 bits)
-   //              nbins  (8 bits)
-   //           last > 1  (Size in bits of lastgt1)
-   //           last > 2  (No more than the actual bits in last > 1
-   //
-   // Note::
-   // Because of the countLeadingMethod is not marked as const, the
-   // values lastgt1 and lastgt2 must be copied to non-const variables.
-   // -----------------------------------------------------------------------------
-   Histogram::Idx_t lastgt1 = m_clastgt1;
-   Histogram::Idx_t lastgt2 = m_clastgt2;
-   int             nlastgt2 = lastgt1.length () - lastgt1.countLeadingZeros ();
-   int                nbits = lastgt1.length () + nlastgt2;
-   uint32_t            bits = (Version             << (nbits + 8))
-                            | ((HISTOGRAM_K_NBINS) << nbits)
-                            | ((uint32_t)lastgt1   << nlastgt2)
-                            | ((uint32_t)lastgt2);
-   nbits += 10;
-   int    diff;
+      // Insert the current bit pattern
+      bs64.insert (bits, nbits);
+      HIST_ENCODE_CHECK_statement (CheckStream.insert (bits, nbits);)
 
-   // ----------------------------------------------------------------
-   // This insert of these bits into the output stream is deferred 
-   // and done on entry to the HIST_ENCODE_BIN_LOOP.  This unnatural
-   // construction saves dropping down another copy of the bs64.insert
-   // which is a big savings in FPGA resources.
-   // ----------------------------------------------------------------
-   //bs64.insert (tmp, nbits);
-   // ----------------------------------------------------------------
 
-   
-   // ----------------------------------------------------------------
-   // DEPRECATED: This was part of the binary tree encoding of the
-   // groups of 32-bins containing only 0's and 1's. The current
-   // implementation of the encoding routines was too resource
-   // expensive, so this gain in packing efficiency has been 
-   // sacrificed until a better implementation is found.  
-   //
-   // Also note, that when the number of histogram bins is 64,
-   // there are almost no benefit, i.e. there are no groups of
-   // such bins.
-   // ------------------------------------------------------------
-   // Find last group of 32 bits that contains a count value > 1
-   // All bins past this point are either 0 or 1.
-   // The premise is that bins in past this are sparsely populated
-   // and amiable to a binary tree compression on the bit mask.
-   // ------------------------------------------------------------
-   ///int r0 = lastgt1 | 0x1f;
-   // ------------------------------------------------------------
-   
-   int      ibin;
-   int prv_nbits;
-   int total = 0;
+      if (ibin >= NBins) break;
 
-   // ---------------------------------------------------------------------------------
-   // This loop divides the histogram into the following regions
-   // Region  Range                               Encoding Method
-   // ------  ----------------------------------  ------------------------------------
-   //      0  0 - last bin with a count gt 3;     Differences in the significant bits
-   //      1  last bin > 3 + 1 - last bin < 2     Absolute, 2 bits (values of 0-3)
-   //      2  last_bin > 2 + 1 - next 32 boundary Absolute, 1 bit  (values of 0,1)
-   //      3  remaining                           Must be 0 or 1,masks encoded
-   //                                             as binary tree
-   // ---------------------------------------------------------------------------------
-   HIST_ENCODE_BIN_LOOP:
-   for (ibin = 0; ;ibin++)
-   {
-      #pragma HLS LOOP_TRIPCOUNT min=40 max=64 avg=60
-      #pragma HLS PIPELINE II=2
-      
-      if (nbits)
-      {
-         bs64.insert (bits, nbits);
-         HIST_ENCODE_CHECK_statement (CheckStream.insert (bits, nbits);)
-      }
+      // Since the first bit must be a 1, no need to encode it.
+      // This is no true when left = 0, but at that point no further bits encoded
+      nbits =  left.length () - left.countLeadingZeros ();
 
-      if (ibin > m_clastgt0)
-      {
-         break;
-      }
 
       Histogram::Entry_t cnts = m_comask.test (ibin)
                               ? m_cbins[ibin]
                               : Histogram::Entry_t (0);
 
-      bits        = cnts;
-      table[ibin] = total;
-      total      += cnts;
 
-      // For the bins up to and including the last bin of 2 significant bits
-      // of more, encode using the differences
-      if (ibin <= lastgt2)
+      total += cnts;
+      bits   = cnts;
+
+      // Limit the number of bits to the maximum of all entries
+      if (nbits >= mbits)
       {
-         HistEncodeSchemeSet (encoding_scheme, HES_K_DIFF);
-
-         // Count the number of significant bits in this bin
-         nbits = cnts.length() - cnts.countLeadingZeros ();
-
-         // --------------------------------------------------------
-         // Guess that bin[0] (overflow bin) has 2 significant bits
-         //            bin[1] (0 count  bin) has 7 significant bits
-         // --------------------------------------------------------
-         if      (ibin == 0) prv_nbits = 2;
-         else if (ibin == 1) prv_nbits = 7;
-
-         // Count the difference in significant bits from the last entry
-         int diff  = prv_nbits - nbits;
-         prv_nbits = nbits;
-
-         // ------------------------------------------------------------
-         // The following is a poor man's Huffman type encoding.  This
-         // is just a prefix code of n 0s.
-         //
-         //   Diff # 0s
-         //      0    0. The leading 1 forms the stop bit
-         //              and the first bit of the bin count
-         //      1    1  There is one less significant bit than the
-         //              previous count
-         //     -1    2  There is one more significant bit than the
-         //              previous count
-         //   rest    3  The number of digits follows. This is no
-         //              more than what is need for the remaining
-         //              count.  For example, if there are less than
-         //              127 values left, 6 digits are used.
-         // ------------------------------------------------------------
-         {
-            if (diff == 0)
-            {
-               // Only need to handle special case of 0
-               if (cnts == 0) { nbits = 1; bits = 1; }
-            }
-            else if (diff == 1)
-            {
-               if (cnts == 0) { nbits += 2;  bits = 1; }
-               else           { nbits += 1;            }
-            }
-            else if (diff == -1)
-            {
-               nbits += 2;
-            }
-            else if (diff == 2)
-            {
-               if (cnts == 0) { nbits += 4; bits =1; }
-               else           { nbits += 3;          }
-            }
-            else if (diff == -2)
-            {
-               nbits += 4;
-            }
-            else
-            {
-               // Handle 0 case specially
-               // This is necessary to ensure there is a stop bit
-               if (nbits == 0)
-               {
-                  nbits = 6;
-                  bits  = 1;
-               }
-               else
-               {
-                  // Encode as an absolute value using the maximum number
-                  // of bits that will contain it
-                  nbits = 7 + left.length () - left.countLeadingZeros ();
-               }
-            }
-         }
+         nbits = mbits;
       }
-
-      // All values are <= 3, just encode the absolute counts
-      else if (ibin <= lastgt1)
-      {
-         HistEncodeSchemeSet (encoding_scheme, HES_K_FX2);
-         nbits = 2;
-      }
-
-      else
-      {
-         HistEncodeSchemeSet (encoding_scheme, HES_K_FX1);
-         nbits = 1;
-      }
-
-      #if 0
-      // This is if doing a binary tree encode of those past r0
-      // I've abandoned this idea for the present time.  It looks
-      // easier and with only a small penalty to shorten the range
-      // such that there aren't many stragglers.
-      //  Shard to the 32-bit boundary, all values are 0 or 1
-      else if (ibin <= r0)
-      {
-         HistEncodeSchemeSet (encoding_scheme, HES_K_FX1);
-         nbits = 1;
-      }
-
-      // -----------------------------------------------------
-      // Only 0s or 1s are left; these are taken care of with
-      // the binary tree encoding.
-      // ----------------------------------------------------
-      else
-      {
-         nbits = 0;
-      }
-      #endif
-
-      if (nbits)
-      {
-         hist_encode_print (debug, encoding_scheme,        ibin, diff,
-                            nbits, bits, bs64.m_cur, bs64.m_idx, left);
-      }
-
-      left -= cnts;
    }
-
-   // Last bin
-   table[ibin] = total;
-
-   // If defined, binary tree encode the remaining bins
-   hist_encode_bte (bs64, this, r0);
-
-   hist_encode_summary_print (debug, nbits, left);
 
 
    // DEBUG
    #if HIST_ENCODE_CHECK
    {
       int ebits = CheckStream.flush ();
-      hist_check (m_id, CheckStream, ebits, m_bins);  ///!!!  m_cbins);
+      hist_check (m_id, CheckStream, ebits, m_bins, first, m_cnobits);  ///!!!  m_cbins);
    }
    #endif
 
@@ -486,6 +255,78 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
 }
 /* ---------------------------------------------------------------------- */
 
+
+#ifdef HIST_ENCODE_OLD_SCHEME
+
+#ifndef HIST_ENCODE_BTE
+#define HIST_ENCODE_BTE 0
+#endif
+
+
+/* ---------------------------------------------------------------------- */
+#if HIST_ENCODE_BTE
+/* ---------------------------------------------------------------------- */
+static void hist_encode_bte (BitStream64 &bs, Histogram &hist, int r0);
+/* ---------------------------------------------------------------------- */
+#else
+/* ---------------------------------------------------------------------- */
+#define     hist_encode_bte(_bs, _hist, _r0)
+/* ---------------------------------------------------------------------- */
+#endif /* HIST_ENCODE_BTE                                                 */
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- */
+#ifdef HIST_ENCODE_DEBUG
+/* ---------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \enum  HistEncodeScheme
+ *  \brief Enumerates the scheme used to encode a particular histogram bin
+ *
+\* ---------------------------------------------------------------------- */
+enum HistEncodeScheme
+{
+   HES_K_DIFF = 0,   /*!< Differences                                     */
+   HES_K_FX2  = 1,   /*!< Fixed 2 bit encoding                            */
+   HES_K_FX1  = 2,   /*!< Fixed 1 bit encoding                            */
+   HES_K_BT   = 3,   /*!< Binary tree encoding                            */
+};
+/* ---------------------------------------------------------------------- */
+
+
+static void         hist_encode_print (bool              debug,
+                                       HistEncodeScheme scheme,
+                                       int                ibin,
+                                       int                diff,
+                                       int               nbits,
+                                       uint32_t           bits,
+                                       uint64_t            cur,
+                                       int32_t             idx,
+                                       int                left);
+
+static void hist_encode_summary_print (bool              debug,
+                                       int               nbits,
+                                       int                left);
+
+
+#define HistEncodeSchemeDeclare(_name)       HistEncodeScheme _name
+#define HistEncodeSchemeSet(_name, _scheme) _name = _scheme
+
+#else
+
+#define hist_encode_print(_debug, _scheme, _ibin, _diff,       \
+                          _nbits, _bits,    _cur,  _idx,  _left)
+
+#define hist_encode_summary_print(_debug, _nbits, _left)
+
+#define HistEncodeSchemeDeclare(_name)
+#define HistEncodeSchemeSet(_name, _scheme)
+
+/* ---------------------------------------------------------------------- */
+#endif  /* HIST_DEBUG                                                     */
+/* ---------------------------------------------------------------------- */
 
 
 
@@ -763,3 +604,257 @@ static void hist_encode_summary_print (bool debug, int nbits, int left)
 /* ---------------------------------------------------------------------- */
 #endif  /* HIST_ENCODE_DEBUG                                              */
 /* ---------------------------------------------------------------------- */
+
+
+
+void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
+{
+   #pragma HLS INLINE
+
+   static int Format (0);
+
+   // DEBUGGING ONLY STREAM
+   HIST_ENCODE_CHECK_statement (BitStream64 CheckStream; CheckStream.setName ("HistOld"); )
+
+
+   // Debug only
+   bool debug = true;
+
+
+   Histogram::Acc_t left = PACKET_K_NSAMPLES -1;
+   HISTOGRAM_statement (if (debug) print ());
+
+
+   // This is for debug purposes only
+   HistEncodeSchemeDeclare (encoding_scheme);
+   // -----------------------------------------------------------------------------
+   // Format the header
+   //
+   // Note this could fail if the nbits > 32.
+   // This seems unlikely.  That would require a histogram of 2**15 bins
+   //
+   // Format version = 0  (2 bits)
+   //              nbins  (8 bits)
+   //           last > 1  (Size in bits of lastgt1)
+   //           last > 2  (No more than the actual bits in last > 1
+   //
+   // Note::
+   // Because of the countLeadingMethod is not marked as const, the
+   // values lastgt1 and lastgt2 must be copied to non-const variables.
+   // -----------------------------------------------------------------------------
+
+   bs64.m_cur = bs64.m_idx = 0;  /// !!! KLUDGE to test the number of bits inserted
+   Histogram::Idx_t lastgt1 = m_clastgt1;
+   Histogram::Idx_t lastgt2 = m_clastgt2;
+   int             nlastgt2 = lastgt1.length () - lastgt1.countLeadingZeros ();
+   int                nbits = lastgt1.length () + nlastgt2;
+   uint32_t            bits = (Format              << (nbits + 8))
+                            | ((HISTOGRAM_K_NBINS) << nbits)
+                            | ((uint32_t)lastgt1   << nlastgt2)
+                            | ((uint32_t)lastgt2);
+   nbits += 10;
+   int    diff;
+
+   // ----------------------------------------------------------------
+   // This insert of these bits into the output stream is deferred
+   // and done on entry to the HIST_ENCODE_BIN_LOOP.  This unnatural
+   // construction saves dropping down another copy of the bs64.insert
+   // which is a big savings in FPGA resources.
+   // ----------------------------------------------------------------
+   ///bs64.insert (bits, nbits);
+   // ----------------------------------------------------------------
+
+
+   // ----------------------------------------------------------------
+   // DEPRECATED: This was part of the binary tree encoding of the
+   // groups of 32-bins containing only 0's and 1's. The current
+   // implementation of the encoding routines was too resource
+   // expensive, so this gain in packing efficiency has been
+   // sacrificed until a better implementation is found.
+   //
+   // Also note, that when the number of histogram bins is 64,
+   // there are almost no benefit, i.e. there are no groups of
+   // such bins.
+   // ------------------------------------------------------------
+   // Find last group of 32 bits that contains a count value > 1
+   // All bins past this point are either 0 or 1.
+   // The premise is that bins in past this are sparsely populated
+   // and amiable to a binary tree compression on the bit mask.
+   // ------------------------------------------------------------
+   ///int r0 = lastgt1 | 0x1f;
+   // ------------------------------------------------------------
+
+   int      ibin;
+   int prv_nbits;
+   int total = 0;
+
+   // ---------------------------------------------------------------------------------
+   // This loop divides the histogram into the following regions
+   // Region  Range                               Encoding Method
+   // ------  ----------------------------------  ------------------------------------
+   //      0  0 - last bin with a count gt 3;     Differences in the significant bits
+   //      1  last bin > 3 + 1 - last bin < 2     Absolute, 2 bits (values of 0-3)
+   //      2  last_bin > 2 + 1 - next 32 boundary Absolute, 1 bit  (values of 0,1)
+   //      3  remaining                           Must be 0 or 1,masks encoded
+   //                                             as binary tree
+   // ---------------------------------------------------------------------------------
+   HIST_ENCODE_BIN_LOOP:
+   for (ibin = 0; ;ibin++)
+   {
+      #pragma HLS LOOP_TRIPCOUNT min=40 max=64 avg=60
+      #pragma HLS PIPELINE II=2
+
+      if (nbits)
+      {
+         bs64.insert (bits, nbits);
+         HIST_ENCODE_CHECK_statement (CheckStream.insert (bits, nbits);)
+      }
+
+      if (ibin > m_clastgt0)
+      {
+         break;
+      }
+
+      Histogram::Entry_t cnts = m_comask.test (ibin)
+                              ? m_cbins[ibin]
+                              : Histogram::Entry_t (0);
+
+      bits        = cnts;
+      table[ibin] = total;
+      total      += cnts;
+
+      // For the bins up to and including the last bin of 2 significant bits
+      // of more, encode using the differences
+      if (ibin <= lastgt2)
+      {
+         HistEncodeSchemeSet (encoding_scheme, HES_K_DIFF);
+
+         // Count the number of significant bits in this bin
+         nbits = cnts.length() - cnts.countLeadingZeros ();
+
+         // --------------------------------------------------------
+         // Guess that bin[0] (overflow bin) has 2 significant bits
+         //            bin[1] (0 count  bin) has 7 significant bits
+         // --------------------------------------------------------
+         if      (ibin == 0) prv_nbits = 2;
+         else if (ibin == 1) prv_nbits = 7;
+
+         // Count the difference in significant bits from the last entry
+         int diff  = prv_nbits - nbits;
+         prv_nbits = nbits;
+
+         // ------------------------------------------------------------
+         // The following is a poor man's Huffman type encoding.  This
+         // is just a prefix code of n 0s.
+         //
+         //   Diff # 0s
+         //      0    0. The leading 1 forms the stop bit
+         //              and the first bit of the bin count
+         //      1    1  There is one less significant bit than the
+         //              previous count
+         //     -1    2  There is one more significant bit than the
+         //              previous count
+         //   rest    3  The number of digits follows. This is no
+         //              more than what is need for the remaining
+         //              count.  For example, if there are less than
+         //              127 values left, 6 digits are used.
+         // ------------------------------------------------------------
+         {
+            if (diff == 0)
+            {
+               // Only need to handle special case of 0
+               if (cnts == 0) { nbits = 1; bits = 1; }
+            }
+            else if (diff == 1)
+            {
+               if (cnts == 0) { nbits += 2;  bits = 1; }
+               else           { nbits += 1;            }
+            }
+            else if (diff == -1)
+            {
+               nbits += 2;
+            }
+            else if (diff == 2)
+            {
+               if (cnts == 0) { nbits += 4; bits =1; }
+               else           { nbits += 3;          }
+            }
+            else if (diff == -2)
+            {
+               nbits += 4;
+            }
+            else
+            {
+               // Handle 0 case specially
+               // This is necessary to ensure there is a stop bit
+               if (nbits == 0)
+               {
+                  nbits = 6;
+                  bits  = 1;
+               }
+               else
+               {
+                  // Encode as an absolute value using the maximum number
+                  // of bits that will contain it
+                  nbits = 7 + left.length () - left.countLeadingZeros ();
+               }
+            }
+         }
+      }
+
+      // All values are <= 3, just encode the absolute counts
+      else if (ibin <= lastgt1)
+      {
+         HistEncodeSchemeSet (encoding_scheme, HES_K_FX2);
+         nbits = 2;
+      }
+
+      else
+      {
+         HistEncodeSchemeSet (encoding_scheme, HES_K_FX1);
+         nbits = 1;
+      }
+
+      #if 0
+      // This is if doing a binary tree encode of those past r0
+      // I've abandoned this idea for the present time.  It looks
+      // easier and with only a small penalty to shorten the range
+      // such that there aren't many stragglers.
+      //  Shard to the 32-bit boundary, all values are 0 or 1
+      else if (ibin <= r0)
+      {
+         HistEncodeSchemeSet (encoding_scheme, HES_K_FX1);
+         nbits = 1;
+      }
+
+      // -----------------------------------------------------
+      // Only 0s or 1s are left; these are taken care of with
+      // the binary tree encoding.
+      // ----------------------------------------------------
+      else
+      {
+         nbits = 0;
+      }
+      #endif
+
+      if (nbits)
+      {
+         hist_encode_print (debug, encoding_scheme,        ibin, diff,
+                            nbits, bits, bs64.m_cur, bs64.m_idx, left);
+      }
+
+      left -= cnts;
+   }
+
+   // Last bin
+   table[ibin] = total;
+
+   // If defined, binary tree encode the remaining bins
+   hist_encode_bte (bs64, this, r0);
+
+   hist_encode_summary_print (debug, nbits, left);
+
+   return;
+   }
+#endif
+

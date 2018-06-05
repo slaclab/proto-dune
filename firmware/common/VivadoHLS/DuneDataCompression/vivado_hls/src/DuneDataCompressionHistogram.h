@@ -131,7 +131,7 @@ public:
    typedef ap_uint<Histogram::NETableBits + Histogram::NBits> ESize_t;
    typedef ap_uint<Histogram::NBins>                        BitMask_t;
    typedef ap_uint<Histogram::NBits>                            Idx_t;
-   typedef ap_uint<ADC_B_NBITS  + 1>                        Symbol_t;
+   typedef ap_uint<ADC_B_NBITS  + 1>                         Symbol_t;
    typedef Entry_t                                              Table;
 public:
    Histogram ();
@@ -141,7 +141,9 @@ public:
    void         clear              ();
    static void  clear              (Histogram hists[], int nhists);
    void         bump               (Symbol_t sym);
-   void         encode             (BitStream64 &bs64, Table table[NBins+1]) const;
+   void         encode             (BitStream64 &bs64,
+                                    Table table[NBins+1],
+                                    AdcIn_t       first) const;
 
    uint32_t                   size () const;
    uint32_t     integrate_and_size ();
@@ -151,24 +153,23 @@ public:
 
 public:
    BitMask_t        m_omask; /*!< Bit mask of non-zero entries            */
+   Entry_t         m_maxcnt; /*!< Maximum counts                          */
    Idx_t          m_lastgt0; /*!> Index of tje last entry with counts > 0 */
    Idx_t          m_lastgt1; /*!< Index of the last entry with counts > 1 */
    Idx_t          m_lastgt2; /*!< Index of the last entry with counts > 2 */
    Symbol_t           m_min; /*!< Minimum overflow difference             */
    Symbol_t           m_max; /*!< Maximum overflow difference             */
-   Entry_t  m_bins[NBins+1]; /*!< The bins of the histogram. The \e extra
-                                 bin allows the integrated from to be
-                                 used as the arithmetic probability
-                                 encoding table.                          */
+   Entry_t    m_bins[NBins]; /*!< The bins of the histogram.              */
 
                              /*!< Copy of the stuff                       */
    BitMask_t       m_comask; /*!< Bit mask of non-zero entries            */
+   Entry_t        m_cmaxcnt; /*!< Maximum counts                          */
    Idx_t         m_clastgt0; /*!> Index of tje last entry with counts > 0 */
    Idx_t         m_clastgt1; /*!< Index of the last entry with counts > 1 */
    Idx_t         m_clastgt2; /*!< Index of the last entry with counts > 2 */
    Symbol_t          m_cmin; /*!< Minimum overflow difference             */
    ap_uint<4>     m_cnobits; /*!< Number of bits in m_cmax - m_cmin       */
-   Entry_t m_cbins[NBins+1]; /*!< Copy of m_bins                          */
+   Entry_t   m_cbins[NBins]; /*!< Copy of m_bins                          */
 
    //----------------------------------------------
    // Diagnostic print routines.
@@ -287,6 +288,7 @@ inline void Histogram::clear ()
    #pragma HLS INLINE
    #pragma HLS PIPELINE
 
+   m_cmaxcnt  = m_cmaxcnt =  0;
    m_comask   = m_omask   =  0;
    m_clastgt0 = m_lastgt0 =  0;
    m_clastgt1 = m_lastgt1 =  0;
@@ -464,19 +466,15 @@ inline void Histogram::bump (Symbol_t sym)
 
    // ------------------------------------------------------
    // Check if this symbol is contained in the histogram
-   // The - 2 is the usual -1 for index vs offset and the
-   // second -1 is because the number of bins is actually
-   // one greater to accomodate the total when the histogram
-   // is integrated.
    // ------------------------------------------------------
-   if (sym > sizeof (m_bins) / sizeof (m_bins[0]) - 2)
+   int ovr = sym - sizeof (m_bins) / sizeof (m_bins[0]);
+   if (ovr >= 0)
    {
       // Keep track of the minimum and maximum overflow
-      if (sym > m_max)          m_max = sym;
-      if (sym < m_min) m_cmin = m_min = sym;
+      if (ovr > m_max)          m_max = ovr;
+      if (ovr < m_min) m_cmin = m_min = ovr;
 
-      Entry_t diff = m_max - Histogram::NBins;
-      m_cnobits = diff.length () - diff.countLeadingZeros ();
+      m_cnobits = m_max.length () - m_max.countLeadingZeros ();
       bin       = 0;
    }
    else
@@ -531,6 +529,9 @@ inline void Histogram::bump (Symbol_t sym)
     cnts        += 1;
     m_bins[bin]  = cnts;
     m_cbins[bin] = cnts;
+
+    // Keep track of the maximum count
+    if (cnts >= m_maxcnt) m_cmaxcnt = m_maxcnt = cnts;
 
    return;
 }
