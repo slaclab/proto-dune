@@ -1,3 +1,48 @@
+// -*-Mode: C;-*-
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  @file     rssi_receiver.cpp
+ *  @brief    Toy RSSI receiver for data from the RCEs
+ *  @verbatim
+ *                               Copyright 2013
+ *                                    by
+ *
+ *                       The Board of Trustees of the
+ *                    Leland Stanford Junior University.
+ *                           All rights reserved.
+ *
+ *  @endverbatim
+ *
+ *  @par Facility:
+ *  util
+ *
+ *  @author
+ *  <russell@slac.stanford.edu>
+ *
+ *  @par Date created:
+ *  <2018/06/05>
+ *
+ * @par Credits:
+ * SLAC
+ *
+\* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *\
+   
+   HISTORY
+   -------
+  
+   DATE       WHO WHAT
+   ---------- --- ---------------------------------------------------------
+   2018.06.05 jjr Added documentation/history header.
+                  Modified the copying/accessing of the data in acceptFrame
+                  to use a faster access.  This allowed the rate to go to
+                  at least 1.7Gbps
+  
+\* ---------------------------------------------------------------------- */
 
 // This must go first in order to get things like PRIx32 defined
 #include <cinttypes>
@@ -546,9 +591,6 @@ void Receiver::
    }
 
 
-   // Iterator to start of buffer
-   rogue::interfaces::stream::Frame::iterator beg = frame->beginRead();
-   rogue::interfaces::stream::Frame::iterator end = frame->endRead();
 
    m_display -= 1;
 
@@ -556,13 +598,33 @@ void Receiver::
    if (m_copy || m_nsdump || m_nedump || m_fd >= 0 || m_display == 0)
    {
       ///std::cout << "Copying nbytes: " << nbytes << std::endl;
-      uint8_t * buff = (uint8_t *)malloc (nbytes);
-      std::copy (beg, end, buff);
+
+
+      // Iterator to start of buffer
+      rogue::interfaces::stream::Frame::iterator iter = frame->beginRead();
+      rogue::interfaces::stream::Frame::iterator  end = frame->endRead();
+
+
+      uint8_t *buff = (uint8_t *)malloc (nbytes);
+      uint8_t  *dst = buff;
+
+
+      //Iterate through contigous buffers
+      while ( iter != end ) {
+         rogue::interfaces::stream::Frame::iterator nxt = iter.endBuffer();
+         auto size = iter.remBuffer ();
+         auto *src = iter.ptr       ();
+         memcpy(dst, src, size);
+         dst += size;
+         iter = nxt;
+      }
+
 
       uint64_t const *header = (uint64_t const *)buff;
       uint64_t const      *d = (uint64_t const *)buff;
       uint64_t const   *data = header + 1;
       size_t           ndata = nbytes / sizeof (uint64_t) - 1;
+
 
       if ((header[0] >> 40) != 0x8b309e)
       {

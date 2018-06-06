@@ -374,7 +374,7 @@ inline size_t RssiIovec::send (int32_t fd) const
       }
       
       // Diagnostic only, generally neutered
-      print (ret);
+      //print (ret);
 
       // Check for success
       if (ret != len)
@@ -393,7 +393,7 @@ inline size_t RssiIovec::send (int32_t fd) const
 
 
       // Diagnostic only, generally neutered
-      print (ret);
+      //print (ret);
 
       if (ret != len) 
       {

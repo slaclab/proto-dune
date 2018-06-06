@@ -2267,7 +2267,7 @@ public:
    HeaderAndOrigin &operator = (HeaderAndOrigin const &src)
    {
       int nbytes = n64 () * sizeof (uint64_t);
-      printf ("Copying nbytes = %d\n", nbytes);
+      ///printf ("Copying nbytes = %d\n", nbytes);
       memcpy (this, &src, nbytes);
       return *this;
    }
@@ -2288,8 +2288,11 @@ public:
    pdd::fragment::tpc::Stream *getStreamRecord () 
    { 
       void *next = getNextAddress ();
+
+      /*
       printf ("HO this = %p   stream = %p  N64 = %4.4" PRIx32 " origin = %4.4" PRIx32 "\n",
               (void *)this, next, n64 (), sizeof (m_origin));
+      */
 
       return reinterpret_cast<pdd::fragment::tpc::Stream *>(next);
    }
@@ -4582,7 +4585,7 @@ void DaqBuffer::txRun ()
    // tdest = 0 for RSSI
    // tdest = 2 for Loopback
    // -----------------------------------
-   TxMsg txMsg (&_txServerAddr, 2);
+   TxMsg txMsg (&_txServerAddr, 0);
 
 
    // ---------------------------
@@ -4606,8 +4609,6 @@ void DaqBuffer::txRun ()
       HeaderAndOrigin *ho = reinterpret_cast<decltype (ho)>
                            (_dataDma._map[hoIndex]);
       *ho = HeaderOrigin;
-
-      //memcpy (ho, &HeaderOrigin, HeaderOrigin.n64 () * sizeof (uint64_t));
 
 
       // ----------------------------------------------------------------------
@@ -4666,22 +4667,6 @@ void DaqBuffer::txRun ()
       trailer->construct (ho->m_header.retrieve ());
       txMsg.increaseLast (sizeof (*trailer));
 
-
-      // !!! KLUDGE !!! DEBUGGING
-      {
-         static int Counter = 0;
-         uint64_t *p = (uint64_t *)ho + 4;
-         for (int idx = 0; idx < 16; idx++)
-         {
-            int frIdx = txMsg.m_rssi_iov[idx].iov_idx;
-            uint64_t t = Counter;
-            t <<= 32;
-            t  |= idx << 16;
-            t  |= frIdx;
-            p[idx] = t;
-         }
-         Counter += 1;
-      }
 
       // -------------------------------------------------
       // Each completed packet consists of 

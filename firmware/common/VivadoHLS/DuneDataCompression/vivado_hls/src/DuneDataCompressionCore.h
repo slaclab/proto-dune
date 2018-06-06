@@ -89,7 +89,7 @@
 /*  PROCESS_K_TYPE must be set to one of the above PROCESS_K_<xxxx> to    */
 /*  select the desired processing mode.                                   */
 /* ---------------------------------------------------------------------- */
-#define PROCESS_K_MODE PROCESS_K_COMPRESS
+#define PROCESS_K_MODE PROCESS_K_DATAFLOW
 /* ====================================================================== */
 
 #include "DuneDataCompressionTypes.h"

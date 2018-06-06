@@ -29,6 +29,13 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2018.06.06  jjr  Release 1.3.0-0
+//                  Added RSSI support.  This has been tested to a moderate
+//                  degree.  Events have integrity and can run in excess of
+//                  40Hz.  Have not tested backpressure.  There are some
+//                  indication that if the receiver goes away when transporting
+//                  via RSSI that all DMAs (including inbound ones (i.e. the
+//                  arriving data stream) stops.
 // 2018.03.26  jjr  Release 1.2.0-0
 //                  Modify TimingMsg to match the V4 firmware
 // 2017.02.06  jjr  Version 1.1.0-0
@@ -347,7 +354,7 @@ inline uint32_t DaqDmaDevice::allocateWait (int32_t fd)
 {
    uint32_t index = dmaGetIndex (fd);
 
-   printf ("Index = %8.8x errno = %d\n", index, errno);
+   ///printf ("Index = %8.8x errno = %d\n", index, errno);
 
 
    // --------------------------------------
@@ -806,7 +813,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01020000;
+      static const uint32_t SoftwareVersion = 0x01030000;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;

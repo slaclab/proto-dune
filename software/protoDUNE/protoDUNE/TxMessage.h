@@ -59,6 +59,7 @@ public:
 /* ---------------------------------------------------------------------- */
 
 
+static void dump (uint64_t const *d, int n) __attribute__ ((unused));
 
 
 /* ---------------------------------------------------------------------- *//*!
@@ -455,9 +456,8 @@ inline size_t TxMessage<NIOVECS>::sendRssi (int fd, size_t txSize)
    terminateRssi ();
    size_t  size  = m_rssi.send (fd);
 
-   dump ((uint64_t const *)m_msg.msg_iov[0].iov_base, 8);
-
-   //printf ("RSSI %8.8zx : %8.8zx\n", size, txSize);
+   ///dump ((uint64_t const *)m_msg.msg_iov[0].iov_base, 8);
+   ///printf ("RSSI %8.8zx : %8.8zx\n", size, txSize);
 
    if (size != txSize)
    {
@@ -531,7 +531,7 @@ static inline bool transmitTcpIp (int fd, const msghdr *msg, int32_t txSize)
       }      
 
 
-      fragment_dump (event);
+      ///fragment_dump (event);
          
       ret = sendmsg (fd, msg, 0);
       if (ret != (int32_t)txSize)

@@ -1,3 +1,49 @@
+// -*-Mode: C;-*-
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  @file     rssi_sink.cpp
+ *  @brief    Primitive RSSI receiver for data from the RCEs.  This is
+ *            a very small modification of Ryan's original implementation.
+ *  @verbatim
+ *                               Copyright 2013
+ *                                    by
+ *
+ *                       The Board of Trustees of the
+ *                    Leland Stanford Junior University.
+ *                           All rights reserved.
+ *
+ *  @endverbatim
+ *
+ *  @par Facility:
+ *  util
+ *
+ *  @author
+ *  <russell@slac.stanford.edu>
+ *
+ *  @par Date created:
+ *  <2018/06/05>
+ *
+ * @par Credits:
+ * SLAC
+ *
+\* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *\
+   
+   HISTORY
+   -------
+  
+   DATE       WHO WHAT
+   ---------- --- ---------------------------------------------------------
+   2018.06.05 jjr Added documentation/history header.
+                  Modified the copying/accessing of the data in acceptFrame
+                  to use a faster access.  This allowed the rate to go to
+                  at least 1.7Gbps
+  
+\* ---------------------------------------------------------------------- */
 
 #include <cinttypes>
 
@@ -116,7 +162,6 @@ void Parameters::echo () const
    {
       std::cout << " receive frames: " << m_nframes  << std::endl;
    }
-
 
 
    if (m_copy)
@@ -247,16 +292,32 @@ class TestSink : public rogue::interfaces::stream::Slave {
       
       //std::cout << "Got:" << rxLast << " bytes" << std::endl;
 
-      // iterator to start of buffer
-      rogue::interfaces::stream::Frame::iterator beg = frame->beginRead();
-      rogue::interfaces::stream::Frame::iterator end = frame->endRead();
       
       // Copy to buffer
       if (copy)
       {
-         std::cout << "Copying nbytes: " << rxLast << std::endl;
-         uint8_t * buff = (uint8_t *)malloc(frame->getPayload());
-         std::copy(beg,end,buff);
+         // std::cout << "Copying nbytes: " << rxLast << std::endl;
+
+         // iterator to start of buffer
+         rogue::interfaces::stream::Frame::iterator iter = frame->beginRead();
+         rogue::interfaces::stream::Frame::iterator  end = frame->endRead  ();
+
+
+         uint8_t  *buff = (uint8_t *)malloc(frame->getPayload());
+         uint8_t   *dst = buff;
+
+
+         //Iterate through contigous buffers
+         while ( iter != end ) {
+            rogue::interfaces::stream::Frame::iterator nxt = iter.endBuffer();
+            auto size = iter.remBuffer ();
+            auto *src = iter.ptr       ();
+            memcpy(dst, src, size);
+            dst += size;
+            iter = nxt;
+         }
+
+
          if (fd >= 0)
          {
             ssize_t nwrote = write (fd, buff, rxLast);

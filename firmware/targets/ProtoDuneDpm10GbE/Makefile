@@ -5,10 +5,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000060
+export PRJ_VERSION = 0x00000061
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/06/05 0x00000061 jjr  Incorporate Axis gen2 with HLS firmware that eliminates header word
 # 2018/05/31 0x00000060 llr  surf update: Seperate cache settings in Axis gen2 DMA
 # 2018/05/30 0x00000059 llr  Switching RSSI from MTU1500 to MTU900 (jumbo) ETH frames
 # 2018/05/24 0x00000058 llr  Adding DMA[0].TDEST[3] loopback path
