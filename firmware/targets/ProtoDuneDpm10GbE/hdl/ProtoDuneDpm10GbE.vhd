@@ -10,6 +10,21 @@
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
 -- Description: 
+--
+-- DMA[0].Inbound = timing message
+-- DMA[0].Outbound = unused
+--
+-- DMA[1] = REG access
+--
+-- DMA[2].DEST[0].Inbound = HLS[0]
+-- DMA[2].DEST[0].Outbound = RSSI
+--
+-- DMA[2].DEST[1].Inbound = HLS[1]
+-- DMA[2].DEST[1].Outbound = Unused
+--
+-- DMA[2].DEST[2].Inbound = Loopback
+-- DMA[2].DEST[2].Outbound = Loopback
+--
 -------------------------------------------------------------------------------
 -- This file is part of 'DUNE Development Firmware'.
 -- It is subject to the license terms in the LICENSE.txt file found in the 

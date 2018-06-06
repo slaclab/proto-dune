@@ -1,9 +1,9 @@
 // -*-Mode: C++;-*-
 
+#if 0 // Deprecated
 
 #ifndef _DUNE_DATA_COMPRESSION_PACKET_H_
 #define _DUNE_DATA_COMPRESSION_PACKET_H_
-
 
 /* ---------------------------------------------------------------------- *//*!
  *
@@ -389,4 +389,4 @@ bool inline Packets::is_last (WibTimestamp_t timestamp)
 /* ---------------------------------------------------------------------- */
 
 #endif
-
+#endif

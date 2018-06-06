@@ -93,7 +93,7 @@ extern void apd_start (APD_dtx      *dtx,
     boff     += (uintptr_t)in & APD_M_IOBUF_ALIGN;
     in        = (uint8_t *)((uintptr_t)in
                          & ~(uintptr_t)APD_M_IOBUF_ALIGN);
-    in       += boff >> APD_K_IOBUF_SHIFT;
+    in       += (boff >> APD_K_IOBUF_SHIFT) << 3;  // Force alignment to buffer width, convert to byte offset
     boff     &= APD_M_IOBUF_MASK;
 
 

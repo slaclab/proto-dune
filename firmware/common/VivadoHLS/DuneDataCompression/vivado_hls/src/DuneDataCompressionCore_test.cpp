@@ -63,15 +63,15 @@
 // the terms contained in the LICENSE.txt file.
 //////////////////////////////////////////////////////////////////////////////
 
+
 #define __STDC_FORMAT_MACROS
 
 #include "DuneDataCompressionCore.h"
 #include "DuneDataCompressionTypes.h"
-#include "DuneDataCompressionPacket.h"
 #include "WibFrame.h"
+#include "AxisIO_test.h"
 
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <fstream>
@@ -79,11 +79,714 @@
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <fcntl.h>
+#include <errno.h>
 
 
 
+/* ---------------------------------------------------------------------- */
+/* Local Prototypes                                                       */
+/* ---------------------------------------------------------------------- */
+static int      open_file (char const           *filename);
+
+static ssize_t  read_adcs (int                          fd,
+                           char const            *filename,
+                           uint16_t                  *adcs,
+                           int                       nadcs);
+
+static int  compress_test (int                          fd,
+                           char const            *filename,
+                           uint32_t               headerId,
+                           uint32_t                version);
+
+static int      copy_test (int                          fd,
+                           char const            *filename,
+                           uint32_t               headerId,
+                           uint32_t                version);
+
+static void configure_hls (Source                     &src,
+                           MyStreamOut              &mAxis,
+                           ModuleIdx_t           moduleIdx,
+                           uint32_t               headerId,
+                           uint32_t                version,
+                           uint64_t              timestamp,
+                           ModuleConfig            &config,
+                           MonitorModule          &monitor);
+
+static int    fill_packet (Source                     &src,
+                           uint32_t               headerId,
+                           uint32_t                version,
+                           uint64_t              timestamp,
+                           uint16_t adcs[PACKET_K_NSAMPLES]
+                                       [MODULE_K_NCHANNELS],
+                           int                    runEnable,
+                           int                        flush);
+
+static void        update (MonitorModule          &monitor,
+                           bool              output_packet);
+
+static bool        differ (MonitorModule const         &s0,
+                           MonitorModule const         &s1);
+
+static int    check_empty (MyStreamOut              &mAxis,
+                           MyStreamIn                 &src);
+
+static void print_monitor (MonitorModule const         &s0,
+                           MonitorModule const         &s1,
+                           int                     ipacket,
+                           int                     isample);
+/* ---------------------------------------------------------------------- */
+
+
+#define NPACKETS 1
+
+#if PROCESS_K_MODE == PROCESS_K_DATAFLOW
+#define MODE MODE_K_COPY
+#else
+#define MODE MODE_K_COMPRESS
+#endif
+
+/* ---------------------------------------------------------------------- *//*!
+  \process Processes all the data from the specified file
+
+  \param[out]   slice  The array of time slices to fill
+  \param [in]     dir  The root directory of the data files
+  \param [in]     run  The run number
+  \param [in]   event  The event number
+  \param [in] channel  The channel to process
+  \param [in]   print  Print flags, all adcs will be printed to the
+                       terminal.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+int main (int argc, char const *argv[])
+{
+
+   uint32_t version  = VERSION_COMPOSE(1, 0, 0, 0);
+   uint32_t headerId = Identifier::identifier (Identifier::FrameType::DATA,
+                                               Identifier:: DataType:: WIB,
+                                               0);
+
+   unsigned int                     run =                       15660;
+   static char const DefaultDirectory[] =       "/u/eb/convery/ForJJ";
+   static char const               *dir =            DefaultDirectory;
+   static const char     FileTemplate[] = "%s/run%u_binary/run%u.bin";
+   char filename[256];
+
+
+   // --------------------------------------
+   // Compose the test file name and open it
+   // --------------------------------------
+   sprintf (filename, FileTemplate, dir, run, run);
+   int fd = open_file (filename);
+
+
+
+   // -----------------------
+   // Set the processing mode
+   // -----------------------
+   int   mode = MODE;
+   int status = (mode == MODE_K_COPY)
+              ?     copy_test (fd, filename, headerId, version)
+              : compress_test (fd, filename, headerId, version);
+
+
+   if (status == 0)
+   {
+      printf ("Passed\n");
+   }
+
+   return 0;
+   return status;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static int copy_test (int               fd,
+                      char const *filename,
+                      uint32_t    headerId,
+                      uint32_t     version)
+{
+   Source                             src;
+   MyStreamOut              mAxis ("Out");
+   ModuleIdx_t              moduleIdx = 1;
+   ModuleConfig                    config;
+   MonitorModule                  monitor;
+   MonitorModule               expMonitor;
+   int                        test_status;
+
+
+   std::cout << "MODE = COPY" << std::endl;
+   uint64_t timestamp = 0xab000000;
+
+   configure_hls (src, mAxis, moduleIdx, headerId, version, timestamp, config, monitor);
+
+   memset (&expMonitor, 0, sizeof (expMonitor));
+   print_monitor (expMonitor, monitor, 0,-1);
+   expMonitor  = monitor;
+
+
+   static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
+   for (int ipacket = 0; ipacket < NPACKETS; ipacket++)
+   {
+      uint32_t summary = 0;
+
+      ssize_t nread = read_adcs (fd, filename, (uint16_t *)adcs, sizeof (adcs)/sizeof (adcs[0][0]));
+      if (nread == 0) break;
+
+
+      int runEnable = 1;
+      int flush     = 0;
+
+
+      // ----------------------------------
+      // Fill a packets worth of Wib frames
+      // -----------------------------------
+      int nbytes = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
+
+      // Process each packet for all time samples
+      for (int isample = 0; isample < PACKET_K_NSAMPLES; isample++)
+      {
+         DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, monitor);
+
+         // --------------------------------------------------
+         // Update monitoring status variables for this frame
+         // Report if they are not as expected or this is the
+         // last frame in the packet
+         // -------------------------------------------------
+         update (expMonitor, isample == (PACKET_K_NSAMPLES -1));
+         if (differ (expMonitor, monitor) || isample == (PACKET_K_NSAMPLES-1))
+         {
+            static int Count = 0;
+            if (Count < 32)
+            {
+               print_monitor (expMonitor, monitor, ipacket, isample);
+            }
+            Count     += 1;
+            expMonitor = monitor;
+         }
+
+         summary |= monitor.read.summary.mask;
+      }
+
+
+      // ------------------------------
+      // Add trailer to the check frame
+      // and check the completed packet
+      // -------------------------------
+      src.add_trailer (version, headerId, summary, nbytes);
+      test_status = MyStreamOut::check (mAxis, src.m_chk, ipacket);
+
+
+      if (test_status)
+      {
+         printf ("Failed\n");
+         break;
+      }
+
+      printf ("NEXT\n");
+   }
+
+
+   // ---------------------------------------------------
+   // If have passed all the tests so far, make sure both
+   // the input and output streams are not empty
+   // ---------------------------------------------------
+   if (test_status == 0)
+   {
+      test_status = check_empty (mAxis, src.m_src);
+   }
+
+   return test_status;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static int compress_test (int               fd,
+                          char const *filename,
+                          uint32_t    headerId,
+                          uint32_t     version)
+{
+   Source                             src;
+   MyStreamOut              mAxis ("Out");
+   ModuleIdx_t              moduleIdx = 1;
+   ModuleConfig                    config;
+   MonitorModule               expMonitor;
+   MonitorModule                  monitor;
+   int                        test_status;
+
+   std::cout << "MODE = COMPRESS" << std::endl;
+   std::cout << "-- BY PASSING CHECKING" << std::endl;
+
+   uint64_t timestamp = 0;
+
+   for (int ipacket = 0; ipacket < NPACKETS; ipacket++)
+   {
+      static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
+      uint32_t summary = 0;
+
+      // -------------------
+      // Read one time slice
+      // -------------------
+      ssize_t nread = read_adcs (fd, filename, (uint16_t *)adcs, sizeof (adcs)/ sizeof (adcs[0][0]));
+      if (nread == 0) break;
+
+
+      int runEnable = 1;
+      int flush     = 0;
+
+
+      // ----------------------------------
+      // Fill a packets worth of Wib frames
+      // -----------------------------------
+      int nbytes = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
+
+
+      // -------------------
+      // Compress the packet
+      // -------------------
+      DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, monitor);
+
+
+
+      // ------------------------------
+      // Add trailer to the check frame
+      // Do the check
+      // ------------------------------
+      src.add_trailer (version, headerId, summary, nbytes);
+      test_status = MyStreamOut::check (mAxis, src.m_chk, ipacket);
+
+
+      // -------------------------
+      // Abort the test on failure
+      // -------------------------
+      if (test_status)
+      {
+         printf ("Failed\n");
+         break;
+      }
+
+      printf ("NEXT\n");
+   }
+
+
+   // ---------------------------------------------------
+   // If have passed all the tests so far, make sure both
+   // the input and output streams are not empty
+   // ---------------------------------------------------
+   if (test_status == 0)
+   {
+      test_status = check_empty (mAxis, src.m_src);
+   }
+
+   return test_status;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Open the test file of ADCs
+ *   \return The file description of the opened file
+ *
+ *   \param[in]  filename  The name of the file to open
+ *
+ *   \par
+ *    An unsuccessful opens terminates the program
+ *
+\* ---------------------------------------------------------------------- */
+static int open_file (char const *filename)
+{
+   int fd = ::open (filename, O_RDONLY);
+   if (fd < 0)
+   {
+      char const *err = strerror (errno);
+
+      fprintf (stderr,
+               "ERROR : Unable to open: %s\n"
+               "Reason: %s\n", filename, err);
+      exit (-1);
+   }
+
+   return fd;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief  Reads the specified number of \a adcs from the file
+ *  \return The number of bytes write or 0 if EOF
+ *
+ *  \param[ in]       fd The file description of the opened file
+ *  \param[ in] filename The file name, used only for reporting
+ *  \param[out]     adcs Filled in with the read ADCs
+ *  \param[ in[    nadcs The number of ADCs to read
+ *
+ *  \par
+ *   Any read errors abort the program.
+ *
+\* ---------------------------------------------------------------------- */
+static ssize_t read_adcs (int               fd,
+                          char const *filename,
+                          uint16_t       *adcs,
+                          int            nadcs)
+{
+   ssize_t nbytes =    nadcs * sizeof (*adcs);
+   ssize_t nread  = ::read (fd, adcs, nbytes);
+
+   if (nread != nbytes)
+   {
+      if (nread < 0)
+      {
+         // Error
+         char const *err = strerror (errno);
+         fprintf (stderr,
+                  "ERROR : error reading : %s\n"
+                  "Reason: %s\n", filename, err);
+         exit (-1);
+      }
+      else
+      {
+         // EOF
+         return 0;
+      }
+   }
+
+
+   return nread;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static void configure_hls (Source            &src,
+                           MyStreamOut     &mAxis,
+                           ModuleIdx_t  moduleIdx,
+                           uint32_t      headerId,
+                           uint32_t       version,
+                           uint64_t     timestamp,
+                           ModuleConfig   &config,
+                           MonitorModule &monitor)
+{
+   // This is suppose to do the configuration
+   config.init  = true;
+   config.mode  = MODE_K_COPY;
+   config.limit = 1 + 30 * PACKET_K_NSAMPLES + 1;
+
+
+   // Add the header to the check stream
+   ///src.add_header (headerId, version);
+   src.fill_runDisableAndFlush_frame (timestamp, 0);
+
+   DuneDataCompressionCore (src.m_src, mAxis, moduleIdx, config, monitor);
+
+
+   // --------------------------------------------------
+   // Drain the check stream
+   // --------------------------------------------------
+   while (!src.m_chk.empty ()) src.m_chk.read ();
+
+
+   // --------------------------------------------------
+   // The output and input streams must be empty
+   // The input frame should have been consumed
+   // The frame is not written when the run is disabled
+   // --------------------------------------------------
+   int status = check_empty (mAxis, src.m_src);
+   if (status)
+   {
+      printf ("Aborting\n");
+      exit (-1);
+   }
+
+   //printf ("Kludge -- quitting after configuration\n");
+   //exit (0);
+
+   config.init = false;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static int fill_packet (Source                                          &src,
+                        uint32_t                                    headerId,
+                        uint32_t                                     version,
+                        uint64_t                                   timestamp,
+                        uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS],
+                        int                                        runEnable,
+                        int                                            flush)
+ {
+
+    // ----------------------------------
+    // Add the header to the check stream
+    // ----------------------------------
+    //src.add_header (headerId, version);
+    //int nbytes       = sizeof (Header);
+
+    int nbytes = 0;
+    for (int isample = 0; isample < PACKET_K_NSAMPLES; isample++)
+    {
+       timestamp += 25;
+
+
+       if (flush | (runEnable == 0))
+       {
+          printf ("Sample[%4u] Flush:%d runEnable:%d\n", isample, flush, runEnable);
+          src.fill_empty_frame (timestamp, runEnable, flush, isample);
+       }
+       else
+       {
+          src.fill_frame (timestamp, adcs[isample], runEnable, flush, isample);
+          nbytes += sizeof (WibFrame);
+       }
+    }
+
+    return nbytes;
+ }
+
+
+/* ---------------------------------------------------------------------- */
+static void update (MonitorModule &status, bool output_packet)
+{
+   status.read.summary.nframes    += 1;
+   status.read.summary.nStates[0] += 1;
+
+   status.write.npromoted += 1;
+   status.write.npackets  += output_packet;
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static bool differ (MonitorModule const &s0,
+                    MonitorModule const &s1)
+{
+   // NOTE: types[0] is not checked.  This is the normal
+   //       frame counter and would cause a difference
+   //        every time.
+   if (s0.common.pattern          != s1.common.pattern         ) return true;
+   if (s0.cfg.m_ncfgs             != s1.cfg.m_ncfgs            ) return true;
+   if (s0.cfg.m_mode              != s1.cfg.m_mode             ) return true;
+   if (s0.read.summary.mask       != 0                         ) return true;
+   if (s0.read.summary.nStates[0] != s1.read.summary.nStates[0]) return true;
+   if (s0.read.summary.nStates[1] != s1.read.summary.nStates[1]) return true;
+   if (s0.read.summary.nStates[2] != s1.read.summary.nStates[2]) return true;
+   if (s0.read.summary.nStates[3] != s1.read.summary.nStates[3]) return true;
+   if (s0.write.npackets          != s1.write.npackets         ) return true;
+
+
+   for (unsigned idx = 0; idx < sizeof (s0.read.errs.nWibErrs) / sizeof (s1.read.errs.nWibErrs[0]); idx++)
+   {
+      if (s0.read.errs.nWibErrs[idx] != s1.read.errs.nWibErrs[idx]) return true;
+   }
+
+   return false;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+
+/* ---------------------------------------------------------------------- */
+static void print_monitor (MonitorModule const &s0,
+                           MonitorModule const &s1,
+                           int             ipacket,
+                           int             isample)
+{
+   printf ("New status at packet.sample: %3u.%4u\n"
+         " Common              .pattern: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         " Cfg                    .mode: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                       .ncfgs: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         " Read                 .status: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                     .nframes: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "     .state [         Normal]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [       Disabled]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [          Flush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [    DisAndFlush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "     .frame [        ErrSofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrSofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrEofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrEofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrEofE]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "     .wib   [       ErrComma]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [   ErrVersionId]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [          ErrId]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrRsvd]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrErrors]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [ErrWibTimestamp]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        Unused6]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        Unused7]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         "    .cd     [     ErrStrErr1]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [     ErrStrErr2]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [       ErrRsvd0]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrChkSum]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrCvtCnt]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [      ErrErrReg]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [       ErrRsvd1]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "            [        ErrHdrs]: %8.8" PRIx32 " -> %8.8" PRIx32 ": %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+
+         " Write             .npromoted: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                    .ndropped: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                    .npackets: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
+         "                      .nbytes: %8.8" PRIx32 " -> %8.8" PRIx32 "\n",
+            ipacket, isample,
+
+            s0.common.pattern,                                   s1.common.pattern,
+            s0.cfg.m_mode,                                       s1.cfg.m_mode,
+            s0.cfg.m_ncfgs,                                      s1.cfg.m_ncfgs,
+
+            s0.read.summary.mask.to_uint (),                     s1.read.summary.mask.to_uint (),
+            s0.read.summary.nframes,                             s1.read.summary.nframes,
+            s0.read[MonitorRead::StateCounter::         Normal], s1.read[MonitorRead::StateCounter::         Normal],
+            s0.read[MonitorRead::StateCounter::    RunDisabled], s1.read[MonitorRead::StateCounter::    RunDisabled],
+            s0.read[MonitorRead::StateCounter::          Flush], s1.read[MonitorRead::StateCounter::          Flush],
+            s0.read[MonitorRead::StateCounter::       DisFlush], s1.read[MonitorRead::StateCounter::       DisFlush],
+
+            s0.read[MonitorRead::FrameCounter::        ErrSofM], s1.read[MonitorRead::FrameCounter::        ErrSofM],
+            s0.read[MonitorRead::FrameCounter::        ErrSofU], s1.read[MonitorRead::FrameCounter::        ErrSofU],
+            s0.read[MonitorRead::FrameCounter::        ErrEofM], s1.read[MonitorRead::FrameCounter::        ErrEofM],
+            s0.read[MonitorRead::FrameCounter::        ErrEofU], s1.read[MonitorRead::FrameCounter::        ErrEofU],
+            s0.read[MonitorRead::FrameCounter::        ErrEofE], s1.read[MonitorRead::FrameCounter::        ErrEofE],
+
+            s0.read[MonitorRead::WibCounter::      ErrWibComma], s1.read[MonitorRead::WibCounter::      ErrWibComma],
+            s0.read[MonitorRead::WibCounter::    ErrWibVersion], s1.read[MonitorRead::WibCounter::    ErrWibVersion],
+            s0.read[MonitorRead::WibCounter::         ErrWibId], s1.read[MonitorRead::WibCounter::         ErrWibId],
+            s0.read[MonitorRead::WibCounter::       ErrWibRsvd], s1.read[MonitorRead::WibCounter::       ErrWibRsvd],
+            s0.read[MonitorRead::WibCounter::     ErrWibErrors], s1.read[MonitorRead::WibCounter::     ErrWibErrors],
+            s0.read[MonitorRead::WibCounter::  ErrWibTimestamp], s1.read[MonitorRead::WibCounter::  ErrWibTimestamp],
+            s0.read[MonitorRead::WibCounter::    ErrWibUnused6], s1.read[MonitorRead::WibCounter::    ErrWibUnused6],
+            s0.read[MonitorRead::WibCounter::    ErrWibUnused7], s1.read[MonitorRead::WibCounter::    ErrWibUnused7],
+
+            s0.read[MonitorRead::WibCounter::    ErrCd0StrErr1], s1.read[MonitorRead::WibCounter::    ErrCd0StrErr1],
+            s0.read[MonitorRead::WibCounter::    ErrCd1StrErr1], s1.read[MonitorRead::WibCounter::    ErrCd1StrErr1],
+
+            s0.read[MonitorRead::WibCounter::    ErrCd0StrErr2], s1.read[MonitorRead::WibCounter::    ErrCd0StrErr2],
+            s0.read[MonitorRead::WibCounter::    ErrCd1StrErr2], s1.read[MonitorRead::WibCounter::    ErrCd1StrErr2],
+
+            s0.read[MonitorRead::WibCounter::      ErrCd0Rsvd0], s1.read[MonitorRead::WibCounter::      ErrCd0Rsvd0],
+            s0.read[MonitorRead::WibCounter::      ErrCd1Rsvd0], s1.read[MonitorRead::WibCounter::      ErrCd1Rsvd0],
+
+            s0.read[MonitorRead::WibCounter::     ErrCd0ChkSum], s1.read[MonitorRead::WibCounter::     ErrCd0ChkSum],
+            s0.read[MonitorRead::WibCounter::     ErrCd1ChkSum], s1.read[MonitorRead::WibCounter::     ErrCd1ChkSum],
+
+            s0.read[MonitorRead::WibCounter::     ErrCd0CvtCnt], s1.read[MonitorRead::WibCounter::     ErrCd0CvtCnt],
+            s0.read[MonitorRead::WibCounter::     ErrCd1CvtCnt], s1.read[MonitorRead::WibCounter::     ErrCd1CvtCnt],
+
+            s0.read[MonitorRead::WibCounter::     ErrCd0ErrReg], s1.read[MonitorRead::WibCounter::     ErrCd0ErrReg],
+            s0.read[MonitorRead::WibCounter::     ErrCd1ErrReg], s1.read[MonitorRead::WibCounter::     ErrCd1ErrReg],
+
+            s0.read[MonitorRead::WibCounter::      ErrCd0Rsvd1], s1.read[MonitorRead::WibCounter::      ErrCd0Rsvd1],
+            s0.read[MonitorRead::WibCounter::      ErrCd1Rsvd1], s1.read[MonitorRead::WibCounter::      ErrCd1Rsvd1],
+
+            s0.read[MonitorRead::WibCounter::       ErrCd0Hdrs], s1.read[MonitorRead::WibCounter::       ErrCd0Hdrs],
+            s0.read[MonitorRead::WibCounter::       ErrCd1Hdrs], s1.read[MonitorRead::WibCounter::       ErrCd1Hdrs],
+
+            s0.write.npromoted,                                  s1.write.npromoted,
+            s0.write.ndropped,                                   s1.write.ndropped,
+            s0.write.npackets,                                   s1.write.npackets,
+            s0.write.nbytes,                                     s1.write.nbytes);
+
+
+      return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static int check_empty (MyStreamOut &mAxis, MyStreamIn &sAxis)
+{
+   int status = 0;
+   if (!mAxis.empty()) { status = -2; std::cout << "mAxis is not empty" << std::endl; }
+   if (!sAxis.empty()) { status = -3; std::cout << "sAxis is not empty" << std::endl; }
+
+   if (status == -2)
+   {
+      int idx = 0;
+      std::cout << "mAxis Data.Dest.  Id.  Keep.Last.Strb.User" << std::endl;
+      while (!mAxis.empty ())
+      {
+         AxisOut_t out = mAxis.read ();
+         std::cout << ' ' << std::hex << std::setw (4) << idx
+                   << std::setw(16) << ' ' << out.data << std::setw (4) << '.'
+                   << out.dest      << '.' << out.id   << '.'
+                   << out.keep      << '.' << out.last << '.' << out.strb << '.' << out.user << std::endl;
+         idx += 1;
+      }
+   }
+
+
+   if (status == -3)
+   {
+      int idx = 0;
+      std::cout << "sAxis Data.Dest.  Id.  Keep.Last.Strb.User" << std::endl;
+      while (!sAxis.empty ())
+      {
+         AxisOut_t out = sAxis.read ();
+         std::cout << ' ' << std::hex << std::setw (4) << idx
+                   << std::setw(16) << ' ' << out.data << std::setw (4) << '.'
+                   << out.dest      << '.' << out.id   << '.'
+                   << out.keep      << '.' << out.last << '.' << out.strb << '.' << out.user << std::endl;
+         idx += 1;
+      }
+   }
+
+
+   return status;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ====================================================================== */
+/* DEPRECATED: Leftover from the waveform extraction testing              */
+#if 0
+/* ---------------------------------------------------------------------- */
 #define CHANNELS_IN_FILE 256
 
+/* ---------------------------------------------------------------------- *//*!
+
+   \brief Transposes a ntimes x nchannels array
+
+   \param[in]   samples  The transposed array;
+   \param[in]      adcs  The source array
+   \param[in]    ntimes  The number of rows in \a adcs
+   \param[in] nchannels  The number of columns in \a adcs
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static void  transpose (uint16_t       *samples,
+                        uint16_t const    *adcs,
+                        unsigned int     ntimes,
+                        unsigned int  nchannels)
+{
+   // Advance the output sample column for each new time
+   for (unsigned int itimes = 0; itimes < ntimes; itimes++, samples++)
+   {
+      for (unsigned int ichn = 0; ichn < nchannels; ichn++)
+      {
+         // Page down to the correct row
+         samples[ntimes * ichn] = *adcs++;
+      }
+   }
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
 /* ---------------------------------------------------------------------- *//*!
  *
  *  \struct Timesample
@@ -285,12 +988,8 @@ inline Timesample const *DataStream::get ()
 /* ---------------------------------------------------------------------- */
 
 
-static inline void fill_frame (AxisIn                             &axis,
-                               uint64_t                            nova,
-                               uint16_t  const adcs[MODULE_K_NCHANNELS]);
 
 
-#if 0
 int main (int argc, char *const argv[])
 {
 #  define NSLICES 4
@@ -299,7 +998,7 @@ int main (int argc, char *const argv[])
    AxisOut                          mAxis;
    ModuleIdx_t              moduleIdx = 3;
    ModuleConfig                    config;
-   ModuleStatus                    status;
+   MonitorModule                    status;
 
    static Waveform wfs[1] = { { 100, 110, 0x210 } };
 
@@ -309,7 +1008,7 @@ int main (int argc, char *const argv[])
    sAxis[0].data  = 0;
 
    // Create NSLICES of fake data
-   DataStream ds (NSLICES*1024, fill_signal, &signal);
+   DataStream ds (NSLICES * PACKET_K_NSAMPLES, fill_signal, &signal);
 
 
    // This is suppose to do the configuration
@@ -329,8 +1028,8 @@ int main (int argc, char *const argv[])
    {
       printf ("Slice = %d\n", islice);
 
-      // Process each slice of 1024 time samples
-      for (int itime = 0; itime < NOVA_K_SCALE * 1024; itime += NOVA_K_SCALE)
+      // Process each slice of the time samples
+      for (int itime = 0; itime < NOVA_K_SCALE * PACKET_K_NSAMPLES; itime += NOVA_K_SCALE)
       {
          bool       output;
          Timesample const *sample = ds.get ();
@@ -342,7 +1041,7 @@ int main (int argc, char *const argv[])
          if (output)
          {
             //write_packet   (fd, mAxis);
-            //print_status   (status);
+            //print_monitor  (monitor);
             //print_packet   (mAxis);
             //SIMULATION (print_internal (pframe, beg, end);)
          }
@@ -350,822 +1049,10 @@ int main (int argc, char *const argv[])
 
       pidx ^= 1;
    }
-   
+
    puts ("Success: Well let's not be to hasty, not ready for this yet");
    return 0;
 }
 /* ---------------------------------------------------------------------- */
 #endif
-
-
-class MyStreamIn : public AxisIn
-{
-public:
-   MyStreamIn () :                 AxisIn ("input stream") { return; }
-   MyStreamIn (const char *name) : AxisIn (name)           { return; }
-  ~MyStreamIn ()         { puts ("Deleting input stream"); return; }
-};
-
-class MyStreamOut : public AxisOut
-{
-public:
-   MyStreamOut () :                 AxisIn ("output stream") { return; }
-   MyStreamOut (const char *name) : AxisIn (name)            { return; }
-  ~MyStreamOut ()           { puts ("Deleting output stream"); return; }
-};
-
-
-class Source
-{
-public:
-   Source ();
-
-   void                    add_header (uint32_t id, uint32_t version);
-   void                    add_trailer(uint32_t id, int       nbytes);
-   void                    fill_frame (uint64_t                      timestamp,
-                                       uint16_t  const adcs[MODULE_K_NCHANNELS],
-                                       int                           runEnable,
-                                       int                               flush);
-   void              fill_dummy_frame (int     first,
-                                       int     flush);
-   void              fill_empty_frame (int  runEnable,
-                                       int      flush);
-   void         fill_runDisable_frame ();
-   void              fill_flush_frame ();
-   void fill_runDisableAndFlush_frame ();
-   void                        commit (uint64_t    w,
-                                       int      user,
-                                       int      last);
-   static void                 commit (MyStreamIn  &stream,
-                                       uint64_t          w,
-                                       int            user,
-                                       int            last);
-   static void                 commit (MyStreamOut &stream,
-                                       uint64_t          w,
-                                       int            user,
-                                       int            last);
-
-
-public:
-   MyStreamIn  m_src;  /*!< The stream used by the HLS module    */
-   MyStreamOut m_chk;  /*!< The stream used to check the results */
-};
-
-
-Source::Source () :
-      m_src ("In"),
-      m_chk ("Check")
-{
-   return;
-}
-
-inline void Source::commit (MyStreamIn &stream, uint64_t w, int user, int last)
-{
-   AxisIn_t in;
-   in.data = w;
-   in.keep = 0xff;
-   in.strb = 0;
-   in.user = user;
-   in.last = last;
-   in.id   = 0;
-   in.dest = 0;
-
-   stream.write (in);
-}
-
-
-inline void Source::commit (MyStreamOut &stream, uint64_t w, int user, int last)
-{
-   AxisIn_t out;
-   out.data = w;
-   out.keep = 0xff;
-   out.strb = 0;
-   out.user = user;
-   out.last = last;
-   out.id   = 0;
-   out.dest = 0;
-
-   if (user)
-   {
-      printf ("Setting User = %d", user);
-   }
-
-   stream.write (out);
-}
-
-
-
-inline void Source::commit (uint64_t    w,
-                            int      user,
-                            int      last)
-{
-   AxisIn_t in;
-   in.data = w;
-   in.keep = 0xff;
-   in.strb = 0;
-   in.user = user;
-   in.last = last;
-   in.id   = 0;
-   in.dest = 0;
-
-   m_src.write (in);
-
-   // WIB Frames are not delimited on the check/output stream
-   in.user = 0;
-   in.last = 0;
-   m_chk.write (in);
-
-   return;
-}
-
-void Source::add_header (uint32_t id, uint32_t version)
-{
-   uint64_t header  = Header::header (id, version);
-
-   commit (m_chk, header, (int)AxisUserFirst::Sof, 0);
-
-   return;
-}
-
-
-// Add the trailer to the check stream
-void Source::add_trailer (uint32_t id, int nbytes)
-{
-   uint64_t tlr = Trailer::trailer (id | nbytes + sizeof (tlr));
-   commit (m_chk, tlr, 0, (int)AxisLast::Eof);
-   return;
-}
-
-
-void Source::fill_dummy_frame (int     first,
-                               int     flush)
-{
-   int     iaxis = 0;
-   int      last = (int)AxisLast::Eof;
-   uint16_t data = 0xfff;
-
-
-   uint16_t adcs[MODULE_K_NCHANNELS];
-
-   for (int idx = 0; idx < MODULE_K_NCHANNELS; idx++)
-   {
-      adcs[idx] = 0xf00 | idx;
-   }
-
-   fill_frame (0, adcs, 0, flush);
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief Writes a dummy WIB frame to the AXI input stream when doing
- *         a run disable.
- *                                                                        */
-/* ---------------------------------------------------------------------- */
-inline void Source::fill_runDisable_frame ()
-{
-   int first = (int)AxisUserFirst::Sof;
-   int flush = 0;
-   fill_dummy_frame (first, flush);
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief Writes a dummy WIB frame to the AXI input stream when doing
- *         a frame flush
- *                                                                                 */
-/* ---------------------------------------------------------------------- */
-inline void Source::fill_flush_frame ()
-{
-   int first =  (int)AxisUserFirst::Sof
-             |  (int)AxisUserFirst::RunEnable;
-   int flush = (int)AxisUserLast::Flush;
-
-   fill_dummy_frame (first, flush);
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief Writes a dummy WIB frame to the AXI input stream when doing
- *         a run disable and flush
- *                                                                        */
-/* ---------------------------------------------------------------------- */
-inline void Source::fill_runDisableAndFlush_frame ()
-{
-   int first = (int)AxisUserFirst::Sof;
-   int flush = (int)AxisUserLast::Flush;
-
-   fill_dummy_frame (first, flush);
-}
-/* ---------------------------------------------------------------------- */
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief Writes an empty WIB frame to the AXI input stream
- *
- *  \param[ in] runEnable   The run enable flag, if 0, data is pitched
- *  \param[ in]     flush   Flush flag
- *                                                                        */
-/* ---------------------------------------------------------------------- */
-inline void Source::fill_empty_frame (int  runEnable,
-                                      int      flush)
-{
-   int first = (int)AxisUserFirst::Sof
-             | (runEnable ? (int)AxisUserFirst::RunEnable : 0);
-   flush     = flush ? (int)AxisUserLast::Flush : 0;
-
-   fill_dummy_frame (first, flush);
-}
-/* ---------------------------------------------------------------------- */
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \brief Writes the data to the AXI input stream
- *
- *  \param[out]      axis   The target AXI stream
- *  \param[ount]    xaxis   Duplicate copy of the target AXI stream
- *                          used in checking the output
- *  \param[ in]      nova   The nova timestamp + status bits
- *  \param[ in]       adc   The ADC value
- *  \param[ in] runEnable   The run enable flag, if 0, data is pitched
- *  \param[ in]     flush   Flush flag
- *                                                                        */
-/* ---------------------------------------------------------------------- */
-void Source::fill_frame (uint64_t                      timestamp,
-                         uint16_t  const adcs[MODULE_K_NCHANNELS],
-                         int                           runEnable,
-                         int                               flush)
-{
-   static const WibFrame::Crate Crate (1);
-   static const WibFrame::Slot  Slot  (2);
-   static const WibFrame::Fiber Fiber (3);
-
-   static const WibFrame::Id id = WibFrame::id (Crate, Slot, Fiber);
-   int iaxis = 0;
-
-   int first =              (int)AxisUserFirst::Sof
-             | (runEnable ? (int)AxisUserFirst::RunEnable : 0);
-
-   int last  = 0;
-
-   flush  = flush ? (int)AxisUserLast::Flush : 0;
-
-   if (flush) printf ("Nonzero flush = %d\n", flush);
-
-   WibFrame::Rsvd    rsvd0 = 0;
-   WibFrame::ErrWord error = 0;
-
-   // Set the first and runEnable flags = 3
-   uint64_t w0 = WibFrame::w0 (WibFrame::K28_5, id, rsvd0, error);
-   commit (m_src, w0, first, 0);
-   commit (m_chk, w0, 0,     0);
-
-
-   // 125/2 = 64.5
-   uint64_t w1 = WibFrame::w1 (timestamp);
-   commit (w1, 0, 0);
-
-   WibFrame::ColdData::ConvertCount cvt_cnt = timestamp/500;
-
-
-   uint16_t const *in = (uint16_t const *)adcs;
-   uint64_t  sdat  =  0;
-   int       shift =  0;
-   int        left = 64;
-   int        user =  0;
-
-   for (int icolddata = 0; icolddata < 2; icolddata++)
-   {
-      WibFrame::ColdData::ErrWord      err (0);
-      WibFrame::ColdData::ChecksumWord csA (0);
-      WibFrame::ColdData::ChecksumWord csB (0);
-      uint64_t s0 = WibFrame::ColdData::s0 (0, 0, 0, timestamp);
-      commit (s0, 0, 0);
-
-
-      WibFrame::ColdData::ErrReg errReg (0);
-      WibFrame::ColdData::Hdrs     hdrs (0);
-      uint64_t s1 = WibFrame::ColdData::s1 (errReg, hdrs);
-      commit (s1, 0, 0);
-
-
-      int shift =  0;
-      int left  = 64;
-      for (int iadc = 0; iadc < 64; iadc++)
-      {
-         uint64_t adc = (uint64_t)*in++;
-
-         sdat  |= adc << shift;
-         //std::cout << "Adc = " << std::setw (3) << std::hex << adc
-         //          << " sdat = " << std::setw(16) << std::hex << sdat
-         //          << std::endl;
-         if (left <= 12)
-         {
-            /// If on the last word...
-            ///if (icolddata == 1 && iadc == 63) { user = flush;  last = (int)AxisLast::Eof; }
-            ///if (user) printf ("Non-zero user = %d (last = %d)\n", user, last);
-            commit (sdat, user, last);
-
-            std::cout << "WibIdx:" << std::setw (2) << iaxis
-                      << "  "   << std::setw(16) << std::hex << sdat << std::endl;
-
-            sdat   = adc >> left;
-            shift  = 12 - left;
-            left   = 64 - shift;
-            iaxis += 1;
-         }
-         else
-         {
-            sdat  |= adc << shift;
-            shift += 12;
-            left  -= 12;
-         }
-      }
-   }
-
-
-   /*
-   for (int idx = 0; idx < iaxis; idx++)
-   {
-      std::cout << "Idx:" << std::setw (2) << idx
-                << "  "   << std::setw(16) << std::hex << axis[idx].data.VAL
-                << std::endl;
-   }
-   */
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-#include <string.h>
-#include <errno.h>
-static void  transpose (uint16_t       *samples,
-                        uint16_t const    *adcs,
-                        unsigned int     ntimes,
-                        unsigned int  nchannels);
-
-static void  print (AxisOut &mAxis);
-
-static bool differ (ModuleStatus const &s0,
-                    ModuleStatus const &s1)
-{
-   // NOTE: types[0] is not checked.  This is the normal
-   //       frame counter and would cause a difference
-   //        every time.
-   if (s0.common.pattern != s1.common.pattern) return true;
-   if (s0.cfg.ncfgs      != s1.cfg.ncfgs     ) return true;
-   if (s0.cfg.mode       != s1.cfg.mode      ) return true;
-   if (s0.read.ntypes[1] != s1.read.ntypes[1]) return true;
-   if (s0.read.ntypes[2] != s1.read.ntypes[2]) return true;
-   if (s0.read.ntypes[3] != s1.read.ntypes[3]) return true;
-   if (s0.write.nwrote   != s1.write.nwrote  ) return true;
-
-
-   return false;
-}
-
-static void print_status (ModuleStatus const &s0,
-                          ModuleStatus const &s1,
-                          int            isample)
-{
-   printf ("New status at sample   : %6u\n"
-         "          C ommon.pattern: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                 Cfg.mode: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                   .ncfgs: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         " Read.ntypes[     Normal]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[   Disabled]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[      Flush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[DisAndFlush]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrSofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrSofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrEofM]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrEofU]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[    ErrEofE]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[   ErrK28_5]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "     .ntypes[     ErrSeq]: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "          Write.npromoted: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                .ndropped: %8.8" PRIx32 " -> %8.8" PRIx32 "\n"
-         "                  .nwrote: %8.8" PRIx32 " -> %8.8" PRIx32 "\n",
-            isample,
-            s0.common.pattern, s1.common.pattern,
-            s0.cfg.mode,       s1.cfg.mode,
-            s0.cfg.ncfgs,      s1.cfg.ncfgs,
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::     Normal)], s1.read.ntypes[static_cast<int>(StatusRead::Type::     Normal)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::RunDisabled)], s1.read.ntypes[static_cast<int>(StatusRead::Type::RunDisabled)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::      Flush)], s1.read.ntypes[static_cast<int>(StatusRead::Type::      Flush)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::   DisFlush)], s1.read.ntypes[static_cast<int>(StatusRead::Type::   DisFlush)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofM)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofM)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofU)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrSofU)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofM)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofM)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofU)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofU)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofE)], s1.read.ntypes[static_cast<int>(StatusRead::Type::    ErrEofE)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::   ErrK28_5)], s1.read.ntypes[static_cast<int>(StatusRead::Type::   ErrK28_5)],
-            s0.read.ntypes[static_cast<int>(StatusRead::Type::     ErrSeq)], s1.read.ntypes[static_cast<int>(StatusRead::Type::     ErrSeq)],
-            s0.write.npromoted,s1.write.npromoted,
-            s0.write.ndropped, s1.write.ndropped,
-            s0.write.nwrote,   s1.write.nwrote);
-
-
-      return;
-}
-
-
-static int check (MyStreamOut             &mAxis,
-                  MyStreamOut             &sAxis,
-                 ModuleStatus       &last_status,
-                 ModuleStatus            &status,
-                 int                     isample);
-
-/* ---------------------------------------------------------------------- *//*!
-  \process Processes all the data from the specified file
-
-  \param[out]   slice  The array of time slices to fill
-  \param [in]     dir  The root directory of the data files
-  \param [in]     run  The run number
-  \param [in]   event  The event number
-  \param [in] channel  The channel to process
-  \param [in]   print  Print flags, all adcs will be printed to the
-                       terminal.
-                                                                          */
-/* ---------------------------------------------------------------------- */
-int main (int argc, char const *argv[])
-{
-#  define NSLICES 2
-
-    Source                             src;
-    MyStreamOut              mAxis ("Out");
-    ModuleIdx_t              moduleIdx = 1;
-    ModuleConfig                    config;
-    ModuleStatus                    status;
-    ModuleStatus               last_status;
-
-
-   unsigned int                     run =                       15660;
-   static char const DefaultDirectory[] =       "/u/eb/convery/ForJJ";
-   static char const               *dir =            DefaultDirectory;
-   static const char     FileTemplate[] = "%s/run%u_binary/run%u.bin";
-   char filename[256];
-
-   sprintf (filename, FileTemplate, dir, run, run);
-
-
-   uint64_t timestamp = 0;
-
-   // This is suppose to do the configuration
-   config.init  = true;
-   config.mode  = MODE_K_COPY;
-   config.limit = 1 + 30 * 1024 + 1;
-   memset (&last_status, 0, sizeof (last_status));
-   src.fill_runDisableAndFlush_frame ();
-   DuneDataCompressionCore (src.m_src, mAxis, moduleIdx, config, status);
-
-   // Drain the check stream
-   while (!src.m_chk.empty ()) src.m_chk.read ();
-
-   print_status (last_status, status, -1);
-   last_status = status;
-   config.init = false;
-
-   ////return 0;  //////   !!! KLUDGE !!!
-
-   uint32_t version = 1;
-   uint32_t hdr_id  = Identifier::identifier (Identifier::FrameType::DATA,
-                                              Identifier::DataType::WIB,
-                                              0);
-
-   // ------------------
-   // Open the test file
-   // ------------------
-   int fd = ::open (filename, O_RDONLY);
-   if (fd < 0)
-   {
-      char const *err = strerror (errno);
-
-      fprintf (stderr,
-               "ERROR : Unable to open: %s\n"
-               "Reason: %s\n", filename, err);
-      exit (-1);
-   }
-
-
-   uint16_t adcs[1024][128];
-   unsigned int    ntimes = sizeof (adcs)    / sizeof (adcs[0]);
-   unsigned int nchannels = sizeof (adcs[0]) / sizeof (adcs[0][0]);
-   for (int its = 0; its < NSLICES; its++)
-   {
-      // -------------------
-      // Read one time slice
-      // -------------------
-      ssize_t nread = ::read (fd, adcs, sizeof (adcs));
-      if (nread != sizeof (adcs))
-      {
-         if (nread < 0)
-         {
-            // Error
-            char const *err = strerror (errno);
-            fprintf (stderr,
-                     "ERROR : error reading : %s\n"
-                     "Reason: %s\n", filename, err);
-            exit (-1);
-         }
-         else
-         {
-            // ---
-            // EOF
-            // ---
-            break;
-         }
-      }
-
-      int runEnable = 1;
-      int flush     = 0;
-      runEnable     = 1;
-
-      // Add the header to the check stream
-      src.add_header (hdr_id, version);
-
-      int nbytes = sizeof (Header);
-
-      // Process each slice of 1024 time samples
-      for (int isample = 0; isample < 1024; isample++)
-      {
-         ///flush     = (isample == 32) || (isample == 1023);
-         ///runEnable = (isample != 64);
-
-         if (flush | (runEnable == 0))
-         {
-            printf ("Sample[%4u] Flush:%d runEnable:%d\n", isample, flush, runEnable);
-            src.fill_empty_frame (flush, runEnable);
-         }
-         else
-         {
-            src.fill_frame (timestamp, adcs[isample], runEnable, flush);
-            nbytes += sizeof (WibFrame);
-         }
-
-         DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, status);
-
-         if (differ (last_status, status))
-         {
-            print_status (last_status, status, isample);
-            last_status = status;
-         }
-
-         timestamp += 500;
-      }
-
-      // Add trailer to the check frame
-      src.add_trailer (hdr_id, nbytes);
-      check (mAxis, src.m_chk, last_status, status, its * 1024);
-
-
-      //write_packet   (fd, mAxis);
-      //print_status   (status);
-      //print_packet   (mAxis);
-      //SIMULATION (print_internal (pframe, beg, end);)
-
-      printf ("NEXT\n");
-   }
-
-   if (!    mAxis.empty())  std::cout << "mAxis is not empty" << std::endl;
-   if (!src.m_src.empty())  std::cout << "sAxis is not empty" << std::endl;
-
-   return 0;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *   \brief  Check that the output stream matches the input stream
- *   \return == 0, okay
- *   \return != 0, failure
- *
- *   \param[in]   mAxis   The output stream
- *   \param[in]   sAxis   The source input stream
- *
-\* ---------------------------------------------------------------------- */
-static int check (MyStreamOut             &mAxis,
-                  MyStreamOut             &sAxis,
-                 ModuleStatus       &last_status,
-                 ModuleStatus            &status,
-                 int                     isample)
-{
-   int idx = 0;
-
-   while (1)
-   {
-      bool dst_empty = mAxis.empty ();
-      bool src_empty = sAxis.empty ();
-
-
-      if (!dst_empty && !src_empty)
-      {
-         AxisOut_t  dst = mAxis.read  ();
-         AxisIn_t   src = sAxis.read  ();
-
-         int error = dst.data != src.data;
-
-         if (error)
-         {
-            std::cout << std::dec << std::setw ( 5) << "Eror: Data @" << idx
-                      << std::dec << std::setw ( 2) << " User: " << dst.user
-                                                    << " Last: " << dst.last
-                      << std::hex << std::setw ( 4) << " Keep: " << dst.keep
-                      << std::hex << std::setw (16) << " Data: " << dst.data
-                      << std::endl;
-         }
-
-         // Bit 1 of the user field must be set on the first word
-         if ( (idx == 0) && (((dst.user & 2) == 0) || ((src.user & 2) == 0)) )
-         {
-            std::cout << std::dec << std::setw ( 5) << "Eror: User 1 bit clear @" << idx
-                      << std::dec << std::setw ( 2) << " User: " << dst.user
-                                                    << " Last: " << dst.last
-                      << std::hex << std::setw ( 4) << " Keep: " << dst.keep
-                      << std::hex << std::setw (16) << " Data: " << dst.data
-                      << std::endl;
-            return  -1;
-         }
-
-         // Bit 1 of the user field must be clear all but the first word
-         if ( (idx != 0) && ( (dst.user & 2) || (src.user & 2)) )
-         {
-            std::cout << std::dec << std::setw ( 5) << "Eror: User 1 bit set @" << idx
-                      << std::dec << std::setw ( 2) << " User: " << dst.user
-                                                    << " Last: " << dst.last
-                      << std::hex << std::setw ( 4) << " Keep: " << dst.keep
-                      << std::hex << std::setw (16) << " Data: " << dst.data
-                      << std::endl;
-            return -1;
-         }
-
-         if (dst.last & (int)AxisLast::Eof)
-         {
-            if (src.last & (int)AxisLast::Eof)
-            {
-               // Check that both are now empty
-               dst_empty = mAxis.empty ();
-               src_empty = sAxis.empty ();
-               if (dst_empty && src_empty)
-               {
-                  // All is well
-                  return 0;
-               }
-               else if (dst_empty)
-               {
-                  std::cout << "Eror: destination empty, but source not @ "
-                            << std::dec << std::setw (5) << idx << std::endl;
-                  return -1;
-               }
-               else
-               {
-                  std::cout << "Eror: source empty, but destination not @ "
-                                << std::dec << std::setw (5) << idx << std::endl;
-                  return -1;
-               }
-            }
-         }
-      }
-      else if (dst_empty || src_empty)
-      {
-         // This should not happen, dst.user or dst.last should signal the end
-         std::cout << "Eror:Premature empty: dst:src" << dst_empty << ':' << src_empty
-                   << std::endl;
-         break;
-      }
-
-      idx += 1;
-
-   }
-
-   return 0;
-}
-/* ---------------------------------------------------------------------- */
-
-
-static void print (AxisOut &mAxis)
-{
-   std::cout << "OUTPUT DATA\n";
-   int frame = 0;
-   int odx   = 0;
-
-   {
-      AxisOut_t out = mAxis.read ();
-      uint64_t data = out.data;
-      int      user = out.user;
-      int      last = out.last;
-      odx += 1;
-      std::cout << "Hdr: " << std::setw(16) << std::hex << data
-                << "user:" << std::setw (4) << std::hex << user
-                << "last:" << std::setw (4) << std::hex << last << std::endl;
-   }
-
-
-   while (1)
-   {
-      // There are 30 64-bit words in a WIB frame
-      for (int widx = 0; widx < 30; widx++)
-      {
-         if ((widx % 4) == 0) std::cout << std::setw (5) << std::hex << odx << ':';
-
-         AxisOut_t out = mAxis.read ();
-         uint64_t data = out.data;
-         int      user = out.user;
-         int      last = out.last;
-
-         // Check if this is the last word
-         if (last)
-         {
-             if ((widx % 4) == 3) std::cout << std::endl;
-
-             odx += 1;
-             std::cout << "Tlr: " << std::setw(16) << std::hex << data
-                          << "user:" << std::setw (4) << std::hex << user
-                          << "last:" << std::setw (4) << std::hex << last << std::endl;
-
-             goto EXIT;
-         }
-         else if (user != 0)
-         {
-            if ((widx % 4) == 3) std::cout << std::endl;
-
-            std::cout << "Error: " << std::setw(16) << std::hex << data
-                             << "user:" << std::setw (4) << std::hex << user
-                             << "last:" << std::setw (4) << std::hex << last << std::endl;
-
-         }
-         else
-         {
-            std::cout << ' ' << std::setw (16) << std::hex << data;
-         }
-
-         if ((widx % 4) == 3) std::cout << std::endl;
-
-         odx += 1;
-      }
-
-
-      std::cout << " Frame: " << std::setw(4) << std::hex << frame << std::endl;
-      frame += 1;
-      std::cout << std::endl;
-      if (odx > 1 + 30*1024 + 1)
-      {
-         std::cout << "Overrun\n";
-         break;
-      }
-   }
-
-
-   EXIT:
-
-
-   return;
-}
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-   \brief Transposes a ntimes x nchannels array
-
-   \param[in]   samples  The transposed array;
-   \param[in]      adcs  The source array
-   \param[in]    ntimes  The number of rows in \a adcs
-   \param[in] nchannels  The number of columns in \a adcs
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static void  transpose (uint16_t       *samples,
-                        uint16_t const    *adcs,
-                        unsigned int     ntimes,
-                        unsigned int  nchannels)
-{
-   // Advance the output sample column for each new time
-   for (unsigned int itimes = 0; itimes < ntimes; itimes++, samples++)
-   {
-      for (unsigned int ichn = 0; ichn < nchannels; ichn++)
-      {
-         // Page down to the correct row
-         samples[ntimes * ichn] = *adcs++;
-      }
-   }
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
 

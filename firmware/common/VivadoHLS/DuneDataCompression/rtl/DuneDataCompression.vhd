@@ -2,7 +2,7 @@
 -- File       : DuneDataCompression.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-05-02
--- Last update: 2017-04-18
+-- Last update: 2018-05-04
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -46,11 +46,14 @@ end DuneDataCompression;
 
 architecture mapping of DuneDataCompression is
 
+   -- 2018/05/04 jjr -- Increased to 10.  To save LUTs, did not pack the monitor
+                     -- variables.  This increased the address space, although
+                     -- more than expected. This increase should be explored.
    -- 2017/04/18 jjr -- Back to 8
    -- 2017/01/06 llr -- Decreased back to 7 (not sure if I have the most up-to-date version of JJ's code or if he forgot to SVN commit this file with his other HLS code)
    -- 2016/11/29 jjr -- Increased back to 8 after adding some new stuff
    -- 2016/10/18 jjr -- Reduced after eliminating the channel-by-channel status
-   constant ADDR_WIDTH_C : natural := 8;
+   constant ADDR_WIDTH_C : natural := 10;
 
    component DuneDataCompressionCore
       port (

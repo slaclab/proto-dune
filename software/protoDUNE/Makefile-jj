@@ -272,17 +272,57 @@ else
 # host targets
 # -----------------------------------------------------------------
 
-tcp_receiver_SRCDIR     := $(PRJROOT)/util
-tcp_receiver_DEPDIR     := $(DEPROOT)/util
-tcp_receiver_OBJDIR     := $(OBJROOT)/util
+# -- Since these include -I, must use them with the CPPFLAGS
+python_includes           := ${shell python3-config --includes}
 
-tcp_receiver_CSRCFILES  := $(tcp_receiver_SRCDIR)/tcp_receiver.c
-tcp_receiver_INCPATHS   := $(tcp_receiver_SRCDIR)
-tcp_receiver_ALIAS      := tcp_receiver
+tcp_receiver_SRCDIR       := $(PRJROOT)/util
+tcp_receiver_DEPDIR       := $(DEPROOT)/util
+tcp_receiver_OBJDIR       := $(OBJROOT)/util
 
-tcp_receiver_EXE        := $(BINDIR)/tcp_receiver
-EXECUTABLES             += tcp_receiver
+tcp_receiver_CSRCFILES    := $(tcp_receiver_SRCDIR)/tcp_receiver.c
+tcp_receiver_INCPATHS     := $(tcp_receiver_SRCDIR)
+tcp_receiver_ALIAS        := tcp_receiver
 
+tcp_receiver_EXE          := $(BINDIR)/tcp_receiver
+EXECUTABLES               += tcp_receiver
+
+
+# -------------------------------------------------------
+# rssi_sink
+# Basic RSSI reader - it is deliberately kept very simple
+# -------------------------------------------------------  
+rssi_sink_SRCDIR           := $(PRJROOT)/util
+rssi_sink_DEPDIR           := $(DEPROOT)/util
+rssi_sink_OBJDIR           := $(OBJROOT)/util
+
+rssi_sink_CXXSRCFILES      := $(rssi_receiver_SRCDIR)/rssi_sink.cpp
+rssi_sink_INCPATHS         := $(rssi_receiver_SRCDIR) \
+                              ${ROGUE_DIR}/include    \
+                              ${BOOST_PATH}/include
+rssi_sink_CPPFLAGS         := ${python_includes}
+
+rssi_sink_LDLIBS           := ${ROGUE_DIR}/lib/librogue-core.so
+rssi_sink_ALIAS            := rssi_sink
+
+rssi_sink_EXE              := $(BINDIR)/rssi_sink
+EXECUTABLES                += rssi_sink
+
+
+rssi_receiver_SRCDIR       := $(PRJROOT)/util
+rssi_receiver_DEPDIR       := $(DEPROOT)/util
+rssi_receiver_OBJDIR       := $(OBJROOT)/util
+
+rssi_receiver_CXXSRCFILES  := $(rssi_receiver_SRCDIR)/rssi_receiver.cpp
+rssi_receiver_INCPATHS     := $(rssi_receiver_SRCDIR) \
+                              ${ROGUE_DIR}/include    \
+                              ${BOOST_PATH}/include
+rssi_receiver_CPPFLAGS     := ${python_includes}
+
+rssi_receiver_LDLIBS       := ${ROGUE_DIR}/lib/librogue-core.so
+rssi_receiver_ALIAS        := rssi_receiver
+
+rssi_receiver_EXE          := $(BINDIR)/rssi_receiver
+EXECUTABLES                += rssi_receiver
 
 # -----------------------------------------------------------------
 

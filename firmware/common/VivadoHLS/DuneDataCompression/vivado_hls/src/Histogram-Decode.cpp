@@ -1,6 +1,7 @@
 #include "DuneDataCompressionHistogram.h"
-#include "BitStream64.h"
+#include "BFU.h"
 
+#define HIST_DECODE_CHECK 1
 #if !defined (HIST_DECODE_CHECK) || defined (__SYNTHESIS__)
 #undef HIST_DECODE_CHECK 0
 #endif
@@ -8,19 +9,43 @@
 
 
 #if HIST_DECODE_CHECK
+
+
+static bool hist_check (int                                        ihist,
+                        BFU                                         &bfu,
+                        uint64_t  const                             *buf,
+                        int                                        ebits,
+                        Histogram::Entry_t const ebins[Histogram::NBins],
+                        int                                       efirst,
+                        int                                      enovflw);
+
+static bool hist_check (int                                        ihist,
+                        BitStream64                                &bs64,
+                        int                                        ebits,
+                        Histogram::Entry_t const ebins[Histogram::NBins],
+                        int                                       efirst,
+                        int                                      enovflw);
+
 static int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
                          uint16_t           const dbins[Histogram::NBins],
                          int                                        ebits,
-                         int                                        dbits);
+                         int                                        dbits,
+                         int                                       dnbins,
+                         int                                       efirst,
+                         int                                       dfirst,
+                         int                                     enovrflw,
+                         int                                     dnovrflw);
 
-static int hist_decode  (uint16_t                  bins[Histogram::NBins],
-                         BitStream64                                &bs64,
-                         int                                        tbits);
+static int hist_decode (uint16_t                   bins[Histogram::NBins],
+                        int                                       *nrbins,
+                        int                                        *first,
+                        int                                      *novrflw,
+                        BFU                                          &bfu,
+                        uint64_t const                              *buf);
 
-static int get_nbits   (int                                 nsignificant,
+static int get_nbits   (int                                  nsignificant,
                         int                                         nbits,
                         int                                         left);
-
 
 /* ---------------------------------------------------------------------- *//*!
  *
@@ -37,15 +62,66 @@ static int get_nbits   (int                                 nsignificant,
 static bool hist_check (int                                        ihist,
                         BitStream64                                &bs64,
                         int                                        ebits,
-                        Histogram::Entry_t const ebins[Histogram::NBins])
+                        Histogram::Entry_t const ebins[Histogram::NBins],
+                        int                                       efirst,
+                        int                                     enovrflw)
 
+ {
+   static uint64_t buf[Histogram::NBins * 10/64 + 10];
+
+
+   // Copy the data into a temporary bit stream
+   int idx = 0;
+   while (1)
+   {
+      uint64_t dat;
+      bool okay = bs64.m_out.read_nb (buf[idx++]);
+      if (!okay) break;
+   }
+
+   BfuPosition_t position = 0;
+   BFU bfu;
+   _bfu_put (bfu, buf[0], 0);
+
+   bool status = hist_check (ihist, bfu, buf, ebits, ebins, efirst, enovrflw);
+ }
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Checks that the encoded histogram matches the orginal
+ *   \retval A flag indicating that the check was a failure or not
+ *
+ *   \param[in]    ihist Which histogram
+ *   \param[in]     bfu The encoded bit stream
+ *   \param[in]    ebits The number of bits it took to encode the
+ *                       histogram
+ *   \param[in]    ebins The original histogram bins that were encoded
+ *
+\* ---------------------------------------------------------------------- */
+bool hist_check (int                                        ihist,
+                 BFU                                         &bfu,
+                 uint64_t  const                             *buf,
+                 int                                        ebits,
+                 Histogram::Entry_t const ebins[Histogram::NBins],
+                 int                                       efirst,
+                 int                                     enovrflw)
  {
    // ------------------------------------
    // Check the integrity of the encoding
    // -----------------------------------
    uint16_t dbins[Histogram::NBins];
-   int      dbits = hist_decode  (dbins, bs64, ebits);
-   int      ecnt  = hist_compare (ebins, dbins, ebits, dbits);
+   int     dnbins;
+   int     dfirst;
+   int   dnovrflw;
+   int      dbits = hist_decode  (dbins, &dnbins, &dfirst, &dnovrflw, bfu, buf);
+   int       ecnt = hist_compare (ebins,      (unsigned short const*)dbins,
+                                  ebits,       dbits,
+                                  dnbins,
+                                  efirst,     dfirst,
+                                  enovrflw, dnovrflw);
 
    std::cout << "Histogram[" << std::hex << std::setw(4) << ihist
              << "] encode/decode " << (ecnt ? "failed" : "succeeded");
@@ -56,7 +132,7 @@ static bool hist_check (int                                        ihist,
    std::cout  << std::endl;
 
    return ecnt != 0;
- }
+}
 /* ---------------------------------------------------------------------- */
 
 
@@ -76,23 +152,45 @@ static bool hist_check (int                                        ihist,
 static int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
                          uint16_t           const dbins[Histogram::NBins],
                          int                                       ebits,
-                         int                                       dbits)
+                         int                                       dbits,
+                         int                                       nbins,
+                         int                                      efirst,
+                         int                                      dfirst,
+                         int                                    enovrflw,
+                         int                                    dnovrflw)
 {
-   int ecnt;
+   int ecnt = 0;
 
    // -----------------------------------------------------
    // Check that the encoded bit count == decoded bit count
    // -----------------------------------------------------
-   if (ebits != dbits)
+   if (nbins + 1 != Histogram::NBins)
    {
-      ecnt = 1;
+       std::cout << "Encoded:Decoded nbins mismatch " << Histogram::NBins << "!=" << (nbins+1) << std::endl;
+       ecnt += 1;
+   }
+
+   if (enovrflw != enovrflw)
+   {
+      std::cout << "Encoded::Decoded overflow #bits mismatch " << enovrflw << " != " << dnovrflw << std::endl;
+      ecnt += 1;
+   }
+
+   if (efirst != dfirst)
+   {
+      std::cout << "Encoded::Decoded first ADC #bits mismatch " << efirst << " != " <<  dfirst << std::endl;
+      ecnt += 1;
+   }
+
+
+   if (ebits != -1 && ebits != dbits)
+   {
+      ecnt += 1;
       std::cout << "Encoded:Decoded bit count mismatch " << std::hex
                 << ebits << "!=" << dbits << std::endl;
    }
-   else
-   {
-      ecnt = 0;
-   }
+
+
 
    int prv = hbins[0];
    // ----------------------------
@@ -102,7 +200,6 @@ static int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
    {
       int expected = hbins[idx];
       int got      = dbins[idx];
-
 
 
       if (expected != got)
@@ -138,6 +235,45 @@ static void print_hist (bool debug, int idx, int cnts, int left)
 
 #include "BFU.h"
 #include "BTD.h"
+
+
+
+static int hist_decode (uint16_t bins[Histogram::NBins], int *nrbins, int *first, int *novrflw, BFU &bfu, uint64_t const *buf)
+{
+   bool debug = true;
+
+   int64_t  m01s;
+   int left = PACKET_K_NSAMPLES - 1;
+
+   int position = _bfu_get_pos  (bfu);
+   int format   = _bfu_extractR (bfu, buf, position,  4);
+   int nbins    = _bfu_extractR (bfu, buf, position,  8) + 1;
+   int mbits    = _bfu_extractR (bfu, buf, position,  4);
+   int nbits    = mbits;
+
+   // Return decoding context
+  *first        = _bfu_extractR (bfu, buf, position, 12);
+  *novrflw      = _bfu_extractR (bfu, buf, position,  4);
+  *nrbins       = nbins;
+
+   for (int ibin = 0; ibin < nbins; ibin++)
+   {
+      // Extract the bits
+      int cnts   = _bfu_extractR (bfu, buf, position, nbits);
+
+      bins[ibin] =  cnts;
+      std::cout << "Hist[" << ibin << std::setw(2) << "] = " << cnts << "nbits = " << nbits << std::endl;
+
+      left -= cnts;
+      nbits = 32 - __builtin_clz (left);
+      if (nbits > mbits) nbits = mbits;
+   }
+
+   return position;
+}
+
+
+#if HIST_DECODE_OLD
 int hist_decode (uint16_t bins[Histogram::NBins], BitStream64 &bs64, int tbits)
 {
    bool debug = true;
@@ -147,12 +283,12 @@ int hist_decode (uint16_t bins[Histogram::NBins], BitStream64 &bs64, int tbits)
    int idx = 0;
    int left = 1023;
 
-   while (1)
+   int n64 = (tbits + 63) / 64;
+   for (idx = 0; idx < n64; idx++)
    {
       uint64_t dat;
       bool okay = bs64.m_out.read_nb (buf[idx]);
       if (!okay) break;
-      idx += 1;
    }
 
    BfuPosition_t position = 0;
@@ -160,13 +296,13 @@ int hist_decode (uint16_t bins[Histogram::NBins], BitStream64 &bs64, int tbits)
 
    _bfu_put (bfu, buf[0], 0);
 
-
-   int nbits;
    int nsignificant = 2;
    int cnts;
 
    int version  = _bfu_extractR(bfu, buf, position, 2);
-   int lastgt1  = _bfu_extractR(bfu, buf, position, 6);
+   int nbins    = _bfu_extractR(bfu, buf, position, 8);
+   int nbits    = 32 - __builtin_clz (nbins);
+   int lastgt1  = _bfu_extractR(bfu, buf, position, 8);
    nbits        = 32 - __builtin_clz (lastgt1);
    int lastgt2  = _bfu_extractR(bfu, buf, position, nbits);
 
@@ -380,7 +516,16 @@ static int get_nbits (int nsignificant, int nbits, int left)
 
    return nsignificant;
 }
+#endif
 #else
+
+static int hist_decode  (uint16_t                  bins[Histogram::NBins],
+                         BitStream64                                &bs64,
+                         int                                        tbits)
+{
+   return 0;
+}
+
 static inline int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
                                 uint16_t           const dbins[Histogram::NBins],
                                 int                                        ebits,

@@ -43,16 +43,13 @@
 
 
 /* ---------------------------------------------------------------------- *\
-
    HISTORY
    -------
-
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
    2017.04.19 jjr Updated to the format Eric Hazen published on 2017.03.13
    2016.10.18 jjr Corrected K28.5 definition, was 0xDC -> 0xBC
    2016.06.14 jjr Created
-
 \* ---------------------------------------------------------------------- */
 
 
@@ -61,18 +58,14 @@
      WORD     Contents
         0     Err [16] | Rsvd[24] | Slot [3] | Crate[5] | Fiber[3] | Version[5] | K28.5[8]
         1     Timestamp [64]
-
               ColdData Stream 1
         2     CvtCnt[16] | ChkSums_hi[16] | ChkSums_lo[16] | Rsvd[8] | Err2_1[8]
         3              Hdrs[32]           |       Rsvd[16] |    ErrReg[16]
         4-15  ColdData.Adcs
-
               ColdData Stream 2
         16    CvtCnt[16] | ChkSums_hi[16] | ChkSums_lo[16] | Rsvd[8] | Err2_1[8]
         17             Hdrs[32]           |       Rsvd[16] |    ErrReg[16]
         18-29 ColdData.Adcs
-
-
      K28.1 = 0x3c
      K28.2 = 0x5c
      K28.5 = 0xDC
@@ -125,7 +118,6 @@
 28   |aaaaaaa999999999 9999888888888888 7777777777776666 6666666655555555|  &
 29   |ffffffffffffeeee eeeeeeeedddddddd ddddcccccccccccc bbbbbbbbbbbbaaaa| S8
      +----------------+----------------+----------------+----------------+
-
 */
 
 
@@ -188,9 +180,19 @@ public:
    typedef ap_uint<8>        ErrBits;
    typedef ap_uint<16>       ErrWord;
 
-
    // Typedefs: Data word 1
-   typedef ap_uint<32>     Timestamp;
+   typedef ap_uint<64>     Timestamp;
+
+
+   // Accessors: Data word 0
+   static unsigned int commaChar (uint64_t w);
+   static unsigned int version   (uint64_t w);
+   static unsigned int id        (uint64_t w);
+   static unsigned int rsvd      (uint64_t w);
+   static unsigned int wibErrors (uint64_t w);
+
+   // Accessors: Data word 1
+   static Timestamp    timestamp (uint64_t w);
 
    /* ------------------------------------------------------------------- *//*!
     *
@@ -230,8 +232,15 @@ public:
 
       typedef ap_uint<16>  ConvertCount;  // 2MHz AD Convert, resets with synch
 
+      static uint8_t  streamErr1 (uint64_t w);
+      static uint8_t  streamErr2 (uint64_t w);
+      static uint8_t  rsvd0      (uint64_t w);
+      static uint32_t checkSums  (uint64_t w);
+      static uint16_t cvtCnt     (uint64_t w);
 
-      static ErrWord         error (ErrBits   erra, ErrBits   errb);
+
+      // Constructors for composite fields
+      static ErrWord error (ErrBits erra, ErrBits errb);
 
       // Assemble lo or hi byte of the checksum A and B into 16 bit word
       static ChecksumWord checksum (ChecksumByte a, ChecksumByte b);
@@ -265,6 +274,12 @@ public:
       typedef ap_uint<4>            Hdr;
       typedef ap_uint<32>          Hdrs;
 
+      // Extractors
+      static uint16_t errReg (uint64_t w);
+      static uint16_t  rsvd1 (uint64_t w);
+      static uint32_t   hdrs (uint64_t w);
+
+      // Composers
       static Hdrs   hdrs (Hdr const hdr[8]);
       static uint64_t s1 (ErrReg errReg, Rsvd1 rsvd1, Hdrs hdrs);
       static uint64_t s1 (ErrReg errReg,              Hdrs hdrs);
@@ -303,11 +318,286 @@ public:
    static DataWord     w1 (Timestamp       timestamp);
 };
 /* ---------------------------------------------------------------------- */
+/* END: WIB class                                                         */
+/* ====================================================================== */
 
-   
+
+
+/* ====================================================================== */
+/* BEGIN: WIB Accessors                                                   */
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the comma character (K28_5, presumably)
+ *           from the first WIB header
+ *   \retval The extracted comma character
+ *
+ *   \param[in] hdr  The first WIB header word
+ *
+\* ---------------------------------------------------------------------- */
+inline unsigned int WibFrame::commaChar (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >>  0) &  0xff;
+}
+/* ---------------------------------------------------------------------- */
 
 
 
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB version number from the first
+ *           WIB header word.
+ *   \retval The extracted WIB version number
+ *
+ *   \param[in] hdr  The first WIB header word
+ *
+\* ---------------------------------------------------------------------- */
+inline unsigned int WibFrame::version (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >>  8) &  0x1f;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB identifier from the first WIB
+ *           header word.
+ *   \retval The extracted WIB version number
+ *
+ *   \param[in] hdr  The first WIB header word
+ *
+ *   The WIB identifier is 3 fields, the Fiber, Crate and Slot number
+ *   densely packed into a 11-bit field. While the logical order is
+ *   Crate.Slot.Fiber, this method returns the fields in order they
+ *   are packed by the WIB (Fiber, Crate, Slot).  There are extraction
+ *   methods to access the fields within this WIB identifier.
+ *
+\* ---------------------------------------------------------------------- */
+inline unsigned int WibFrame::id (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >> 12) & 0x3ff;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the reserved field from the first WIB
+ *           header word.
+ *   \retval The extracted reserved field
+ *
+ *   \param[in] hdr  The first WIB header word
+ *
+ *   In general, this field is a must be 0 field
+ *
+\* ---------------------------------------------------------------------- */
+inline unsigned int WibFrame::rsvd (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >> 24) & 0xffffff;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB errors field from the first
+ *           WIB header word.
+ *   \retval The extracted WIB error field
+ *
+ *   \param[in] hdr  The first WIB header word
+ *
+\* ---------------------------------------------------------------------- */
+inline unsigned int WibFrame::wibErrors (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >> 48) & 0xffff;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB timestamp from the second
+ *           WIB header word.
+ *   \retval The extracted WIB timestamp
+ *
+ *   \param[in] hdr  The second WIB header word
+ *
+\* ---------------------------------------------------------------------- */
+inline WibFrame::Timestamp WibFrame::timestamp (uint64_t w)
+{
+   #pragma HLS INLINE
+   return w;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB cold data error field for link 1
+ *           from the first cold data header word.
+ *
+ *   \retval The extracted error field
+ *
+ *   \param[in] hdr  The first cold data header word
+ *
+\* ---------------------------------------------------------------------- */
+inline uint8_t WibFrame::ColdData::streamErr1 (uint64_t w)
+ {
+    #pragma HLS INLINE
+    return (w >>  0) &  0xf;
+ }
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB cold data error field for link 2
+ *           from the first cold data header word.
+ *
+ *   \retval The extracted error field
+ *
+ *   \param[in] hdr  The first cold data header word
+ *
+\* ---------------------------------------------------------------------- */
+inline uint8_t WibFrame::ColdData::streamErr2 (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >>  4) & 0xf;
+}
+ /* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the first WIB cold data reserved word
+ *           from the first cold data header word.
+ *
+ *   \retval The extracted error field
+ *
+ *   \param[in] hdr  The first cold data header word
+ *
+\* ---------------------------------------------------------------------- */
+inline uint8_t WibFrame::ColdData::rsvd0 (uint64_t w)
+ {
+     #pragma HLS INLINE
+    return (w >>  8) &  0xff;
+ }
+ /* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the packed (as is) WIB cold data checksums
+ *           from the first cold data header word.
+ *
+ *   \retval The packed checksums
+ *
+ *   \param[in] hdr  The first cold data header word
+ *
+\* ---------------------------------------------------------------------- */
+inline uint32_t WibFrame::ColdData::checkSums (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >> 16) & 0xffffffff;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB cold data convert count
+ *           from the first cold data header word.
+ *
+ *   \retval The extracted convert count
+ *
+ *   \param[in] hdr  The first cold data header word.
+ *
+\* ---------------------------------------------------------------------- */
+inline uint16_t WibFrame::ColdData::cvtCnt (uint64_t w)
+ {
+    #pragma HLS INLINE
+    return (w >> 48) &  0xffff;
+ }
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB cold data error register field
+ *           from the second cold data header word.
+ *
+ *   \retval The extracted error register field
+ *
+ *   \param[in] hdr  The second cold data header word.
+ *
+\* ---------------------------------------------------------------------- */
+ inline uint16_t WibFrame::ColdData::errReg (uint64_t w)
+ {
+    #pragma HLS INLINE
+    return (w >>  0) & 0xffff;
+ }
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB cold data second reserved field
+ *           from the second cold data header word.
+ *
+ *   \retval The extracted reserved field
+ *
+ *   \param[in] hdr  The second cold data header word.
+ *
+\* ---------------------------------------------------------------------- */
+inline uint16_t WibFrame::ColdData::rsvd1 (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >> 16) & 0xffff;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief  Extracts and returns the WIB cold data vector of 8 stream headerssecond reserved field
+ *           from the second cold data header word.
+ *
+ *   \retval The extracted vector of headers
+ *
+ *   \param[in] hdr  The second cold data header word.
+ *
+\* ---------------------------------------------------------------------- */
+inline uint32_t WibFrame::ColdData::hdrs (uint64_t w)
+{
+   #pragma HLS INLINE
+   return (w >> 32) & 0xffffffff;
+}
+/* ---------------------------------------------------------------------- */
+/* END: WIB Accessors                                                     */
+/* ====================================================================== */
+
+
+
+
+/* ====================================================================== */
+/* BEGIN: WIB Composers                                                   */
 /* ---------------------------------------------------------------------- *//*!
  *
  *  \brief  Constructs the concatenated error word
@@ -325,12 +615,12 @@ inline WibFrame::ErrWord WibFrame::errWord (WibFrame::ErrCapture errCapture,
                                             WibFrame::ErrBits       errBits)
 
 {
+   #pragma HLS INLINE
+
    WibFrame::ErrWord err = (errBits, errAsic, errCapture);
    return err;
 }
 /* ---------------------------------------------------------------------- */
-
-
 
 
 
@@ -354,6 +644,8 @@ inline WibFrame::DataWord WibFrame::w0 (CommaChar       commaChar,
                                         Rsvd                 rsvd,
                                         ErrWord            errWrd)
 {
+   #pragma HLS INLINE
+
    static const WibFrame::Version  versionNumber (VersionNumber);
 
    WibFrame::DataWord w = (errWrd, rsvd, id, versionNumber, commaChar);
@@ -378,6 +670,8 @@ inline WibFrame::Id WibFrame::id (WibFrame::Crate  crate,
                                   WibFrame::Slot    slot,
                                   WibFrame::Fiber  fiber)
 {
+   #pragma HLS INLINE
+
    WibFrame::Id id = (slot, crate, fiber);
    return       id;
 }
@@ -396,6 +690,8 @@ inline WibFrame::Id WibFrame::id (WibFrame::Crate  crate,
 \* ---------------------------------------------------------------------- */
 inline WibFrame::DataWord WibFrame::w1 (WibFrame::Timestamp timestamp)
 {
+   #pragma HLS INLINE
+
    WibFrame::DataWord w = (timestamp);
    return             w;
 }
@@ -420,6 +716,8 @@ inline WibFrame::ColdData::ErrWord
        WibFrame::ColdData::error (WibFrame::ColdData::ErrBits err1,
                                   WibFrame::ColdData::ErrBits err2)
 {
+   #pragma HLS INLINE
+
    ErrWord w = (err2, err1);
    return w;
 }
@@ -440,6 +738,8 @@ inline WibFrame::ColdData::ChecksumWord
        WibFrame::ColdData::checksum (WibFrame::ColdData::ChecksumByte a,
                                      WibFrame::ColdData::ChecksumByte b)
 {
+   #pragma HLS INLINE
+
    ChecksumWord w = (b, a);
    return  w;
 }
@@ -459,6 +759,8 @@ inline WibFrame::ColdData::Checksums
        WibFrame::ColdData::checksums (WibFrame::ColdData::ChecksumWord a,
                                       WibFrame::ColdData::ChecksumWord b)
 {
+   #pragma HLS INLINE
+
    Checksums w = (b, a);
    return w;
 }
@@ -484,11 +786,13 @@ inline uint64_t WibFrame::ColdData::s0 (WibFrame::ColdData::ErrWord          err
                                         WibFrame::ColdData::ChecksumWord    cs_b,
                                         WibFrame::ColdData::ConvertCount cvt_cnt)
 {
+   #pragma HLS INLINE
+
    // Rearrange the checksums into hi lo pieces
    ChecksumWord cs_lo = (cs_b ( 7,0), cs_a( 7,0));
    ChecksumWord cs_hi = (cs_b (15,7), cs_a(15,7));
 
-   uint64_t w = (cvt_cnt, cs_hi, cs_lo, err);
+   uint64_t w = (cvt_cnt, cs_hi, cs_lo, rsvd0, err);
    return   w;
 }
 /* ---------------------------------------------------------------------- */
@@ -511,6 +815,8 @@ inline uint64_t WibFrame::ColdData::s0 (WibFrame::ColdData::ErrWord          err
                                         WibFrame::ColdData::ChecksumWord    cs_b,
                                         WibFrame::ColdData::ConvertCount cvt_cnt)
 {
+   #pragma HLS INLINE
+
    uint64_t w = s0 (err, 0, cs_a, cs_b, cvt_cnt);
    return w;
 }
@@ -545,6 +851,8 @@ inline uint64_t WibFrame::ColdData::s0 (WibFrame::ColdData::ErrWord          err
                                          WibFrame::ColdData::ChecksumByte  csB_hi,
                                          WibFrame::ColdData::ConvertCount cvt_cnt)
 {
+    #pragma HLS INLINE
+
     uint64_t w = s0 (cvt_cnt, csB_hi, csA_hi, csB_lo, csA_lo, rsvd, err2, err1);
     return w;
 }
@@ -562,6 +870,8 @@ inline uint64_t WibFrame::ColdData::s0 (WibFrame::ColdData::ErrWord          err
 \* ---------------------------------------------------------------------- */
  inline WibFrame::ColdData::Hdrs hdrs (WibFrame::ColdData::Hdr const hdr[8])
  {
+    #pragma HLS INLINE
+
     WibFrame::ColdData::Hdrs hdrs = (hdr[7], hdr[6], hdr[5], hdr[4],
                                      hdr[3], hdr[2], hdr[1], hdr[0]);
 
@@ -586,6 +896,8 @@ inline uint64_t WibFrame::ColdData::s0 (WibFrame::ColdData::ErrWord          err
                                          WibFrame::ColdData::Rsvd1   rsvd1,
                                          WibFrame::ColdData::Hdrs     hdrs)
 {
+    #pragma HLS INLINE
+
     uint64_t w = (hdrs, rsvd1, errReg);
     return w;
 }
@@ -605,10 +917,14 @@ inline uint64_t WibFrame::ColdData::s0 (WibFrame::ColdData::ErrWord          err
 inline uint64_t WibFrame::ColdData::s1 (WibFrame::ColdData::ErrReg errReg,
                                         WibFrame::ColdData::Hdrs     hdrs)
 {
+   #pragma HLS INLINE
+
    uint64_t w = (hdrs, 0, errReg);
    return w;
 }
 /* ---------------------------------------------------------------------- */
+/* END: WIB Composers                                                     */
+/* ====================================================================== */
 
 #endif  /* WIBFRAME_COMPOSE */
 

@@ -58,11 +58,12 @@
 
 \* ---------------------------------------------------------------------- */
 
-#include "DuneDataCompressionPacket.h"
+#include "Parameters.h"
 
 class BitStream64;
 
 #ifndef __SYNTHESIS__
+#define HISTOGRAM_DEBUG 1
 #define HISTOGRAM_statement(_statement)  _statement
 #else
 #define HISTOGRAM_statement(_statement)
@@ -88,14 +89,16 @@ class BitStream64;
  *   maximum bin rolling over to 0, this will be detected when the
  *   integrated histogram is formed.
 \* ----------------------------------------------------------------------- */
-#define HISTOGRAM_K_NBINS     64
+#define HISTOGRAM_K_NBINS     32
 
 #if     HISTOGRAM_K_NBINS == 128
 #define HISTOGRAM_K_NBITS      7
 #elif   HISTOGRAM_K_NBINS ==  64
 #define HISTOGRAM_K_NBITS      6
+#elif    HISTOGRAM_K_NBINS == 32
+#define HISTOGRAM_K_NBITS      5
 #else
-#error HISTOGRAM_K_NBINS is not one of 64 or 128
+#error HISTOGRAM_K_NBINS is not one of 32, 64 or 128
 #endif
 
 
@@ -128,7 +131,7 @@ public:
    typedef ap_uint<Histogram::NETableBits + Histogram::NBits> ESize_t;
    typedef ap_uint<Histogram::NBins>                        BitMask_t;
    typedef ap_uint<Histogram::NBits>                            Idx_t;
-   typedef ap_uint<PACKET_B_ADC  + 1>                        Symbol_t;
+   typedef ap_uint<ADC_B_NBITS  + 1>                         Symbol_t;
    typedef Entry_t                                              Table;
 public:
    Histogram ();
@@ -138,7 +141,9 @@ public:
    void         clear              ();
    static void  clear              (Histogram hists[], int nhists);
    void         bump               (Symbol_t sym);
-   void         encode             (BitStream64 &bs64, Table table[NBins+1]);
+   void         encode             (BitStream64 &bs64,
+                                    Table table[NBins+1],
+                                    AdcIn_t       first) const;
 
    uint32_t                   size () const;
    uint32_t     integrate_and_size ();
@@ -147,26 +152,24 @@ public:
    static    Idx_t idx             (Symbol_t symbol, Symbol_t &ovr);
 
 public:
-
    BitMask_t        m_omask; /*!< Bit mask of non-zero entries            */
+   Entry_t         m_maxcnt; /*!< Maximum counts                          */
    Idx_t          m_lastgt0; /*!> Index of tje last entry with counts > 0 */
    Idx_t          m_lastgt1; /*!< Index of the last entry with counts > 1 */
    Idx_t          m_lastgt2; /*!< Index of the last entry with counts > 2 */
    Symbol_t           m_min; /*!< Minimum overflow difference             */
    Symbol_t           m_max; /*!< Maximum overflow difference             */
-   Entry_t  m_bins[NBins+1]; /*!< The bins of the histogram. The \e extra
-                                 bin allows the integrated from to be
-                                 used as the arithmetic probability
-                                 encoding table.                          */
+   Entry_t    m_bins[NBins]; /*!< The bins of the histogram.              */
 
                              /*!< Copy of the stuff                       */
    BitMask_t       m_comask; /*!< Bit mask of non-zero entries            */
+   Entry_t        m_cmaxcnt; /*!< Maximum counts                          */
    Idx_t         m_clastgt0; /*!> Index of tje last entry with counts > 0 */
    Idx_t         m_clastgt1; /*!< Index of the last entry with counts > 1 */
    Idx_t         m_clastgt2; /*!< Index of the last entry with counts > 2 */
    Symbol_t          m_cmin; /*!< Minimum overflow difference             */
    ap_uint<4>     m_cnobits; /*!< Number of bits in m_cmax - m_cmin       */
-   Entry_t m_cbins[NBins+1]; /*!< Copy of m_bins                          */
+   Entry_t   m_cbins[NBins]; /*!< Copy of m_bins                          */
 
    //----------------------------------------------
    // Diagnostic print routines.
@@ -211,6 +214,7 @@ public:
 \* ---------------------------------------------------------------------- */
 inline Histogram::Histogram ()
 {
+   /*
    #pragma HLS RESET variable=m_bins    off
    #pragma HLS RESET variable=m_omask   off
    #pragma HLS RESET variable=m_lastgt0 off
@@ -218,29 +222,42 @@ inline Histogram::Histogram ()
    #pragma HLS RESET variable=m_lastgt2 off
    #pragma HLS RESET variable=m_min     off
    #pragma HLS RESET variable=m_max     off
+   */
 
+   /*
    #pragma HLS RESOURCE variable=m_omask   core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_lastgt0 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_lastgt1 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_lastgt2 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_min     core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_max     core=RAM_2P_LUTRAM
+   */
 
+   /*
    #pragma HLS RESET variable=m_cbins    off
    #pragma HLS RESET variable=m_comask   off
    #pragma HLS RESET variable=m_clastgt0 off
    #pragma HLS RESET variable=m_clastgt1 off
    #pragma HLS RESET variable=m_clastgt2 off
    #pragma HLS RESET variable=m_cmin     off
+   #pragma HLS RESET variable=m_cnobits off
+   #pragma HLS RESET variable=m_cmax     off
+   */
 
-
+   /*
    #pragma HLS RESOURCE variable=m_comask   core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt0 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt1 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_clastgt2 core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE variable=m_cmin     core=RAM_2P_LUTRAM
+   #pragma HLS RESOURCE variable=m_cnobits  core=RAM_2P_LUTRAM
+*/
 
-   #pragma HLS ARRAY_PARTITION variable=m_bins cyclic factor=2 dim=1
+   //#pragma HLS RESOURCE        variable=m_bins  core=RAM_2P_LUTRAM
+   //#pragma HLS RESOURCE        variable=m_cbins core=RAM_2P_LUTRAM
+   #pragma HLS ARRAY_PARTITION variable=m_bins cyclic  factor=2 dim=1
+   #pragma HLS ARRAY_PARTITION variable=m_cbins cyclic factor=2 dim=1
+
 
    init ();
    return;
@@ -271,12 +288,14 @@ inline void Histogram::clear ()
    #pragma HLS INLINE
    #pragma HLS PIPELINE
 
+   m_cmaxcnt  = m_cmaxcnt =  0;
    m_comask   = m_omask   =  0;
    m_clastgt0 = m_lastgt0 =  0;
    m_clastgt1 = m_lastgt1 =  0;
    m_clastgt2 = m_lastgt2 =  0;
    m_cmin     = m_min     = (1 << m_min.length () - 1);
                 m_max     =  0;
+   m_cnobits  = 0;
 
 #if 0
    HISTOGRAM_CLEAR_LOOP:
@@ -292,7 +311,8 @@ inline void Histogram::clear ()
 /* ---------------------------------------------------------------------- */
 
 
-HISTOGRAM_statement(
+/* ---------------------------------------------------------------------- */
+HISTOGRAM_statement (
 /* ---------------------------------------------------------------------- *//*!
  *
  *  \brief Set the histogram identifier
@@ -312,6 +332,7 @@ inline void  Histogram::set_id (Histogram hists[], int nhists)
 }
 /* ---------------------------------------------------------------------- */
 )
+/* ---------------------------------------------------------------------- */
 
 
 /* ---------------------------------------------------------------------- *//*!
@@ -438,25 +459,22 @@ static void bump_print (int                           bin,
 inline void Histogram::bump (Symbol_t sym)
 {
 #  pragma HLS INLINE
-#  pragma HLS PIPELINE
+#  pragma HLS PIPELINE II=2
+
 
    int bin;
 
    // ------------------------------------------------------
    // Check if this symbol is contained in the histogram
-   // The - 2 is the usual -1 for index vs offset and the
-   // second -1 is because the number of bins is actually
-   // one greater to accomodate the total when the histogram
-   // is integrated.
    // ------------------------------------------------------
-   if (sym > sizeof (m_bins) / sizeof (m_bins[0]) - 2)
+   int ovr = sym - sizeof (m_bins) / sizeof (m_bins[0]);
+   if (ovr >= 0)
    {
       // Keep track of the minimum and maximum overflow
-      if (sym > m_max)          m_max = sym;
-      if (sym < m_min) m_cmin = m_min = sym;
+      if (ovr > m_max)          m_max = ovr;
+      if (ovr < m_min) m_cmin = m_min = ovr;
 
-      Entry_t diff = m_max - Histogram::NBins;
-      m_cnobits = diff.length () - diff.countLeadingZeros ();
+      m_cnobits = m_max.length () - m_max.countLeadingZeros ();
       bin       = 0;
    }
    else
@@ -487,17 +505,18 @@ inline void Histogram::bump (Symbol_t sym)
    // ----------------------------------------------------------
    if (m_omask.test (bin))
    {
-      // Yes, bump it
-      cnts = m_bins[bin];
+      cnts  = m_bins[bin];
    }
    else
    {
-      // No, set cnts=1 and mark this bin as occupied
+      // No, set cnts=0 and mark this bin as occupied
       cnts = 0;
       m_omask.set (bin);
+
    }
 
    m_comask = m_omask;
+
 
    // -------------------------------------------------------------------
    // Keep track of the last bins with counts > 1 and counts > 3 (2 bits)
@@ -507,9 +526,12 @@ inline void Histogram::bump (Symbol_t sym)
    if ( (cnts >= 1) && (bin > m_lastgt1)) m_clastgt1 = m_lastgt1 = bin;
    if ( (cnts >= 3) && (bin > m_lastgt2)) m_clastgt2 = m_lastgt2 = bin;
 
-   cnts         += 1;
-   m_bins[bin]  = cnts;
-   m_cbins[bin] = cnts;
+    cnts        += 1;
+    m_bins[bin]  = cnts;
+    m_cbins[bin] = cnts;
+
+    // Keep track of the maximum count
+    if (cnts >= m_maxcnt) m_cmaxcnt = m_maxcnt = cnts;
 
    return;
 }
