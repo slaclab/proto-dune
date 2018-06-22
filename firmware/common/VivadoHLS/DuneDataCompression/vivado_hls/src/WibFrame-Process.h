@@ -93,7 +93,7 @@
 /* ------------------------------------------------------------------------ */
 #if     !defined(__SYNTHESIS__)
 #define PROCESS_PRINT      0
-#define PROCESS_PRINT_ADCS 1
+#define PROCESS_PRINT_ADCS 0
 #else
 #define PROCESS_PRINT_ADCS 0
 #define PROCESS_PRINT      0
@@ -106,96 +106,145 @@ static void print_adcs (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLE
 #else
 #define print_adcs(_syms, _iframe)
 #endif
-/* ======================================================================== */
 
 
-class HeaderContext
+/* ======================================================================== *//*!
+ *
+ *  \class HeaderContextLcl
+ *  \brief Captures the context of per packet information.
+ *
+ *   Since the inforation gathered by this class is involved in a dataflow
+ *   routine, the write part must be segregated from the read part.  This
+ *   class contains information that is read/write.  The information is then
+ *   transferred to the dataflow equivalent class, the key being that this
+ *   receiving class is only written to in this part of the dataflow.
+ *
+\* ------------------------------------------------------------------------ */
+class HeaderContextLcl
+{
+   public:
+      HeaderContextLcl ()
+      {
+         return;
+      }
+
+      void reset ()
+      {
+         #pragma HLS INLINE
+         m_hdx = 0;
+         m_edx = 0;
+      }
+
+      void addHeader (uint64_t *hdrsBuf, uint64_t hdr)
+      {
+         #pragma HLS INLINE
+         hdrsBuf[m_hdx] = hdr;
+         m_hdx += 1;
+      }
+
+      void addException (uint64_t *excBuf, ap_uint<6> excMask, ap_uint<10> nframe)
+      {
+         #pragma HLS INLINE
+         //// STRIP #pragma HLS PIPELINE
+
+         ap_uint<16> exc = (excMask, nframe);
+         ap_int<2> shift =  m_edx & 0x3;
+
+
+         exc = static_cast<uint64_t>(exc << (shift<<4));
+         if (shift == 0) m_tmp  = exc;
+         else            m_tmp |= exc;
+
+         if (~shift)
+         {
+            excBuf[m_edx] = m_tmp;
+            m_edx        += 1;
+         }
+      }
+
+      void evaluate (uint64_t          *hdrBuf,
+                     uint64_t          *excBuf,
+                     ReadStatus_t const status,
+                     int                iframe,
+                     uint64_t             wib0,
+                     uint64_t             wib1,
+                     uint64_t             cd00,
+                     uint64_t             cd01,
+                     uint64_t             cd10,
+                     uint64_t             cd11)
+      {
+         #pragma HLS INLINE
+         #pragma HLS PIPELINE
+
+         ap_uint<6> exceptions = 0;
+         if ( (iframe == 0) || ReadStatus::isWibHdr0Bad (status))
+         {
+            addHeader (hdrBuf, wib0);
+            exceptions.set (0);
+         }
+
+         if ( (iframe == 0) || ReadStatus::isWibHdr1Bad (status))
+         {
+            addHeader (hdrBuf, wib1);
+            exceptions.set (1);
+         }
+
+         if ( (iframe == 0) || ReadStatus::isCd0Hdr0Bad (status))
+         {
+            addHeader (hdrBuf, cd00);
+            exceptions.set (2);
+         }
+
+         if ((iframe == 0) || ReadStatus::isCd0Hdr1Bad (status))
+         {
+            addHeader (hdrBuf, cd01);
+            exceptions.set(3);
+         }
+
+         if ((iframe == 0) || ReadStatus::isCd1Hdr0Bad (status))
+         {
+            addHeader (hdrBuf, cd10);
+            exceptions.set (4);
+         }
+
+         if ( (iframe == 0) || ReadStatus::isCd1Hdr1Bad (status))
+         {
+            addHeader (hdrBuf, cd11);
+            exceptions.set (5);
+         }
+
+         if (iframe != 0 && exceptions)
+         {
+            addException (excBuf, exceptions, iframe);
+         }
+      }
+
+
+   public:
+      int                                 m_hdx;   /*!< Header buffer index     */
+      int                                 m_edx;   /*!< Exception buffer index  */
+      ReadStatus_t                     m_status;   /*!< Status summary          */
+      uint64_t                            m_tmp;   /*< Accumulate 4 16-bit exc  */
+};
+/* ---------------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------------- *//*!
+ *
+ *  \class PacketContext
+ *  \brief This is write portion of the per packet information.
+ *
+\* ---------------------------------------------------------------------------- */
+class PacketContext
 {
 public:
-   HeaderContext () :
-      m_hdx (0),
-      m_edx (0)
+   PacketContext ()
    {
+      //// STRIP #pragma HLS ARRAY_PARTITION variable=m_excsBuf cyclic factor=8 dim=1
+      //// STRIP #pragma HLS ARRAY_PARTITION variable=m_hdrsBuf cyclic factor=8 dim=1
       return;
    }
 
-   void reset ()
-   {
-      m_hdx = 0;
-      m_edx = 0;
-   }
-
-
-   void addHeader (uint64_t hdr)
-   {
-      m_hdrsBuf[m_hdx++] = hdr;
-   }
-
-   void addException (ap_uint<6> excMask, ap_uint<10> nframe)
-   {
-      ap_uint<16> exc = (excMask, nframe);
-      ap_int<2> shift =   m_edx & 0x3;
-
-      if (shift == 0) m_excBuf[m_edx] = 0;
-
-      m_excBuf[m_edx] |= static_cast<uint64_t>(exc << (shift<<4));
-
-      if (~shift) m_edx += 1;
-   }
-
-
-   void evaluate (ReadStatus_t const status,
-                  int                iframe,
-                  uint64_t             wib0,
-                  uint64_t             wib1,
-                  uint64_t             cd00,
-                  uint64_t             cd01,
-                  uint64_t             cd10,
-                  uint64_t             cd11)
-   {
-      return;
-      ap_uint<6> exceptions = 0;
-      if ( (iframe == 0) || ReadStatus::isWibHdr0Bad (status))
-      {
-         addHeader (wib0);
-         exceptions |= 1 << 0;
-      }
-
-      if ( (iframe == 0) || ReadStatus::isWibHdr1Bad (status))
-      {
-         addHeader (wib1);
-         exceptions |= 1 << 1;
-      }
-
-      if ( (iframe == 0) || ReadStatus::isCd0Hdr0Bad (status))
-      {
-         addHeader (cd00);
-         exceptions |= 1 << 2;
-      }
-
-      if ((iframe == 0) || ReadStatus::isCd0Hdr1Bad (status))
-      {
-         addHeader (cd01);
-         exceptions |= 1 << 3;
-      }
-
-      if ((iframe == 0) || ReadStatus::isCd1Hdr0Bad (status))
-      {
-         addHeader (cd10);
-         exceptions |= 1 << 4;
-      }
-
-      if ( (iframe == 0) || ReadStatus::isCd1Hdr1Bad (status))
-      {
-         addHeader (cd11);
-         exceptions |= 1 << 5;
-      }
-
-      if (iframe != 0 && exceptions)
-      {
-         addException (exceptions, iframe);
-      }
-   }
 
 
    void commit (AxisOut  &axis, int &odx, bool first, bool write, uint32_t status) const
@@ -203,86 +252,56 @@ public:
       #pragma HLS INLINE
       #pragma HLS PIPELINE
 
-      return;
 
       const static int HeaderFmt   = 3; // Generic Header Format = 3
-      const static int HdrsRecType = 4; // TpcStream Record Subtype = 4;
-
+      const static int HdrsRecType = 1; // TpcStream Record Subtype = 1;
+      const static int HdrN64      = 1;
 
       // -------------------------------------------------------------------------------
       // Compose the record header word
       //    status(32) | exception count(8) | length (16) | RecType(4) | HeaderFormat(4)
       // -------------------------------------------------------------------------------
       uint64_t recHeader = (static_cast<uint64_t>(status) << 32)
-                         | (m_edx << 24) | ((m_edx + m_hdx) << 8) | (HdrsRecType << 4) | (HeaderFmt << 0);
+                         | (m_cedx << 24) | ((m_cedx + m_chdx + HdrN64) << 8)| (HdrsRecType << 4) | (HeaderFmt << 0);
       ::commit (axis, odx, write, recHeader,  first ? (1 << (int)AxisUserFirst::Sof) : 0, 0);
 
-
+#if 1
       // Write out the exception buffer
       HEADER_CONTEXT_EXC_LOOP:
-      for (int idx = 0; idx < m_edx; idx++)
+      for (int idx = 0; idx < m_cedx; idx++)
       {
          #pragma HLS LOOP_TRIPCOUNT min=0 avg=1 max=256
-         ::commit (axis, odx, write, m_excBuf[idx], 0, 0);
+         ::commit (axis, odx, write, m_excsBuf[idx], 0, 0);
       }
 
       // Write out the headers
+      int cnt = m_chdx;
       HEADER_CONTEXT_HDR_LOOP:
-      for (int idx = 0; idx < m_hdx; idx++)
+      for (int idx = 0; idx < cnt; idx++)
       {
          #pragma HLS LOOP_TRIPCOUNT min=6 avg=6 max=1024
          ::commit (axis, odx, write, m_hdrsBuf[idx], 0, 0);
       }
-
+#endif
       return;
    }
 
+
 public:
-   int                                 m_hdx;   /*!< Header buffer index     */
-   int                                 m_edx;   /*!< Exception buffer index  */
-   ReadStatus_t                     m_status;
-   uint64_t m_hdrsBuf[6 * PACKET_K_NSAMPLES];   /*!< Buffer for header words */
-   uint64_t m_excBuf[(6 * PACKET_K_NSAMPLES)
-                   / (sizeof (uint64_t)
-                   /  sizeof (uint16_t))];     /*!< Buffer for exceptions    */
+   int                                 m_chdx;   /*!< Header buffer index    */
+   int                                 m_cedx;   /*!< Exception buffer index */
+   ReadStatus_t                      m_status;
+   uint64_t m_hdrsBuf[ 7];   /*!< Buffer for header words */
+   uint64_t m_excsBuf[ 2];    /*!< Buffer for 4 exceptions */
+
+#if 0 //// STRIP
+    uint64_t m_hdrsBuf[ 6 * PACKET_K_NSAMPLES];   /*!< Buffer for header words*/
+    uint64_t m_excsBuf[(6 * PACKET_K_NSAMPLES)
+                    / (sizeof (uint64_t)
+                    /  sizeof (uint16_t))];     /*!< Buffer for exceptions    */
+#endif
 };
 /* ------------------------------------------------------------------------- */
-
-
-/* ---------------------------------------------------------------------- *//*!
- *
- *  \class PacketContext
- *  \brief This contains the data common to all channels in a frame
- *         plus some bookkeepping variables
- *
-\* ----------------------------------------------------------------------- */
- struct PacketContext
- {
-    uint32_t                    status; /*!< The summary status            */
- };
- /* ---------------------------------------------------------------------- */
-
-
-
- /* ----------------------------------------------------------------------- *//*!
-  *
-  *  \class  ProcessFrame
-  *  \brief  Class to hold the munged version of a WIB frame.
-  *
- \* ----------------------------------------------------------------------- */
-class ProcessFrame
- {
-
- public:
-    typedef uint32_t Status;
-
-    uint64_t                  hdrs[6]; /*!< The frame's 6 header words      */
-    Status                     status; /*!< The frame's read status         */
- };
-/* ------------------------------------------------------------------------ */
-
-
-typedef ap_uint<48>           Adc48_t;
 
 
 
@@ -290,6 +309,8 @@ typedef ap_uint<48>           Adc48_t;
 /* ======================================================================== */
 /* Local Prototypes                                                         */
 /* ------------------------------------------------------------------------ */
+
+typedef ap_uint<48>        Adc48_t;
 
 static void       process_colddata (Symbol_t syms[64][PACKET_K_NSAMPLES],
                                     Histogram                  hists[64],
@@ -299,6 +320,7 @@ static void       process_colddata (Symbol_t syms[64][PACKET_K_NSAMPLES],
                                     int                         beg_chan);
 
 static inline void        process4 (Symbol_t syms[ 4][PACKET_K_NSAMPLES],
+                                    Histogram                histsLcl[4],
                                     Histogram                   hists[4],
                                     AdcIn_t                       prv[4],
                                     Adc48_t                       adcs48,
@@ -310,6 +332,7 @@ static inline AdcIn_t extract_adc1 (Adc48_t                       adcs4);
 static inline AdcIn_t extract_adc2 (Adc48_t                       adcs4);
 static inline AdcIn_t extract_adc3 (Adc48_t                       adcs4);
 
+#if PROCESS_PRINT
 static void    process4_adcs_print (int                            oidx,
                                     int                           ichan,
                                     AdcIn_t                        adc0,
@@ -323,8 +346,18 @@ static void process4_adcs_prv_sym_print
                  AdcIn_t adc1, AdcIn_t prv1,  Histogram::Symbol_t sym1,
                  AdcIn_t adc2, AdcIn_t prv2,  Histogram::Symbol_t sym2,
                  AdcIn_t adc3, AdcIn_t prv3,  Histogram::Symbol_t sym3);
+#else
+#define process4_adcs_print(_oidx,_ichan,_adc0,_adc1,_adc2,_adc3)
 
+
+#define process4_adcs_prv_sym_print(_oidx, _ichan,        \
+                                    _adc0, _prv0, _sym0,  \
+                                    _adc1, _prv1, _sym1,  \
+                                    _adc2, _prv2, _sym2,  \
+                                    _adc3, _prv3, _sym3)
+#endif
 /* ======================================================================== */
+
 
 
 
@@ -350,7 +383,6 @@ static void process_frame
             (ReadFrame        const                        &frame,
              ap_uint<PACKET_B_NSAMPLES>                    iframe,
              ModuleConfig     const                       &config,
-             HeaderContext                                &hdrCtx,
              PacketContext                                &pktCtx,
              Histogram                  hists[MODULE_K_NCHANNELS],
              Symbol_t syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES])
@@ -362,91 +394,99 @@ static void process_frame
    #pragma HLS ARRAY_PARTITION variable=Prv cyclic factor= 8 ///complete ////factor=16 dim=1
 
 
+   static Histogram HistsLcl[MODULE_K_NCHANNELS];
+   #pragma     HLS STREAM           variable=HistsLcl off
+    PRAGMA_HLS(HLS ARRAY_PARTITION  variable=HistsLcl cyclic factor=NHISTPORTS dim=1)
+
+
+   static HeaderContextLcl HdrLcl;
+   #pragma HLS RESET variable=HdrLcl off
+
+
    ReadStatus_t      status = frame.m_status;
    ReadFrame::Data const *d = frame.m_dat.d;
 
-#if 0
-   // --------------------------------------------------------------------
-   // Check is have a valid frame
-   //    1. It must have not protocol errors
-   //    2.  The flush is only honored on the first frame of a new packet.
-   // --------------------------------------------------------------------
-   pktCtx.valid = ReadStatus::isGoodFrame (status)
-            && ! ((iframe == 0) && status.test (static_cast<unsigned>(ReadStatus::Offset::Flush)));
-
-
-   if (!pktCtx.valid)
-   {
-      pktCtx.nframes = iframe;
-      return;
-   }
-#endif
-
-
-
    if (iframe == 0)
    {
-      pktCtx.status  = status = ReadStatus::errsOnFirst (status);
-      hdrCtx.reset ();
+      uint64_t tmp_status = status;
+      HdrLcl.reset ();
+      HdrLcl.m_status  = status = ReadStatus::errsOnFirst (status);
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, (tmp_status << 32) | 0xC0000000 | HdrLcl.m_status);
+
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[0]);
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[1]);
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[2]);
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[3]);
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[16]);
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[17]);
+
+
+      pktCtx.m_excsBuf[0] = 0;
+      pktCtx.m_excsBuf[1] = 0;
    }
    else
    {
-      pktCtx.status |= status;
+      HdrLcl.m_status |= status;
    }
 
-   hdrCtx.m_status = pktCtx.status;
 
    // -------------------------------------------------------
    // Add the headers that do agree with the expected values
    // This always adds the headers for iframe = 0
-   // Accumulate the 'OR' of all the status bits
-   // Note the frame number
    // -------------------------------------------------------
-   hdrCtx.evaluate (status, iframe, d[0], d[1], d[2], d[3], d[16], d[17]);
-
-   std::cout << "W0[" << std::hex << iframe << ']' << d[0] << std::endl;
-
+   /// STRIP HdrLcl.evaluate (pktCtx.m_hdrsBuf, pktCtx.m_excsBuf,
+   /// STRIP                 status, iframe, d[0], d[1], d[2], d[3], d[16], d[17]);
 
 
-   //process_colddata (&syms[64], &hists[64], &Prv[64], d+18, iframe, 64);
+   pktCtx.m_chdx   = HdrLcl.m_hdx;
+   pktCtx.m_cedx   = HdrLcl.m_edx;
+   pktCtx.m_status = HdrLcl.m_status;
 
-
+   // ---------------------------------------------------------------------
+   // Pack the 128 ADCs into a vector 16 x 96 bits (8 x 12 ADCS per element
+   // ---------------------------------------------------------------------
    int             idx = 4;
    ap_uint<8*12> adcs8[16];
    #pragma HLS ARRAY_PARTITION variable=adcs8 factor=2 cyclic
-
-   //#pragma HLS RESOURCE        variable=adcs4 core=RAM_2P_LUTRAM
-
    PROCESS_COLDDATA_EXTRACT_LOOP:
-   for (int odx = 0; odx < 16; odx++)
+   for (int odx = 0; odx < 16;)
    {
       #pragma HLS PIPELINE
       ap_uint<64> a0 = d[idx++];
       ap_uint<64> a1 = d[idx++];
-
-      adcs8[odx++] =   (a1(31,0), a0);
-
       ap_uint<64> a2 = d[idx++];
 
+      adcs8[odx++] = (a1(31,0), a0);
       adcs8[odx++] = (a2, a1(63,32));
 
-      if (odx == 16) idx += 2;
+      // --------------------------------------------------------
+      // If have reached the start of the second colddata stream
+      // Then skip the 2 header words
+      // --------------------------------------------------------
+
+      if (odx == 8)
+      {
+         idx += 2;
+      }
    }
 
+
+   // -----------------------------------------------------------
+   // Access the 12-bit ADCs, form the symbols and histogram them
+   // -----------------------------------------------------------
    PROCESS_COLDDATA_PROCESS_LOOP:
    for (int ichan  = 0; ichan < 128; ichan += 4)
    {
       #pragma HLS PIPELINE II=2
-      //#pragma HLS UNROLL factor=2
 
       ap_uint<8*12> adc8 = adcs8[ichan >> 3];
 
       ap_uint<4*12> adc4 = adc8;
-      process4 (&syms[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
+      process4 (&syms[ichan], &HistsLcl[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
       ichan += 4;
 
       adc4 = adc8 >> 48;
-      process4 (&syms[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
+      process4 (&syms[ichan], &HistsLcl[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
    }
 
    print_adcs (syms, iframe);
@@ -485,6 +525,7 @@ static void process_frame
  *
 \* ----------------------------------------------------------------------- */
 static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
+                              Histogram                      histsLcl[64],
                               Histogram                         hists[64],
                               AdcIn_t                             prv[64],
                               ReadFrame::Data const                    *d,
@@ -517,7 +558,7 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
    for (int ichan  = 0; ichan < 64; ichan += 4)
    {
       #pragma HLS PIPELINE
-      process4 (&syms[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
+      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
    }
 
 #if 0
@@ -540,7 +581,7 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
       // --------
       ap_uint<64>   a0 = d[idx++];
       Adc48_t    adcs4 = a0;
-      process4 (&syms[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
+      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
       ichan += 4;
 
       // --------
@@ -548,7 +589,7 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
       // --------
       ap_uint<64> a1 = d[idx++];
       adcs4 = (a1(31,0), a0(63,48));
-      process4 (&syms[ichan], &hists[ichan], &prv[ichan], adcs4,  iframe, ichan);
+      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4,  iframe, ichan);
       ichan += 4;
 
       // ---------
@@ -556,14 +597,14 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
       // ---------
       ap_uint<64> a2 = d[idx++];
       adcs4 = (a2 (15,0), a1(63,32));
-      process4 (&syms[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
+      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
       ichan += 4;
 
       // ----------
       // ADCs 12-15
       // ----------
       adcs4 = a2 (63,16);
-      process4 (&syms[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
+      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
       ichan += 4;
    }
 #endif
@@ -592,6 +633,7 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
  *
 \* ---------------------------------------------------------------------- */
 static void process4 (Symbol_t syms[4][PACKET_K_NSAMPLES],
+                      Histogram               histsLcl[4],
                       Histogram                  hists[4],
                       AdcIn_t                      prv[4],
                       Adc48_t                       adcs4,
@@ -617,6 +659,16 @@ static void process4 (Symbol_t syms[4][PACKET_K_NSAMPLES],
       // --------------------------------------------------
       // The first ADC is the seed value is not compressed
       // --------------------------------------------------
+      histsLcl[0].clear ();
+      histsLcl[1].clear ();
+      histsLcl[2].clear ();
+      histsLcl[3].clear ();
+
+      // ------------------------------------------------
+      // !!! TEST !!!
+      // See if this removes messages about elements not
+      // being initialized.
+      // ------------------------------------------------
       hists[0].clear ();
       hists[1].clear ();
       hists[2].clear ();
@@ -658,10 +710,10 @@ static void process4 (Symbol_t syms[4][PACKET_K_NSAMPLES],
       // -----------------------------
       // Update the encoding histogram
       // -----------------------------
-      hists[0].bump (sym0);
-      hists[1].bump (sym1);
-      hists[2].bump (sym2);
-      hists[3].bump (sym3);
+      histsLcl[0].bump (hists[0], sym0);
+      histsLcl[1].bump (hists[1], sym1);
+      histsLcl[2].bump (hists[2], sym2);
+      histsLcl[3].bump (hists[3], sym3);
 
       // ----------------------------------
       // Store the symbols to be compressed
@@ -904,8 +956,6 @@ static void print_adcs (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLE
 /* ====================================================================== */
 
 
-
-
 /* ====================================================================== */
 #if PROCESS_PRINT
 /* ---------------------------------------------------------------------- *//*!
@@ -982,31 +1032,8 @@ static void process4_adcs_prv_sym_print
    return;
 }
 /* ---------------------------------------------------------------------- */
-#else
-/* ---------------------------------------------------------------------- */
-static inline void process4_adcs_print(int     oidx,
-                                       int    ichan,
-                                       AdcIn_t adc0,
-                                       AdcIn_t adc1,
-                                       AdcIn_t adc2,
-                                       AdcIn_t adc3)
-{ 
-  return;
-}
-
-static void process4_adcs_prv_sym_print
-           (int     oidx, int    ichan,
-            AdcIn_t adc0, AdcIn_t prv0, Histogram::Symbol_t sym0,
-            AdcIn_t adc1, AdcIn_t prv1, Histogram::Symbol_t sym1,
-            AdcIn_t adc2, AdcIn_t prv2, Histogram::Symbol_t sym2,
-            AdcIn_t adc3, AdcIn_t prv3, Histogram::Symbol_t sym3)
-{
-   return;
-}
-/* ---------------------------------------------------------------------- */
 #endif  /* PROCESS_PRINT                                                  */
 /* ====================================================================== */
-
 
 /* ---------------------------------------------------------------------- */
 #endif  /* _WIBFRAME_PROCESS_H_                                           */

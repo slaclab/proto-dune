@@ -57,8 +57,8 @@
 /* ---------------------------------------------------------------------- */
 #else
 /* ---------------------------------------------------------------------- */
-#define hist_check(_hist, _bs64, _ebits, _m_cbins)
-#define HIST_ENCODE_CHECK_statement(_statement) _statement
+#define hist_check(_hist, _bs64, _ebits, _m_bins)
+#define HIST_ENCODE_CHECK_statement(_statement)
 /* ---------------------------------------------------------------------- */
 #endif   /* HIST_ENCODE_CHECK                                             */
 /* ---------------------------------------------------------------------- */
@@ -164,7 +164,7 @@
  *          At entry 3, there are  0xe entries left, so need 4 bits to encode 0x2
  *          At entry 4, there are  0xc entries left, so need 4 bits to enocde 0x5
  */
-void Histogram::encode (BitStream64 &bs64, Table table[NBins+1], AdcIn_t first) const
+void Histogram::encode (OStream &ostream, BitStream64 &bs64, Table table[NBins+1], AdcIn_t first) const
 {
    #pragma HLS INLINE
    #pragma HLS PIPELINE
@@ -172,7 +172,8 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1], AdcIn_t first) 
    static int Format (0);
 
    // DEBUGGING ONLY STREAM
-   HIST_ENCODE_CHECK_statement (BitStream64 CheckStream; CheckStream.setName ("Hist"); )
+   HIST_ENCODE_CHECK_statement (OStream     CheckStream ("Hist");)
+   HIST_ENCODE_CHECK_statement (BitStream64 CheckBs64; CheckBs64.m_idx = 0; )
 
 
    // Debug only
@@ -187,7 +188,9 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1], AdcIn_t first) 
    int         ibin  = 0;
    int         prv   = 0;
    int         tbits = 0;
-   int         mbits = m_cmaxcnt.length () - m_cmaxcnt.countLeadingZeros ();
+   Entry_t    maxcnt = m_maxcnt;
+   int         mbits = maxcnt.length () - maxcnt.countLeadingZeros ();
+   int        nobits = m_nobits;
    int      firstAdc = first;
 
    // The header is
@@ -202,12 +205,12 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1], AdcIn_t first) 
                             | ((Histogram::NBins - 1) << 20)   // 20,  8
                             |  (mbits                 << 16)   // 16,  4
                             |  (firstAdc              <<  4)   //  4, 12
-                            |  (m_cnobits             <<  0);  //  0,  4
+                            |  (nobits                <<  0);  //  0,  4
    int     nbits = 4 + 12 + 4 + 8 + 4;
    HISTOGRAM_ENCODE_LOOP:
-   for (ibin = 0; ibin <= NBins+1 ; ibin++)
+   for (ibin = 0; ibin <= NBins; ibin++)
    {
-#pragma HLS PIPELINE II=1
+      #pragma HLS PIPELINE II=1
       ap_uint<10> left = PACKET_K_NSAMPLES - 1 - total;
       table[ibin] = total;
       tbits      += nbits;
@@ -216,38 +219,44 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1], AdcIn_t first) 
 
 
       // Insert the current bit pattern
-      bs64.insert (bits, nbits);
-      HIST_ENCODE_CHECK_statement (CheckStream.insert (bits, nbits);)
+      bs64.insert (ostream, bits, nbits);
+      HIST_ENCODE_CHECK_statement (CheckBs64.insert (CheckStream, bits, nbits);)
 
 
-      if (ibin >= NBins) break;
-
-      // Since the first bit must be a 1, no need to encode it.
-      // This is no true when left = 0, but at that point no further bits encoded
-      nbits =  left.length () - left.countLeadingZeros ();
-
-
-      Histogram::Entry_t cnts = m_comask.test (ibin)
-                              ? m_cbins[ibin]
-                              : Histogram::Entry_t (0);
-
-
-      total += cnts;
-      bits   = cnts;
-
-      // Limit the number of bits to the maximum of all entries
-      if (nbits >= mbits)
+      if (ibin < NBins)
       {
-         nbits = mbits;
+         // Since the first bit must be a 1, no need to encode it.
+         // This is no true when left = 0, but at that point no further bits encoded
+         nbits =  left.length () - left.countLeadingZeros ();
+
+         Histogram::Entry_t cnts = m_omask.test (ibin)
+                                 ? m_bins[ibin]
+                                 : Histogram::Entry_t (0);
+
+         total += cnts;
+         bits   = cnts;
+
+         // Limit the number of bits to the maximum of all entries
+         if (nbits >= mbits)
+         {
+            nbits = mbits;
+         }
+      }
+      else
+      {
+         break;
       }
    }
+
+   // Transfer the current context
+   bs64.transfer (ostream);
 
 
    // DEBUG
    #if HIST_ENCODE_CHECK
    {
-      int ebits = CheckStream.flush ();
-      hist_check (m_id, CheckStream, ebits, m_bins, first, m_cnobits);  ///!!!  m_cbins);
+      int ebits = CheckBs64.flush (CheckStream);
+      hist_check (m_id, CheckStream, ebits, m_bins, m_omask, first, nobits);
    }
    #endif
 
@@ -644,8 +653,8 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
    // -----------------------------------------------------------------------------
 
    bs64.m_cur = bs64.m_idx = 0;  /// !!! KLUDGE to test the number of bits inserted
-   Histogram::Idx_t lastgt1 = m_clastgt1;
-   Histogram::Idx_t lastgt2 = m_clastgt2;
+   Histogram::Idx_t lastgt1 = m_lastgt1;
+   Histogram::Idx_t lastgt2 = m_lastgt2;
    int             nlastgt2 = lastgt1.length () - lastgt1.countLeadingZeros ();
    int                nbits = lastgt1.length () + nlastgt2;
    uint32_t            bits = (Format              << (nbits + 8))
@@ -710,13 +719,13 @@ void Histogram::encode (BitStream64 &bs64, Table table[NBins+1]) const
          HIST_ENCODE_CHECK_statement (CheckStream.insert (bits, nbits);)
       }
 
-      if (ibin > m_clastgt0)
+      if (ibin > m_lastgt0)
       {
          break;
       }
 
-      Histogram::Entry_t cnts = m_comask.test (ibin)
-                              ? m_cbins[ibin]
+      Histogram::Entry_t cnts = m_omask.test (ibin)
+                              ? m_bins[ibin]
                               : Histogram::Entry_t (0);
 
       bits        = cnts;

@@ -667,6 +667,37 @@ public:
 /* ---------------------------------------------------------------------- */
 
 
+/* ----------------------------------------------------------------------- */
+#ifndef __SYNTHESIS__
+/* ----------------------------------------------------------------------- */
+#if 0
+static inline void print_header (uint64_t hdr)
+{
+   std::cout << "Header: " << std::setw(16) << std::hex << hdr << std::endl;
+   return;
+}
+#endif
+
+static inline void print_trailer (uint64_t tlr)
+{
+   std::cout << "Trailer: " << std::setw(16) << std::hex << tlr << std::endl;
+   return;
+}
+/* ----------------------------------------------------------------------- */
+#else
+/* ----------------------------------------------------------------------- */
+
+// --------------------------------------------------------------
+// These must be defined away.
+// While Vivado understands how to ignore std::cout, it does not
+// know how to ignore things like std::setw and std::hex
+// --------------------------------------------------------------
+#define  print_header(_hdr)
+#define print_trailer(_tlr)
+/* ----------------------------------------------------------------------- */
+#endif
+/* ----------------------------------------------------------------------- */
+
 
 /* ---------------------------------------------------------------------- *//*!
  *
@@ -791,11 +822,6 @@ static void         prologue (AxisOut          &mAxis,
 static void         epilogue (AxisOut          &mAxis,
                               int                &odx,
                               uint64_t         status);
-
-
-
-//static void    print_header  (uint64_t           hdr);
-static void    print_trailer (uint64_t           tlr);
 /* ----------------------------------------------------------------------- */
 
 
@@ -931,38 +957,6 @@ static inline void epilogue (AxisOut                &mAxis,
 
    return;
 }
-/* ----------------------------------------------------------------------- */
-
-/* ----------------------------------------------------------------------- */
-#ifndef __SYNTHESIS__
-/* ----------------------------------------------------------------------- */
-#if 0
-static inline void print_header (uint64_t hdr)
-{
-   std::cout << "Header: " << std::setw(16) << std::hex << hdr << std::endl;
-   return;
-}
-#endif
-
-static inline void print_trailer (uint64_t tlr)
-{
-   std::cout << "Trailer: " << std::setw(16) << std::hex << tlr << std::endl;
-   return;
-}
-/* ----------------------------------------------------------------------- */
-#else
-/* ----------------------------------------------------------------------- */
-
-// --------------------------------------------------------------
-// These must be defined away.
-// While Vivado understands how to ignore std::cout, it does not
-// know how to ignore things like std::setw and std::hex
-// --------------------------------------------------------------
-//static inline void print_header (uint64_t hdr) { return; }
-static inline void print_trailer(uint64_t tlr) { return; }
-
-/* ----------------------------------------------------------------------- */
-#endif
 /* ----------------------------------------------------------------------- */
 
 #endif

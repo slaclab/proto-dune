@@ -126,36 +126,59 @@ public:
 /* ---------------------------------------------------------------------- */
 
 
+class APE_etxOut
+{
+public:
+   APE_etxOut ();
 
+public:
+   OStream               ha; /*!< Output bit array (histogram+ overflow)   */
+   OStream               ba; /*!< Output bit array (encoded symbols        */
+};
 
 /* ---------------------------------------------------------------------- *//*!
 
-  \struct _APE_etx
+  \class _APE_etx
   \brief   Encoding context
-                                                                          *//*!
-  \typedef APE_etx
-  \brief   Typedef for struct \e _APE_etx
 
    While this is defined in the public interface, this structure should
    be treated like a C++ private member. All manipulation of this
    structure should be through the APE routines.
                                                                           */
 /* ---------------------------------------------------------------------- */
-struct _APE_etx
+class APE_etx
 {
+public:
   APE_cv                cv; /*!< Current lo/hi limits                     */
-  BitStream64           ba; /*!< Output bit array (main)                  */
-  BitStream64           oa; /*!< Output bit array (overflow)              */
+  BitStream64           ha; /*!< The encoded histogram/overflow data      */
+  BitStream64           ba; /*!< The encoded symbols                      */
   unsigned int    tofollow; /*!< Used when lo,hi straddle the .5 boundary */
   int                nhist; /*!< Number of bits in the encoded histogram  */
-
-  BitStream64          xoa; /*!< Check overflow bit array                 */
 };
 /* ---------------------------------------------------------------------- */
-#ifndef         APE_ETX_TD
-#define         APE_ETX_TD
-typedef struct _APE_etx    APE_etx;
-#endif
+
+APE_etxOut::APE_etxOut ()
+{
+   // Declare the encoding context and provide enough stream buffering
+   // to handle the worse case
+   //    ha - contains the histograms and the overflow data
+   //    ba - contains the encoded bits
+   //
+   // Worse case to ha is
+   //    nbins * PACKET_B_NSAMPLES + every bin overflowing
+   // with nbins = 32 and NSAMPLES = 10 bits = ~320 bits and 13 bit symbols
+   //     32 * 10 + 13 * 1024 = 13,362 -> 213 64 bit words
+   //
+   // Worse case for ba is a completely flat distribution
+   // with nbins = 32 and NSAMPLES = 1024 bits this is
+   //     5 bits * 1024 = 5,120 bits -> 80 64 bit words
+   //
+   // Round these to 256 and 128
+   #pragma HLS STREAM          variable=ha depth=256 dim=1
+   #pragma HLS STREAM          variable=ba depth=128 dim=1
+
+   return;
+}
 /* ---------------------------------------------------------------------- */
 
 
@@ -193,7 +216,7 @@ public:
 /* ---------------------------------------------------------------------- */
 #define APE_checkerStatement(_statement) _statement
 /* ---------------------------------------------------------------------- */
-bool encode_check (APE_etx                            &etx,
+bool encode_check (APE_etxOut                         &etx,
                    Histogram const                   &hist,
                    Symbol_t  const syms[PACKET_K_NSAMPLES]);
 /* ---------------------------------------------------------------------- */
@@ -253,7 +276,6 @@ static int inline APE_start (APE_etx &etx)
    etx.cv.m_hi   = APC_K_HI;
    etx.tofollow  = 0;
 
-   etx.xoa.m_idx = 0;
 
    return 0;
 }
@@ -275,7 +297,7 @@ static int inline APE_start (APE_etx &etx)
    This flushing may contribute more bits to the output stream.
                                                                           */
 /* ---------------------------------------------------------------------- */
-static int inline APE_finish (APE_etx &etx)
+static int inline APE_finish (APE_etxOut &etxOut, APE_etx &etx)
 {
    #pragma HLS INLINE
    //#pragma HLS PIPELINE
@@ -284,15 +306,15 @@ static int inline APE_finish (APE_etx &etx)
    ap_uint<1>           bit = etx.cv.m_lo >> (APC_K_NBITS - 2);
 
    uint32_t buf = compose (bit, 1, tofollow);
-   etx.ba.insert  (buf, 1 + tofollow);
-   //etx.ba.flush   ();
+   etx.ba.insert  (etxOut.ba, buf, 1 + tofollow);
+
+   etx.ba.transfer (etxOut.ba);
 
    //   printf ("Total bits = %u\n", etx->ba.m_idx);
    // Return the number of bits
    return etx.ba.m_idx;
 }
 /* ---------------------------------------------------------------------- */
-
 
 
 
@@ -314,7 +336,7 @@ static int inline APE_finish (APE_etx &etx)
   \fn    int  APE_encode (APE_etx              *etx,
                           APE_table_t  const *table,
                           Symbol_t     const  *syms,
-                          int                 nsymss)
+                          int                nsymss)
 
   \brief          Encodes an array of symbols
   \return         Number of symbols remaining to be encoded. If this is
@@ -326,24 +348,25 @@ static int inline APE_finish (APE_etx &etx)
   \param   nsyms  The number of symbols
                                                                           */
 /* ---------------------------------------------------------------------- */
-static int APE_encode  (APE_etx              &etx,
+static int APE_encode  (APE_etxOut        &etxOut,
                         Histogram    const  &hist,
                         Symbol_t     const  *syms,
                         int                 nsyms)
 {
+   #pragma HLS INLINE off
+   APE_etx etx;
+
    Histogram::Table table[Histogram::NBins+1];
    APE_start (etx);
-
-   printf ("Number of symbols = %d\n", nsyms);
 
 
    //static APE_instruction   instructions[1024];
    //APE_instruction *instruction = instructions;
 
    // Setup the APE decoding context
-   hist.encode (etx.ba, table, *syms++);
-   etx.nhist = etx.ba.m_idx;
-   ///APE_dumpStatement (hist.print (0));
+   hist.encode (etxOut.ha, etx.ha, table, *syms++);
+   etx.nhist = etx.ha.m_idx;   /// DEBUG
+   ////APE_dumpStatement (hist.print (0));
 
 
    int    npending   = etx.tofollow;
@@ -356,25 +379,21 @@ static int APE_encode  (APE_etx              &etx,
 
 
    APE_ENCODE_LOOP:
-   while (--nsyms >= 0)
+   while (--nsyms > 0)
    {
       //////#pragma HLS ALLOCATION instances=insert limit=1 function
       #pragma HLS PIPELINE II=1
+      #pragma HLS UNROLL factor=1
 
        Histogram::Symbol_t ovr;
        Histogram::Symbol_t sym = *syms++;
-       Histogram::Idx_t    idx = hist.idx (sym, ovr);
+       Histogram::Idx_t    idx = Histogram::idx (sym, ovr);
 
        cv.scale (table[idx], table[idx+1]);
 
        if (idx == 0)
        {
-
-          if (nsyms <= 1)
-          {
-             printf ("Wait here\n");
-          }
-          etx.oa.insert (ovr, hist.m_cnobits);
+          etx.ha.insert (etxOut.ha, ovr, hist.m_nobits);
        }
 
        // ----------------------------------------------------
@@ -511,7 +530,7 @@ static int APE_encode  (APE_etx              &etx,
 #else
           ebits  = compose (bits, nsame, npending);
           nebits = nsame + npending;
-          etx.ba.insert  (ebits, nebits);
+          etx.ba.insert  (etxOut.ba, ebits, nebits);
 #endif
           // -----------------------------------------------
           // If finishing up for either because we are done
@@ -527,7 +546,7 @@ static int APE_encode  (APE_etx              &etx,
                 buf <<= 12;
                 buf  |= sym;
              }
-             etx.ba.insert (buf, 2 + mpending + 12);
+             ba.insert (etxOut.ba, buf, 2 + mpending + 12);
 
              cv.m_lo   = 0;
              cv.m_hi   = APC_K_HI;
@@ -536,7 +555,7 @@ static int APE_encode  (APE_etx              &etx,
 
           else
           {
-             //APE_sharedStatement (ebits =) etx.ba.insert (bits, nsame, npending);
+             //APE_sharedStatement (ebits =) ba.insert (etxOut.ba, bits, nsame, npending);
              npending = mpending;
           }
 #else
@@ -578,7 +597,9 @@ static int APE_encode  (APE_etx              &etx,
  EXIT:
    etx.cv        = cv;
    etx.tofollow  = npending;
-   APE_finish (etx);
+
+   etx.ha.transfer (etxOut.ha);
+   APE_finish (etxOut, etx);
 
    return nsyms;
 }

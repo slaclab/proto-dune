@@ -31,22 +31,24 @@
 #include <stdint.h>
 #include <ap_int.h>
 
-class XStream : public hls::stream<uint64_t>
+class OStream : public hls::stream<uint64_t>
 {
 public:
-   XStream (const char *name = "test") : hls::stream<uint64_t>(name) {}
+   OStream (const char *name = "test") :
+      hls::stream<uint64_t> (name)
+   {
+      return;
+   }
 
 #ifndef __SYNTHESIS__
 public:
    const std::string &name () { return _name; }
-
-   void setName (const char *name)
-   {
-      _name = name;
-   }
-#else
-   const char *name () { return "Dummy"; }
 #endif
+
+   typedef uint32_t Idx_t;
+
+   uint64_t               m_ccur; /*!< Output staging buffer                   */
+   OStream::Idx_t         m_cidx; /*!< The current bit index                   */
 };
 
 class BitStream64
@@ -59,36 +61,32 @@ public:
 public:
    void               set   (Idx_t idx);
    void               reset ();
-   BitStream64::Idx_t flush ();
+   BitStream64::Idx_t flush (OStream &ostream);
    int                bidx  () const;
    int                widx  () const;
 
    //void               insert (APC_cv_t bit);
-   void               insert (int bits, int nbits);
+   void               insert (OStream &ostream, int bits, int nbits);
+   void             transfer (OStream & ostream);
 
-public:
-   void setName (const char *name)
-   {
-      #ifndef __SYNTHESIS__
-      m_out.setName (name);
-      #endif
-   }
+   void              dfready ();
 
 public:
    uint64_t                  m_cur; /*!< Output staging buffer                   */
    BitStream64::Idx_t        m_idx; /*!< The current bit index                   */
-   XStream                   m_out; /*!< Output array                            */
+   uint64_t                 m_ccur; /*!< Output staging buffer                   */
+   BitStream64::Idx_t       m_cidx; /*!< The current bit index                   */
 };
 
 
 __inline BitStream64::BitStream64 () :
-      m_cur (   0),
-      m_idx (   0)
+      m_idx (0),
+      m_cur (0)
 {
    #pragma HLS INLINE
-   #pragma HLS STREAM variable=m_out depth=192 dim=1
    return;
 }
+
 
 __inline void BitStream64::set (BitStream64::Idx_t idx)
 {
@@ -96,7 +94,13 @@ __inline void BitStream64::set (BitStream64::Idx_t idx)
    m_idx = idx;
 }
 
-__inline BitStream64::Idx_t BitStream64::flush ()
+__inline void BitStream64::transfer (OStream & ostream)
+{
+   ostream.m_ccur = m_cur;
+   ostream.m_cidx = m_idx;
+}
+
+__inline BitStream64::Idx_t BitStream64::flush (OStream &ostream)
 {
    #pragma HLS INLINE
     int cur_idx = bidx ();
@@ -105,8 +109,12 @@ __inline BitStream64::Idx_t BitStream64::flush ()
    if (cur_idx != 0)
    {
       m_cur <<= 0x40 - cur_idx;
-      m_out.write (m_cur);
+      ostream.write (m_cur);
    }
+
+   ostream.m_cidx = m_idx;
+   ostream.m_ccur = 0;
+
    return m_idx;
 }
 
@@ -128,8 +136,15 @@ __inline int BitStream64::widx () const
 //   insert (bit, 1);
 //}
 
+__inline void BitStream64::dfready ()
+{
+   #pragma HLS INLINE
 
-__inline void BitStream64::insert (int bits, int nbits)
+   m_ccur = m_cur;
+   m_cidx = m_idx;
+}
+
+__inline void BitStream64::insert (OStream &ostream, int bits, int nbits)
 {
    #pragma HLS PIPELINE
    #pragma HLS INLINE
@@ -154,14 +169,16 @@ __inline void BitStream64::insert (int bits, int nbits)
       // There is no need to clear any set bits beyond
       // the overrun bits, they will eventually by
       // shifted out the top bit.
-      m_out.write (m_cur);
+      ostream.write (m_cur);
+
 
       #ifndef __SYNTHESIS__
          nbidx += left;
 
-         std::cout << "BS64:" << m_out.name() << ':'
+         std::cout << "BS64:" << ostream.name() << ':'
                    << std::setfill ('0') << std::hex << std::setw (16) << m_cur
-                   << ':' << bits << std::setfill (' ') << " len = " <<  nbidx << std::endl;
+                   << ':'       <<  std::hex << std::setw(8) << std::setfill (' ') << bits
+                   << " len = " <<  std::hex << std::setw(4) << std::setfill (' ') << nbidx << std::endl;
       #endif
 
       m_cur   = bits;
@@ -170,7 +187,7 @@ __inline void BitStream64::insert (int bits, int nbits)
    m_idx += nbits;
 
    #ifndef __SYNTHESIS__
-   ///   std::cout << "BS64:" << m_out.name () << "len = " << m_idx << std::endl;
+   ///   std::cout << "BS64:" << ostream.name () << "len = " << m_idx << std::endl;
    #endif
    return;
 }
