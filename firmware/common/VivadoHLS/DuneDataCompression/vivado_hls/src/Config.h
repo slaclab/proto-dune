@@ -101,7 +101,7 @@ public:
    void copy (ModuleConfig const &src); 
    
 public:   
-   uint32_t                            init;  /*!< Initialization flag    */
+    int32_t                            init;  /*!< Initialization flag    */
    uint32_t                            mode;  /*!< Data processing mode   */
    uint32_t                           limit;  /*!< Limits size of output
                                                    packet, units = 64bit

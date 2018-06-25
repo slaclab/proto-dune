@@ -85,6 +85,13 @@
 \* ---------------------------------------------------------------------- */
 
 #include "Parameters.h"
+#include "DuneDataCompressionHistogram.h"
+
+
+typedef Histogram::Symbol_t Symbol_t;
+
+
+
 
 
 /* ======================================================================== */
@@ -101,10 +108,14 @@
 
 
 #if    PROCESS_PRINT_ADCS
-static void print_adcs (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-                        int                                                iframe);
+static void print_adcs (Symbol_t const syms0[PACKET_K_NSAMPLES],
+                        Symbol_t const syms1[PACKET_K_NSAMPLES],
+                        Symbol_t const syms2[PACKET_K_NSAMPLES],
+                        Symbol_t const syms3[PACKET_K_NSAMPLES],
+                        int                              iframe)
+
 #else
-#define print_adcs(_syms, _iframe)
+#define print_adcs(_syms0, _syms1, _syms2, _syms3, _iframe)
 #endif
 
 
@@ -229,6 +240,8 @@ class HeaderContextLcl
 /* ---------------------------------------------------------------------------- */
 
 
+
+
 /* ---------------------------------------------------------------------------- *//*!
  *
  *  \class PacketContext
@@ -304,6 +317,50 @@ public:
 /* ------------------------------------------------------------------------- */
 
 
+struct Symbols
+{
+   Symbol_t  sg0[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 0, 4,  8, ... */
+   Symbol_t  sg1[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 1, 5,  9, ... */
+   Symbol_t  sg2[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 2, 6, 10, ... */
+   Symbol_t  sg3[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 3, 7, 11, ... */ 
+};
+
+
+
+struct Histograms
+{
+public:
+   Histogram sg0[MODULE_K_NSERIAL];  /*!< 0, 4,  8, ... */
+   Histogram sg1[MODULE_K_NSERIAL];  /*!< 1, 5,  9, ... */
+   Histogram sg2[MODULE_K_NSERIAL];  /*!< 2, 6, 10, ... */
+   Histogram sg3[MODULE_K_NSERIAL];  /*!< 3, 7, 11, ... */ 
+
+public:
+   HISTOGRAM_statement (
+   void set_ids (int nparallel)
+   {
+      Histogram::set_ids (sg0, sizeof (sg0) / sizeof (sg0[0]), 0, nparallel);
+      Histogram::set_ids (sg1, sizeof (sg1) / sizeof (sg1[0]), 1, nparallel);
+      Histogram::set_ids (sg2, sizeof (sg2) / sizeof (sg2[0]), 2, nparallel);
+      Histogram::set_ids (sg3, sizeof (sg3) / sizeof (sg3[0]), 3, nparallel);
+   }
+   )
+};
+
+/* ------------------------------------------------------------------------ *//*!
+ *
+ * \brief The compression context
+ *
+ *  This contains the information needed to compression the data
+ *
+\* ------------------------------------------------------------------------ */
+struct CompressionContext
+{
+   Symbols     syms;
+   Histograms hists;
+};
+/* ------------------------------------------------------------------------ */
+
 
 
 /* ======================================================================== */
@@ -312,20 +369,20 @@ public:
 
 typedef ap_uint<48>        Adc48_t;
 
-static void       process_colddata (Symbol_t syms[64][PACKET_K_NSAMPLES],
-                                    Histogram                  hists[64],
-                                    AdcIn_t                      prv[64],
-                                    ReadFrame::Data const             *d,
-                                    int                           iframe,
-                                    int                         beg_chan);
 
-static inline void        process4 (Symbol_t syms[ 4][PACKET_K_NSAMPLES],
-                                    Histogram                histsLcl[4],
-                                    Histogram                   hists[4],
-                                    AdcIn_t                       prv[4],
-                                    Adc48_t                       adcs48,
-                                    int                           iframe,
-                                    int                            ichan);
+static inline void        process4 (Symbol_t   syms0[PACKET_K_NSAMPLES],
+                                    Symbol_t   syms1[PACKET_K_NSAMPLES],
+                                    Symbol_t   syms2[PACKET_K_NSAMPLES],
+                                    Symbol_t   syms3[PACKET_K_NSAMPLES],
+                                    Histogram                    &hist0,
+                                    Histogram                    &hist1,
+                                    Histogram                    &hist2,
+                                    Histogram                    &hist3,
+                                    Histogram               histsLcl[4],
+                                    AdcIn_t                      prv[4],
+                                    Adc48_t                      adcs48,
+                                    int                          iframe,
+                                    int                           ichan);
 
 static inline AdcIn_t extract_adc0 (Adc48_t                       adcs4);
 static inline AdcIn_t extract_adc1 (Adc48_t                       adcs4);
@@ -384,8 +441,7 @@ static void process_frame
              ap_uint<PACKET_B_NSAMPLES>                    iframe,
              ModuleConfig     const                       &config,
              PacketContext                                &pktCtx,
-             Histogram                  hists[MODULE_K_NCHANNELS],
-             Symbol_t syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES])
+             CompressionContext                           &cmpCtx)
 {
    #pragma HLS INLINE off
 
@@ -393,11 +449,10 @@ static void process_frame
    #pragma HLS RESET           variable=Prv off
    #pragma HLS ARRAY_PARTITION variable=Prv cyclic factor= 8 ///complete ////factor=16 dim=1
 
-
    static Histogram HistsLcl[MODULE_K_NCHANNELS];
-   #pragma     HLS STREAM           variable=HistsLcl off
+   #pragma HLS RESOURCE variable=HistsLcl  core=RAM_2P_LUTRAM
     PRAGMA_HLS(HLS ARRAY_PARTITION  variable=HistsLcl cyclic factor=NHISTPORTS dim=1)
-
+   ///PRAGMA_HLS(HLS ARRAY_PARTITION  variable=HistsLcl cyclic factor=8 dim=1)
 
    static HeaderContextLcl HdrLcl;
    #pragma HLS RESET variable=HdrLcl off
@@ -475,144 +530,64 @@ static void process_frame
    // Access the 12-bit ADCs, form the symbols and histogram them
    // -----------------------------------------------------------
    PROCESS_COLDDATA_PROCESS_LOOP:
-   for (int ichan  = 0; ichan < 128; ichan += 4)
+   int ichan = 0;
+   for (int iserial  = 0; iserial < MODULE_K_NSERIAL;)
    {
       #pragma HLS PIPELINE II=2
 
       ap_uint<8*12> adc8 = adcs8[ichan >> 3];
 
       ap_uint<4*12> adc4 = adc8;
-      process4 (&syms[ichan], &HistsLcl[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
-      ichan += 4;
+      process4 (cmpCtx. syms.sg0[iserial],
+                cmpCtx. syms.sg1[iserial],
+                cmpCtx. syms.sg2[iserial],
+                cmpCtx. syms.sg3[iserial],
+
+                cmpCtx.hists.sg0[iserial],
+                cmpCtx.hists.sg1[iserial],
+                cmpCtx.hists.sg2[iserial],
+                cmpCtx.hists.sg3[iserial],
+
+                &HistsLcl[ichan],
+                &Prv[ichan],
+                adc4,
+                iframe,
+                ichan);
+      iserial += 1;
+      ichan   += 4;
 
       adc4 = adc8 >> 48;
-      process4 (&syms[ichan], &HistsLcl[ichan], &hists[ichan], &Prv[ichan], adc4, iframe, ichan);
+      process4 (cmpCtx. syms.sg0[iserial],
+                cmpCtx. syms.sg1[iserial],
+                cmpCtx. syms.sg2[iserial],
+                cmpCtx. syms.sg3[iserial],
+
+                cmpCtx.hists.sg0[iserial],
+                cmpCtx.hists.sg1[iserial],
+                cmpCtx.hists.sg2[iserial],
+                cmpCtx.hists.sg3[iserial],
+
+                &HistsLcl[ichan],
+                &Prv[ichan],
+                adc4,
+                iframe,
+                ichan);
+      iserial += 1;
+      ichan   += 4;
    }
 
-   print_adcs (syms, iframe);
 
+   print_adcs (cmpCtx.syms.sg0,
+               cmpCtx.syms.sg1,
+               cmpCtx.syms.sg2,
+               cmpCtx.syms.sg3,
+               iframe);
 
    return;
 }
 /* ----------------------------------------------------------------------- */
 
 
-
-/* ----------------------------------------------------------------------- *//*!
- *
- *   \brief  Process 1 colddata stream, extracting the cold data headers
- *           and ADCs.  The ADCs are processed into the symbols which will
- *           be compressed. Per channel histgrams are updated. These
- *           histograms are the basis of the compression tables.
- *
- *  \param[in:out]  hists  The per channel histograms
- *  \param[out]      syms  The values  that will be compressed.  These
- *                         are result of a reversible function of an
- *                         ADC. (It must be reversible in order to
- *                         recover the original ADC.
- *  \param[in:out]    prv  The ADC value of the previous sample. This
- *                         is used to form the symbol by subtracting
- *                         it from the ADC value, \i i.e. sym=cur-prv
- *  \param[in]          d  The cold data. This consists of 2 64-bit
- *                         header words followed by 12 64-bits containing
- *                         the ADCs.
- *  \param[in]     iframe  The frame number within the packet.  This
- *                         is used as the last index into \a syms.
- *  \param[in]    beg_chan The beginning channel number.  This is for
- *                         debugging purposes only and is either
- *                            -  0 for cold data stream 0
- *                            - 64 for cold data stream 1
- *
-\* ----------------------------------------------------------------------- */
-static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
-                              Histogram                      histsLcl[64],
-                              Histogram                         hists[64],
-                              AdcIn_t                             prv[64],
-                              ReadFrame::Data const                    *d,
-                              int                                  iframe,
-                              int                                beg_chan)
-{
-   #pragma HLS INLINE
-   #pragma HLS PIPELINE
-
-   ap_uint<4*12> adcs4[16];
-   int idx = 0;
-
-   PROCESS_COLDDATA_EXTRACT_LOOP:
-   for (int odx = 0; odx < 16; odx++)
-   {
-      #pragma HLS PIPELINE
-      ap_uint<64> a0 = d[idx++];
-      adcs4[odx++] = a0;
-
-      ap_uint<64> a1 = d[idx++];
-      adcs4[odx++] =   (a1(31,0), a0(63,48));
-
-      ap_uint<64> a2 = d[idx++];
-      adcs4[odx++] = (a2 (15,0), a1(63,32));
-
-      adcs4[odx++] = a2 (63,16);
-   }
-
-   PROCESS_COLDDATA_LOOP:
-   for (int ichan  = 0; ichan < 64; ichan += 4)
-   {
-      #pragma HLS PIPELINE
-      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
-   }
-
-#if 0
-   int idx = 0;
-   PROCESS_COLDDATA_LOOP:
-   for (int ichan = 0; ichan < MODULE_K_NCHANNELS/2;)
-   {
-      // ------------------------------------------------------------
-      // The reading of the 5 axi stream limits the II to 5 and is
-      // is the best one can do. This rids the output of carried
-      // dependency warnings.
-      // ------------------------------------------------------------
-      #pragma HLS PIPELINE II=2
-
-      HISTOGRAM_statement (hists[ichan].printit = ichan == 0 ? true : false;)
-
-
-      // --------
-      // ADCs 0-3
-      // --------
-      ap_uint<64>   a0 = d[idx++];
-      Adc48_t    adcs4 = a0;
-      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
-      ichan += 4;
-
-      // --------
-      // ADCs 4-7
-      // --------
-      ap_uint<64> a1 = d[idx++];
-      adcs4 = (a1(31,0), a0(63,48));
-      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4,  iframe, ichan);
-      ichan += 4;
-
-      // ---------
-      // ADCs 8-11
-      // ---------
-      ap_uint<64> a2 = d[idx++];
-      adcs4 = (a2 (15,0), a1(63,32));
-      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
-      ichan += 4;
-
-      // ----------
-      // ADCs 12-15
-      // ----------
-      adcs4 = a2 (63,16);
-      process4 (&syms[ichan], &histsLcl[ichan], &hists[ichan], &prv[ichan], adcs4, iframe, ichan);
-      ichan += 4;
-   }
-#endif
-
-   return;
-
-}
-/* ---------------------------------------------------------------------- */
 
 
 
@@ -632,13 +607,19 @@ static void process_colddata (Symbol_t        syms[64][PACKET_K_NSAMPLES],
  *  \param[in]       ichan  For diagnostic purposes only (printf's...)
  *
 \* ---------------------------------------------------------------------- */
-static void process4 (Symbol_t syms[4][PACKET_K_NSAMPLES],
-                      Histogram               histsLcl[4],
-                      Histogram                  hists[4],
-                      AdcIn_t                      prv[4],
-                      Adc48_t                       adcs4,
-                      int                          iframe,
-                      int                           ichan)
+static void process4 (Symbol_t syms0[PACKET_K_NSAMPLES],
+                      Symbol_t syms1[PACKET_K_NSAMPLES],
+                      Symbol_t syms2[PACKET_K_NSAMPLES],
+                      Symbol_t syms3[PACKET_K_NSAMPLES],
+                      Histogram                  &hist0,
+                      Histogram                  &hist1,
+                      Histogram                  &hist2,
+                      Histogram                  &hist3,
+                      Histogram             histsLcl[4],
+                      AdcIn_t                    prv[4],
+                      Adc48_t                     adcs4,
+                      int                        iframe,
+                      int                         ichan)
 {
    #pragma HLS   INLINE
    #pragma HLS PIPELINE
@@ -669,19 +650,19 @@ static void process4 (Symbol_t syms[4][PACKET_K_NSAMPLES],
       // See if this removes messages about elements not
       // being initialized.
       // ------------------------------------------------
-      hists[0].clear ();
-      hists[1].clear ();
-      hists[2].clear ();
-      hists[3].clear ();
+      hist0.clear ();
+      hist1.clear ();
+      hist2.clear ();
+      hist3.clear ();
 
       // -----------------------------------------------------
       // Store the ADC as the first symbol
       // A symbol will always have enough bits to hold an ADC
       // ----------------------------------------------------
-      syms[0][iframe] = adc0;
-      syms[1][iframe] = adc1;
-      syms[2][iframe] = adc2;
-      syms[3][iframe] = adc3;
+      syms0[iframe] = adc0;
+      syms1[iframe] = adc1;
+      syms2[iframe] = adc2;
+      syms3[iframe] = adc3;
 
       // -------------------------
       // Diagnostic only print-out
@@ -710,18 +691,18 @@ static void process4 (Symbol_t syms[4][PACKET_K_NSAMPLES],
       // -----------------------------
       // Update the encoding histogram
       // -----------------------------
-      histsLcl[0].bump (hists[0], sym0);
-      histsLcl[1].bump (hists[1], sym1);
-      histsLcl[2].bump (hists[2], sym2);
-      histsLcl[3].bump (hists[3], sym3);
+      histsLcl[0].bump (hist0, sym0);
+      histsLcl[1].bump (hist1, sym1);
+      histsLcl[2].bump (hist2, sym2);
+      histsLcl[3].bump (hist3, sym3);
 
       // ----------------------------------
       // Store the symbols to be compressed
       // ----------------------------------
-      syms[0][iframe] = sym0;
-      syms[1][iframe] = sym1;
-      syms[2][iframe] = sym2;
-      syms[3][iframe] = sym3;
+      syms0[iframe] = sym0;
+      syms1[iframe] = sym1;
+      syms2[iframe] = sym2;
+      syms3[iframe] = sym3;
 
       // ------------------------
       // Diagnostic only printout
@@ -904,8 +885,11 @@ static inline AdcIn_t extract_adc3 (Adc48_t adcs4)
  *  \param[in]  syms  The symbols which are derived from the ADCs
  *
 \* ---------------------------------------------------------------------- */
-static void print_adcs (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-                        int                                                 iframe)
+static void print_adcs (Symbol_t const syms0[PACKET_K_NSAMPLES],
+                        Symbol_t const syms1[PACKET_K_NSAMPLES],
+                        Symbol_t const syms2[PACKET_K_NSAMPLES],
+                        Symbol_t const syms3[PACKET_K_NSAMPLES],
+                        int                              iframe)
 {
    // -------------------------------
    // Holds onto the last set of ADCs
@@ -921,7 +905,7 @@ static void print_adcs (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLE
    // ----------------------
    // Print ADCs 16 per line
    // ----------------------
-   for (int idx = 0; idx < 128; idx++)
+   for (int idx = 0; idx < 32; idx++)
    {
       // -------------------------------
       // Put title out on the first line
@@ -934,7 +918,15 @@ static void print_adcs (Symbol_t const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLE
       // ----------------------------------------------------------
       // If not the first, must add the previous value for this ADC
       // ----------------------------------------------------------
-      int adc  = syms[idx][iframe];
+      int adc;
+      int nserial   = idx / MODULE_K_NPARALLEL;
+      int nparallel = idx % MODULE_K_NPARALLEL;
+
+      if      ( (nparallel == 0) adc = syms0[nserial][iframe];
+      else if ( (nparallel == 1) adc = syms1[nserial][iframe];
+      else if ( (nparallel == 2) adc = syms2[nserial][iframe];
+      else if ( (nparallel == 3) adc = syms3[nserial[iframe];
+
       if (iframe != 0)
       {
          int dif = adc;

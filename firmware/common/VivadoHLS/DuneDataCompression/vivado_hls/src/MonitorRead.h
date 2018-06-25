@@ -2,8 +2,7 @@
 /* ---------------------------------------------------------------------- */
 /* Local methods used by the update read class method                     */
 /* ---------------------------------------------------------------------- */
-static void update_read (MonitorRead        &gbl,
-                         MonitorRead        &lcl,
+static void update_read (MonitorRead        &lcl,
                          ModuleConfig const &cfg,
                          ReadStatus       status);
 /* ---------------------------------------------------------------------- */
@@ -15,9 +14,21 @@ static void update_read (MonitorRead        &gbl,
                            ReadStatus       status)
  {
     #pragma HLS INLINE off
-    update_read (gbl, *this, cfg, status);
+    update_read (*this, cfg, status);
+    gbl = *this;
     return;
- }
+}
+
+ void MonitorRead::update (ModuleConfig const cfg,
+                       ReadStatus      status)
+{
+   #pragma HLS INLINE off
+    update_read (*this, cfg, status);
+    return;
+}
+
+
+
 
 
 /* ---------------------------------------------------------------------- */
@@ -34,31 +45,24 @@ static void update_colddata (MonitorRead    &lcl,
                              int            sOff,
                              int            cOff);
 
-static void printReadResults (ap_uint<2>          status, 
+static void printReadResults (ap_uint<2>          status,
                               MonitorRead const &monitor);
 
 /* ---------------------------------------------------------------------- */
-
-
 
 
 /* ---------------------------------------------------------------------- *//*!
  *
  *  \brief  Update the read portion of the status block
  *
- *  \param[   out]    gbl This will receive a copy of the locally
- *                        maintained read status block after it has
- *                        been updated
  *  \param[in:out]    lcl The locally maintained copy of the read status
  *                        block
  * \param[in]         cfg The configuration block
- * \param[in]      output Flag indicating whether the packet was written
  * \param[in]      status The read status flags.  This is used to increment
  *                        a counter corresponding to this status.
  *
 \* ---------------------------------------------------------------------- */
-static void update_read (MonitorRead        &gbl,
-                         MonitorRead        &lcl,
+static void update_read (MonitorRead        &lcl,
                          ModuleConfig const &cfg,
                          ReadStatus       status)
 {
@@ -68,7 +72,7 @@ static void update_read (MonitorRead        &gbl,
 
    //std::cout << "status(flush): " << status << " user:" << in.user << std::endl;
    static bool First = true;
-   if (cfg.init || First)
+   if ( (cfg.init == 1)|| (cfg.init >= 0 && First))
    {
       printf ("Initializing lcl\n");
       First = false;
@@ -112,17 +116,11 @@ static void update_read (MonitorRead        &gbl,
       }
    }
 
-   gbl = lcl;
-
    printReadResults (status, lcl);
-
-
 
    return;
 }
 /* ----------------------------------------------------------------------- */
-
-
 
 /* ----------------------------------------------------------------------- *//*!
  *

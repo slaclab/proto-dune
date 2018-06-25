@@ -60,12 +60,6 @@
 
 #include "Parameters.h"
 
-#if  MODULE_K_NCHANNELS == 128
-#define NHISTPORTS  16
-#else
-#error  "MODULE_K_NCHANNELS  must be 128 channels"
-#endif
-
 
 class BitStream64;
 
@@ -183,8 +177,14 @@ public:
     static void  print                   (Histogram  const  hists[],
                                           int                nhists);
 
-    static void set_id                   (Histogram         hists[],
+    static void set_ids                  (Histogram         hists[],
                                           int               nhists);
+
+    static void set_ids                  (Histogram         hists[],
+                                          int                nhists,
+                                          int                  base,
+                                          int                stride);
+
     static void  print_integration_title ();
     static void  print_integration_line  (int                   bin,
                                           Histogram::Entry_t    cnt,
@@ -290,7 +290,7 @@ HISTOGRAM_statement (
  *  \param[ in[ nhists  The number of histograms to clear
  *
 \* ---------------------------------------------------------------------- */
-inline void  Histogram::set_id (Histogram hists[], int nhists)
+inline void  Histogram::set_ids (Histogram hists[], int nhists)
 {
    for (int idx = 0; idx < nhists; idx++)
    {
@@ -299,6 +299,36 @@ inline void  Histogram::set_id (Histogram hists[], int nhists)
 
    return;
 }
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief Set the histogram identifier
+ *
+ *  \param[out]  hists  The  array of histograms to clear
+ *  \param[ in[ nhists  The number of histograms to clear
+ *  \param[ in]   base  The base id
+ *  \param[ in] stride  The stride.
+ *
+ *  Ids will be assigned as base + 0*nstride, base + 1* nstride,
+ *  base + 2*nstride,etc...
+ *
+\* ---------------------------------------------------------------------- */
+inline void  Histogram::set_ids (Histogram hists[],
+                                 int        nhists,
+                                 int          base,
+                                 int        stride)
+{
+   int id = base;
+   for (int idx = 0; idx < nhists; id += stride, idx++)
+   {
+      hists[idx].m_id = id;
+   }
+
+   return;
+}
+
+
 /* ---------------------------------------------------------------------- */
 )
 /* ---------------------------------------------------------------------- */

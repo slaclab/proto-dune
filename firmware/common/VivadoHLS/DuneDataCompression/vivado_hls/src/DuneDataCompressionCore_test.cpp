@@ -325,6 +325,8 @@ static int compress_test (int               fd,
    std::cout << "MODE = COMPRESS" << std::endl;
    std::cout << "-- BY PASSING CHECKING" << std::endl;
 
+   // Ignore the first time flag;
+   config.init = -1;
    uint64_t timestamp = 0x00800000LL;
 
    for (int ipacket = 0; ipacket < NPACKETS; ipacket++)
@@ -344,8 +346,8 @@ static int compress_test (int               fd,
       // ----------------------------------
       // Fill a packets worth of Wib frames
       // -----------------------------------
-      int nbytes = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
-      timestamp += 25 * PACKET_K_NSAMPLES;
+      int nbytes  = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
+      timestamp  += 25 * PACKET_K_NSAMPLES;
 
       // -------------------
       // Compress the packet
@@ -370,6 +372,7 @@ static int compress_test (int               fd,
          break;
       }
 
+      config.init = 0;
       printf ("NEXT\n");
    }
 
