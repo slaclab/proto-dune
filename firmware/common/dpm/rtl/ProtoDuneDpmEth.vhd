@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEth.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-11-01
--- Last update: 2018-05-30
+-- Last update: 2018-06-26
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -71,25 +71,25 @@ architecture mapping of ProtoDuneDpmEth is
    signal syncWriteMaster : AxiLiteWriteMasterType;
    signal syncWriteSlave  : AxiLiteWriteSlaveType;
 
-   signal srpReadMaster  : AxiLiteReadMasterType;
-   signal srpReadSlave   : AxiLiteReadSlaveType;
-   signal srpWriteMaster : AxiLiteWriteMasterType;
-   signal srpWriteSlave  : AxiLiteWriteSlaveType;
+   signal srpReadMaster  : AxiLiteReadMasterType  := AXI_LITE_READ_MASTER_INIT_C;
+   signal srpReadSlave   : AxiLiteReadSlaveType   := AXI_LITE_READ_SLAVE_EMPTY_OK_C;
+   signal srpWriteMaster : AxiLiteWriteMasterType := AXI_LITE_WRITE_MASTER_INIT_C;
+   signal srpWriteSlave  : AxiLiteWriteSlaveType  := AXI_LITE_WRITE_SLAVE_EMPTY_OK_C;
 
-   signal axilWriteMasters : AxiLiteWriteMasterArray(AXIL_MASTERS_C-1 downto 0);
-   signal axilWriteSlaves  : AxiLiteWriteSlaveArray(AXIL_MASTERS_C-1 downto 0);
-   signal axilReadMasters  : AxiLiteReadMasterArray(AXIL_MASTERS_C-1 downto 0);
-   signal axilReadSlaves   : AxiLiteReadSlaveArray(AXIL_MASTERS_C-1 downto 0);
+   signal axilWriteMasters : AxiLiteWriteMasterArray(AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_MASTER_INIT_C);
+   signal axilWriteSlaves  : AxiLiteWriteSlaveArray(AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_WRITE_SLAVE_EMPTY_OK_C);
+   signal axilReadMasters  : AxiLiteReadMasterArray(AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_MASTER_INIT_C);
+   signal axilReadSlaves   : AxiLiteReadSlaveArray(AXIL_MASTERS_C-1 downto 0)   := (others => AXI_LITE_READ_SLAVE_EMPTY_OK_C);
 
-   signal obServerMaster : AxiStreamMasterType;
-   signal obServerSlave  : AxiStreamSlaveType;
-   signal ibServerMaster : AxiStreamMasterType;
-   signal ibServerSlave  : AxiStreamSlaveType;
+   signal obServerMaster : AxiStreamMasterType := AXI_STREAM_MASTER_INIT_C;
+   signal obServerSlave  : AxiStreamSlaveType  := AXI_STREAM_SLAVE_FORCE_C;
+   signal ibServerMaster : AxiStreamMasterType := AXI_STREAM_MASTER_INIT_C;
+   signal ibServerSlave  : AxiStreamSlaveType  := AXI_STREAM_SLAVE_FORCE_C;
 
-   signal rssiIbMasters : AxiStreamMasterArray(APP_STREAMS_C-1 downto 0);
-   signal rssiIbSlaves  : AxiStreamSlaveArray(APP_STREAMS_C-1 downto 0);
-   signal rssiObMasters : AxiStreamMasterArray(APP_STREAMS_C-1 downto 0);
-   signal rssiObSlaves  : AxiStreamSlaveArray(APP_STREAMS_C-1 downto 0);
+   signal rssiIbMasters : AxiStreamMasterArray(APP_STREAMS_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
+   signal rssiIbSlaves  : AxiStreamSlaveArray(APP_STREAMS_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
+   signal rssiObMasters : AxiStreamMasterArray(APP_STREAMS_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
+   signal rssiObSlaves  : AxiStreamSlaveArray(APP_STREAMS_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
 
 begin
 
@@ -192,6 +192,7 @@ begin
             2                => X"FF"),  -- TDEST 0xFF routed to TX/RX PRBS modules        
          CLK_FREQUENCY_G     => 156.25E+6,
          TIMEOUT_UNIT_G      => 1.0E-3,  -- In units of seconds
+         BYP_RX_BUFFER_G     => true,   -- Not building the RSSI's RX buffer!!!
          SERVER_G            => true,
          RETRANSMIT_ENABLE_G => true,
          BYPASS_CHUNKER_G    => false,
@@ -257,77 +258,77 @@ begin
          mAxisSlave  => rssiIbSlaves(0));
    rssiObSlaves(0) <= AXI_STREAM_SLAVE_FORCE_C;  -- Unused 
 
-   -----------------------------------
-   -- SRPv3 Channel: TDEST=[0x80:0xBF]
-   -----------------------------------
-   U_SRPv3 : entity work.SrpV3AxiLite
-      generic map (
-         TPD_G               => TPD_G,
-         SLAVE_READY_EN_G    => true,
-         GEN_SYNC_FIFO_G     => true,
-         AXI_STREAM_CONFIG_G => APP_AXIS_CONFIG_C(1))
-      port map (
-         -- Streaming Slave (Rx) Interface (sAxisClk domain) 
-         sAxisClk         => ethClk,
-         sAxisRst         => ethRst,
-         sAxisMaster      => rssiObMasters(1),
-         sAxisSlave       => rssiObSlaves(1),
-         -- Streaming Master (Tx) Data Interface (mAxisClk domain)
-         mAxisClk         => ethClk,
-         mAxisRst         => ethRst,
-         mAxisMaster      => rssiIbMasters(1),
-         mAxisSlave       => rssiIbSlaves(1),
-         -- Master AXI-Lite Interface (axilClk domain)
-         axilClk          => ethClk,
-         axilRst          => ethRst,
-         mAxilReadMaster  => srpReadMaster,
-         mAxilReadSlave   => srpReadSlave,
-         mAxilWriteMaster => srpWriteMaster,
-         mAxilWriteSlave  => srpWriteSlave);
+   -- -----------------------------------
+   -- -- SRPv3 Channel: TDEST=[0x80:0xBF]
+   -- -----------------------------------
+   -- U_SRPv3 : entity work.SrpV3AxiLite
+   -- generic map (
+   -- TPD_G               => TPD_G,
+   -- SLAVE_READY_EN_G    => true,
+   -- GEN_SYNC_FIFO_G     => true,
+   -- AXI_STREAM_CONFIG_G => APP_AXIS_CONFIG_C(1))
+   -- port map (
+   -- -- Streaming Slave (Rx) Interface (sAxisClk domain) 
+   -- sAxisClk         => ethClk,
+   -- sAxisRst         => ethRst,
+   -- sAxisMaster      => rssiObMasters(1),
+   -- sAxisSlave       => rssiObSlaves(1),
+   -- -- Streaming Master (Tx) Data Interface (mAxisClk domain)
+   -- mAxisClk         => ethClk,
+   -- mAxisRst         => ethRst,
+   -- mAxisMaster      => rssiIbMasters(1),
+   -- mAxisSlave       => rssiIbSlaves(1),
+   -- -- Master AXI-Lite Interface (axilClk domain)
+   -- axilClk          => ethClk,
+   -- axilRst          => ethRst,
+   -- mAxilReadMaster  => srpReadMaster,
+   -- mAxilReadSlave   => srpReadSlave,
+   -- mAxilWriteMaster => srpWriteMaster,
+   -- mAxilWriteSlave  => srpWriteSlave);
 
-   ------------------------
-   -- TX PRBS: TDEST=[0xFF]
-   ------------------------
-   U_SsiPrbsTx : entity work.SsiPrbsTx
-      generic map (
-         TPD_G                      => TPD_G,
-         MASTER_AXI_PIPE_STAGES_G   => 1,
-         MASTER_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
-      port map (
-         mAxisClk        => ethClk,
-         mAxisRst        => ethRst,
-         mAxisMaster     => rssiIbMasters(2),
-         mAxisSlave      => rssiIbSlaves(2),
-         locClk          => ethClk,
-         locRst          => ethRst,
-         trig            => '0',
-         packetLength    => X"0000FFFF",
-         tDest           => X"FF",
-         tId             => X"00",
-         axilReadMaster  => axilReadMasters(PRBS_TX_INDEX_C),
-         axilReadSlave   => axilReadSlaves(PRBS_TX_INDEX_C),
-         axilWriteMaster => axilWriteMasters(PRBS_TX_INDEX_C),
-         axilWriteSlave  => axilWriteSlaves(PRBS_TX_INDEX_C));
+   -- ------------------------
+   -- -- TX PRBS: TDEST=[0xFF]
+   -- ------------------------
+   -- U_SsiPrbsTx : entity work.SsiPrbsTx
+   -- generic map (
+   -- TPD_G                      => TPD_G,
+   -- MASTER_AXI_PIPE_STAGES_G   => 1,
+   -- MASTER_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
+   -- port map (
+   -- mAxisClk        => ethClk,
+   -- mAxisRst        => ethRst,
+   -- mAxisMaster     => rssiIbMasters(2),
+   -- mAxisSlave      => rssiIbSlaves(2),
+   -- locClk          => ethClk,
+   -- locRst          => ethRst,
+   -- trig            => '0',
+   -- packetLength    => X"0000FFFF",
+   -- tDest           => X"FF",
+   -- tId             => X"00",
+   -- axilReadMaster  => axilReadMasters(PRBS_TX_INDEX_C),
+   -- axilReadSlave   => axilReadSlaves(PRBS_TX_INDEX_C),
+   -- axilWriteMaster => axilWriteMasters(PRBS_TX_INDEX_C),
+   -- axilWriteSlave  => axilWriteSlaves(PRBS_TX_INDEX_C));
 
-   ------------------------
-   -- RX PRBS: TDEST=[0xFF]
-   ------------------------
-   U_SsiPrbsRx : entity work.SsiPrbsRx
-      generic map (
-         TPD_G                     => TPD_G,
-         SLAVE_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
-      port map (
-         sAxisClk       => ethClk,
-         sAxisRst       => ethRst,
-         sAxisMaster    => rssiObMasters(2),
-         sAxisSlave     => rssiObSlaves(2),
-         mAxisClk       => ethClk,
-         mAxisRst       => ethRst,
-         axiClk         => ethClk,
-         axiRst         => ethRst,
-         axiReadMaster  => axilReadMasters(PRBS_RX_INDEX_C),
-         axiReadSlave   => axilReadSlaves(PRBS_RX_INDEX_C),
-         axiWriteMaster => axilWriteMasters(PRBS_RX_INDEX_C),
-         axiWriteSlave  => axilWriteSlaves(PRBS_RX_INDEX_C));
+   -- ------------------------
+   -- -- RX PRBS: TDEST=[0xFF]
+   -- ------------------------
+   -- U_SsiPrbsRx : entity work.SsiPrbsRx
+   -- generic map (
+   -- TPD_G                     => TPD_G,
+   -- SLAVE_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
+   -- port map (
+   -- sAxisClk       => ethClk,
+   -- sAxisRst       => ethRst,
+   -- sAxisMaster    => rssiObMasters(2),
+   -- sAxisSlave     => rssiObSlaves(2),
+   -- mAxisClk       => ethClk,
+   -- mAxisRst       => ethRst,
+   -- axiClk         => ethClk,
+   -- axiRst         => ethRst,
+   -- axiReadMaster  => axilReadMasters(PRBS_RX_INDEX_C),
+   -- axiReadSlave   => axilReadSlaves(PRBS_RX_INDEX_C),
+   -- axiWriteMaster => axilWriteMasters(PRBS_RX_INDEX_C),
+   -- axiWriteSlave  => axilWriteSlaves(PRBS_RX_INDEX_C));
 
 end architecture mapping;
