@@ -399,10 +399,10 @@ static void handle_packet (AxisOut                   &mAxis,
    PacketContext      pktCtx;
    CompressionContext cmpCtx;
 
-   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.syms.sg0  cyclic factor=NSYMPORTS  dim=1)
-   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.syms.sg1  cyclic factor=NSYMPORTS  dim=1)
-   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.syms.sg2  cyclic factor=NSYMPORTS  dim=1)
-   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.syms.sg3  cyclic factor=NSYMPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg0  cyclic factor=NSYMPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg1  cyclic factor=NSYMPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg2  cyclic factor=NSYMPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg3  cyclic factor=NSYMPORTS  dim=1)
 
    PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg0 cyclic factor=NHISTPORTS dim=1)
    PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg1 cyclic factor=NHISTPORTS dim=1)

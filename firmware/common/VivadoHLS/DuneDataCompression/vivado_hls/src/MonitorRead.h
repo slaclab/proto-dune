@@ -76,7 +76,7 @@ static void update_read (MonitorRead        &lcl,
    {
       printf ("Initializing lcl\n");
       First = false;
-       lcl.init ();
+      lcl.init ();
    }
    else
    {

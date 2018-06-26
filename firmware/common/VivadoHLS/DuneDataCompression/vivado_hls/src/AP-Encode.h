@@ -364,7 +364,8 @@ static int APE_encode  (APE_etxOut        &etxOut,
    //APE_instruction *instruction = instructions;
 
    // Setup the APE decoding context
-   hist.encode (etxOut.ha, etx.ha, table, *syms++);
+   AdcIn_t prv = *syms++;
+   hist.encode (etxOut.ha, etx.ha, table, prv);
    etx.nhist = etx.ha.m_idx;   /// DEBUG
    ////APE_dumpStatement (hist.print (0));
 
@@ -375,7 +376,7 @@ static int APE_encode  (APE_etxOut        &etxOut,
 
    // DEBUGGING/DIAGNOSITC
    APE_checkerStatement (APE_checker chk (npending));
-   APE_checkerStatement (Histogram::Symbol_t const *syms_beg = syms - 1);
+   APE_checkerStatement (Symbol_t const *syms_beg = syms - 1);
 
 
    APE_ENCODE_LOOP:
@@ -386,8 +387,10 @@ static int APE_encode  (APE_etxOut        &etxOut,
       #pragma HLS UNROLL factor=1
 
        Histogram::Symbol_t ovr;
-       Histogram::Symbol_t sym = *syms++;
-       Histogram::Idx_t    idx = Histogram::idx (sym, ovr);
+       AdcIn_t             cur = *syms++;
+       Histogram::Symbol_t sym = Histogram::symbol (cur, prv);
+       Histogram::Idx_t    idx = Histogram::idx    (sym, ovr);
+       prv = cur;
 
        cv.scale (table[idx], table[idx+1]);
 

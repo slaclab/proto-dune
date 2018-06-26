@@ -88,8 +88,9 @@
 #include "DuneDataCompressionHistogram.h"
 
 
-typedef Histogram::Symbol_t Symbol_t;
+//// STRIP typedef Histogram::Symbol_t Symbol_t;
 
+typedef AdcIn_t Symbol_t;
 
 
 
@@ -108,14 +109,14 @@ typedef Histogram::Symbol_t Symbol_t;
 
 
 #if    PROCESS_PRINT_ADCS
-static void print_adcs (Symbol_t const syms0[PACKET_K_NSAMPLES],
-                        Symbol_t const syms1[PACKET_K_NSAMPLES],
-                        Symbol_t const syms2[PACKET_K_NSAMPLES],
-                        Symbol_t const syms3[PACKET_K_NSAMPLES],
-                        int                              iframe)
+static void print_adcs (AdcIn_t const adcs0[PACKET_K_NSAMPLES],
+                        AdcIn_t const adcs1[PACKET_K_NSAMPLES],
+                        AdcIn_t const adcs2[PACKET_K_NSAMPLES],
+                        AdcIn_t const adcs3[PACKET_K_NSAMPLES],
+                        int                             iframe)
 
 #else
-#define print_adcs(_syms0, _syms1, _syms2, _syms3, _iframe)
+#define print_adcs(_adcs0, _adcs1, _adcs2, _adcs3, _iframe)
 #endif
 
 
@@ -268,17 +269,20 @@ public:
 
       const static int HeaderFmt   = 3; // Generic Header Format = 3
       const static int HdrsRecType = 1; // TpcStream Record Subtype = 1;
-      const static int HdrN64      = 1;
+      const static int HdrFixedN64 = 2; // Record Header + last timestamp
 
       // -------------------------------------------------------------------------------
       // Compose the record header word
       //    status(32) | exception count(8) | length (16) | RecType(4) | HeaderFormat(4)
       // -------------------------------------------------------------------------------
-      uint64_t recHeader = (static_cast<uint64_t>(status) << 32)
-                         | (m_cedx << 24) | ((m_cedx + m_chdx + HdrN64) << 8)| (HdrsRecType << 4) | (HeaderFmt << 0);
+      uint64_t recHeader =  (static_cast<uint64_t>(status) << 32)
+                         |  (m_cedx                        << 24)
+                         | ((m_cedx + m_chdx + HdrFixedN64) << 8)
+                         |  (HdrsRecType                    << 4)
+                         |  (HeaderFmt                      << 0);
       ::commit (axis, odx, write, recHeader,  first ? (1 << (int)AxisUserFirst::Sof) : 0, 0);
 
-#if 1
+
       // Write out the exception buffer
       HEADER_CONTEXT_EXC_LOOP:
       for (int idx = 0; idx < m_cedx; idx++)
@@ -295,17 +299,22 @@ public:
          #pragma HLS LOOP_TRIPCOUNT min=6 avg=6 max=1024
          ::commit (axis, odx, write, m_hdrsBuf[idx], 0, 0);
       }
-#endif
+
+      // Write the timestamp of the last WIB frame;
+      ::commit (axis, odx, write, m_lasttimestamp, 0, 0);
+
       return;
    }
 
 
 public:
-   int                                 m_chdx;   /*!< Header buffer index    */
-   int                                 m_cedx;   /*!< Exception buffer index */
-   ReadStatus_t                      m_status;
+   int                                 m_chdx;  /*!< Header buffer index      */
+   int                                 m_cedx;  /*!< Exception buffer index   */
+   ReadStatus_t                      m_status;  /*!< Summary status           */
+   uint64_t                   m_lasttimestamp;  /*!< Timestamp of last frame  */
+
    uint64_t m_hdrsBuf[ 7];   /*!< Buffer for header words */
-   uint64_t m_excsBuf[ 2];    /*!< Buffer for 4 exceptions */
+   uint64_t m_excsBuf[ 2];   /*!< Buffer for 8 exceptions */
 
 #if 0 //// STRIP
     uint64_t m_hdrsBuf[ 6 * PACKET_K_NSAMPLES];   /*!< Buffer for header words*/
@@ -317,12 +326,12 @@ public:
 /* ------------------------------------------------------------------------- */
 
 
-struct Symbols
+struct Adcs
 {
-   Symbol_t  sg0[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 0, 4,  8, ... */
-   Symbol_t  sg1[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 1, 5,  9, ... */
-   Symbol_t  sg2[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 2, 6, 10, ... */
-   Symbol_t  sg3[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 3, 7, 11, ... */ 
+   AdcIn_t  sg0[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 0, 4,  8, ... */
+   AdcIn_t  sg1[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 1, 5,  9, ... */
+   AdcIn_t  sg2[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 2, 6, 10, ... */
+   AdcIn_t  sg3[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]; /*!< 3, 7, 11, ... */
 };
 
 
@@ -356,7 +365,7 @@ public:
 \* ------------------------------------------------------------------------ */
 struct CompressionContext
 {
-   Symbols     syms;
+   Adcs        adcs;
    Histograms hists;
 };
 /* ------------------------------------------------------------------------ */
@@ -370,10 +379,10 @@ struct CompressionContext
 typedef ap_uint<48>        Adc48_t;
 
 
-static inline void        process4 (Symbol_t   syms0[PACKET_K_NSAMPLES],
-                                    Symbol_t   syms1[PACKET_K_NSAMPLES],
-                                    Symbol_t   syms2[PACKET_K_NSAMPLES],
-                                    Symbol_t   syms3[PACKET_K_NSAMPLES],
+static inline void        process4 (AdcIn_t   adcs0[PACKET_K_NSAMPLES],
+                                    AdcIn_t   adcs1[PACKET_K_NSAMPLES],
+                                    AdcIn_t   adcs2[PACKET_K_NSAMPLES],
+                                    AdcIn_t   adcs3[PACKET_K_NSAMPLES],
                                     Histogram                    &hist0,
                                     Histogram                    &hist1,
                                     Histogram                    &hist2,
@@ -429,11 +438,8 @@ static void process4_adcs_prv_sym_print
  *  \param[in]     iframe  The frame number within the packet
  *  \param[in]     config  The configuration parameters
  *  \param[in:out] pktCtx  The packet context
- *  \param[out]     hists  The per channel histograms
- *  \param[out[      syms  The values  that will be compressed.  These
- *                         are result of a reversible function of an
- *                         ADC. (It must be reversible in order to
- *                         recover the original ADC.
+ *  \param[in:out] cmpCtx  The compression context, this maintained on a
+ *                         per channel basis
  *
 \* ----------------------------------------------------------------------- */
 static void process_frame
@@ -466,7 +472,6 @@ static void process_frame
       uint64_t tmp_status = status;
       HdrLcl.reset ();
       HdrLcl.m_status  = status = ReadStatus::errsOnFirst (status);
-      HdrLcl.addHeader (pktCtx.m_hdrsBuf, (tmp_status << 32) | 0xC0000000 | HdrLcl.m_status);
 
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[0]);
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[1]);
@@ -484,6 +489,12 @@ static void process_frame
       HdrLcl.m_status |= status;
    }
 
+   // ---------------------------------------------------------------
+   // This will be the timestamp of the last packet.
+   // Together with the first timestamp captured in the m_hdrsBuf[1],
+   // it is used to define the time range of the packet.
+   // ---------------------------------------------------------------
+   pktCtx.m_lasttimestamp = d[1];
 
    // -------------------------------------------------------
    // Add the headers that do agree with the expected values
@@ -538,10 +549,10 @@ static void process_frame
       ap_uint<8*12> adc8 = adcs8[ichan >> 3];
 
       ap_uint<4*12> adc4 = adc8;
-      process4 (cmpCtx. syms.sg0[iserial],
-                cmpCtx. syms.sg1[iserial],
-                cmpCtx. syms.sg2[iserial],
-                cmpCtx. syms.sg3[iserial],
+      process4 (cmpCtx. adcs.sg0[iserial],
+                cmpCtx. adcs.sg1[iserial],
+                cmpCtx. adcs.sg2[iserial],
+                cmpCtx. adcs.sg3[iserial],
 
                 cmpCtx.hists.sg0[iserial],
                 cmpCtx.hists.sg1[iserial],
@@ -557,10 +568,10 @@ static void process_frame
       ichan   += 4;
 
       adc4 = adc8 >> 48;
-      process4 (cmpCtx. syms.sg0[iserial],
-                cmpCtx. syms.sg1[iserial],
-                cmpCtx. syms.sg2[iserial],
-                cmpCtx. syms.sg3[iserial],
+      process4 (cmpCtx. adcs.sg0[iserial],
+                cmpCtx. adcs.sg1[iserial],
+                cmpCtx. adcs.sg2[iserial],
+                cmpCtx. adcs.sg3[iserial],
 
                 cmpCtx.hists.sg0[iserial],
                 cmpCtx.hists.sg1[iserial],
@@ -577,10 +588,10 @@ static void process_frame
    }
 
 
-   print_adcs (cmpCtx.syms.sg0,
-               cmpCtx.syms.sg1,
-               cmpCtx.syms.sg2,
-               cmpCtx.syms.sg3,
+   print_adcs (cmpCtx.adcs.sg0,
+               cmpCtx.adcs.sg1,
+               cmpCtx.adcs.sg2,
+               cmpCtx.adcs.sg3,
                iframe);
 
    return;
@@ -607,10 +618,10 @@ static void process_frame
  *  \param[in]       ichan  For diagnostic purposes only (printf's...)
  *
 \* ---------------------------------------------------------------------- */
-static void process4 (Symbol_t syms0[PACKET_K_NSAMPLES],
-                      Symbol_t syms1[PACKET_K_NSAMPLES],
-                      Symbol_t syms2[PACKET_K_NSAMPLES],
-                      Symbol_t syms3[PACKET_K_NSAMPLES],
+static void process4 (AdcIn_t adcs0[PACKET_K_NSAMPLES],
+                      AdcIn_t adcs1[PACKET_K_NSAMPLES],
+                      AdcIn_t adcs2[PACKET_K_NSAMPLES],
+                      AdcIn_t adcs3[PACKET_K_NSAMPLES],
                       Histogram                  &hist0,
                       Histogram                  &hist1,
                       Histogram                  &hist2,
@@ -656,13 +667,12 @@ static void process4 (Symbol_t syms0[PACKET_K_NSAMPLES],
       hist3.clear ();
 
       // -----------------------------------------------------
-      // Store the ADC as the first symbol
-      // A symbol will always have enough bits to hold an ADC
+      // Store the ADCs
       // ----------------------------------------------------
-      syms0[iframe] = adc0;
-      syms1[iframe] = adc1;
-      syms2[iframe] = adc2;
-      syms3[iframe] = adc3;
+      adcs0[iframe] = adc0;
+      adcs1[iframe] = adc1;
+      adcs2[iframe] = adc2;
+      adcs3[iframe] = adc3;
 
       // -------------------------
       // Diagnostic only print-out
@@ -697,12 +707,12 @@ static void process4 (Symbol_t syms0[PACKET_K_NSAMPLES],
       histsLcl[3].bump (hist3, sym3);
 
       // ----------------------------------
-      // Store the symbols to be compressed
+      // Store the symbols to be compressed  -- Change to storing the ADCs  STRIP
       // ----------------------------------
-      syms0[iframe] = sym0;
-      syms1[iframe] = sym1;
-      syms2[iframe] = sym2;
-      syms3[iframe] = sym3;
+      adcs0[iframe] = adc0; /// STRIP sym0;
+      adcs1[iframe] = adc1; /// STRIP sym1;
+      adcs2[iframe] = adc2; /// STRIP sym2;
+      adcs3[iframe] = adc3; /// STRIP sym3;
 
       // ------------------------
       // Diagnostic only printout
@@ -882,20 +892,18 @@ static inline AdcIn_t extract_adc3 (Adc48_t adcs4)
  *
  *  \brief Reconstitutes the ADCs from the symbols
  *
- *  \param[in]  syms  The symbols which are derived from the ADCs
+ *  \param[in]  adcs0  The adcs for channels 0, 4,  8 ..... 124
+ *  \param[in]  adcs1  The adcs for channels 1, 5,  9 ..... 125
+ *  \param]in]  adcs2  The adcs for channels 2, 6, 10 ..... 126
+ *  \param[in]  adcs3  The adcs for channels 3, 7, 11 ..... 127
  *
 \* ---------------------------------------------------------------------- */
-static void print_adcs (Symbol_t const syms0[PACKET_K_NSAMPLES],
-                        Symbol_t const syms1[PACKET_K_NSAMPLES],
-                        Symbol_t const syms2[PACKET_K_NSAMPLES],
-                        Symbol_t const syms3[PACKET_K_NSAMPLES],
+static void print_adcs (AdcIn_t const adcs0[PACKET_K_NSAMPLES],
+                        AdcIn_t const adcs1[PACKET_K_NSAMPLES],
+                        AdcIn_t const adcs2[PACKET_K_NSAMPLES],
+                        AdcIn_t const adcs3[PACKET_K_NSAMPLES],
                         int                              iframe)
 {
-   // -------------------------------
-   // Holds onto the last set of ADCs
-   // -------------------------------
-   static uint16_t Last[MODULE_K_NCHANNELS];
-
    // ----------
    // Title line
    // ----------
@@ -922,19 +930,10 @@ static void print_adcs (Symbol_t const syms0[PACKET_K_NSAMPLES],
       int nserial   = idx / MODULE_K_NPARALLEL;
       int nparallel = idx % MODULE_K_NPARALLEL;
 
-      if      ( (nparallel == 0) adc = syms0[nserial][iframe];
-      else if ( (nparallel == 1) adc = syms1[nserial][iframe];
-      else if ( (nparallel == 2) adc = syms2[nserial][iframe];
-      else if ( (nparallel == 3) adc = syms3[nserial[iframe];
-
-      if (iframe != 0)
-      {
-         int dif = adc;
-         dif     = dif/2;
-         if ((adc & 1) == 0) dif = -dif;
-         adc = Last[idx] + dif;
-      }
-      Last[idx] = adc;
+      if      ( (nparallel == 0) adc = adcs0[nserial][iframe];
+      else if ( (nparallel == 1) adc = adcs1[nserial][iframe];
+      else if ( (nparallel == 2) adc = adcs2[nserial][iframe];
+      else if ( (nparallel == 3) adc = adcs3[nserial[iframe];
 
       // --------------------------------------------------------
       // Print ADC and a new line if one the last ADC in this row

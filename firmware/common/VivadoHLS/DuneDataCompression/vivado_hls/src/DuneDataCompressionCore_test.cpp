@@ -814,7 +814,7 @@ static void decode (AxisOut &mAxis)
 
    if (nbuf & 0x7) std::cout << std::endl;
 
-   #if 0 && DECODE
+   #if  0 && DECODE
    Toc toc;
    toc_decode (&toc, buf, nbuf);
 
@@ -902,9 +902,9 @@ static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const 
    int      excCnt = (recHdr >> 24) & 0xff;
            *status = (recHdr >> 32);
 
-
    uint16_t const *excBuf = reinterpret_cast<decltype(excBuf)>(buf + 1);
    uint64_t const *hdrBuf = reinterpret_cast<decltype(hdrBuf)>(excBuf) + excCnt;
+   uint64_t        lastts = buf[recLen - 1];
 
    int nhdrs   = 6;
    uint64_t prv[6];
@@ -914,7 +914,7 @@ static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const 
    headers[3] = prv[3] = *hdrBuf++;
    headers[4] = prv[4] = *hdrBuf++;
    headers[5] = prv[5] = *hdrBuf++;
-
+   lastts     =          *hdrBuf++;
 
    std::cout << "Header Record:"
              <<               "Format   = " << std::setw ( 8) << std::hex <<  hdrFmt    << std::endl
@@ -927,7 +927,8 @@ static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const 
              << "              Cd00     = " << std::setw (16) << std::hex <<  headers[2]<< std::endl
              << "              Cd01     = " << std::setw (16) << std::hex <<  headers[3]<< std::endl
              << "              Cd10     = " << std::setw (16) << std::hex <<  headers[4]<< std::endl
-             << "              Cd11     = " << std::setw (16) << std::hex <<  headers[5]<< std::endl;
+             << "              Cd11     = " << std::setw (16) << std::hex <<  headers[5]<< std::endl
+             << "              LastTs   = " << std::setw (16) << std::hex <<  lastts    << std::endl;
 
 
    // Decode the exception frames

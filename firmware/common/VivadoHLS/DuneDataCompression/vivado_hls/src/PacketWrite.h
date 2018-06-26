@@ -15,7 +15,7 @@
  *   cycles for 128 channels. The problem child is the copyN routine;
  *   it either takes too long or takes too many LUTs.
  *
- *   In addition, the code in writeSymsN is structured to dataflow
+ *   In addition, the code in writeAdcsN is structured to dataflow
  *   copyN and encodeN.  What Vivado HLS seems to have produced is
  *   copyN running serially and encodeN + writeN in dataflow.
  *
@@ -41,12 +41,12 @@
 #define COMPRESS_VERSION 0x10000000
 
 #define CHECKER          1
-#define WRITE_SYMS_PRINT 1
+#define WRITE_ADCS_PRINT 1
 
 
 #ifdef __SYNTHESIS__
 #undef  CHECKER
-#undef  WRITE_SYMS_PRINT
+#undef  WRITE_ADCS_PRINT
 #endif
 
 
@@ -68,19 +68,19 @@ static void   write_toc (AxisOut                                    &mAxis,
                          int                                      nsamples,
                          ChannelOffset_t                         offsets[]);
 
-static void write_syms (AxisBitStream                               &bAxis,
+static void write_adcs (AxisBitStream                               &bAxis,
                         AxisOut                                     &mAxis,
                         ChannelOffset_t        offsets[MODULE_K_NCHANNELS],
                         CompressionContext                        &cmpCtx);
 
 static inline void
-           write_syms4 (AxisBitStream                              &bAxis,
+           write_adcs4 (AxisBitStream                              &bAxis,
                         AxisOut                                    &mAxis,
                         ChannelOffset_t                         offsets[],
-                        Symbol_t                 syms0[PACKET_K_NSAMPLES],
-                        Symbol_t                 syms1[PACKET_K_NSAMPLES],
-                        Symbol_t                 syms2[PACKET_K_NSAMPLES],
-                        Symbol_t                 syms3[PACKET_K_NSAMPLES],
+                        AdcIn_t                  adcs0[PACKET_K_NSAMPLES],
+                        AdcIn_t                  adcs1[PACKET_K_NSAMPLES],
+                        AdcIn_t                  adcs2[PACKET_K_NSAMPLES],
+                        AdcIn_t                  adcs3[PACKET_K_NSAMPLES],
                         Histogram                                  &hist0,
                         Histogram                                  &hist1,
                         Histogram                                  &hist2,
@@ -92,10 +92,10 @@ static __inline void encode4 (APE_etxOut                          *etx,
                               Histogram                        &hists1,
                               Histogram                        &hists2,
                               Histogram                        &hists3,
-                              Symbol_t        syms0[PACKET_K_NSAMPLES],
-                              Symbol_t        syms1[PACKET_K_NSAMPLES],
-                              Symbol_t        syms2[PACKET_K_NSAMPLES],
-                              Symbol_t        syms3[PACKET_K_NSAMPLES],
+                              AdcIn_t         adcs0[PACKET_K_NSAMPLES],
+                              AdcIn_t         adcs1[PACKET_K_NSAMPLES],
+                              AdcIn_t         adcs2[PACKET_K_NSAMPLES],
+                              AdcIn_t         adcs3[PACKET_K_NSAMPLES],
                               int                               ichan);
 
 static void             writeN (AxisBitStream                       &bAxis,
@@ -108,21 +108,21 @@ static void             writeN (AxisBitStream                       &bAxis,
 
 static void             encode (APE_etxOut                           &etx,
                                 Histogram                           &hist,
-                                Symbol_t          syms[PACKET_K_NSAMPLES],
-                                int                                nsyms);
+                                AdcIn_t           adcs[PACKET_K_NSAMPLES],
+                                int                                nadcs);
 
 static void               pack (AxisBitStream                      &baxis,
                                 AxisOut                            &mAxis,
                                 OStream                           &osream);
 
 /* ---------------------------------------------------------------------- */
-#if WRITE_SYMS_PRINT
+#if WRITE_ADCS_PRINT
 /* ---------------------------------------------------------------------- */
 
-static void write_syms_print  (Symbol_t const syms0[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
-                               Symbol_t const syms1[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
-                               Symbol_t const syms2[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
-                               Symbol_t const syms3[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]);
+static void write_adcs_print  (AdcIn_t const adcs0[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
+                               AdcIn_t const adcs1[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
+                               AdcIn_t const adcs2[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
+                               AdcIn_t const adcs3[MODULE_K_NSERIAL][PACKET_K_NSAMPLES]);
 
 static void write_sizes_print (int ichan, int csize, int osize);
 
@@ -130,9 +130,9 @@ static void write_sizes_print (int ichan, int csize, int osize);
 #else
 /* ---------------------------------------------------------------------- */
 
-#define write_syms_print(_syms0, _syms1, _syms2, _syms3)
-#define write_syms_bit_size_print(_ichan, _ebit_size)
-#define write_syms_encode_chan(_ichan)
+#define write_adcs_print(_adcs0, _adcs1, _adcs2, _adcs3)
+#define write_adcs_bit_size_print(_ichan, _ebit_size)
+#define write_adcs_encode_chan(_ichan)
 #define write_sizes_print(_ichan, csize, osize)
 
 /* ---------------------------------------------------------------------- */
@@ -148,12 +148,12 @@ static void write_sizes_print (int ichan, int csize, int osize);
  *
  *   \brief Writes one packets worth of data to the output stream
  *
- *   \param[out]     mAxis  The output data stream
- *   \param[ in]    pktCtx  The per packet context
- *   \param[ in]      syms  The symbols (processed ADCs) to be compressed
- *   \param[ in]     hists  The histograms used to compose the compression
- *                          tables
- *   \param[ in] moduleIdx  The module idx of this group of channels
+ *   \param[out]        mAxis  The output data stream
+ *   \param[ in]       pktCtx  The per packet context
+ *   \param[ in]       cmpCtx  The per channeel compression context
+ *   \param[out] monitorWrite  Contains the variables monitoring the
+ *                             output.  These are things like the
+ *                             number of bytes and packets written,
  *
  *   \par
  *   Packets are only written when a full 1024 time samples have been
@@ -196,15 +196,9 @@ static void  write_packet (AxisOut                               &mAxis,
    int bdx = odx << 6;
    AxisBitStream bAxis (bdx);
 
-   ///// Histogram Hists[MODULE_K_NCHANNELS];
-   ///// PRAGMA_HLS(HLS ARRAY_PARTITION  variable=Hists block factor=NHISTPORTS dim=1)
-
-
-   //// Symbol_t   Syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES];
-   ////  PRAGMA_HLS(HLS ARRAY_PARTITION  variable=Syms  block factor=NADCPORTS  dim=1)
 
    ChannelOffset_t    offsets[MODULE_K_NCHANNELS+2];
-   write_syms (bAxis, mAxis, offsets, cmpCtx);
+   write_adcs (bAxis, mAxis, offsets, cmpCtx);
 
    odx = (bAxis.m_idx + 63) >> 6;
 
@@ -296,20 +290,18 @@ static void   write_toc (AxisOut                       &mAxis,
 
 /* ---------------------------------------------------------------------- *//*!
  *
- *  \brief Writes the symbols (processed ADcs) for all channels to the
+ *  \brief Compresses and writes the ADcs for all channels to the
  *         output stream
  *
- *  \param[in:out] bAxis
+ *  \param[in:out] bAxis  An intermediate 64-bit bit stream used to
+ *                        concatenate the compressed data streams
  *  \param[in]     mAxis  The output stream
  *  \param[out]  offsets  The starting bit offset for each channel
- *  \param[in]      syms  The symbols to encode
- *  \param[in:out] hists  The histograms of the symbols. These are transformed
- *                        into the cumulative distributions used to do
- *                        the actual encoding
+ *  \param[ in]   cmpCtx  The per channeel compression context
  *
 \* ---------------------------------------------------------------------- */
 static inline void
-       write_syms (AxisBitStream                                       &bAxis,
+       write_adcs (AxisBitStream                                       &bAxis,
                    AxisOut                                             &mAxis,
                    ChannelOffset_t                offsets[MODULE_K_NCHANNELS],
                    CompressionContext                                 &cmpCtx)
@@ -317,19 +309,19 @@ static inline void
    #pragma HLS INLINE
 
    // Diagnostic printout
-   write_syms_print (cmpCtx.syms.sg0,
-                     cmpCtx.syms.sg1,
-                     cmpCtx.syms.sg2,
-                     cmpCtx.syms.sg3);
+   write_adcs_print (cmpCtx.adcs.sg0,
+                     cmpCtx.adcs.sg1,
+                     cmpCtx.adcs.sg2,
+                     cmpCtx.adcs.sg3);
 
-   WRITE_SYMS_CHANNEL_LOOP:
+   WRITE_ADCS_CHANNEL_LOOP:
    for (int isg = 0; isg < NSERIAL; isg++)
    {
-      write_syms4 (bAxis, mAxis, offsets,
-                   cmpCtx. syms.sg0[isg],
-                   cmpCtx. syms.sg1[isg],
-                   cmpCtx. syms.sg2[isg],
-                   cmpCtx. syms.sg3[isg],
+      write_adcs4 (bAxis, mAxis, offsets,
+                   cmpCtx. adcs.sg0[isg],
+                   cmpCtx. adcs.sg1[isg],
+                   cmpCtx. adcs.sg2[isg],
+                   cmpCtx. adcs.sg3[isg],
                    cmpCtx.hists.sg0[isg],
                    cmpCtx.hists.sg1[isg],
                    cmpCtx.hists.sg2[isg],
@@ -352,13 +344,13 @@ static inline void
  *
 \* -------------------------------------------------------------------- */
 static inline void
-       write_syms4 (AxisBitStream                              &bAxis,
-                    AxisOut                                    &mAxis,
-                    ChannelOffset_t                         offsets[],
-                    Symbol_t                 syms0[PACKET_K_NSAMPLES],
-                    Symbol_t                 syms1[PACKET_K_NSAMPLES],
-                    Symbol_t                 syms2[PACKET_K_NSAMPLES],
-                    Symbol_t                 syms3[PACKET_K_NSAMPLES],
+       write_adcs4 (AxisBitStream                             &bAxis,
+                    AxisOut                                   &mAxis,
+                    ChannelOffset_t                        offsets[],
+                    AdcIn_t                 adcs0[PACKET_K_NSAMPLES],
+                    AdcIn_t                 adcs1[PACKET_K_NSAMPLES],
+                    AdcIn_t                 adcs2[PACKET_K_NSAMPLES],
+                    AdcIn_t                 adcs3[PACKET_K_NSAMPLES],
                     Histogram                                 &hist0,
                     Histogram                                 &hist1,
                     Histogram                                 &hist2,
@@ -368,29 +360,13 @@ static inline void
    #pragma HLS INLINE off
    #pragma HLS DATAFLOW
 
-   APE_etxOut            etxOut[NPARALLEL];
+   APE_etxOut                           etxOut[NPARALLEL];
    #pragma HLS ARRAY_PARTITION variable=etxOut complete dim=1
-
-#if 0
-   {
-      #pragma HLS DATAFLOW
-
-      Histogram Hists[NPARALLEL];
-      #pragma HLS ARRAY_PARTITION variable=Hists complete
-
-      Symbol_t Syms[NPARALLEL][PACKET_K_NSAMPLES];
-      #pragma HLS ARRAY_PARTITION variable=Syms complete dim=1
-
-      copyN            (Hists, &hists[ichan], Syms,   &syms[ichan]);
-      encodeN (etxOut,  Hists, Syms, PACKET_K_NSAMPLES, NPARALLEL, NSERIAL, ichan);
-   }
-#else
 
     encode4 (etxOut,
              hist0, hist1, hist2, hist3,
-             syms0, syms1, syms2, syms3,
+             adcs0, adcs1, adcs2, adcs3,
              ichan);
-#endif
 
    writeN  (bAxis, mAxis, &offsets[ichan], etxOut, NPARALLEL, NSERIAL, ichan);
 }
@@ -404,20 +380,20 @@ static __inline void encode4 (APE_etxOut                          *etx,
                               Histogram                        &hists1,
                               Histogram                        &hists2,
                               Histogram                        &hists3,
-                              Symbol_t        syms0[PACKET_K_NSAMPLES],
-                              Symbol_t        syms1[PACKET_K_NSAMPLES],
-                              Symbol_t        syms2[PACKET_K_NSAMPLES],
-                              Symbol_t        syms3[PACKET_K_NSAMPLES],
+                              AdcIn_t        adcs0[PACKET_K_NSAMPLES],
+                              AdcIn_t        adcs1[PACKET_K_NSAMPLES],
+                              AdcIn_t        adcs2[PACKET_K_NSAMPLES],
+                              AdcIn_t        adcs3[PACKET_K_NSAMPLES],
                               int                               ichan)
 {
    #pragma HLS INLINE off
    #pragma HLS DATAFLOW
 
 
-   encode (etx[0], hists0, syms0, PACKET_K_NSAMPLES);
-   encode (etx[1], hists1, syms1, PACKET_K_NSAMPLES);
-   encode (etx[2], hists2, syms2, PACKET_K_NSAMPLES);
-   encode (etx[3], hists3, syms3, PACKET_K_NSAMPLES);
+   encode (etx[0], hists0, adcs0, PACKET_K_NSAMPLES);
+   encode (etx[1], hists1, adcs1, PACKET_K_NSAMPLES);
+   encode (etx[2], hists2, adcs2, PACKET_K_NSAMPLES);
+   encode (etx[3], hists3, adcs3, PACKET_K_NSAMPLES);
 
 
    #if CHECKER
@@ -430,17 +406,17 @@ static __inline void encode4 (APE_etxOut                          *etx,
          write_sizes_print (ichan, etx[idx].ba.m_cidx, etx[idx].ha.m_cidx);
       }
 
-      bool failure0 = encode_check (etx[0], hists0, syms0);
-      if  (failure0)    APE_encode (etx[0], hists0, syms0, PACKET_K_NSAMPLES);
+      bool failure0 = encode_check (etx[0], hists0, adcs0);
+      if  (failure0)    APE_encode (etx[0], hists0, adcs0, PACKET_K_NSAMPLES);
 
-      bool failure1 = encode_check (etx[1], hists1, syms1);
-      if  (failure1)    APE_encode (etx[1], hists1, syms1, PACKET_K_NSAMPLES);
+      bool failure1 = encode_check (etx[1], hists1, adcs1);
+      if  (failure1)    APE_encode (etx[1], hists1, adcs1, PACKET_K_NSAMPLES);
 
-      bool failure2 = encode_check (etx[2], hists2, syms2);
-      if  (failure2)    APE_encode (etx[2], hists2, syms2, PACKET_K_NSAMPLES);
+      bool failure2 = encode_check (etx[2], hists2, adcs2);
+      if  (failure2)    APE_encode (etx[2], hists2, adcs2, PACKET_K_NSAMPLES);
 
-      bool failure3 = encode_check (etx[3], hists3, syms3);
-      if  (failure3)    APE_encode (etx[3], hists3, syms3, PACKET_K_NSAMPLES);
+      bool failure3 = encode_check (etx[3], hists3, adcs3);
+      if  (failure3)    APE_encode (etx[3], hists3, adcs3, PACKET_K_NSAMPLES);
 
       if (failure0 || failure1 || failure2 || failure3)
       {
@@ -451,70 +427,6 @@ static __inline void encode4 (APE_etxOut                          *etx,
 /* -------------------------------------------------------------------- */
 
 
-#if 0
-/* -------------------------------------------------------------------- *//*!
- *
- *  \brief Encode the \a ichan channels in parallel
- *
- *  \param[in:out]  etx  The vector of encoded outputs
- *  \param[in:out] hist  The vector of histograms to use generate
- *                       compression tables
- *  \param[in]     syms  The vector of symbols to encode
- *  \param[in]    nsyms  The number of symbols to encode for each channel
- *  \param[in] nstreams  The number of parallel streams
- *  \param[in]   nchans  The number of channels per stream
- *  \param[in]    ichan  The channel number of the first channel to
- *                       be encoded
- *
-\* -------------------------------------------------------------------- */
-static __inline void encodeN (APE_etxOut                               *etx,
-                              Histogram                              *hists,
-                              Symbol_t             syms[][PACKET_K_NSAMPLES],
-                              int                                     nsyms,
-                              int                                  nstreams,
-                              int                                    nchans,
-                              int                                     ichan)
-{
-   #pragma HLS INLINE off
-   #pragma HLS DATAFLOW
-
-   ////write_syms_encode_chan (ichan);
-
-   ENCODE_N_ENCODELOOP:
-   for (int idx = 0; idx < NPARALLEL; idx++)
-   {
-      //// #pragma HLS PIPELINE
-      #pragma HLS UNROLL
-
-      /////HISTOGRAM_statement (hists[idx].print ());
-      encode (etx[idx], hists[idx], syms[idx], PACKET_K_NSAMPLES);
-
-
-
-
-      // -------------------------------------------------------
-      // Increment the channels by the number of channels
-      // and check if done with all the channels.  This check is
-      // necessary since the number of channels may not be an
-      // integer multiple of the number of streams.
-      // -------------------------------------------------------
-      ///ichan     += 1
-
-#if 0
-      if (ichan >= NCHANS)
-      {
-         break;
-      }
-#endif
-
-   }
-
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-#endif
-
 
 /* ---------------------------------------------------------------------- *//*!
  *
@@ -522,18 +434,18 @@ static __inline void encodeN (APE_etxOut                               *etx,
  *
  *   \param[out]   etx  The encoding context for this channel
  *   \param[ in]  hist  The encoding frequency distribution
- *   \param[ in]  syms  The symbols to be encoded
- *   \param[ in] nsyms  The number of symbols to encoded
+ *   \param[ in]  adcs  The ADCs to be encoded
+ *   \param[ in] nadcs  The number of ADCs to be encoded
  *
 \* ---------------------------------------------------------------------- */
 static void encode (APE_etxOut                        &etx,
                     Histogram                        &hist,
-                    Symbol_t       syms[PACKET_K_NSAMPLES],
-                    int                              nsyms)
+                    AdcIn_t        adcs[PACKET_K_NSAMPLES],
+                    int                             nadcs)
 {
   #pragma HLS INLINE
 
-   APE_encode (etx, hist, syms, PACKET_K_NSAMPLES);
+   APE_encode (etx, hist, adcs, PACKET_K_NSAMPLES);
 
 }
 /* ---------------------------------------------------------------------- */
@@ -728,33 +640,37 @@ static void print_decoded (uint16_t sym, int idy)
    static uint16_t Adcs[16];
    static uint16_t Prv;
 
+   // ---------------------------------------------------------------------------------------
+   // Print the symbols and accumulate the restored ADCs to be printed after every 16 symbols
+   // ---------------------------------------------------------------------------------------
    int idz = idy & 0xf;
    if (idz == 0) { std::cout << "Sym[" << std::hex << std::setw (4) << idy << "] "; }
    if (idy == 0) { Adcs[0]   = sym; }
    else          { Adcs[idz] = Adcs[(idz-1) & 0xf] + restore (sym); }
-
-
    std::cout << std::hex << std::setw (3) << sym;
 
+
+   // ----------------------------------------
+   // If have accumulated the ADCs, print them
+   // ----------------------------------------
    if (idz == 0xf)
    {
       std::cout << "  ";
       for (int i = 0; i < 16; i++)  std::cout << std::hex << std::setw (4) << Adcs[i];
       std::cout << std::endl;
    }
-   ///std::cout << "Sym[" << idy << "] = " << syms[idy] << " : " << dsyms[idy] <<  std::hex << std::setw(5) << std::endl);
 
    return;
 }
 )
 
-static bool decode_data (uint16_t      dsyms[PACKET_K_NSAMPLES],
+static bool decode_data (uint16_t      dadcs[PACKET_K_NSAMPLES],
                          BFU                              &ebfu,
                          uint64_t  const                  *ebuf,
                          BFU                              &obfu,
                          uint64_t const                   *obuf,
                          Histogram const                  &hist,
-                         Symbol_t const syms[PACKET_K_NSAMPLES])
+                         AdcIn_t const  adcs[PACKET_K_NSAMPLES])
 {
    // Integrate the histogram
    APD_table_t table[Histogram::NBins + 2];
@@ -770,10 +686,10 @@ static bool decode_data (uint16_t      dsyms[PACKET_K_NSAMPLES],
 
    uint16_t bins[Histogram::NBins];
    int     nbins;
-   int       prv;
    int   novrflw;
-   int       sym;
-   int oposition = hist_decode (bins, &nbins, &sym, &novrflw, obfu, obuf);
+
+   int       prv;
+   int oposition = hist_decode (bins, &nbins, &prv, &novrflw, obfu, obuf);
 
 
    APD_dtx dtx;
@@ -781,13 +697,13 @@ static bool decode_data (uint16_t      dsyms[PACKET_K_NSAMPLES],
 
 
    int Nerrs = 0;
-
+   uint16_t sym = prv;
    for (int idy = 0; ; idy++)
    {
-      dsyms[idy] = sym;
+      dadcs[idy] = prv;
       APD_dumpStatement (print_decoded (sym, idy));
 
-      if (dsyms[idy] != syms[idy])
+      if (dadcs[idy] != adcs[idy])
       {
          std::cout << std::endl << "Error @" << std::hex << idy << std::endl;
          if (Nerrs++ > 20) return true;
@@ -805,6 +721,8 @@ static bool decode_data (uint16_t      dsyms[PACKET_K_NSAMPLES],
          int ovr = _bfu_extractR (obfu, obuf, oposition, novrflw);
          sym     =  nbins + ovr;
       }
+
+      prv += restore (sym);
    }
 
 
@@ -851,7 +769,7 @@ void restore (OStream &ostream, uint64_t *buf, int nbuf)
    return;
 }
 
-bool encode_check (APE_etxOut &etx, Histogram const &hist, Symbol_t const syms[PACKET_K_NSAMPLES])
+bool encode_check (APE_etxOut &etx, Histogram const &hist, AdcIn_t const adcs[PACKET_K_NSAMPLES])
 {
    static uint64_t hbuf[PACKET_K_NSAMPLES/(sizeof (uint64_t) / sizeof (int16_t))];
    static uint64_t ebuf[PACKET_K_NSAMPLES/(sizeof (uint64_t) / sizeof (int16_t)) + Histogram::NBins * 10/64 + 10];
@@ -868,8 +786,8 @@ bool encode_check (APE_etxOut &etx, Histogram const &hist, Symbol_t const syms[P
    _bfu_put (ebfu, ebuf[0], 0);
 
 
-   uint16_t dsyms[PACKET_K_NSAMPLES];
-   bool failure = decode_data (dsyms, ebfu, ebuf, hbfu, hbuf, hist, syms);
+   uint16_t dadcs[PACKET_K_NSAMPLES];
+   bool failure = decode_data (dadcs, ebfu, ebuf, hbfu, hbuf, hist, adcs);
 
    restore (etx.ha, hbuf, hcnt);
    restore (etx.ba, ebuf, ecnt);
@@ -881,38 +799,38 @@ bool encode_check (APE_etxOut &etx, Histogram const &hist, Symbol_t const syms[P
 
 
 /* ---------------------------------------------------------------------- */
-#if WRITE_SYMS_PRINT
+#if WRITE_ADCS_PRINT
 /* ---------------------------------------------------------------------- */
 static int List[] = {0};
 
 static void
-  write_syms_print  (Symbol_t const syms0[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
-                     Symbol_t const syms1[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
-                     Symbol_t const syms2[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
-                     Symbol_t const syms3[MODULE_K_NSERIAL][PACKET_K_NSAMPLES])
+  write_adcs_print  (AdcIn_t const adcs0[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
+                     AdcIn_t const adcs1[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
+                     AdcIn_t const adcs2[MODULE_K_NSERIAL][PACKET_K_NSAMPLES],
+                     AdcIn_t const adcs3[MODULE_K_NSERIAL][PACKET_K_NSAMPLES])
 {
    for (int ilist = 0; ilist < sizeof (List) / sizeof (List[0]); ilist++)
    {
       int ichan = List[ilist];
 
-      std::cout << "Encoded Symbols[" << std::hex << std::setw (2) << ichan << ']' << std::endl;
+      std::cout << "Encoded Adcs[" << std::hex << std::setw (2) << ichan << ']' << std::endl;
 
-      Symbol_t const *syms;
+      AdcIn_t const *adcs;
       int isg     = ichan % MODULE_K_NPARALLEL;
       int iserial = ichan / MODULE_K_NPARALLEL;
-      if      (isg == 0) syms = syms0[iserial];
-      else if (isg == 1) syms = syms1[iserial];
-      else if (isg == 2) syms = syms2[iserial];
-      else if (isg == 3) syms = syms3[iserial];
+      if      (isg == 0) adcs = adcs0[iserial];
+      else if (isg == 1) adcs = adcs1[iserial];
+      else if (isg == 2) adcs = adcs2[iserial];
+      else if (isg == 3) adcs = adcs3[iserial];
 
       for (int idx = 0; idx < PACKET_K_NSAMPLES; idx++)
       {
           #define COLUMNS 0x20
 
-          int sym = syms[idx];
+          int adc = adcs[idx];
           int col = idx % COLUMNS;
           if (col == 0x0)     std::cout << std::setfill(' ') << std::hex << std::setw(3) << idx;
-          std::cout << ' ' << std::setfill (' ') << std::hex << std::setw(3) << sym;
+          std::cout << ' ' << std::setfill (' ') << std::hex << std::setw(3) << adc;
           if (col == (COLUMNS -1)) std::cout << std::endl;
 
           #undef COLUMNS
@@ -930,88 +848,12 @@ static void write_sizes_print (int ichan, int csize, int osize)
 }
 
 
-static void write_syms_encode_chan (int ichan)
+static void write_adcs_encode_chan (int ichan)
  {
  std::cout << "Encoding chan: " << std::hex << ichan << std::endl;
  }
-
 /* ---------------------------------------------------------------------- */
 #endif
 
 
-#if defined (OLD_TEST_OF_WRITE_PACKET_DATAFLOW)
-static void write_packet (AxisOut &mAxis)
-{
-   int odx = 0;
-   commit (mAxis, odx, true, (0xdeadbeefLL << 32) | 1 , 0, 0);
-   commit (mAxis, odx, true, (0xaaaaaaaaLL << 32) | 2 , 0, 0);
-   commit (mAxis, odx, true, (0xbbbbbbbbLL << 32) | 3 , 0, 0);
-}
 
-
-static void write_packet (AxisOut &mAxis, ReadStatus_t status)
-{
-   int odx = 0;
-   uint64_t tmp = status;
-   commit (mAxis, odx, true, (0xabadbabeLL << 32) | tmp, 0, 0);
-
-   commit (mAxis, odx, true, (0xdeadbeefLL << 32) | 0x31, 0, 0);
-   commit (mAxis, odx, true, (0xaaaaaaaaLL << 32) | 0x32, 0, 0);
-   commit (mAxis, odx, true, (0xbbbbbbbbLL << 32) | 0x33, 0, 0);
-}
-
-static void  write_packet (AxisOut                                                   &mAxis,
-                           Symbol_t      const  syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES])
-{
-   int odx = 0;
-   commit (mAxis, odx, true, (0xdeadbeefLL << 32) | 4 , 0, 0);
-   commit (mAxis, odx, true, (0xaaaaaaaaLL << 32) | 5 , 0, 0);
-   commit (mAxis, odx, true, (0xbbbbbbbbLL << 32) | 6 , 0, 0);
-}
-
-static void  write_packet (AxisOut                                                   &mAxis,
-                           Histogram     const                    hists[MODULE_K_NCHANNELS],
-                           Symbol_t      const  syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES])
-{
-   int odx = 0;
-   commit (mAxis, odx, true, (0xdeadbeefLL << 32) | 0x11 , 0, 0);
-   commit (mAxis, odx, true, (0xaaaaaaaaLL << 32) | 0x12 , 0, 0);
-   commit (mAxis, odx, true, (0xbbbbbbbbLL << 32) | 0x13 , 0, 0);
-
-
-   for (int idx = 0; idx < 32; idx++)
-   {
-      commit (mAxis, odx, true, hists[0].m_bins[idx], 0, 0);
-   }
-
-   for (int idx = 0; idx < 128; idx++)
-   {
-      commit (mAxis, odx, true, syms[0][idx], 0, 0);
-   }
-}
-
-static void write_packet (AxisOut &mAxis, PacketContext const &pktCtx)
-{
-   int odx = 0;
-   pktCtx.commit (mAxis, odx,  true, true, pktCtx.m_status);
-   pktCtx.commit (mAxis, odx, false, true, pktCtx.m_status);
-
-
-   uint64_t w64 = pktCtx.m_cedx;
-   w64 <<= 16;
-   w64  |= pktCtx.m_chdx;
-   w64  |= 0xd0000000LL << 32;
-   commit (mAxis, odx, true, w64,                         0, 0);
-   commit (mAxis, odx, true, (0x11111111LL << 32) | pktCtx.m_status, 0, 0);
-   commit (mAxis, odx, true, (0xabadcafeLL << 32) | 0xab, 0, 0);
-   commit (mAxis, odx, true, (0xdeadbeefLL << 32) |    1, 0, 0);
-   commit (mAxis, odx, true, (0xaaaaaaaaLL << 32) |    2, 0, 0);
-   commit (mAxis, odx, true, (0xbbbbbbbbLL << 32) |    3, 0, 0);
-
-   for (int idx = 0; idx < 7; idx++)
-    {
-       commit (mAxis, odx, true, pktCtx.m_hdrsBuf[idx], 0, 0);
-    }
-
-}
-#endif
