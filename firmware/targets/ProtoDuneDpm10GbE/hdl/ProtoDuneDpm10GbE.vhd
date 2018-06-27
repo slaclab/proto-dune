@@ -228,7 +228,7 @@ begin
    U_App : entity work.ProtoDuneDpmCore
       generic map (
          TPD_G            => TPD_G,
-         CASCADE_SIZE_G   => 8,
+         CASCADE_SIZE_G   => 1,
          AXI_BASE_ADDR_G  => x"A0000000")
       port map (
          -- AXI-Lite Interface (axilClk domain)
