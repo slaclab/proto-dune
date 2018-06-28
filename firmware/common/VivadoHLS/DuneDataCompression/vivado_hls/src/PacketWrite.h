@@ -220,7 +220,7 @@ static void  write_packet (AxisOut                               &mAxis,
    epilogue (mAxis, odx, Identifier::DataType::COMPRESSED, status);
 
 
-   lclMonitor.nbytes    += odx << 6;
+   lclMonitor.nbytes    += odx << 3;
    lclMonitor.npackets  += 1;
    lclMonitor.npromoted += 1;
 

@@ -98,7 +98,7 @@ class ModuleConfig
 {
 public:
    ModuleConfig () { return; }
-   void copy (ModuleConfig const &src); 
+   void copy (ModuleConfig const &src, bool &first);
    
 public:   
     int32_t                            init;  /*!< Initialization flag    */
@@ -118,9 +118,14 @@ public:
  *   \param[ in]  src The configuration block to copy
  *
 \* ---------------------------------------------------------------------- */
-inline void ModuleConfig::copy (ModuleConfig const &src)
+inline void ModuleConfig::copy (ModuleConfig const &src, bool &first)
 {
     *this = src;
+    if (first)
+    {
+       this->init = 1;
+       first      = false;
+    }
     return;
 }
 /* ---------------------------------------------------------------------- */

@@ -353,10 +353,11 @@ void DuneDataCompressionCore (AxisIn            &sAxis,
 
    static MonitorCfg       lclMonitorCfg;
    static MonitorCommon lclMonitorCommon;
+   static bool              First = true;
    ModuleConfig                   lclCfg;
 
    #pragma HLS DATAFLOW
-   lclCfg.copy             (config);
+   lclCfg.copy             (config, First);
    lclMonitorCfg.   update (lclCfg, monitor.cfg);
    lclMonitorCommon.update (lclCfg, monitor.common);
 
@@ -456,12 +457,14 @@ void acquire_packet (AxisIn                                        &sAxis,
 {
    #pragma HLS INLINE off
 
+
    // -------------------------------------------
    // Accumulates the statistics and status
    // associated with the reading of a WIB frame.
    // -------------------------------------------
    static MonitorRead lclMonitor;
 
+   if (config.init) lclMonitor.init ();
 
    ACQUIRE_LOOP:
    for (int idx = 0; idx < PACKET_K_NSAMPLES; idx++)
@@ -529,8 +532,8 @@ static void acquire_frame (AxisIn                                        &sAxis,
    #pragma HLS RESOURCE        variable=frame.m_dat.d          core=RAM_2P_LUTRAM
    #pragma HLS ARRAY_PARTITION variable=frame.m_dat.d cyclic factor=2
 
-   frame.read        (sAxis);
-   //// lclMonitor.update (config, frame.m_status);  Hangs the RTL cosim
+   ReadStatus status = frame.read        (sAxis);
+   lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
    process_frame     (frame, iframe, config, pktCtx, cmpCtx);
 }
 /* ----------------------------------------------------------------------- */

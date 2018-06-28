@@ -140,7 +140,7 @@ static void decode        (AxisOut                  &mAxis);
 /* ---------------------------------------------------------------------- */
 
 
-#define NPACKETS 1
+#define NPACKETS 2
 
 #if PROCESS_K_MODE == PROCESS_K_DATAFLOW
 #define MODE MODE_K_COPY
@@ -325,6 +325,9 @@ static int compress_test (int               fd,
    std::cout << "MODE = COMPRESS" << std::endl;
    std::cout << "-- BY PASSING CHECKING" << std::endl;
 
+   memset (&expMonitor, 0, sizeof (expMonitor));
+   ////print_monitor (expMonitor, monitor, 0,-1);
+
    // Ignore the first time flag;
    config.init = -1;
    uint64_t timestamp = 0x00800000LL;
@@ -353,6 +356,8 @@ static int compress_test (int               fd,
       // Compress the packet
       // -------------------
       DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, monitor);
+
+      print_monitor (expMonitor, monitor, ipacket, ipacket*0x400);
 
       // ------------------------------
       // Add trailer to the check frame

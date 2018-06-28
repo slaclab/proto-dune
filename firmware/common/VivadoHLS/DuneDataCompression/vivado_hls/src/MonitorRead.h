@@ -71,14 +71,17 @@ static void update_read (MonitorRead        &lcl,
 
 
    //std::cout << "status(flush): " << status << " user:" << in.user << std::endl;
+#if 0
    static bool First = true;
    if ( (cfg.init == 1)|| (cfg.init >= 0 && First))
+   ///if (First)
    {
       printf ("Initializing lcl\n");
       First = false;
       lcl.init ();
    }
    else
+#endif
    {
       // Always update the status mask and count the total number of frames seen
       lcl.summary.mask     = status;
