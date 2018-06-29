@@ -140,7 +140,8 @@ static void decode        (AxisOut                  &mAxis);
 /* ---------------------------------------------------------------------- */
 
 
-#define NPACKETS 2
+
+int NPackets = 1;
 
 #if PROCESS_K_MODE == PROCESS_K_DATAFLOW
 #define MODE MODE_K_COPY
@@ -174,6 +175,11 @@ int main (int argc, char const *argv[])
    static const char     FileTemplate[] = "%s/run%u_binary/run%u.bin";
    char filename[256];
 
+   // Get the number of 1024 packets to process
+   if (argc > 1)
+   {
+      NPackets = strtoul (argv[1], 0, 0);
+   }
 
    // --------------------------------------
    // Compose the test file name and open it
@@ -230,7 +236,7 @@ static int copy_test (int               fd,
 
 
    static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
-   for (int ipacket = 0; ipacket < NPACKETS; ipacket++)
+   for (int ipacket = 0; ipacket < NPackets; ipacket++)
    {
       uint32_t summary = 0;
 
@@ -332,7 +338,7 @@ static int compress_test (int               fd,
    config.init = -1;
    uint64_t timestamp = 0x00800000LL;
 
-   for (int ipacket = 0; ipacket < NPACKETS; ipacket++)
+   for (int ipacket = 0; ipacket < NPackets; ipacket++)
    {
       static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
       uint32_t summary = 0;
@@ -774,10 +780,10 @@ struct Toc
 
 static int      toc_decode (Toc      *toc,                       uint64_t const *buf, int nbuf);
 static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const *buf, int nbuf);
-static int     chan_decode (uint64_t const *buf, int nbuf, int position);
-static int     hist_decode (uint16_t *bins, int *nrbins, int *first, int *novrflw, BFU &bfu, uint64_t const *buf);
+static int     chan_decode (uint64_t const *buf, int nbuf, int position, bool printit);
+static int     hist_decode (uint16_t *bins, int *nrbins, int *first, int *novrflw, BFU &bfu, uint64_t const *buf, bool printit);
 static void hist_integrate (uint16_t *table,uint16_t *bins, int nbins);
-static int      sym_decode (uint16_t *syms, uint16_t const *table, uint16_t sym, BFU bfu, uint64_t const *buf, int ovrpos, int novrflw);
+static int      sym_decode (uint16_t *syms, uint16_t const *table, uint16_t sym, BFU bfu, uint64_t const *buf, int ovrpos, int novrflw, bool printit);
 static int16_t     restore (uint16_t   sym);
 static void  print_decoded (uint16_t   sym, int idy);
 
@@ -843,7 +849,7 @@ static void decode (AxisOut &mAxis)
    if (nbuf & 0x7) std::cout << std::endl;
 
 
-   #if  0 && DECODE
+   #if  1 && DECODE
    Toc toc;
    toc_decode (&toc, buf, nbuf);
 
@@ -857,7 +863,10 @@ static void decode (AxisOut &mAxis)
       std::cout << "Position[" << std::setfill (' ') << std::hex << std::setw (4) << ichan
                 << "] = " << std::hex << std::setw (8) << position << ':' << toc.m_offsets[ichan]
                 << std::endl;
-      position = chan_decode (buf, nbuf, position);
+
+      bool printit = (ichan < 4);
+
+      position = chan_decode (buf, nbuf, position, printit);
    }
    #endif
 
@@ -890,7 +899,7 @@ static int toc_decode (Toc *toc, uint64_t const *buf, int nbuf)
 
 
 /* ---------------------------------------------------------------------- */
-static int chan_decode (uint64_t const *buf, int nbuf, int position)
+static int chan_decode (uint64_t const *buf, int nbuf, int position, bool printit)
 {
    BFU bfu;
    _bfu_put (bfu, buf[position>>6], position);
@@ -900,14 +909,14 @@ static int chan_decode (uint64_t const *buf, int nbuf, int position)
    int            sym;
    int        novrflw;
    uint16_t bins[128];
-   int ovrpos = hist_decode (bins, &nbins, &sym, &novrflw, bfu, buf);
+   int ovrpos = hist_decode (bins, &nbins, &sym, &novrflw, bfu, buf, printit);
 
    uint16_t table[130];
    hist_integrate (table, bins, nbins);
 
 
    uint16_t syms[1024];
-   position = sym_decode (syms, table, sym, bfu, buf, ovrpos, novrflw);
+   position = sym_decode (syms, table, sym, bfu, buf, ovrpos, novrflw, printit);
 
    std::cout << "Total Bits " << std::setfill (' ') << std::setw (8) <<  std::hex
              << position << ':' << ((position + 63 )>> 6) << "  " << nbuf << std::endl;
@@ -1019,7 +1028,8 @@ static int hist_decode (uint16_t      *bins,
                         int          *first,
                         int        *novrflw,
                         BFU            &bfu,
-                        uint64_t const *buf)
+                        uint64_t const *buf,
+                        bool        printit)
 {
    bool debug = true;
 
@@ -1045,9 +1055,13 @@ static int hist_decode (uint16_t      *bins,
       int cnts   = left ? _bfu_extractR (bfu, buf, position, nbits) : 0;
 
       bins[ibin] =  cnts;
-      if ( (ibin & 0xf) == 0x0) std::cout << "Hist[" << std::hex << std::setw(2) << ibin << "] ";
-      std::cout <<  ' ' << std::hex << std::setw(3) << cnts  << ":" << std::hex << std::setw(1) << nbits;
-      if ( (ibin & 0xf) == 0xf) std::cout << std::endl;
+
+      if (printit)
+      {
+         if ( (ibin & 0xf) == 0x0) std::cout << "Hist[" << std::hex << std::setw(2) << ibin << "] ";
+         std::cout <<  ' ' << std::hex << std::setw(3) << cnts  << ":" << std::hex << std::setw(1) << nbits;
+         if ( (ibin & 0xf) == 0xf) std::cout << std::endl;
+      }
 
       left -= cnts;
 
@@ -1088,7 +1102,8 @@ int sym_decode (uint16_t        *syms,
                 BFU               bfu,
                 uint64_t const   *buf,
                 int            ovrpos,
-                int           novrflw)
+                int           novrflw,
+                bool          printit)
 {
    APD_dtx dtx;
 
@@ -1105,7 +1120,10 @@ int sym_decode (uint16_t        *syms,
    for (int idy = 0; ; idy++)
    {
       syms[idy] = sym;
-      print_decoded (sym, idy);
+      if (printit)
+      {
+         print_decoded (sym, idy);
+      }
 
       if (idy == PACKET_K_NSAMPLES -1)
       {

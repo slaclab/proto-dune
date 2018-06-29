@@ -75,12 +75,20 @@ static bool hist_check (int                                        ihist,
 
    // Copy the data into a temporary bit stream
    int idx = 0;
-   while (1)
-   {
-      uint64_t dat;
-      bool okay = ostream.read_nb (buf[idx++]);
-      if (!okay) break;
-   }
+   #if USE_FIFO
+      while (1)
+      {
+         uint64_t dat;
+         bool okay = ostream.read_nb (buf[idx++]);
+         if (!okay) break;
+      }
+  #else
+      int cnt = (ostream.m_cidx + 63) >> 6;
+      for (idx = 0; idx < cnt; idx++)
+      {
+         buf[idx] = ostream.read (idx);
+      }
+   #endif
 
 
    BfuPosition_t position = 0;

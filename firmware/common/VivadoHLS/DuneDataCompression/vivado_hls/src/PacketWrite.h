@@ -358,17 +358,24 @@ static inline void
                     int                                        ichan)
 {
    #pragma HLS INLINE off
-   #pragma HLS DATAFLOW
+  #pragma HLS DATAFLOW
 
-   APE_etxOut                           etxOut[NPARALLEL];
-   #pragma HLS ARRAY_PARTITION variable=etxOut complete dim=1
 
-    encode4 (etxOut,
+   struct Container
+   {
+      APE_etxOut                           etxOut[NPARALLEL];
+   };
+
+   Container container;
+   #pragma HLS ARRAY_PARTITION variable=container.etxOut complete dim=1
+   /// #pragma HLS STREAM variable=containet off
+
+    encode4 (container.etxOut,
              hist0, hist1, hist2, hist3,
              adcs0, adcs1, adcs2, adcs3,
              ichan);
 
-   writeN  (bAxis, mAxis, &offsets[ichan], etxOut, NPARALLEL, NSERIAL, ichan);
+   writeN  (bAxis, mAxis, &offsets[ichan], container.etxOut, NPARALLEL, NSERIAL, ichan);
 }
 /* -------------------------------------------------------------------- */
 
@@ -555,7 +562,7 @@ static void pack (AxisBitStream                     &bAxis,
                   AxisOut                           &mAxis,
                   OStream                         &ostream)
 {
-    #pragma HLS INLINE  off
+    #pragma HLS INLINE
     ///#pragma HLS PIPELINE
 
 
@@ -585,8 +592,28 @@ static void pack (AxisBitStream                     &bAxis,
    out.dest = 0x0;
 
    int cnt = bleft >> 6;
+
+#if 1
    PACK_LOOP:
-   for (int idx = 0; idx < cnt/2; idx++)
+   for (int idx = 0; idx < cnt; idx++)
+   {
+       #pragma HLS LOOP_TRIPCOUNT min=12 max=48 avg=16
+       #pragma HLS UNROLL factor=2
+       ///#pragma HLS PIPELINE
+
+      // Make room. get and insert the new 64-bts worth of data
+       #if USE_FIFO
+           data = ostream.read ();
+       #else
+          data = ostream.read (idx);
+       #endif
+
+       bAxis.insert (mAxis, data, 64);
+   }
+#else
+   PACK_LOOP:
+   int cntRnd = cnt & ~0x1;
+   for (int idx = 0; idx < cntRnd; idx += 2)
    {
       #pragma HLS LOOP_TRIPCOUNT min=12 max=48 avg=16
 
@@ -594,19 +621,36 @@ static void pack (AxisBitStream                     &bAxis,
       #pragma HLS UNROLL factor=1
 
       // Make room. get and insert the new 64-bts worth of data
-      data = ostream.read ();
+      #if USE_FIFO
+          data = ostream.read ();
+      #else
+         data = ostream.read (idx);
+      #endif
+
       bAxis.insert (mAxis, data, 64);
 
+
       // Make room. get and insert the new 64-bts worth of data
-      data = ostream.read ();
+     #if USE_FIFO
+         data = ostream.read ();
+     #else
+         data = ostream.read (idx + 1);
+     #endif
+
       bAxis.insert (mAxis, data, 64);
    }
 
    if (cnt&1)
    {
-      data = ostream.read ();
+      #if USE_FIFO
+          data = ostream.read ();
+      #else
+          data = ostream.read (cnt-1);
+      #endif
+
       bAxis.insert (mAxis, data, 64);
    }
+#endif
 
    // Push an leftover input bits into the output stream.
    int nbits = bleft & 0x3f; // NEW ostream.bidx();
@@ -737,14 +781,24 @@ static bool decode_data (uint16_t      dadcs[PACKET_K_NSAMPLES],
 static int copy (uint64_t *buf, OStream &ostream)
 {
    // Copy the data into a temporary bit stream
-   int idx = 0;
-   while (1)
-   {
-      uint64_t dat;
-      bool okay = ostream.read_nb (buf[idx]);
-      if (!okay) break;
-      idx += 1;
-   }
+#if USE_FIFO
+      int idx = 0;
+      while (1)
+      {
+         uint64_t dat;
+         bool okay = ostream.read_nb (buf[idx]);
+         if (!okay) break;
+         idx += 1;
+      }
+   #else
+      int idx;
+      int cnt = ostream.m_cidx >> 6;
+      for (idx = 0; idx < cnt; idx++)
+      {
+         buf[idx] = ostream.read (idx);
+      }
+      idx = cnt;
+   #endif
 
    // Get the last one
    // This is kind of cheating. It believes that
@@ -763,10 +817,14 @@ static int copy (uint64_t *buf, OStream &ostream)
 void restore (OStream &ostream, uint64_t *buf, int nbuf)
 {
    // Push this all back from whence it came
-   for (int idx = 0; idx < nbuf; idx++)
-   {
-      ostream.write_nb (buf[idx]);
-   }
+   #if USE_FIFO
+       for (int idx = 0; idx < nbuf; idx++)
+       {
+           ostream.write_nb (buf[idx]);
+       }
+   #else
+       // Nothing to do hear, the read is non-destructive
+   #endif
 
    return;
 }

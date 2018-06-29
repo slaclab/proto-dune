@@ -136,6 +136,7 @@ public:
    OStream               ba; /*!< Output bit array (encoded symbols        */
 };
 
+
 /* ---------------------------------------------------------------------- *//*!
 
   \class _APE_etx
@@ -174,8 +175,8 @@ APE_etxOut::APE_etxOut ()
    //     5 bits * 1024 = 5,120 bits -> 80 64 bit words
    //
    // Round these to 256 and 128
-   #pragma HLS STREAM          variable=ha depth=256 dim=1
-   #pragma HLS STREAM          variable=ba depth=128 dim=1
+   #pragma HLS STREAM          variable=ha depth=256 dim=1 off  /// STRIP off
+   #pragma HLS STREAM          variable=ba depth=128 dim=1 off  ///  STRIP off
 
    return;
 }
@@ -247,7 +248,7 @@ bool encode_check (APE_etxOut                         &etx,
 /* ---------------------------------------------------------------------- */
 /* LOCAL PROTOTYPES                                                       */
 /* ---------------------------------------------------------------------- */
-static inline uint32_t compose (APE_cv_t bits, int nbits, int npending);
+static inline uint64_t compose (APE_cv_t bits, int nbits, int npending);
 /* ---------------------------------------------------------------------- */
 
 
@@ -305,7 +306,7 @@ static int inline APE_finish (APE_etxOut &etxOut, APE_etx &etx)
    int             tofollow = etx.tofollow + 1;
    ap_uint<1>           bit = etx.cv.m_lo >> (APC_K_NBITS - 2);
 
-   uint32_t buf = compose (bit, 1, tofollow);
+   uint64_t buf = compose (bit, 1, tofollow);
    etx.ba.insert  (etxOut.ba, buf, 1 + tofollow);
 
    etx.ba.transfer (etxOut.ba);
@@ -516,7 +517,7 @@ static int APE_encode  (APE_etxOut        &etxOut,
        // chk::reduce method.
        // ---------------------------------------------
        APE_cv_t  bits;
-       uint32_t ebits;
+       uint64_t ebits;
        int     nebits;
        APE_dumpStatement (int npending_save = npending);
        //bool   finish = (idx == 0) || (nsyms == 1);
@@ -628,7 +629,7 @@ static int APE_encode  (APE_etxOut        &etxOut,
  *  \a nbits + \a npending bits
  *
 \* ---------------------------------------------------------------------- */
-static inline uint32_t compose (APE_cv_t bits, int nbits, int npending)
+static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
 {
    #pragma HLS PIPELINE
    #pragma HLS INLINE
@@ -641,10 +642,21 @@ static inline uint32_t compose (APE_cv_t bits, int nbits, int npending)
    // The total number of bits to insert cannot exceed 32.
    // This can be fixed, but at a later date
    // ----------------------------------------------------
-   assert (npending + nbits <= 32);
+   if (npending + nbits > 32)
+   {
+      if (npending + nbits > 64)
+      {
+         std::cout << "Too many bits " << npending << ':' << nbits << std::endl;
+         assert (npending + nbits <= 64);
+      }
+      else
+      {
+         std::cout << "Large number of encoding bits " << npending << ':' << nbits << std::endl;
+      }
+   }
 
 
-   uint32_t buf = 0;
+   uint64_t buf = 0;
    int     nbuf = npending + nbits;
 
 
@@ -654,11 +666,11 @@ static inline uint32_t compose (APE_cv_t bits, int nbits, int npending)
    {
       nbits -= 1;
       uint32_t leading_bit = bits[nbits];
-      buf |=  leading_bit << (nbuf-1);
+      buf |=   leading_bit << (nbuf-1);
       if (leading_bit == 0)
       {
          // Leading bit is 0, must insert 'to_follow' 1s
-         buf |= ((1 << npending) - 1) << nbits;
+         buf |= ((1LL << npending) - 1) << nbits;
       }
       else
       {

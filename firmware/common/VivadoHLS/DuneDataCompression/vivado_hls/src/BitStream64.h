@@ -31,6 +31,8 @@
 #include <stdint.h>
 #include <ap_int.h>
 
+#define USE_FIFO 0
+#if USE_FIFO
 class OStream : public hls::stream<uint64_t>
 {
 public:
@@ -51,6 +53,60 @@ public:
    OStream::Idx_t         m_cidx; /*!< The current bit index                   */
 };
 
+#else
+
+class OStream
+{
+public:
+
+public:
+      void write (uint64_t data, int idx)
+      {
+         m_buf[idx] = data;
+      }
+
+      uint64_t read (int idx)
+      {
+         uint64_t data = m_buf[idx];
+         return data;
+      }
+
+public:
+
+   typedef uint32_t Idx_t;
+
+   uint64_t        m_ccur; /*!< Output staging buffer */
+   uint64_t        m_cidx; /*!< Current bit index     */
+   uint64_t     m_buf[256]; /*!< The buffer            */
+
+#ifndef __SYNTHESIS__
+
+public:
+   char const      *m_name;
+
+   OStream (const char *name) :
+       m_name (name)
+    {
+       return;
+    }
+
+   char const *name () { return m_name; }
+
+   OStream () :
+      m_name ("Test")
+   {
+        return;
+   }
+#else
+   OStream ()
+   {
+      return;
+   }
+#endif
+};
+
+#endif
+
 class BitStream64
 {
 public:
@@ -66,7 +122,7 @@ public:
    int                widx  () const;
 
    //void               insert (APC_cv_t bit);
-   void               insert (OStream &ostream, int bits, int nbits);
+   void               insert (OStream &ostream, uint64_t bits, int nbits);
    void             transfer (OStream & ostream);
 
    void              dfready ();
@@ -109,7 +165,13 @@ __inline BitStream64::Idx_t BitStream64::flush (OStream &ostream)
    if (cur_idx != 0)
    {
       m_cur <<= 0x40 - cur_idx;
-      ostream.write (m_cur);
+
+      #if USE_FIFO
+         ostream.write (m_cur);
+      #else
+         int wrdIdx = widx ();
+         ostream.write (m_cur, wrdIdx);
+      #endif
    }
 
    ostream.m_cidx = m_idx;
@@ -144,7 +206,7 @@ __inline void BitStream64::dfready ()
    m_cidx = m_idx;
 }
 
-__inline void BitStream64::insert (OStream &ostream, int bits, int nbits)
+__inline void BitStream64::insert (OStream &ostream, uint64_t bits, int nbits)
 {
    #pragma HLS PIPELINE
    #pragma HLS INLINE
@@ -169,18 +231,22 @@ __inline void BitStream64::insert (OStream &ostream, int bits, int nbits)
       // There is no need to clear any set bits beyond
       // the overrun bits, they will eventually by
       // shifted out the top bit.
-      ostream.write (m_cur);
-
+      #if USE_FIFO
+          ostream.write (m_cur);
+      #else
+         int wrdIdx = widx ();
+         ostream.write (m_cur, wrdIdx);
+      #endif
 
       #ifndef __SYNTHESIS__
          nbidx += left;
 
-         /*  !!! STRIP - remove output 2018-06-28
+         /*  !!! STRIP - remove output 2018-06-28 -- restore */
          std::cout << "BS64:" << ostream.name() << ':'
                    << std::setfill ('0') << std::hex << std::setw (16) << m_cur
                    << ':'       <<  std::hex << std::setw(8) << std::setfill (' ') << bits
                    << " len = " <<  std::hex << std::setw(4) << std::setfill (' ') << nbidx << std::endl;
-         */
+         /**/
       #endif
 
       m_cur   = bits;
