@@ -804,9 +804,9 @@ static void decode (AxisOut &mAxis)
          AxisOut_t  dst = mAxis.read  ();
          uint64_t  data = dst.data;
 
-         if ( (nbuf & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << nbuf << "] = ";
-         std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << data;
-         if ((nbuf & 0x7) == 7) std::cout << std::endl;
+         ///if ( (nbuf & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << nbuf << "] = ";
+         ///std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << data;
+         ///if ((nbuf & 0x7) == 7) std::cout << std::endl;
 
          buf[nbuf] = data;
          nbuf++;
@@ -817,7 +817,31 @@ static void decode (AxisOut &mAxis)
       }
    }
 
+   /// if (nbuf & 0x7) std::cout << std::endl;
+
+   // Print the first 32 64-bit words
+   int idx;
+   for (idx = 0; idx < 32; idx++)
+   {
+      if ( (idx & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << idx << "] = ";
+      std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << buf[idx];
+      if ((idx & 0x7) == 7) std::cout << std::endl;
+   }
+
+   std::cout << "...... skipping" << std::endl;
+
+   // Print the last 256 64-bit words
+   int beg = (nbuf > 256) ? ((nbuf - 32*8) & ~0x7) : idx;
+   for (idx = beg; idx < nbuf; idx++)
+   {
+      if ( (idx & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << idx << "] = ";
+      std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << buf[idx];
+      if ((idx & 0x7) == 7) std::cout << std::endl;
+   }
+
+
    if (nbuf & 0x7) std::cout << std::endl;
+
 
    #if  0 && DECODE
    Toc toc;

@@ -41,7 +41,7 @@
 #define COMPRESS_VERSION 0x10000000
 
 #define CHECKER          1
-#define WRITE_ADCS_PRINT 1
+#define WRITE_ADCS_PRINT 0  /// STRIP remove output 2018-06-28
 
 
 #ifdef __SYNTHESIS__
@@ -639,6 +639,8 @@ static void print_decoded (uint16_t sym, int idy)
 {
    static uint16_t Adcs[16];
    static uint16_t Prv;
+
+   return;  /// STRIP added 2018-06-28 to reduce output
 
    // ---------------------------------------------------------------------------------------
    // Print the symbols and accumulate the restored ADCs to be printed after every 16 symbols

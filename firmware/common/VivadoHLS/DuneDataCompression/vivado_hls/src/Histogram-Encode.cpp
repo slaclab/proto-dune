@@ -74,6 +74,7 @@
                                 int          left,
                                 int         tbits)
 {
+    return; /// STRIP removed 2018-06-28 to reduce output
     std::cout <<    "Bin: " << std::setw(2) << ibin
               <<  " Cnts: " << std::setw(4) << std::hex << bits
               << " Nbits: " << std::setw(2) << std::dec << nbits
@@ -181,7 +182,7 @@ void Histogram::encode (OStream &ostream, BitStream64 &bs64, Table table[NBins+1
 
 
    Histogram::Acc_t left = PACKET_K_NSAMPLES -1;
-   HISTOGRAM_statement (if (debug) print ());
+   /// STRIP  removed 2018-06-28 to reduce output HISTOGRAM_statement (if (debug) print ());
 
 
    ap_uint<10> total = 0;

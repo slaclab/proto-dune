@@ -269,9 +269,12 @@ static int hist_decode (uint16_t bins[Histogram::NBins], int *nrbins, int *first
       int cnts   = left ? _bfu_extractR (bfu, buf, position, nbits) : 0;
 
       bins[ibin] =  cnts;
+
+      /* STRIP removed 2018-06-28 to reduce output
       if ( (ibin & 0xf) == 0x0) std::cout << "Hist[" << std::hex << std::setw(2) << ibin << "] ";
       std::cout <<  ' ' << std::hex << std::setw(3) << cnts  << ":" << std::hex << std::setw(1) << nbits;
       if ( (ibin & 0xf) == 0xf) std::cout << std::endl;
+      */
 
       left -= cnts;
 

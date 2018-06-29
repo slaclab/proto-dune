@@ -143,10 +143,12 @@ __inline void AxisBitStream::insert (AxisOut &mAxis, uint64_t bits, int nbits)
       #ifndef __SYNTHESIS__
          nbidx += left;
 
+         /* STRIP remove output 2018-06-28
          std::cout << "AxisBs: "
                    << std::setfill ('0') << std::hex << std::setw (16) << m_cur
                    << ':'       <<  std::hex << std::setw(16) << std::setfill ('0') << bits
                    << " len = " <<  std::hex << std::setw( 4) << std::setfill (' ') << nbidx << std::endl;
+         */
       #endif
 
       m_cur   = bits;
