@@ -923,7 +923,7 @@ static void decode (AxisOut &mAxis)
    int nerrs = 0;
    uint64_t buf[(12*1024*128)/64 + 0x800];
 
-   decode (Record, RecordLen);
+   // decode (Record, RecordLen);
 
    while (1)
    {
