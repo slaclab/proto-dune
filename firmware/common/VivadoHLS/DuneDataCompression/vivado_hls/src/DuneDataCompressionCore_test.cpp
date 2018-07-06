@@ -311,37 +311,11 @@ static int copy_test (int               fd,
 /* ---------------------------------------------------------------------- */
 
 
+void GenData ( int fd, char const *filename, Source &src, uint32_t headerId, uint32_t version ) {
 
-/* ---------------------------------------------------------------------- */
-static int compress_test (int               fd,
-                          char const *filename,
-                          uint32_t    headerId,
-                          uint32_t     version)
-{
-   Source                             src;
-   MyStreamOut              mAxis ("Out");
-   ModuleIdx_t              moduleIdx = 1;
-   ModuleConfig                    config;
-   MonitorModule               expMonitor;
-   MonitorModule                  monitor;
-   int                        test_status;
+   for (int ipacket = 0; ipacket < NPackets; ipacket++) {
 
-   #pragma HLS STREAM variable=mAxis depth=32768
-
-   std::cout << "MODE = COMPRESS" << std::endl;
-   std::cout << "-- BY PASSING CHECKING" << std::endl;
-
-   memset (&expMonitor, 0, sizeof (expMonitor));
-   ////print_monitor (expMonitor, monitor, 0,-1);
-
-   // Ignore the first time flag;
-   config.init = -1;
-   uint64_t timestamp = 0x00800000LL;
-
-   for (int ipacket = 0; ipacket < NPackets; ipacket++)
-   {
       static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
-      uint32_t summary = 0;
 
       // -------------------
       // Read one time slice
@@ -351,56 +325,57 @@ static int compress_test (int               fd,
 
       int runEnable = 1;
       int flush     = 0;
+      uint64_t timestamp = 0x00800000LL;
+      uint32_t summary = 0;
 
       // ----------------------------------
       // Fill a packets worth of Wib frames
       // -----------------------------------
       int nbytes  = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
-      timestamp  += 25 * PACKET_K_NSAMPLES;
-
-      // -------------------
-      // Compress the packet
-      // -------------------
-      DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, monitor);
-
-      print_monitor (expMonitor, monitor, ipacket, ipacket*0x400);
-
-      // ------------------------------
-      // Add trailer to the check frame
-      // Do the check
-      // ------------------------------
       src.add_trailer (version, headerId, summary, nbytes);
-
-      decode (mAxis);
-      test_status = 0; //// MyStreamOut::check (mAxis, src.m_chk, ipacket);
-
-      // -------------------------
-      // Abort the test on failure
-      // -------------------------
-      if (test_status)
-      {
-         printf ("Failed\n");
-         break;
-      }
-
-      config.init = 0;
-      printf ("NEXT\n");
    }
-
-
-   // ---------------------------------------------------
-   // If have passed all the tests so far, make sure both
-   // the input and output streams are not empty
-   // ---------------------------------------------------
-   if (test_status == 0)
-   {
-      check_empty (mAxis,     src.m_src);
-      src.drainCheck ();
-   }
-
-   return test_status;
 }
+
+void CompressData ( Source &src, MyStreamOut &mAxis, ModuleIdx_t &moduleIdx,  ModuleConfig &config, MonitorModule &monitor ) {
+
+   // Ignore the first time flag;
+   config.init = -1;
+
+   for (int ipacket = 0; ipacket < NPackets; ipacket++) {
+      DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, monitor);
+      config.init = 0;
+   }
+}
+
+void TestData (MyStreamOut &mAxis ) {
+   for (int ipacket = 0; ipacket < NPackets; ipacket++) {
+      decode (mAxis);
+   }
+}
+
 /* ---------------------------------------------------------------------- */
+static int compress_test (int               fd,
+                          char const *filename,
+                          uint32_t    headerId,
+                          uint32_t     version) {
+
+   Source                             src;
+   MyStreamOut              mAxis ("Out");
+   ModuleIdx_t              moduleIdx = 1;
+   ModuleConfig                    config;
+   MonitorModule               expMonitor;
+   MonitorModule                  monitor;
+   int                        test_status;
+
+   #pragma HLS STREAM variable=mAxis depth=32768
+   #pragma HLS DATAFLOW
+
+   GenData ( fd, filename, src, headerId, version );
+   CompressData ( src, mAxis, moduleIdx,  config, monitor );
+   TestData(mAxis);
+
+   return 0;
+}
 
 
 
@@ -800,6 +775,8 @@ static void decode (AxisOut &mAxis)
    int  nbuf = 0;
    int nerrs = 0;
    uint64_t buf[(12*1024*128)/64 + 0x800];
+
+   return;
 
    while (1)
    {
