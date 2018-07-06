@@ -14,9 +14,9 @@ Starting synth_design
 Attempting to get a license for feature 'Synthesis' and/or device 'xc7z045'
 INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7z045'
 INFO: Launching helper process for spawning children vivado processes
-INFO: Helper process launched with PID 28670 
+INFO: Helper process launched with PID 35853 
 ---------------------------------------------------------------------------------
-Starting RTL Elaboration : Time (s): cpu = 00:00:10 ; elapsed = 00:00:11 . Memory (MB): peak = 1439.578 ; gain = 122.922 ; free physical = 17966 ; free virtual = 46560
+Starting RTL Elaboration : Time (s): cpu = 00:00:10 ; elapsed = 00:00:11 . Memory (MB): peak = 1439.578 ; gain = 122.922 ; free physical = 15448 ; free virtual = 46833
 ---------------------------------------------------------------------------------
 INFO: [Synth 8-6157] synthesizing module 'DuneDataCompressionCore' [/u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressionCore.v:12]
 	Parameter C_S_AXI_BUS_A_DATA_WIDTH bound to: 32 - type: integer 
@@ -995,7 +995,7 @@ WARNING: [Synth 8-3331] design encode4 has unconnected port etx_0_ha_m_buf_q1[30
 WARNING: [Synth 8-3331] design encode4 has unconnected port etx_0_ha_m_buf_q1[29]
 INFO: [Common 17-14] Message 'Synth 8-3331' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
 ---------------------------------------------------------------------------------
-Finished RTL Elaboration : Time (s): cpu = 00:00:22 ; elapsed = 00:00:25 . Memory (MB): peak = 1668.836 ; gain = 352.180 ; free physical = 17824 ; free virtual = 46426
+Finished RTL Elaboration : Time (s): cpu = 00:00:22 ; elapsed = 00:00:25 . Memory (MB): peak = 1668.836 ; gain = 352.180 ; free physical = 15307 ; free virtual = 46699
 ---------------------------------------------------------------------------------
 
 Report Check Netlist: 
@@ -1109,10 +1109,10 @@ INFO: [Common 17-14] Message 'Synth 8-3295' appears 100 times and further instan
 Start Handling Custom Attributes
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:00:25 ; elapsed = 00:00:28 . Memory (MB): peak = 1668.836 ; gain = 352.180 ; free physical = 17876 ; free virtual = 46478
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:25 ; elapsed = 00:00:28 . Memory (MB): peak = 1668.836 ; gain = 352.180 ; free physical = 15360 ; free virtual = 46751
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:25 ; elapsed = 00:00:28 . Memory (MB): peak = 1668.836 ; gain = 352.180 ; free physical = 17876 ; free virtual = 46478
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:25 ; elapsed = 00:00:28 . Memory (MB): peak = 1668.836 ; gain = 352.180 ; free physical = 15360 ; free virtual = 46751
 ---------------------------------------------------------------------------------
 INFO: [Device 21-403] Loading part xc7z045ffg900-2
 INFO: [Project 1-570] Preparing netlist for logic optimization
@@ -1126,22 +1126,22 @@ Completed Processing XDC Constraints
 INFO: [Project 1-111] Unisim Transformation Summary:
 No Unisim elements were transformed.
 
-Constraint Validation Runtime : Time (s): cpu = 00:00:04 ; elapsed = 00:00:00.84 . Memory (MB): peak = 2189.395 ; gain = 14.004 ; free physical = 17322 ; free virtual = 45925
+Constraint Validation Runtime : Time (s): cpu = 00:00:04 ; elapsed = 00:00:00.80 . Memory (MB): peak = 2190.395 ; gain = 15.004 ; free physical = 14810 ; free virtual = 46202
 ---------------------------------------------------------------------------------
-Finished Constraint Validation : Time (s): cpu = 00:01:11 ; elapsed = 00:01:55 . Memory (MB): peak = 2189.395 ; gain = 872.738 ; free physical = 17601 ; free virtual = 46205
+Finished Constraint Validation : Time (s): cpu = 00:01:11 ; elapsed = 00:01:56 . Memory (MB): peak = 2190.395 ; gain = 873.738 ; free physical = 15084 ; free virtual = 46475
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Loading Part and Timing Information
 ---------------------------------------------------------------------------------
 Loading part: xc7z045ffg900-2
 ---------------------------------------------------------------------------------
-Finished Loading Part and Timing Information : Time (s): cpu = 00:01:11 ; elapsed = 00:01:55 . Memory (MB): peak = 2189.395 ; gain = 872.738 ; free physical = 17601 ; free virtual = 46205
+Finished Loading Part and Timing Information : Time (s): cpu = 00:01:11 ; elapsed = 00:01:56 . Memory (MB): peak = 2190.395 ; gain = 873.738 ; free physical = 15084 ; free virtual = 46475
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Applying 'set_property' XDC Constraints
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:01:11 ; elapsed = 00:01:55 . Memory (MB): peak = 2189.395 ; gain = 872.738 ; free physical = 17603 ; free virtual = 46208
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:01:11 ; elapsed = 00:01:56 . Memory (MB): peak = 2190.395 ; gain = 873.738 ; free physical = 15086 ; free virtual = 46478
 ---------------------------------------------------------------------------------
 INFO: [Synth 8-802] inferred FSM for state register 'wstate_reg' in module 'DuneDataCompressionCore_BUS_A_s_axi'
 INFO: [Synth 8-802] inferred FSM for state register 'rstate_reg' in module 'DuneDataCompressionCore_BUS_A_s_axi'
@@ -1554,7 +1554,7 @@ INFO: [Synth 8-3971] The signal ram_reg was recognized as a true dual port RAM t
 INFO: [Synth 8-3971] The signal ram_reg was recognized as a true dual port RAM template.
 INFO: [Synth 8-3971] The signal ram_reg was recognized as a true dual port RAM template.
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 2 : Time (s): cpu = 00:01:26 ; elapsed = 00:02:10 . Memory (MB): peak = 2189.395 ; gain = 872.738 ; free physical = 17567 ; free virtual = 46177
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:01:25 ; elapsed = 00:02:12 . Memory (MB): peak = 2190.395 ; gain = 873.738 ; free physical = 15051 ; free virtual = 46449
 ---------------------------------------------------------------------------------
 
 Report RTL Partitions: 
@@ -7623,10 +7623,6 @@ INFO: [Common 17-14] Message 'Synth 8-3332' appears 100 times and further instan
 INFO: [Synth 8-5546] ROM "tmp_274_i_i_fu_9307_p2" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "tmp_298_i_i_fu_9435_p2" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "tmp_i_i_fu_6713_p2" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\HdrLcl_m_hdx_loc_i_i_reg_6162_reg[0] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\HdrLcl_m_hdx_loc_i_i_reg_6162_reg[3] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ap_phi_reg_pp1_iter1_p_0115_0_i48_i1_i_i_reg_6409_reg[9] )
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ap_phi_reg_pp1_iter1_p_0115_0_i_i1_i_i_reg_6424_reg[9] )
 INFO: [Synth 8-5545] ROM "exitcond_fu_1767_p2" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5545] ROM "tmp_404_i_fu_2759_p2" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5545] ROM "tmp_450_i_fu_2485_p2" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
@@ -7708,6 +7704,10 @@ INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encod
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encode153_U0/\left_cast_i_reg_3267_reg[30] )
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encode153_U0/\left_cast_i_reg_3267_reg[29] )
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encode153_U0/\left_cast_i_reg_3267_reg[28] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encode153_U0/\left_cast_i_reg_3267_reg[27] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encode153_U0/\left_cast_i_reg_3267_reg[26] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encode153_U0/\left_cast_i_reg_3267_reg[25] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (APE_encode153_U0/\left_cast_i_reg_3267_reg[24] )
 INFO: [Common 17-14] Message 'Synth 8-3333' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
 INFO: [Common 17-14] Message 'Synth 8-3333' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
 INFO: [Common 17-14] Message 'Synth 8-3332' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
@@ -7722,8 +7722,7 @@ DSP Report: Generating DSP DuneDataCompressibKp_U693/DuneDataCompressibKp_DSP48_
 DSP Report: register B is absorbed into DSP DuneDataCompressibKp_U693/DuneDataCompressibKp_DSP48_0_U/p.
 DSP Report: operator DuneDataCompressibKp_U693/DuneDataCompressibKp_DSP48_0_U/p is absorbed into DSP DuneDataCompressibKp_U693/DuneDataCompressibKp_DSP48_0_U/p.
 DSP Report: operator DuneDataCompressibKp_U693/DuneDataCompressibKp_DSP48_0_U/m is absorbed into DSP DuneDataCompressibKp_U693/DuneDataCompressibKp_DSP48_0_U/p.
-INFO: [Common 17-14] Message 'Synth 8-3886' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
-INFO: [Common 17-14] Message 'Synth 8-3332' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+INFO: [Common 17-14] Message 'Synth 8-3333' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
 INFO: [Synth 8-5545] ROM "exitcond_fu_1767_p2" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5545] ROM "tmp_483_i_fu_2759_p2" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5545] ROM "tmp_535_i_fu_2485_p2" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
@@ -7741,7 +7740,7 @@ INFO: [Synth 8-5546] ROM "tmp_40_i_i_i_fu_1107_p2" won't be mapped to RAM becaus
 INFO: [Synth 8-5546] ROM "tmp_64_i_i_i_fu_1504_p2" won't be mapped to RAM because it is too sparse
 INFO: [Common 17-14] Message 'Synth 8-3333' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
 ---------------------------------------------------------------------------------
-Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:02:19 ; elapsed = 00:04:44 . Memory (MB): peak = 2189.395 ; gain = 872.738 ; free physical = 15018 ; free virtual = 43700
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:02:19 ; elapsed = 00:04:43 . Memory (MB): peak = 2190.395 ; gain = 873.738 ; free physical = 12514 ; free virtual = 43971
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start ROM, RAM, DSP and Shift Register Reporting
@@ -8164,13 +8163,13 @@ Report RTL Partitions:
 Start Applying XDC Timing Constraints
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Applying XDC Timing Constraints : Time (s): cpu = 00:02:33 ; elapsed = 00:05:06 . Memory (MB): peak = 2189.395 ; gain = 872.738 ; free physical = 14822 ; free virtual = 43549
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:02:38 ; elapsed = 00:05:11 . Memory (MB): peak = 2190.395 ; gain = 873.738 ; free physical = 12316 ; free virtual = 43820
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Timing Optimization
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Timing Optimization : Time (s): cpu = 00:03:10 ; elapsed = 00:05:45 . Memory (MB): peak = 2281.016 ; gain = 964.359 ; free physical = 14670 ; free virtual = 43400
+Finished Timing Optimization : Time (s): cpu = 00:03:16 ; elapsed = 00:05:51 . Memory (MB): peak = 2281.016 ; gain = 964.359 ; free physical = 12166 ; free virtual = 43672
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start ROM, RAM, DSP and Shift Register Reporting
@@ -8471,7 +8470,7 @@ Report RTL Partitions:
 Start Technology Mapping
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Technology Mapping : Time (s): cpu = 00:03:29 ; elapsed = 00:06:21 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13946 ; free virtual = 42682
+Finished Technology Mapping : Time (s): cpu = 00:03:34 ; elapsed = 00:06:27 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11443 ; free virtual = 42954
 ---------------------------------------------------------------------------------
 
 Report RTL Partitions: 
@@ -8511,7 +8510,7 @@ INFO: [Synth 8-5365] Flop handle_packet_U0/process_packet_U0/grp_write_packet_fu
 Finished Final Netlist Cleanup
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished IO Insertion : Time (s): cpu = 00:03:42 ; elapsed = 00:06:34 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13923 ; free virtual = 42724
+Finished IO Insertion : Time (s): cpu = 00:03:46 ; elapsed = 00:06:40 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11416 ; free virtual = 42993
 ---------------------------------------------------------------------------------
 
 Report Check Netlist: 
@@ -8524,7 +8523,7 @@ Report Check Netlist:
 Start Renaming Generated Instances
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Instances : Time (s): cpu = 00:03:43 ; elapsed = 00:06:35 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13923 ; free virtual = 42724
+Finished Renaming Generated Instances : Time (s): cpu = 00:03:47 ; elapsed = 00:06:40 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11416 ; free virtual = 42993
 ---------------------------------------------------------------------------------
 
 Report RTL Partitions: 
@@ -8536,25 +8535,25 @@ Report RTL Partitions:
 Start Rebuilding User Hierarchy
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Rebuilding User Hierarchy : Time (s): cpu = 00:04:01 ; elapsed = 00:06:53 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13904 ; free virtual = 42705
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:04:04 ; elapsed = 00:06:58 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11397 ; free virtual = 42975
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Renaming Generated Ports
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Ports : Time (s): cpu = 00:04:01 ; elapsed = 00:06:54 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13904 ; free virtual = 42706
+Finished Renaming Generated Ports : Time (s): cpu = 00:04:04 ; elapsed = 00:06:58 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11398 ; free virtual = 42975
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Handling Custom Attributes
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:04:05 ; elapsed = 00:06:57 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13901 ; free virtual = 42702
+Finished Handling Custom Attributes : Time (s): cpu = 00:04:08 ; elapsed = 00:07:02 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11394 ; free virtual = 42971
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Renaming Generated Nets
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Nets : Time (s): cpu = 00:04:05 ; elapsed = 00:06:58 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13901 ; free virtual = 42702
+Finished Renaming Generated Nets : Time (s): cpu = 00:04:08 ; elapsed = 00:07:02 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11394 ; free virtual = 42971
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start ROM, RAM, DSP and Shift Register Reporting
@@ -9460,11 +9459,11 @@ Report Instance Areas:
 |841   |  update_U0                                              |update                                                  |     1|
 +------+---------------------------------------------------------+--------------------------------------------------------+------+
 ---------------------------------------------------------------------------------
-Finished Writing Synthesis Report : Time (s): cpu = 00:04:05 ; elapsed = 00:06:58 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 13900 ; free virtual = 42702
+Finished Writing Synthesis Report : Time (s): cpu = 00:04:08 ; elapsed = 00:07:02 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 11393 ; free virtual = 42971
 ---------------------------------------------------------------------------------
-Synthesis finished with 0 errors, 0 critical warnings and 1087 warnings.
-Synthesis Optimization Runtime : Time (s): cpu = 00:03:31 ; elapsed = 00:05:48 . Memory (MB): peak = 2294.941 ; gain = 457.727 ; free physical = 17181 ; free virtual = 45982
-Synthesis Optimization Complete : Time (s): cpu = 00:04:07 ; elapsed = 00:07:02 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 17191 ; free virtual = 45982
+Synthesis finished with 0 errors, 0 critical warnings and 988 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:03:35 ; elapsed = 00:05:51 . Memory (MB): peak = 2294.941 ; gain = 456.727 ; free physical = 14664 ; free virtual = 46242
+Synthesis Optimization Complete : Time (s): cpu = 00:04:10 ; elapsed = 00:07:06 . Memory (MB): peak = 2294.941 ; gain = 978.285 ; free physical = 14675 ; free virtual = 46242
 INFO: [Project 1-571] Translating synthesized netlist
 INFO: [Netlist 29-17] Analyzing 3880 Unisim elements for replacement
 INFO: [Netlist 29-28] Unisim Transformation completed in 1 CPU seconds
@@ -9480,11 +9479,11 @@ INFO: [Project 1-111] Unisim Transformation Summary:
   RAM64X1D => RAM64X1D (RAMD64E, RAMD64E): 72 instances
 
 INFO: [Common 17-83] Releasing license: Synthesis
-914 Infos, 504 Warnings, 0 Critical Warnings and 0 Errors encountered.
+913 Infos, 504 Warnings, 0 Critical Warnings and 0 Errors encountered.
 synth_design completed successfully
-synth_design: Time (s): cpu = 00:04:30 ; elapsed = 00:07:25 . Memory (MB): peak = 2351.047 ; gain = 1060.047 ; free physical = 17191 ; free virtual = 45982
+synth_design: Time (s): cpu = 00:04:32 ; elapsed = 00:07:28 . Memory (MB): peak = 2351.047 ; gain = 1060.047 ; free physical = 14677 ; free virtual = 46244
 INFO: [Common 17-1381] The checkpoint '/u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/project.runs/synth_1/DuneDataCompressionCore.dcp' has been generated.
-write_checkpoint: Time (s): cpu = 00:00:17 ; elapsed = 00:00:24 . Memory (MB): peak = 2381.062 ; gain = 30.016 ; free physical = 17183 ; free virtual = 45985
+write_checkpoint: Time (s): cpu = 00:00:16 ; elapsed = 00:00:24 . Memory (MB): peak = 2381.062 ; gain = 30.016 ; free physical = 14668 ; free virtual = 46247
 INFO: [runtcl-4] Executing : report_utilization -file DuneDataCompressionCore_utilization_synth.rpt -pb DuneDataCompressionCore_utilization_synth.pb
-report_utilization: Time (s): cpu = 00:00:00.74 ; elapsed = 00:00:00.88 . Memory (MB): peak = 2381.062 ; gain = 0.000 ; free physical = 17180 ; free virtual = 45982
-INFO: [Common 17-206] Exiting Vivado at Thu Jul  5 20:08:44 2018...
+report_utilization: Time (s): cpu = 00:00:00.76 ; elapsed = 00:00:00.88 . Memory (MB): peak = 2381.062 ; gain = 0.000 ; free physical = 14666 ; free virtual = 46244
+INFO: [Common 17-206] Exiting Vivado at Thu Jul  5 23:11:50 2018...

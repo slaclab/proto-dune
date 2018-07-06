@@ -5,7 +5,7 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x0000009A
+export PRJ_VERSION = 0x0000009B
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
