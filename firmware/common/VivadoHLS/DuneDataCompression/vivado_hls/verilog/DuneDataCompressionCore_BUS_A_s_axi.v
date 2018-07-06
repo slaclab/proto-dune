@@ -65,14 +65,10 @@ module DuneDataCompressionCore_BUS_A_s_axi
     input  wire                          monitor_read_errs_nWibErrs_ce0,
     input  wire                          monitor_read_errs_nWibErrs_we0,
     input  wire [31:0]                   monitor_read_errs_nWibErrs_d0,
-    input  wire [31:0]                   monitor_write_nbytes,
-    input  wire                          monitor_write_nbytes_ap_vld,
-    input  wire [31:0]                   monitor_write_npromoted,
-    input  wire                          monitor_write_npromoted_ap_vld,
-    input  wire [31:0]                   monitor_write_ndropped,
-    input  wire                          monitor_write_ndropped_ap_vld,
-    input  wire [31:0]                   monitor_write_npackets,
-    input  wire                          monitor_write_npackets_ap_vld
+    output wire [31:0]                   monitor_write_nbytes,
+    output wire [31:0]                   monitor_write_npromoted,
+    output wire [31:0]                   monitor_write_ndropped,
+    output wire [31:0]                   monitor_write_npackets
 );
 //------------------------Address Info-------------------
 // 0x000 : Control signals
@@ -124,25 +120,17 @@ module DuneDataCompressionCore_BUS_A_s_axi
 //         bit 31~0 - monitor_read_summary_nframes[31:0] (Read/Write)
 // 0x124 : reserved
 // 0x200 : Data signal of monitor_write_nbytes
-//         bit 31~0 - monitor_write_nbytes[31:0] (Read)
-// 0x204 : Control signal of monitor_write_nbytes
-//         bit 0  - monitor_write_nbytes_ap_vld (Read/COR)
-//         others - reserved
+//         bit 31~0 - monitor_write_nbytes[31:0] (Read/Write)
+// 0x204 : reserved
 // 0x208 : Data signal of monitor_write_npromoted
-//         bit 31~0 - monitor_write_npromoted[31:0] (Read)
-// 0x20c : Control signal of monitor_write_npromoted
-//         bit 0  - monitor_write_npromoted_ap_vld (Read/COR)
-//         others - reserved
+//         bit 31~0 - monitor_write_npromoted[31:0] (Read/Write)
+// 0x20c : reserved
 // 0x210 : Data signal of monitor_write_ndropped
-//         bit 31~0 - monitor_write_ndropped[31:0] (Read)
-// 0x214 : Control signal of monitor_write_ndropped
-//         bit 0  - monitor_write_ndropped_ap_vld (Read/COR)
-//         others - reserved
+//         bit 31~0 - monitor_write_ndropped[31:0] (Read/Write)
+// 0x214 : reserved
 // 0x218 : Data signal of monitor_write_npackets
-//         bit 31~0 - monitor_write_npackets[31:0] (Read)
-// 0x21c : Control signal of monitor_write_npackets
-//         bit 0  - monitor_write_npackets_ap_vld (Read/COR)
-//         others - reserved
+//         bit 31~0 - monitor_write_npackets[31:0] (Read/Write)
+// 0x21c : reserved
 // 0x080 ~
 // 0x0ff : Memory 'config_chns_disabled' (128 * 1b)
 //         Word n : bit [ 0: 0] - config_chns_disabled[4n]
@@ -241,13 +229,9 @@ localparam
     reg  [31:0]                   int_monitor_read_summary_mask_V = 'b0;
     reg  [31:0]                   int_monitor_read_summary_nframes = 'b0;
     reg  [31:0]                   int_monitor_write_nbytes = 'b0;
-    reg                           int_monitor_write_nbytes_ap_vld;
     reg  [31:0]                   int_monitor_write_npromoted = 'b0;
-    reg                           int_monitor_write_npromoted_ap_vld;
     reg  [31:0]                   int_monitor_write_ndropped = 'b0;
-    reg                           int_monitor_write_ndropped_ap_vld;
     reg  [31:0]                   int_monitor_write_npackets = 'b0;
-    reg                           int_monitor_write_npackets_ap_vld;
     // memory signals
     wire [4:0]                    int_config_chns_disabled_address0;
     wire                          int_config_chns_disabled_ce0;
@@ -529,26 +513,14 @@ always @(posedge ACLK) begin
                 ADDR_MONITOR_WRITE_NBYTES_DATA_0: begin
                     rdata <= int_monitor_write_nbytes[31:0];
                 end
-                ADDR_MONITOR_WRITE_NBYTES_CTRL: begin
-                    rdata[0] <= int_monitor_write_nbytes_ap_vld;
-                end
                 ADDR_MONITOR_WRITE_NPROMOTED_DATA_0: begin
                     rdata <= int_monitor_write_npromoted[31:0];
-                end
-                ADDR_MONITOR_WRITE_NPROMOTED_CTRL: begin
-                    rdata[0] <= int_monitor_write_npromoted_ap_vld;
                 end
                 ADDR_MONITOR_WRITE_NDROPPED_DATA_0: begin
                     rdata <= int_monitor_write_ndropped[31:0];
                 end
-                ADDR_MONITOR_WRITE_NDROPPED_CTRL: begin
-                    rdata[0] <= int_monitor_write_ndropped_ap_vld;
-                end
                 ADDR_MONITOR_WRITE_NPACKETS_DATA_0: begin
                     rdata <= int_monitor_write_npackets[31:0];
-                end
-                ADDR_MONITOR_WRITE_NPACKETS_CTRL: begin
-                    rdata[0] <= int_monitor_write_npackets_ap_vld;
                 end
             endcase
         end
@@ -576,6 +548,10 @@ assign config_mode                  = int_config_mode;
 assign config_limit                 = int_config_limit;
 assign monitor_read_summary_mask_V  = int_monitor_read_summary_mask_V;
 assign monitor_read_summary_nframes = int_monitor_read_summary_nframes;
+assign monitor_write_nbytes         = int_monitor_write_nbytes;
+assign monitor_write_npromoted      = int_monitor_write_npromoted;
+assign monitor_write_ndropped       = int_monitor_write_ndropped;
+assign monitor_write_npackets       = int_monitor_write_npackets;
 // int_ap_start
 always @(posedge ACLK) begin
     if (ARESET)
@@ -788,91 +764,43 @@ always @(posedge ACLK) begin
     end
 end
 
-// int_monitor_write_nbytes
+// int_monitor_write_nbytes[31:0]
 always @(posedge ACLK) begin
     if (ARESET)
-        int_monitor_write_nbytes <= 0;
+        int_monitor_write_nbytes[31:0] <= 0;
     else if (ACLK_EN) begin
-        if (monitor_write_nbytes_ap_vld)
-            int_monitor_write_nbytes <= monitor_write_nbytes;
+        if (w_hs && waddr == ADDR_MONITOR_WRITE_NBYTES_DATA_0)
+            int_monitor_write_nbytes[31:0] <= (WDATA[31:0] & wmask) | (int_monitor_write_nbytes[31:0] & ~wmask);
     end
 end
 
-// int_monitor_write_nbytes_ap_vld
+// int_monitor_write_npromoted[31:0]
 always @(posedge ACLK) begin
     if (ARESET)
-        int_monitor_write_nbytes_ap_vld <= 1'b0;
+        int_monitor_write_npromoted[31:0] <= 0;
     else if (ACLK_EN) begin
-        if (monitor_write_nbytes_ap_vld)
-            int_monitor_write_nbytes_ap_vld <= 1'b1;
-        else if (ar_hs && raddr == ADDR_MONITOR_WRITE_NBYTES_CTRL)
-            int_monitor_write_nbytes_ap_vld <= 1'b0; // clear on read
+        if (w_hs && waddr == ADDR_MONITOR_WRITE_NPROMOTED_DATA_0)
+            int_monitor_write_npromoted[31:0] <= (WDATA[31:0] & wmask) | (int_monitor_write_npromoted[31:0] & ~wmask);
     end
 end
 
-// int_monitor_write_npromoted
+// int_monitor_write_ndropped[31:0]
 always @(posedge ACLK) begin
     if (ARESET)
-        int_monitor_write_npromoted <= 0;
+        int_monitor_write_ndropped[31:0] <= 0;
     else if (ACLK_EN) begin
-        if (monitor_write_npromoted_ap_vld)
-            int_monitor_write_npromoted <= monitor_write_npromoted;
+        if (w_hs && waddr == ADDR_MONITOR_WRITE_NDROPPED_DATA_0)
+            int_monitor_write_ndropped[31:0] <= (WDATA[31:0] & wmask) | (int_monitor_write_ndropped[31:0] & ~wmask);
     end
 end
 
-// int_monitor_write_npromoted_ap_vld
+// int_monitor_write_npackets[31:0]
 always @(posedge ACLK) begin
     if (ARESET)
-        int_monitor_write_npromoted_ap_vld <= 1'b0;
+        int_monitor_write_npackets[31:0] <= 0;
     else if (ACLK_EN) begin
-        if (monitor_write_npromoted_ap_vld)
-            int_monitor_write_npromoted_ap_vld <= 1'b1;
-        else if (ar_hs && raddr == ADDR_MONITOR_WRITE_NPROMOTED_CTRL)
-            int_monitor_write_npromoted_ap_vld <= 1'b0; // clear on read
-    end
-end
-
-// int_monitor_write_ndropped
-always @(posedge ACLK) begin
-    if (ARESET)
-        int_monitor_write_ndropped <= 0;
-    else if (ACLK_EN) begin
-        if (monitor_write_ndropped_ap_vld)
-            int_monitor_write_ndropped <= monitor_write_ndropped;
-    end
-end
-
-// int_monitor_write_ndropped_ap_vld
-always @(posedge ACLK) begin
-    if (ARESET)
-        int_monitor_write_ndropped_ap_vld <= 1'b0;
-    else if (ACLK_EN) begin
-        if (monitor_write_ndropped_ap_vld)
-            int_monitor_write_ndropped_ap_vld <= 1'b1;
-        else if (ar_hs && raddr == ADDR_MONITOR_WRITE_NDROPPED_CTRL)
-            int_monitor_write_ndropped_ap_vld <= 1'b0; // clear on read
-    end
-end
-
-// int_monitor_write_npackets
-always @(posedge ACLK) begin
-    if (ARESET)
-        int_monitor_write_npackets <= 0;
-    else if (ACLK_EN) begin
-        if (monitor_write_npackets_ap_vld)
-            int_monitor_write_npackets <= monitor_write_npackets;
-    end
-end
-
-// int_monitor_write_npackets_ap_vld
-always @(posedge ACLK) begin
-    if (ARESET)
-        int_monitor_write_npackets_ap_vld <= 1'b0;
-    else if (ACLK_EN) begin
-        if (monitor_write_npackets_ap_vld)
-            int_monitor_write_npackets_ap_vld <= 1'b1;
-        else if (ar_hs && raddr == ADDR_MONITOR_WRITE_NPACKETS_CTRL)
-            int_monitor_write_npackets_ap_vld <= 1'b0; // clear on read
+        if (w_hs && waddr == ADDR_MONITOR_WRITE_NPACKETS_DATA_0)
+            int_monitor_write_npackets[31:0] <= (WDATA[31:0] & wmask) | (int_monitor_write_npackets[31:0] & ~wmask);
     end
 end
 

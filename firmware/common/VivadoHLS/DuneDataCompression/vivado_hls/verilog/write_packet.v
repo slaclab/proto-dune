@@ -26,7 +26,6 @@ module write_packet (
         pktCtx_m_chdx_read,
         pktCtx_m_cedx_read,
         pktCtx_m_status_V_re,
-        pktCtx_m_lasttimesta,
         pktCtx_m_hdrsBuf_address0,
         pktCtx_m_hdrsBuf_ce0,
         pktCtx_m_hdrsBuf_q0,
@@ -560,25 +559,22 @@ module write_packet (
         cmpCtx_hists_sg3_m_bins_V124_q0,
         cmpCtx_hists_sg3_m_bins_V12432_address0,
         cmpCtx_hists_sg3_m_bins_V12432_ce0,
-        cmpCtx_hists_sg3_m_bins_V12432_q0,
-        ap_return_0,
-        ap_return_1,
-        ap_return_2
+        cmpCtx_hists_sg3_m_bins_V12432_q0
 );
 
 parameter    ap_ST_fsm_state1 = 13'd1;
-parameter    ap_ST_fsm_state2 = 13'd2;
-parameter    ap_ST_fsm_state3 = 13'd4;
-parameter    ap_ST_fsm_state4 = 13'd8;
-parameter    ap_ST_fsm_state5 = 13'd16;
-parameter    ap_ST_fsm_state6 = 13'd32;
-parameter    ap_ST_fsm_state7 = 13'd64;
-parameter    ap_ST_fsm_state8 = 13'd128;
-parameter    ap_ST_fsm_state9 = 13'd256;
-parameter    ap_ST_fsm_state10 = 13'd512;
-parameter    ap_ST_fsm_state11 = 13'd1024;
-parameter    ap_ST_fsm_state12 = 13'd2048;
-parameter    ap_ST_fsm_state13 = 13'd4096;
+parameter    ap_ST_fsm_pp0_stage0 = 13'd2;
+parameter    ap_ST_fsm_state4 = 13'd4;
+parameter    ap_ST_fsm_pp1_stage0 = 13'd8;
+parameter    ap_ST_fsm_state7 = 13'd16;
+parameter    ap_ST_fsm_state8 = 13'd32;
+parameter    ap_ST_fsm_state9 = 13'd64;
+parameter    ap_ST_fsm_state10 = 13'd128;
+parameter    ap_ST_fsm_state11 = 13'd256;
+parameter    ap_ST_fsm_pp2_stage0 = 13'd512;
+parameter    ap_ST_fsm_state14 = 13'd1024;
+parameter    ap_ST_fsm_state15 = 13'd2048;
+parameter    ap_ST_fsm_state16 = 13'd4096;
 
 input   ap_clk;
 input   ap_rst;
@@ -598,7 +594,6 @@ output  [0:0] mAxis_TDEST;
 input  [3:0] pktCtx_m_chdx_read;
 input  [0:0] pktCtx_m_cedx_read;
 input  [31:0] pktCtx_m_status_V_re;
-input  [63:0] pktCtx_m_lasttimesta;
 output  [2:0] pktCtx_m_hdrsBuf_address0;
 output   pktCtx_m_hdrsBuf_ce0;
 input  [63:0] pktCtx_m_hdrsBuf_q0;
@@ -1133,9 +1128,6 @@ input  [9:0] cmpCtx_hists_sg3_m_bins_V124_q0;
 output  [5:0] cmpCtx_hists_sg3_m_bins_V12432_address0;
 output   cmpCtx_hists_sg3_m_bins_V12432_ce0;
 input  [9:0] cmpCtx_hists_sg3_m_bins_V12432_q0;
-output  [31:0] ap_return_0;
-output  [31:0] ap_return_1;
-output  [31:0] ap_return_2;
 
 reg ap_done;
 reg ap_idle;
@@ -1150,9 +1142,6 @@ reg[0:0] mAxis_TID;
 reg[0:0] mAxis_TDEST;
 reg pktCtx_m_hdrsBuf_ce0;
 reg pktCtx_m_excsBuf_ce0;
-reg[31:0] ap_return_0;
-reg[31:0] ap_return_1;
-reg[31:0] ap_return_2;
 
 (* fsm_encoding = "none" *) reg   [12:0] ap_CS_fsm;
 wire    ap_CS_fsm_state1;
@@ -1161,50 +1150,76 @@ reg   [31:0] lclMonitor_nbytes;
 reg   [31:0] lclMonitor_npromoted;
 reg   [31:0] lclMonitor_npackets;
 reg    mAxis_TDATA_blk_n;
-wire    ap_CS_fsm_state3;
-wire    ap_CS_fsm_state5;
-wire    ap_CS_fsm_state4;
-wire   [0:0] tmp_11_fu_1256_p2;
-wire    StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n;
-wire    ap_CS_fsm_state9;
-reg   [0:0] tmp_14_reg_1622;
+wire    ap_CS_fsm_pp0_stage0;
+reg    ap_enable_reg_pp0_iter1;
+wire    ap_block_pp0_stage0;
+reg   [0:0] tmp_s_reg_1546;
+wire    ap_CS_fsm_pp1_stage0;
+reg    ap_enable_reg_pp1_iter1;
+wire    ap_block_pp1_stage0;
+reg   [0:0] tmp_11_reg_1565;
+wire    StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n;
 wire    ap_CS_fsm_state11;
-wire    ap_CS_fsm_state10;
-wire   [0:0] exitcond_fu_1390_p2;
-wire    ap_CS_fsm_state12;
-wire    ap_CS_fsm_state13;
-reg   [31:0] reg_1105;
-wire    ap_CS_fsm_state6;
-wire   [0:0] exitcond_i_fu_1304_p2;
+reg   [0:0] tmp_13_reg_1597;
+wire    ap_CS_fsm_pp2_stage0;
+reg    ap_enable_reg_pp2_iter1;
+wire    ap_block_pp2_stage0;
+reg   [0:0] exitcond_reg_1617;
+wire    ap_CS_fsm_state14;
+wire    ap_CS_fsm_state15;
+wire    ap_CS_fsm_state16;
+reg   [0:0] idx_0_i_reg_642;
+reg   [2:0] idx1_0_i_reg_654;
+reg   [26:0] odx_2_reg_677;
+reg   [7:0] ichan_0_i_reg_686;
+reg   [31:0] reg_1100;
+wire    ap_CS_fsm_state8;
+wire   [0:0] exitcond_i_fu_1299_p2;
 reg    ap_sig_ioackin_mAxis_TREADY;
-wire    ap_CS_fsm_state2;
-wire   [0:0] tmp_s_fu_1214_p2;
+wire   [0:0] tmp_s_fu_1209_p2;
+wire    ap_block_state2_pp0_stage0_iter0;
+wire    ap_block_state3_pp0_stage0_iter1;
+reg    ap_block_state3_io;
+reg    ap_block_pp0_stage0_11001;
 wire   [3:0] tmp_29_cast_fu_1229_p1;
-reg   [3:0] tmp_29_cast_reg_1581;
+reg   [3:0] tmp_29_cast_reg_1555;
+wire    ap_CS_fsm_state4;
 wire   [3:0] tmp_31_cast_fu_1243_p1;
-reg   [3:0] tmp_31_cast_reg_1586;
-wire   [2:0] idx_fu_1261_p2;
-reg   [2:0] idx_reg_1594;
-reg    ap_block_state4_io;
-wire   [5:0] isg_fu_1310_p2;
-reg   [5:0] isg_reg_1607;
-wire   [6:0] cur_idx_cast_fu_1320_p1;
-reg   [6:0] cur_idx_cast_reg_1617;
-wire   [0:0] tmp_14_fu_1324_p2;
-wire   [6:0] tmp_16_fu_1334_p3;
-reg   [6:0] tmp_16_reg_1626;
-wire    ap_CS_fsm_state7;
-wire   [26:0] odx_cast_fu_1380_p1;
-reg    ap_block_state9;
-wire   [26:0] odx_fu_1384_p2;
-reg   [26:0] odx_reg_1636;
-reg    ap_block_state10_io;
-wire   [26:0] odx_1_fu_1411_p2;
-reg   [26:0] odx_1_reg_1655;
-wire   [7:0] ichan_fu_1417_p2;
-reg   [7:0] ichan_reg_1660;
-wire   [29:0] nbytes_fu_1439_p2;
-reg   [29:0] nbytes_reg_1665;
+reg   [3:0] tmp_31_cast_reg_1560;
+wire   [0:0] tmp_11_fu_1251_p2;
+wire    ap_block_state5_pp1_stage0_iter0;
+wire    ap_block_state6_pp1_stage0_iter1;
+reg    ap_block_state6_io;
+reg    ap_block_pp1_stage0_11001;
+wire   [2:0] idx_fu_1256_p2;
+reg    ap_enable_reg_pp1_iter0;
+wire   [5:0] isg_fu_1305_p2;
+reg   [5:0] isg_reg_1582;
+wire   [6:0] cur_idx_cast_fu_1315_p1;
+reg   [6:0] cur_idx_cast_reg_1592;
+wire   [0:0] tmp_13_fu_1319_p2;
+wire   [6:0] tmp_15_fu_1329_p3;
+reg   [6:0] tmp_15_reg_1601;
+wire    ap_CS_fsm_state9;
+wire   [26:0] odx_cast_fu_1375_p1;
+reg    ap_block_state11;
+wire   [26:0] odx_fu_1379_p2;
+reg   [26:0] odx_reg_1611;
+wire   [0:0] exitcond_fu_1385_p2;
+wire    ap_block_state12_pp2_stage0_iter0;
+wire    ap_block_state13_pp2_stage0_iter1;
+reg    ap_block_state13_io;
+reg    ap_block_pp2_stage0_11001;
+wire   [26:0] odx_1_fu_1406_p2;
+reg    ap_enable_reg_pp2_iter0;
+wire   [7:0] ichan_fu_1412_p2;
+reg    ap_enable_reg_pp0_iter0;
+reg    ap_block_pp0_stage0_subdone;
+reg    ap_condition_pp0_exit_iter0_state2;
+reg    ap_block_pp1_stage0_subdone;
+reg    ap_condition_pp1_exit_iter0_state5;
+reg    ap_block_pp2_stage0_subdone;
+reg    ap_condition_pp2_exit_iter0_state12;
 reg   [7:0] offsets_address0;
 reg    offsets_ce0;
 reg    offsets_we0;
@@ -1214,1693 +1229,1698 @@ reg   [7:0] offsets_address1;
 reg    offsets_ce1;
 reg    offsets_we1;
 wire   [31:0] offsets_q1;
-wire   [63:0] grp_write_adcs4_fu_702_bAxis_m_cur;
-wire   [31:0] grp_write_adcs4_fu_702_bAxis_m_idx;
-wire   [63:0] grp_write_adcs4_fu_702_mAxis_TDATA;
-wire   [7:0] grp_write_adcs4_fu_702_mAxis_TKEEP;
-wire   [7:0] grp_write_adcs4_fu_702_mAxis_TSTRB;
-wire   [3:0] grp_write_adcs4_fu_702_mAxis_TUSER;
-wire   [0:0] grp_write_adcs4_fu_702_mAxis_TLAST;
-wire   [0:0] grp_write_adcs4_fu_702_mAxis_TID;
-wire   [0:0] grp_write_adcs4_fu_702_mAxis_TDEST;
-wire   [7:0] grp_write_adcs4_fu_702_offsets_address0;
-wire    grp_write_adcs4_fu_702_offsets_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_offsets_d0;
-wire    grp_write_adcs4_fu_702_offsets_we0;
-wire   [7:0] grp_write_adcs4_fu_702_offsets_address1;
-wire    grp_write_adcs4_fu_702_offsets_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_offsets_d1;
-wire    grp_write_adcs4_fu_702_offsets_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_0_V_address0;
-wire    grp_write_adcs4_fu_702_adcs0_0_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_0_V_d0;
-wire    grp_write_adcs4_fu_702_adcs0_0_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_0_V_address1;
-wire    grp_write_adcs4_fu_702_adcs0_0_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_0_V_d1;
-wire    grp_write_adcs4_fu_702_adcs0_0_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_1_V_address0;
-wire    grp_write_adcs4_fu_702_adcs0_1_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_1_V_d0;
-wire    grp_write_adcs4_fu_702_adcs0_1_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_1_V_address1;
-wire    grp_write_adcs4_fu_702_adcs0_1_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_1_V_d1;
-wire    grp_write_adcs4_fu_702_adcs0_1_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_2_V_address0;
-wire    grp_write_adcs4_fu_702_adcs0_2_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_2_V_d0;
-wire    grp_write_adcs4_fu_702_adcs0_2_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_2_V_address1;
-wire    grp_write_adcs4_fu_702_adcs0_2_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_2_V_d1;
-wire    grp_write_adcs4_fu_702_adcs0_2_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_3_V_address0;
-wire    grp_write_adcs4_fu_702_adcs0_3_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_3_V_d0;
-wire    grp_write_adcs4_fu_702_adcs0_3_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs0_3_V_address1;
-wire    grp_write_adcs4_fu_702_adcs0_3_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs0_3_V_d1;
-wire    grp_write_adcs4_fu_702_adcs0_3_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_0_V_address0;
-wire    grp_write_adcs4_fu_702_adcs1_0_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_0_V_d0;
-wire    grp_write_adcs4_fu_702_adcs1_0_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_0_V_address1;
-wire    grp_write_adcs4_fu_702_adcs1_0_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_0_V_d1;
-wire    grp_write_adcs4_fu_702_adcs1_0_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_1_V_address0;
-wire    grp_write_adcs4_fu_702_adcs1_1_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_1_V_d0;
-wire    grp_write_adcs4_fu_702_adcs1_1_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_1_V_address1;
-wire    grp_write_adcs4_fu_702_adcs1_1_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_1_V_d1;
-wire    grp_write_adcs4_fu_702_adcs1_1_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_2_V_address0;
-wire    grp_write_adcs4_fu_702_adcs1_2_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_2_V_d0;
-wire    grp_write_adcs4_fu_702_adcs1_2_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_2_V_address1;
-wire    grp_write_adcs4_fu_702_adcs1_2_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_2_V_d1;
-wire    grp_write_adcs4_fu_702_adcs1_2_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_3_V_address0;
-wire    grp_write_adcs4_fu_702_adcs1_3_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_3_V_d0;
-wire    grp_write_adcs4_fu_702_adcs1_3_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs1_3_V_address1;
-wire    grp_write_adcs4_fu_702_adcs1_3_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs1_3_V_d1;
-wire    grp_write_adcs4_fu_702_adcs1_3_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_0_V_address0;
-wire    grp_write_adcs4_fu_702_adcs2_0_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_0_V_d0;
-wire    grp_write_adcs4_fu_702_adcs2_0_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_0_V_address1;
-wire    grp_write_adcs4_fu_702_adcs2_0_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_0_V_d1;
-wire    grp_write_adcs4_fu_702_adcs2_0_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_1_V_address0;
-wire    grp_write_adcs4_fu_702_adcs2_1_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_1_V_d0;
-wire    grp_write_adcs4_fu_702_adcs2_1_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_1_V_address1;
-wire    grp_write_adcs4_fu_702_adcs2_1_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_1_V_d1;
-wire    grp_write_adcs4_fu_702_adcs2_1_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_2_V_address0;
-wire    grp_write_adcs4_fu_702_adcs2_2_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_2_V_d0;
-wire    grp_write_adcs4_fu_702_adcs2_2_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_2_V_address1;
-wire    grp_write_adcs4_fu_702_adcs2_2_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_2_V_d1;
-wire    grp_write_adcs4_fu_702_adcs2_2_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_3_V_address0;
-wire    grp_write_adcs4_fu_702_adcs2_3_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_3_V_d0;
-wire    grp_write_adcs4_fu_702_adcs2_3_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs2_3_V_address1;
-wire    grp_write_adcs4_fu_702_adcs2_3_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs2_3_V_d1;
-wire    grp_write_adcs4_fu_702_adcs2_3_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_0_V_address0;
-wire    grp_write_adcs4_fu_702_adcs3_0_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_0_V_d0;
-wire    grp_write_adcs4_fu_702_adcs3_0_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_0_V_address1;
-wire    grp_write_adcs4_fu_702_adcs3_0_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_0_V_d1;
-wire    grp_write_adcs4_fu_702_adcs3_0_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_1_V_address0;
-wire    grp_write_adcs4_fu_702_adcs3_1_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_1_V_d0;
-wire    grp_write_adcs4_fu_702_adcs3_1_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_1_V_address1;
-wire    grp_write_adcs4_fu_702_adcs3_1_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_1_V_d1;
-wire    grp_write_adcs4_fu_702_adcs3_1_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_2_V_address0;
-wire    grp_write_adcs4_fu_702_adcs3_2_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_2_V_d0;
-wire    grp_write_adcs4_fu_702_adcs3_2_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_2_V_address1;
-wire    grp_write_adcs4_fu_702_adcs3_2_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_2_V_d1;
-wire    grp_write_adcs4_fu_702_adcs3_2_V_we1;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_3_V_address0;
-wire    grp_write_adcs4_fu_702_adcs3_3_V_ce0;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_3_V_d0;
-wire    grp_write_adcs4_fu_702_adcs3_3_V_we0;
-wire   [12:0] grp_write_adcs4_fu_702_adcs3_3_V_address1;
-wire    grp_write_adcs4_fu_702_adcs3_3_V_ce1;
-wire   [11:0] grp_write_adcs4_fu_702_adcs3_3_V_d1;
-wire    grp_write_adcs4_fu_702_adcs3_3_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_0_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_0_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_0_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_0_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_1_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_1_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_1_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_1_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_2_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_2_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_2_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_2_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_3_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_3_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_3_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_3_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_4_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_4_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_4_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_4_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_5_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_5_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_5_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_5_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_6_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_6_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_6_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_6_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_7_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_7_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_7_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist0_7_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_0_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_0_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_0_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_0_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_1_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_1_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_1_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_1_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_2_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_2_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_2_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_2_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_3_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_3_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_3_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_3_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_4_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_4_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_4_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_4_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_5_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_5_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_5_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_5_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_6_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_6_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_6_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_6_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_7_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_7_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist0_7_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist0_7_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_nobits_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_0_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_0_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_0_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_0_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_1_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_1_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_1_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_1_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_2_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_2_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_2_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_2_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_3_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_3_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_3_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_3_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_4_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_4_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_4_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_4_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_5_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_5_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_5_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_5_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_6_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_6_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_6_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_6_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_7_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_7_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_7_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist1_7_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_0_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_0_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_0_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_0_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_1_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_1_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_1_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_1_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_2_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_2_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_2_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_2_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_3_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_3_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_3_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_3_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_4_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_4_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_4_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_4_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_5_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_5_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_5_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_5_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_6_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_6_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_6_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_6_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_7_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_7_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist1_7_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist1_7_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_nobits_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_0_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_0_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_0_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_0_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_1_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_1_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_1_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_1_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_2_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_2_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_2_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_2_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_3_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_3_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_3_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_3_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_4_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_4_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_4_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_4_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_5_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_5_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_5_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_5_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_6_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_6_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_6_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_6_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_7_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_7_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_7_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist2_7_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_0_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_0_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_0_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_0_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_1_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_1_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_1_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_1_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_2_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_2_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_2_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_2_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_3_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_3_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_3_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_3_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_4_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_4_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_4_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_4_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_5_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_5_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_5_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_5_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_6_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_6_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_6_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_6_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_7_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_7_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist2_7_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist2_7_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_nobits_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_0_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_0_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_0_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_0_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_1_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_1_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_1_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_1_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_2_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_2_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_2_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_2_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_3_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_3_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_3_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_3_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_4_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_4_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_4_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_4_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_5_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_5_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_5_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_5_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_6_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_6_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_6_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_6_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_7_m_omask_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_omask_V_ce0;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_7_m_omask_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_omask_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_7_m_omask_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_omask_V_ce1;
-wire   [31:0] grp_write_adcs4_fu_702_hist3_7_m_omask_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_omask_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_0_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_0_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_0_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_0_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_1_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_1_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_1_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_1_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_2_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_2_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_2_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_2_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_3_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_3_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_3_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_3_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_4_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_4_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_4_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_4_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_5_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_5_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_5_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_5_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_6_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_6_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_6_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_6_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_nobits_V_we1;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_7_m_nobits_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_nobits_V_ce0;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_7_m_nobits_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_nobits_V_we0;
-wire   [1:0] grp_write_adcs4_fu_702_hist3_7_m_nobits_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_nobits_V_ce1;
-wire   [3:0] grp_write_adcs4_fu_702_hist3_7_m_nobits_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_nobits_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_we1;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_we0;
-wire   [6:0] grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_we1;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_address0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_ce0;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_d0;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_we0;
-wire   [5:0] grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_address1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_ce1;
-wire   [9:0] grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_d1;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_we1;
-wire    grp_write_adcs4_fu_702_hist0_0_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_1_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_2_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_3_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_4_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_5_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_6_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_7_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist0_0_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_1_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_2_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_3_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_4_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_5_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_6_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_7_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_0_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_1_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_2_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_3_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_4_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_5_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_6_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_7_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist1_0_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_1_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_2_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_3_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_4_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_5_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_6_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_7_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_0_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_1_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_2_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_3_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_4_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_5_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_6_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_7_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist2_0_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_1_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_2_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_3_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_4_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_5_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_6_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_7_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_0_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_1_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_2_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_3_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_4_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_5_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_6_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_7_m_omask_V_read;
-wire    grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_read;
-wire    grp_write_adcs4_fu_702_hist3_0_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_1_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_2_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_3_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_4_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_5_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_6_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_7_m_nobits_V_read;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_read;
-wire    grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_read;
-wire    grp_write_adcs4_fu_702_adcs0_0_V_read;
-wire    grp_write_adcs4_fu_702_adcs0_1_V_read;
-wire    grp_write_adcs4_fu_702_adcs0_2_V_read;
-wire    grp_write_adcs4_fu_702_adcs0_3_V_read;
-wire    grp_write_adcs4_fu_702_adcs1_0_V_read;
-wire    grp_write_adcs4_fu_702_adcs1_1_V_read;
-wire    grp_write_adcs4_fu_702_adcs1_2_V_read;
-wire    grp_write_adcs4_fu_702_adcs1_3_V_read;
-wire    grp_write_adcs4_fu_702_adcs2_0_V_read;
-wire    grp_write_adcs4_fu_702_adcs2_1_V_read;
-wire    grp_write_adcs4_fu_702_adcs2_2_V_read;
-wire    grp_write_adcs4_fu_702_adcs2_3_V_read;
-wire    grp_write_adcs4_fu_702_adcs3_0_V_read;
-wire    grp_write_adcs4_fu_702_adcs3_1_V_read;
-wire    grp_write_adcs4_fu_702_adcs3_2_V_read;
-wire    grp_write_adcs4_fu_702_adcs3_3_V_read;
-wire    grp_write_adcs4_fu_702_mAxis_TVALID;
-wire    grp_write_adcs4_fu_702_ap_done;
-wire    grp_write_adcs4_fu_702_ap_start;
-wire    grp_write_adcs4_fu_702_ap_ready;
-wire    grp_write_adcs4_fu_702_ap_idle;
-reg    grp_write_adcs4_fu_702_ap_continue;
-reg    StgValue_106_write_r_fu_1080_ap_start;
-wire    StgValue_106_write_r_fu_1080_ap_done;
-wire    StgValue_106_write_r_fu_1080_ap_idle;
-wire    StgValue_106_write_r_fu_1080_ap_ready;
-wire   [63:0] StgValue_106_write_r_fu_1080_mAxis_TDATA;
-wire    StgValue_106_write_r_fu_1080_mAxis_TVALID;
-wire   [7:0] StgValue_106_write_r_fu_1080_mAxis_TKEEP;
-wire   [7:0] StgValue_106_write_r_fu_1080_mAxis_TSTRB;
-wire   [3:0] StgValue_106_write_r_fu_1080_mAxis_TUSER;
-wire   [0:0] StgValue_106_write_r_fu_1080_mAxis_TLAST;
-wire   [0:0] StgValue_106_write_r_fu_1080_mAxis_TID;
-wire   [0:0] StgValue_106_write_r_fu_1080_mAxis_TDEST;
-wire   [63:0] StgValue_106_write_r_fu_1080_w64;
-reg   [0:0] idx_0_i_reg_646;
-reg   [2:0] idx1_0_i_reg_659;
-reg   [5:0] isg_0_i_reg_670;
-wire    ap_CS_fsm_state8;
-wire    ap_sync_grp_write_adcs4_fu_702_ap_ready;
-wire    ap_sync_grp_write_adcs4_fu_702_ap_done;
-reg    ap_block_state8_on_subcall_done;
-reg   [26:0] odx_2_reg_682;
-reg   [7:0] ichan_0_i_reg_691;
-reg    grp_write_adcs4_fu_702_ap_start_reg;
-reg    ap_sync_reg_grp_write_adcs4_fu_702_ap_ready;
-reg    ap_sync_reg_grp_write_adcs4_fu_702_ap_done;
-reg   [63:0] bAxis_m_cur_fu_512;
-reg   [31:0] bAxis_m_idx_fu_516;
-wire   [63:0] bAxis_m_cur_1_fu_1352_p2;
-wire   [63:0] tmp_4_fu_1219_p1;
-wire   [63:0] tmp_12_fu_1267_p1;
-wire   [63:0] tmp_21_fu_1395_p1;
-wire   [63:0] tmp_23_fu_1406_p1;
-wire   [0:0] First_load_load_fu_1111_p1;
-wire   [31:0] monitorWrite_nbytes_s_fu_1470_p2;
-wire   [31:0] monitorWrite_npromot_fu_1502_p2;
-wire   [31:0] monitorWrite_npacket_fu_1486_p2;
-wire   [31:0] bAxis_m_idx_2_fu_1290_p1;
-wire   [63:0] recHeader_fu_1201_p2;
-wire   [63:0] tmp_data_V_1_fu_1247_p1;
-wire   [63:0] w64_fu_1423_p3;
-wire   [63:0] statusId_fu_1455_p3;
+wire   [63:0] grp_write_adcs4_fu_697_bAxis_m_cur;
+wire   [31:0] grp_write_adcs4_fu_697_bAxis_m_idx;
+wire   [63:0] grp_write_adcs4_fu_697_mAxis_TDATA;
+wire   [7:0] grp_write_adcs4_fu_697_mAxis_TKEEP;
+wire   [7:0] grp_write_adcs4_fu_697_mAxis_TSTRB;
+wire   [3:0] grp_write_adcs4_fu_697_mAxis_TUSER;
+wire   [0:0] grp_write_adcs4_fu_697_mAxis_TLAST;
+wire   [0:0] grp_write_adcs4_fu_697_mAxis_TID;
+wire   [0:0] grp_write_adcs4_fu_697_mAxis_TDEST;
+wire   [7:0] grp_write_adcs4_fu_697_offsets_address0;
+wire    grp_write_adcs4_fu_697_offsets_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_offsets_d0;
+wire    grp_write_adcs4_fu_697_offsets_we0;
+wire   [7:0] grp_write_adcs4_fu_697_offsets_address1;
+wire    grp_write_adcs4_fu_697_offsets_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_offsets_d1;
+wire    grp_write_adcs4_fu_697_offsets_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_0_V_address0;
+wire    grp_write_adcs4_fu_697_adcs0_0_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_0_V_d0;
+wire    grp_write_adcs4_fu_697_adcs0_0_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_0_V_address1;
+wire    grp_write_adcs4_fu_697_adcs0_0_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_0_V_d1;
+wire    grp_write_adcs4_fu_697_adcs0_0_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_1_V_address0;
+wire    grp_write_adcs4_fu_697_adcs0_1_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_1_V_d0;
+wire    grp_write_adcs4_fu_697_adcs0_1_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_1_V_address1;
+wire    grp_write_adcs4_fu_697_adcs0_1_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_1_V_d1;
+wire    grp_write_adcs4_fu_697_adcs0_1_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_2_V_address0;
+wire    grp_write_adcs4_fu_697_adcs0_2_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_2_V_d0;
+wire    grp_write_adcs4_fu_697_adcs0_2_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_2_V_address1;
+wire    grp_write_adcs4_fu_697_adcs0_2_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_2_V_d1;
+wire    grp_write_adcs4_fu_697_adcs0_2_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_3_V_address0;
+wire    grp_write_adcs4_fu_697_adcs0_3_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_3_V_d0;
+wire    grp_write_adcs4_fu_697_adcs0_3_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs0_3_V_address1;
+wire    grp_write_adcs4_fu_697_adcs0_3_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs0_3_V_d1;
+wire    grp_write_adcs4_fu_697_adcs0_3_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_0_V_address0;
+wire    grp_write_adcs4_fu_697_adcs1_0_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_0_V_d0;
+wire    grp_write_adcs4_fu_697_adcs1_0_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_0_V_address1;
+wire    grp_write_adcs4_fu_697_adcs1_0_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_0_V_d1;
+wire    grp_write_adcs4_fu_697_adcs1_0_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_1_V_address0;
+wire    grp_write_adcs4_fu_697_adcs1_1_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_1_V_d0;
+wire    grp_write_adcs4_fu_697_adcs1_1_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_1_V_address1;
+wire    grp_write_adcs4_fu_697_adcs1_1_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_1_V_d1;
+wire    grp_write_adcs4_fu_697_adcs1_1_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_2_V_address0;
+wire    grp_write_adcs4_fu_697_adcs1_2_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_2_V_d0;
+wire    grp_write_adcs4_fu_697_adcs1_2_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_2_V_address1;
+wire    grp_write_adcs4_fu_697_adcs1_2_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_2_V_d1;
+wire    grp_write_adcs4_fu_697_adcs1_2_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_3_V_address0;
+wire    grp_write_adcs4_fu_697_adcs1_3_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_3_V_d0;
+wire    grp_write_adcs4_fu_697_adcs1_3_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs1_3_V_address1;
+wire    grp_write_adcs4_fu_697_adcs1_3_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs1_3_V_d1;
+wire    grp_write_adcs4_fu_697_adcs1_3_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_0_V_address0;
+wire    grp_write_adcs4_fu_697_adcs2_0_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_0_V_d0;
+wire    grp_write_adcs4_fu_697_adcs2_0_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_0_V_address1;
+wire    grp_write_adcs4_fu_697_adcs2_0_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_0_V_d1;
+wire    grp_write_adcs4_fu_697_adcs2_0_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_1_V_address0;
+wire    grp_write_adcs4_fu_697_adcs2_1_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_1_V_d0;
+wire    grp_write_adcs4_fu_697_adcs2_1_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_1_V_address1;
+wire    grp_write_adcs4_fu_697_adcs2_1_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_1_V_d1;
+wire    grp_write_adcs4_fu_697_adcs2_1_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_2_V_address0;
+wire    grp_write_adcs4_fu_697_adcs2_2_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_2_V_d0;
+wire    grp_write_adcs4_fu_697_adcs2_2_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_2_V_address1;
+wire    grp_write_adcs4_fu_697_adcs2_2_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_2_V_d1;
+wire    grp_write_adcs4_fu_697_adcs2_2_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_3_V_address0;
+wire    grp_write_adcs4_fu_697_adcs2_3_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_3_V_d0;
+wire    grp_write_adcs4_fu_697_adcs2_3_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs2_3_V_address1;
+wire    grp_write_adcs4_fu_697_adcs2_3_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs2_3_V_d1;
+wire    grp_write_adcs4_fu_697_adcs2_3_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_0_V_address0;
+wire    grp_write_adcs4_fu_697_adcs3_0_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_0_V_d0;
+wire    grp_write_adcs4_fu_697_adcs3_0_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_0_V_address1;
+wire    grp_write_adcs4_fu_697_adcs3_0_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_0_V_d1;
+wire    grp_write_adcs4_fu_697_adcs3_0_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_1_V_address0;
+wire    grp_write_adcs4_fu_697_adcs3_1_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_1_V_d0;
+wire    grp_write_adcs4_fu_697_adcs3_1_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_1_V_address1;
+wire    grp_write_adcs4_fu_697_adcs3_1_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_1_V_d1;
+wire    grp_write_adcs4_fu_697_adcs3_1_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_2_V_address0;
+wire    grp_write_adcs4_fu_697_adcs3_2_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_2_V_d0;
+wire    grp_write_adcs4_fu_697_adcs3_2_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_2_V_address1;
+wire    grp_write_adcs4_fu_697_adcs3_2_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_2_V_d1;
+wire    grp_write_adcs4_fu_697_adcs3_2_V_we1;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_3_V_address0;
+wire    grp_write_adcs4_fu_697_adcs3_3_V_ce0;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_3_V_d0;
+wire    grp_write_adcs4_fu_697_adcs3_3_V_we0;
+wire   [12:0] grp_write_adcs4_fu_697_adcs3_3_V_address1;
+wire    grp_write_adcs4_fu_697_adcs3_3_V_ce1;
+wire   [11:0] grp_write_adcs4_fu_697_adcs3_3_V_d1;
+wire    grp_write_adcs4_fu_697_adcs3_3_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_0_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_0_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_0_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_0_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_1_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_1_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_1_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_1_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_2_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_2_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_2_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_2_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_3_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_3_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_3_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_3_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_4_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_4_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_4_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_4_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_5_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_5_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_5_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_5_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_6_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_6_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_6_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_6_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_7_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_7_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_7_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist0_7_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_0_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_0_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_0_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_0_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_1_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_1_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_1_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_1_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_2_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_2_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_2_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_2_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_3_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_3_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_3_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_3_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_4_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_4_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_4_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_4_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_5_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_5_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_5_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_5_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_6_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_6_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_6_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_6_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_7_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_7_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist0_7_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist0_7_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_nobits_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_0_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_0_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_0_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_0_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_1_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_1_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_1_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_1_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_2_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_2_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_2_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_2_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_3_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_3_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_3_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_3_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_4_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_4_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_4_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_4_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_5_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_5_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_5_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_5_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_6_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_6_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_6_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_6_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_7_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_7_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_7_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist1_7_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_0_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_0_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_0_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_0_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_1_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_1_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_1_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_1_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_2_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_2_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_2_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_2_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_3_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_3_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_3_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_3_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_4_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_4_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_4_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_4_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_5_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_5_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_5_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_5_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_6_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_6_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_6_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_6_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_7_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_7_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist1_7_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist1_7_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_nobits_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_0_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_0_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_0_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_0_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_1_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_1_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_1_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_1_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_2_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_2_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_2_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_2_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_3_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_3_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_3_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_3_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_4_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_4_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_4_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_4_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_5_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_5_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_5_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_5_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_6_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_6_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_6_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_6_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_7_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_7_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_7_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist2_7_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_0_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_0_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_0_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_0_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_1_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_1_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_1_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_1_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_2_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_2_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_2_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_2_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_3_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_3_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_3_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_3_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_4_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_4_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_4_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_4_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_5_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_5_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_5_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_5_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_6_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_6_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_6_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_6_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_7_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_7_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist2_7_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist2_7_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_nobits_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_0_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_0_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_0_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_0_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_1_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_1_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_1_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_1_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_2_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_2_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_2_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_2_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_3_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_3_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_3_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_3_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_4_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_4_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_4_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_4_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_5_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_5_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_5_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_5_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_6_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_6_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_6_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_6_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_7_m_omask_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_omask_V_ce0;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_7_m_omask_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_omask_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_7_m_omask_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_omask_V_ce1;
+wire   [31:0] grp_write_adcs4_fu_697_hist3_7_m_omask_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_omask_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_0_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_0_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_0_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_0_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_1_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_1_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_1_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_1_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_2_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_2_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_2_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_2_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_3_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_3_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_3_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_3_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_4_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_4_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_4_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_4_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_5_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_5_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_5_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_5_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_6_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_6_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_6_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_6_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_nobits_V_we1;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_7_m_nobits_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_nobits_V_ce0;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_7_m_nobits_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_nobits_V_we0;
+wire   [1:0] grp_write_adcs4_fu_697_hist3_7_m_nobits_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_nobits_V_ce1;
+wire   [3:0] grp_write_adcs4_fu_697_hist3_7_m_nobits_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_nobits_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_we1;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_we0;
+wire   [6:0] grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_we1;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_address0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_ce0;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_d0;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_we0;
+wire   [5:0] grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_address1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_ce1;
+wire   [9:0] grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_d1;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_we1;
+wire    grp_write_adcs4_fu_697_hist0_0_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_1_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_2_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_3_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_4_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_5_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_6_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_7_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist0_0_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_1_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_2_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_3_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_4_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_5_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_6_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_7_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_0_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_1_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_2_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_3_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_4_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_5_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_6_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_7_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist1_0_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_1_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_2_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_3_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_4_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_5_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_6_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_7_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_0_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_1_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_2_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_3_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_4_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_5_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_6_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_7_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist2_0_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_1_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_2_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_3_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_4_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_5_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_6_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_7_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_0_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_1_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_2_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_3_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_4_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_5_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_6_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_7_m_omask_V_read;
+wire    grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_read;
+wire    grp_write_adcs4_fu_697_hist3_0_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_1_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_2_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_3_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_4_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_5_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_6_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_7_m_nobits_V_read;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_read;
+wire    grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_read;
+wire    grp_write_adcs4_fu_697_adcs0_0_V_read;
+wire    grp_write_adcs4_fu_697_adcs0_1_V_read;
+wire    grp_write_adcs4_fu_697_adcs0_2_V_read;
+wire    grp_write_adcs4_fu_697_adcs0_3_V_read;
+wire    grp_write_adcs4_fu_697_adcs1_0_V_read;
+wire    grp_write_adcs4_fu_697_adcs1_1_V_read;
+wire    grp_write_adcs4_fu_697_adcs1_2_V_read;
+wire    grp_write_adcs4_fu_697_adcs1_3_V_read;
+wire    grp_write_adcs4_fu_697_adcs2_0_V_read;
+wire    grp_write_adcs4_fu_697_adcs2_1_V_read;
+wire    grp_write_adcs4_fu_697_adcs2_2_V_read;
+wire    grp_write_adcs4_fu_697_adcs2_3_V_read;
+wire    grp_write_adcs4_fu_697_adcs3_0_V_read;
+wire    grp_write_adcs4_fu_697_adcs3_1_V_read;
+wire    grp_write_adcs4_fu_697_adcs3_2_V_read;
+wire    grp_write_adcs4_fu_697_adcs3_3_V_read;
+wire    grp_write_adcs4_fu_697_mAxis_TVALID;
+wire    grp_write_adcs4_fu_697_ap_done;
+wire    grp_write_adcs4_fu_697_ap_start;
+wire    grp_write_adcs4_fu_697_ap_ready;
+wire    grp_write_adcs4_fu_697_ap_idle;
+reg    grp_write_adcs4_fu_697_ap_continue;
+reg    StgValue_113_write_r_fu_1075_ap_start;
+wire    StgValue_113_write_r_fu_1075_ap_done;
+wire    StgValue_113_write_r_fu_1075_ap_idle;
+wire    StgValue_113_write_r_fu_1075_ap_ready;
+wire   [63:0] StgValue_113_write_r_fu_1075_mAxis_TDATA;
+wire    StgValue_113_write_r_fu_1075_mAxis_TVALID;
+wire   [7:0] StgValue_113_write_r_fu_1075_mAxis_TKEEP;
+wire   [7:0] StgValue_113_write_r_fu_1075_mAxis_TSTRB;
+wire   [3:0] StgValue_113_write_r_fu_1075_mAxis_TUSER;
+wire   [0:0] StgValue_113_write_r_fu_1075_mAxis_TLAST;
+wire   [0:0] StgValue_113_write_r_fu_1075_mAxis_TID;
+wire   [0:0] StgValue_113_write_r_fu_1075_mAxis_TDEST;
+wire   [63:0] StgValue_113_write_r_fu_1075_w64;
+reg   [0:0] ap_phi_mux_idx_0_i_phi_fu_646_p4;
+reg   [5:0] isg_0_i_reg_665;
+wire    ap_CS_fsm_state7;
+wire    ap_CS_fsm_state10;
+wire    ap_sync_grp_write_adcs4_fu_697_ap_ready;
+wire    ap_sync_grp_write_adcs4_fu_697_ap_done;
+reg    ap_block_state10_on_subcall_done;
+reg    grp_write_adcs4_fu_697_ap_start_reg;
+reg    ap_sync_reg_grp_write_adcs4_fu_697_ap_ready;
+reg    ap_sync_reg_grp_write_adcs4_fu_697_ap_done;
+reg   [63:0] bAxis_m_cur_fu_514;
+reg   [31:0] bAxis_m_idx_fu_518;
+wire   [63:0] bAxis_m_cur_1_fu_1347_p2;
+wire   [63:0] tmp_9_fu_1214_p1;
+wire   [63:0] tmp_12_fu_1262_p1;
+wire   [63:0] tmp_24_fu_1390_p1;
+wire   [63:0] tmp_26_fu_1401_p1;
+wire   [0:0] First_load_load_fu_1106_p1;
+wire   [31:0] monitorWrite_nbytes_s_fu_1466_p2;
+wire   [31:0] monitorWrite_npromot_fu_1498_p2;
+wire   [31:0] monitorWrite_npacket_fu_1482_p2;
+wire   [31:0] bAxis_m_idx_2_fu_1285_p1;
+wire   [63:0] recHeader_fu_1196_p2;
+wire   [63:0] tmp_data_V_1_fu_1219_p1;
+wire    ap_block_pp0_stage0_01001;
+wire    ap_block_pp1_stage0_01001;
+wire   [63:0] w64_fu_1418_p3;
+wire    ap_block_pp2_stage0_01001;
+wire   [63:0] statusId_fu_1454_p3;
 reg    ap_reg_ioackin_mAxis_TREADY;
-wire   [24:0] tmp_2_fu_1139_p3;
-wire  signed [3:0] tmp_4_cast_fu_1151_p0;
-wire   [4:0] tmp_13_cast_fu_1155_p1;
-wire  signed [4:0] tmp_4_cast_fu_1151_p1;
-wire   [4:0] tmp_1_fu_1159_p2;
-wire   [12:0] tmp_3_fu_1165_p3;
-wire  signed [13:0] tmp_5_cast_fu_1173_p1;
-wire   [13:0] tmp_6_fu_1177_p2;
-wire   [31:0] tmp_2_cast_fu_1147_p1;
-wire  signed [63:0] tmp_7_fu_1183_p1;
-wire   [63:0] tmp_8_fu_1187_p3;
-wire   [63:0] tmp_fu_1195_p2;
-wire   [0:0] tmp_tmp_fu_1208_p2;
-wire  signed [3:0] tmp_9_fu_1224_p0;
-wire  signed [3:0] tmp_5_fu_1232_p0;
-wire   [0:0] tmp_9_fu_1224_p2;
-wire   [2:0] tmp_5_fu_1232_p1;
-wire   [2:0] tmp_10_fu_1235_p3;
-wire   [3:0] idx1_0_i_cast_cast_fu_1252_p1;
-wire  signed [3:0] tmp_11_fu_1256_p1;
-wire   [3:0] tmp_13_fu_1272_p2;
-wire   [9:0] tmp_15_fu_1276_p3;
-wire   [9:0] bdx_fu_1284_p2;
-wire   [5:0] cur_idx_fu_1316_p1;
-wire   [4:0] tmp_26_fu_1330_p1;
-wire   [6:0] tmp_17_fu_1343_p2;
-wire   [63:0] tmp_18_fu_1348_p1;
-wire   [31:0] tmp_19_fu_1364_p2;
-wire   [25:0] tmp_24_fu_1370_p4;
-wire   [7:0] tmp_22_fu_1400_p2;
-wire   [29:0] tmp_20_fu_1432_p3;
-wire   [29:0] id_fu_1445_p2;
-wire   [31:0] id_i_cast_fu_1451_p1;
-wire   [31:0] nbytes_cast_fu_1463_p1;
-reg   [31:0] ap_return_0_preg;
-reg   [31:0] ap_return_1_preg;
-reg   [31:0] ap_return_2_preg;
+wire   [24:0] tmp_2_fu_1134_p3;
+wire  signed [3:0] tmp_4_cast_fu_1146_p0;
+wire   [4:0] tmp_14_cast_fu_1150_p1;
+wire  signed [4:0] tmp_4_cast_fu_1146_p1;
+wire   [4:0] tmp_1_fu_1154_p2;
+wire   [12:0] tmp_3_fu_1160_p3;
+wire  signed [13:0] tmp_5_cast_fu_1168_p1;
+wire   [13:0] tmp_6_fu_1172_p2;
+wire   [31:0] tmp_2_cast_fu_1142_p1;
+wire  signed [63:0] tmp_7_fu_1178_p1;
+wire   [63:0] tmp_8_fu_1182_p3;
+wire   [63:0] tmp_fu_1190_p2;
+wire   [0:0] tmp_tmp_fu_1203_p2;
+wire  signed [3:0] tmp_5_fu_1224_p0;
+wire  signed [3:0] tmp_10_fu_1232_p0;
+wire   [0:0] tmp_5_fu_1224_p2;
+wire   [2:0] tmp_10_fu_1232_p1;
+wire   [2:0] tmp_14_fu_1235_p3;
+wire   [3:0] idx1_0_i_cast_cast_fu_1247_p1;
+wire  signed [3:0] tmp_11_fu_1251_p1;
+wire   [3:0] tmp_20_fu_1267_p2;
+wire   [9:0] tmp_22_fu_1271_p3;
+wire   [9:0] bdx_fu_1279_p2;
+wire   [5:0] cur_idx_fu_1311_p1;
+wire   [4:0] tmp_29_fu_1325_p1;
+wire   [6:0] tmp_16_fu_1338_p2;
+wire   [63:0] tmp_17_fu_1343_p1;
+wire   [31:0] tmp_19_fu_1359_p2;
+wire   [25:0] tmp_27_fu_1365_p4;
+wire   [7:0] tmp_25_fu_1395_p2;
+wire   [29:0] tmp_21_fu_1427_p3;
+wire   [29:0] nbytes_fu_1434_p2;
+wire   [29:0] id_fu_1444_p2;
+wire   [31:0] id_i_cast_fu_1450_p1;
+wire   [31:0] nbytes_cast_fu_1440_p1;
 reg   [12:0] ap_NS_fsm;
+reg    ap_idle_pp0;
+wire    ap_enable_pp0;
+reg    ap_idle_pp1;
+wire    ap_enable_pp1;
+reg    ap_idle_pp2;
+wire    ap_enable_pp2;
 
 // power-on initialization
 initial begin
@@ -2909,35 +2929,37 @@ initial begin
 #0 lclMonitor_nbytes = 32'd0;
 #0 lclMonitor_npromoted = 32'd0;
 #0 lclMonitor_npackets = 32'd0;
-#0 tmp_14_reg_1622 = 1'd0;
-#0 reg_1105 = 32'd0;
-#0 tmp_29_cast_reg_1581 = 4'd0;
-#0 tmp_31_cast_reg_1586 = 4'd0;
-#0 idx_reg_1594 = 3'd0;
-#0 isg_reg_1607 = 6'd0;
-#0 cur_idx_cast_reg_1617 = 7'd0;
-#0 tmp_16_reg_1626 = 7'd0;
-#0 odx_reg_1636 = 27'd0;
-#0 odx_1_reg_1655 = 27'd0;
-#0 ichan_reg_1660 = 8'd0;
-#0 nbytes_reg_1665 = 30'd0;
-#0 idx_0_i_reg_646 = 1'd0;
-#0 idx1_0_i_reg_659 = 3'd0;
-#0 isg_0_i_reg_670 = 6'd0;
-#0 odx_2_reg_682 = 27'd0;
-#0 ichan_0_i_reg_691 = 8'd0;
-#0 grp_write_adcs4_fu_702_ap_start_reg = 1'b0;
-#0 ap_sync_reg_grp_write_adcs4_fu_702_ap_ready = 1'b0;
-#0 ap_sync_reg_grp_write_adcs4_fu_702_ap_done = 1'b0;
-#0 bAxis_m_cur_fu_512 = 64'd0;
-#0 bAxis_m_idx_fu_516 = 32'd0;
+#0 ap_enable_reg_pp0_iter1 = 1'b0;
+#0 tmp_s_reg_1546 = 1'd0;
+#0 ap_enable_reg_pp1_iter1 = 1'b0;
+#0 tmp_11_reg_1565 = 1'd0;
+#0 tmp_13_reg_1597 = 1'd0;
+#0 ap_enable_reg_pp2_iter1 = 1'b0;
+#0 exitcond_reg_1617 = 1'd0;
+#0 idx_0_i_reg_642 = 1'd0;
+#0 idx1_0_i_reg_654 = 3'd0;
+#0 odx_2_reg_677 = 27'd0;
+#0 ichan_0_i_reg_686 = 8'd0;
+#0 reg_1100 = 32'd0;
+#0 tmp_29_cast_reg_1555 = 4'd0;
+#0 tmp_31_cast_reg_1560 = 4'd0;
+#0 ap_enable_reg_pp1_iter0 = 1'b0;
+#0 isg_reg_1582 = 6'd0;
+#0 cur_idx_cast_reg_1592 = 7'd0;
+#0 tmp_15_reg_1601 = 7'd0;
+#0 odx_reg_1611 = 27'd0;
+#0 ap_enable_reg_pp2_iter0 = 1'b0;
+#0 ap_enable_reg_pp0_iter0 = 1'b0;
+#0 isg_0_i_reg_665 = 6'd0;
+#0 grp_write_adcs4_fu_697_ap_start_reg = 1'b0;
+#0 ap_sync_reg_grp_write_adcs4_fu_697_ap_ready = 1'b0;
+#0 ap_sync_reg_grp_write_adcs4_fu_697_ap_done = 1'b0;
+#0 bAxis_m_cur_fu_514 = 64'd0;
+#0 bAxis_m_idx_fu_518 = 32'd0;
 #0 ap_reg_ioackin_mAxis_TREADY = 1'b0;
-#0 ap_return_0_preg = 32'd0;
-#0 ap_return_1_preg = 32'd0;
-#0 ap_return_2_preg = 32'd0;
 end
 
-write_packet_offsbYs #(
+write_packet_offsbQq #(
     .DataWidth( 32 ),
     .AddressRange( 130 ),
     .AddressWidth( 8 ))
@@ -2956,2182 +2978,2182 @@ offsets_U(
     .q1(offsets_q1)
 );
 
-write_adcs4 grp_write_adcs4_fu_702(
+write_adcs4 grp_write_adcs4_fu_697(
+    .bAxis_m_cur(grp_write_adcs4_fu_697_bAxis_m_cur),
+    .bAxis_m_cur_read(bAxis_m_cur_fu_514),
+    .bAxis_m_idx(grp_write_adcs4_fu_697_bAxis_m_idx),
+    .bAxis_m_idx_read(reg_1100),
+    .mAxis_TDATA(grp_write_adcs4_fu_697_mAxis_TDATA),
+    .mAxis_TKEEP(grp_write_adcs4_fu_697_mAxis_TKEEP),
+    .mAxis_TSTRB(grp_write_adcs4_fu_697_mAxis_TSTRB),
+    .mAxis_TUSER(grp_write_adcs4_fu_697_mAxis_TUSER),
+    .mAxis_TLAST(grp_write_adcs4_fu_697_mAxis_TLAST),
+    .mAxis_TID(grp_write_adcs4_fu_697_mAxis_TID),
+    .mAxis_TDEST(grp_write_adcs4_fu_697_mAxis_TDEST),
+    .offsets_address0(grp_write_adcs4_fu_697_offsets_address0),
+    .offsets_ce0(grp_write_adcs4_fu_697_offsets_ce0),
+    .offsets_d0(grp_write_adcs4_fu_697_offsets_d0),
+    .offsets_q0(32'd0),
+    .offsets_we0(grp_write_adcs4_fu_697_offsets_we0),
+    .offsets_address1(grp_write_adcs4_fu_697_offsets_address1),
+    .offsets_ce1(grp_write_adcs4_fu_697_offsets_ce1),
+    .offsets_d1(grp_write_adcs4_fu_697_offsets_d1),
+    .offsets_q1(32'd0),
+    .offsets_we1(grp_write_adcs4_fu_697_offsets_we1),
+    .adcs0_0_V_address0(grp_write_adcs4_fu_697_adcs0_0_V_address0),
+    .adcs0_0_V_ce0(grp_write_adcs4_fu_697_adcs0_0_V_ce0),
+    .adcs0_0_V_d0(grp_write_adcs4_fu_697_adcs0_0_V_d0),
+    .adcs0_0_V_q0(cmpCtx_adcs_sg0_0_V_q0),
+    .adcs0_0_V_we0(grp_write_adcs4_fu_697_adcs0_0_V_we0),
+    .adcs0_0_V_address1(grp_write_adcs4_fu_697_adcs0_0_V_address1),
+    .adcs0_0_V_ce1(grp_write_adcs4_fu_697_adcs0_0_V_ce1),
+    .adcs0_0_V_d1(grp_write_adcs4_fu_697_adcs0_0_V_d1),
+    .adcs0_0_V_q1(12'd0),
+    .adcs0_0_V_we1(grp_write_adcs4_fu_697_adcs0_0_V_we1),
+    .adcs0_1_V_address0(grp_write_adcs4_fu_697_adcs0_1_V_address0),
+    .adcs0_1_V_ce0(grp_write_adcs4_fu_697_adcs0_1_V_ce0),
+    .adcs0_1_V_d0(grp_write_adcs4_fu_697_adcs0_1_V_d0),
+    .adcs0_1_V_q0(cmpCtx_adcs_sg0_1_V_q0),
+    .adcs0_1_V_we0(grp_write_adcs4_fu_697_adcs0_1_V_we0),
+    .adcs0_1_V_address1(grp_write_adcs4_fu_697_adcs0_1_V_address1),
+    .adcs0_1_V_ce1(grp_write_adcs4_fu_697_adcs0_1_V_ce1),
+    .adcs0_1_V_d1(grp_write_adcs4_fu_697_adcs0_1_V_d1),
+    .adcs0_1_V_q1(12'd0),
+    .adcs0_1_V_we1(grp_write_adcs4_fu_697_adcs0_1_V_we1),
+    .adcs0_2_V_address0(grp_write_adcs4_fu_697_adcs0_2_V_address0),
+    .adcs0_2_V_ce0(grp_write_adcs4_fu_697_adcs0_2_V_ce0),
+    .adcs0_2_V_d0(grp_write_adcs4_fu_697_adcs0_2_V_d0),
+    .adcs0_2_V_q0(cmpCtx_adcs_sg0_2_V_q0),
+    .adcs0_2_V_we0(grp_write_adcs4_fu_697_adcs0_2_V_we0),
+    .adcs0_2_V_address1(grp_write_adcs4_fu_697_adcs0_2_V_address1),
+    .adcs0_2_V_ce1(grp_write_adcs4_fu_697_adcs0_2_V_ce1),
+    .adcs0_2_V_d1(grp_write_adcs4_fu_697_adcs0_2_V_d1),
+    .adcs0_2_V_q1(12'd0),
+    .adcs0_2_V_we1(grp_write_adcs4_fu_697_adcs0_2_V_we1),
+    .adcs0_3_V_address0(grp_write_adcs4_fu_697_adcs0_3_V_address0),
+    .adcs0_3_V_ce0(grp_write_adcs4_fu_697_adcs0_3_V_ce0),
+    .adcs0_3_V_d0(grp_write_adcs4_fu_697_adcs0_3_V_d0),
+    .adcs0_3_V_q0(cmpCtx_adcs_sg0_3_V_q0),
+    .adcs0_3_V_we0(grp_write_adcs4_fu_697_adcs0_3_V_we0),
+    .adcs0_3_V_address1(grp_write_adcs4_fu_697_adcs0_3_V_address1),
+    .adcs0_3_V_ce1(grp_write_adcs4_fu_697_adcs0_3_V_ce1),
+    .adcs0_3_V_d1(grp_write_adcs4_fu_697_adcs0_3_V_d1),
+    .adcs0_3_V_q1(12'd0),
+    .adcs0_3_V_we1(grp_write_adcs4_fu_697_adcs0_3_V_we1),
+    .adcs0_V_offset(isg_0_i_reg_665),
+    .adcs1_0_V_address0(grp_write_adcs4_fu_697_adcs1_0_V_address0),
+    .adcs1_0_V_ce0(grp_write_adcs4_fu_697_adcs1_0_V_ce0),
+    .adcs1_0_V_d0(grp_write_adcs4_fu_697_adcs1_0_V_d0),
+    .adcs1_0_V_q0(cmpCtx_adcs_sg1_0_V_q0),
+    .adcs1_0_V_we0(grp_write_adcs4_fu_697_adcs1_0_V_we0),
+    .adcs1_0_V_address1(grp_write_adcs4_fu_697_adcs1_0_V_address1),
+    .adcs1_0_V_ce1(grp_write_adcs4_fu_697_adcs1_0_V_ce1),
+    .adcs1_0_V_d1(grp_write_adcs4_fu_697_adcs1_0_V_d1),
+    .adcs1_0_V_q1(12'd0),
+    .adcs1_0_V_we1(grp_write_adcs4_fu_697_adcs1_0_V_we1),
+    .adcs1_1_V_address0(grp_write_adcs4_fu_697_adcs1_1_V_address0),
+    .adcs1_1_V_ce0(grp_write_adcs4_fu_697_adcs1_1_V_ce0),
+    .adcs1_1_V_d0(grp_write_adcs4_fu_697_adcs1_1_V_d0),
+    .adcs1_1_V_q0(cmpCtx_adcs_sg1_1_V_q0),
+    .adcs1_1_V_we0(grp_write_adcs4_fu_697_adcs1_1_V_we0),
+    .adcs1_1_V_address1(grp_write_adcs4_fu_697_adcs1_1_V_address1),
+    .adcs1_1_V_ce1(grp_write_adcs4_fu_697_adcs1_1_V_ce1),
+    .adcs1_1_V_d1(grp_write_adcs4_fu_697_adcs1_1_V_d1),
+    .adcs1_1_V_q1(12'd0),
+    .adcs1_1_V_we1(grp_write_adcs4_fu_697_adcs1_1_V_we1),
+    .adcs1_2_V_address0(grp_write_adcs4_fu_697_adcs1_2_V_address0),
+    .adcs1_2_V_ce0(grp_write_adcs4_fu_697_adcs1_2_V_ce0),
+    .adcs1_2_V_d0(grp_write_adcs4_fu_697_adcs1_2_V_d0),
+    .adcs1_2_V_q0(cmpCtx_adcs_sg1_2_V_q0),
+    .adcs1_2_V_we0(grp_write_adcs4_fu_697_adcs1_2_V_we0),
+    .adcs1_2_V_address1(grp_write_adcs4_fu_697_adcs1_2_V_address1),
+    .adcs1_2_V_ce1(grp_write_adcs4_fu_697_adcs1_2_V_ce1),
+    .adcs1_2_V_d1(grp_write_adcs4_fu_697_adcs1_2_V_d1),
+    .adcs1_2_V_q1(12'd0),
+    .adcs1_2_V_we1(grp_write_adcs4_fu_697_adcs1_2_V_we1),
+    .adcs1_3_V_address0(grp_write_adcs4_fu_697_adcs1_3_V_address0),
+    .adcs1_3_V_ce0(grp_write_adcs4_fu_697_adcs1_3_V_ce0),
+    .adcs1_3_V_d0(grp_write_adcs4_fu_697_adcs1_3_V_d0),
+    .adcs1_3_V_q0(cmpCtx_adcs_sg1_3_V_q0),
+    .adcs1_3_V_we0(grp_write_adcs4_fu_697_adcs1_3_V_we0),
+    .adcs1_3_V_address1(grp_write_adcs4_fu_697_adcs1_3_V_address1),
+    .adcs1_3_V_ce1(grp_write_adcs4_fu_697_adcs1_3_V_ce1),
+    .adcs1_3_V_d1(grp_write_adcs4_fu_697_adcs1_3_V_d1),
+    .adcs1_3_V_q1(12'd0),
+    .adcs1_3_V_we1(grp_write_adcs4_fu_697_adcs1_3_V_we1),
+    .adcs2_0_V_address0(grp_write_adcs4_fu_697_adcs2_0_V_address0),
+    .adcs2_0_V_ce0(grp_write_adcs4_fu_697_adcs2_0_V_ce0),
+    .adcs2_0_V_d0(grp_write_adcs4_fu_697_adcs2_0_V_d0),
+    .adcs2_0_V_q0(cmpCtx_adcs_sg2_0_V_q0),
+    .adcs2_0_V_we0(grp_write_adcs4_fu_697_adcs2_0_V_we0),
+    .adcs2_0_V_address1(grp_write_adcs4_fu_697_adcs2_0_V_address1),
+    .adcs2_0_V_ce1(grp_write_adcs4_fu_697_adcs2_0_V_ce1),
+    .adcs2_0_V_d1(grp_write_adcs4_fu_697_adcs2_0_V_d1),
+    .adcs2_0_V_q1(12'd0),
+    .adcs2_0_V_we1(grp_write_adcs4_fu_697_adcs2_0_V_we1),
+    .adcs2_1_V_address0(grp_write_adcs4_fu_697_adcs2_1_V_address0),
+    .adcs2_1_V_ce0(grp_write_adcs4_fu_697_adcs2_1_V_ce0),
+    .adcs2_1_V_d0(grp_write_adcs4_fu_697_adcs2_1_V_d0),
+    .adcs2_1_V_q0(cmpCtx_adcs_sg2_1_V_q0),
+    .adcs2_1_V_we0(grp_write_adcs4_fu_697_adcs2_1_V_we0),
+    .adcs2_1_V_address1(grp_write_adcs4_fu_697_adcs2_1_V_address1),
+    .adcs2_1_V_ce1(grp_write_adcs4_fu_697_adcs2_1_V_ce1),
+    .adcs2_1_V_d1(grp_write_adcs4_fu_697_adcs2_1_V_d1),
+    .adcs2_1_V_q1(12'd0),
+    .adcs2_1_V_we1(grp_write_adcs4_fu_697_adcs2_1_V_we1),
+    .adcs2_2_V_address0(grp_write_adcs4_fu_697_adcs2_2_V_address0),
+    .adcs2_2_V_ce0(grp_write_adcs4_fu_697_adcs2_2_V_ce0),
+    .adcs2_2_V_d0(grp_write_adcs4_fu_697_adcs2_2_V_d0),
+    .adcs2_2_V_q0(cmpCtx_adcs_sg2_2_V_q0),
+    .adcs2_2_V_we0(grp_write_adcs4_fu_697_adcs2_2_V_we0),
+    .adcs2_2_V_address1(grp_write_adcs4_fu_697_adcs2_2_V_address1),
+    .adcs2_2_V_ce1(grp_write_adcs4_fu_697_adcs2_2_V_ce1),
+    .adcs2_2_V_d1(grp_write_adcs4_fu_697_adcs2_2_V_d1),
+    .adcs2_2_V_q1(12'd0),
+    .adcs2_2_V_we1(grp_write_adcs4_fu_697_adcs2_2_V_we1),
+    .adcs2_3_V_address0(grp_write_adcs4_fu_697_adcs2_3_V_address0),
+    .adcs2_3_V_ce0(grp_write_adcs4_fu_697_adcs2_3_V_ce0),
+    .adcs2_3_V_d0(grp_write_adcs4_fu_697_adcs2_3_V_d0),
+    .adcs2_3_V_q0(cmpCtx_adcs_sg2_3_V_q0),
+    .adcs2_3_V_we0(grp_write_adcs4_fu_697_adcs2_3_V_we0),
+    .adcs2_3_V_address1(grp_write_adcs4_fu_697_adcs2_3_V_address1),
+    .adcs2_3_V_ce1(grp_write_adcs4_fu_697_adcs2_3_V_ce1),
+    .adcs2_3_V_d1(grp_write_adcs4_fu_697_adcs2_3_V_d1),
+    .adcs2_3_V_q1(12'd0),
+    .adcs2_3_V_we1(grp_write_adcs4_fu_697_adcs2_3_V_we1),
+    .adcs3_0_V_address0(grp_write_adcs4_fu_697_adcs3_0_V_address0),
+    .adcs3_0_V_ce0(grp_write_adcs4_fu_697_adcs3_0_V_ce0),
+    .adcs3_0_V_d0(grp_write_adcs4_fu_697_adcs3_0_V_d0),
+    .adcs3_0_V_q0(cmpCtx_adcs_sg3_0_V_q0),
+    .adcs3_0_V_we0(grp_write_adcs4_fu_697_adcs3_0_V_we0),
+    .adcs3_0_V_address1(grp_write_adcs4_fu_697_adcs3_0_V_address1),
+    .adcs3_0_V_ce1(grp_write_adcs4_fu_697_adcs3_0_V_ce1),
+    .adcs3_0_V_d1(grp_write_adcs4_fu_697_adcs3_0_V_d1),
+    .adcs3_0_V_q1(12'd0),
+    .adcs3_0_V_we1(grp_write_adcs4_fu_697_adcs3_0_V_we1),
+    .adcs3_1_V_address0(grp_write_adcs4_fu_697_adcs3_1_V_address0),
+    .adcs3_1_V_ce0(grp_write_adcs4_fu_697_adcs3_1_V_ce0),
+    .adcs3_1_V_d0(grp_write_adcs4_fu_697_adcs3_1_V_d0),
+    .adcs3_1_V_q0(cmpCtx_adcs_sg3_1_V_q0),
+    .adcs3_1_V_we0(grp_write_adcs4_fu_697_adcs3_1_V_we0),
+    .adcs3_1_V_address1(grp_write_adcs4_fu_697_adcs3_1_V_address1),
+    .adcs3_1_V_ce1(grp_write_adcs4_fu_697_adcs3_1_V_ce1),
+    .adcs3_1_V_d1(grp_write_adcs4_fu_697_adcs3_1_V_d1),
+    .adcs3_1_V_q1(12'd0),
+    .adcs3_1_V_we1(grp_write_adcs4_fu_697_adcs3_1_V_we1),
+    .adcs3_2_V_address0(grp_write_adcs4_fu_697_adcs3_2_V_address0),
+    .adcs3_2_V_ce0(grp_write_adcs4_fu_697_adcs3_2_V_ce0),
+    .adcs3_2_V_d0(grp_write_adcs4_fu_697_adcs3_2_V_d0),
+    .adcs3_2_V_q0(cmpCtx_adcs_sg3_2_V_q0),
+    .adcs3_2_V_we0(grp_write_adcs4_fu_697_adcs3_2_V_we0),
+    .adcs3_2_V_address1(grp_write_adcs4_fu_697_adcs3_2_V_address1),
+    .adcs3_2_V_ce1(grp_write_adcs4_fu_697_adcs3_2_V_ce1),
+    .adcs3_2_V_d1(grp_write_adcs4_fu_697_adcs3_2_V_d1),
+    .adcs3_2_V_q1(12'd0),
+    .adcs3_2_V_we1(grp_write_adcs4_fu_697_adcs3_2_V_we1),
+    .adcs3_3_V_address0(grp_write_adcs4_fu_697_adcs3_3_V_address0),
+    .adcs3_3_V_ce0(grp_write_adcs4_fu_697_adcs3_3_V_ce0),
+    .adcs3_3_V_d0(grp_write_adcs4_fu_697_adcs3_3_V_d0),
+    .adcs3_3_V_q0(cmpCtx_adcs_sg3_3_V_q0),
+    .adcs3_3_V_we0(grp_write_adcs4_fu_697_adcs3_3_V_we0),
+    .adcs3_3_V_address1(grp_write_adcs4_fu_697_adcs3_3_V_address1),
+    .adcs3_3_V_ce1(grp_write_adcs4_fu_697_adcs3_3_V_ce1),
+    .adcs3_3_V_d1(grp_write_adcs4_fu_697_adcs3_3_V_d1),
+    .adcs3_3_V_q1(12'd0),
+    .adcs3_3_V_we1(grp_write_adcs4_fu_697_adcs3_3_V_we1),
+    .hist0_0_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_0_m_omask_V_address0),
+    .hist0_0_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_0_m_omask_V_ce0),
+    .hist0_0_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_0_m_omask_V_d0),
+    .hist0_0_m_omask_V_q0(cmpCtx_hists_sg0_0_s_q0),
+    .hist0_0_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_0_m_omask_V_we0),
+    .hist0_0_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_0_m_omask_V_address1),
+    .hist0_0_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_0_m_omask_V_ce1),
+    .hist0_0_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_0_m_omask_V_d1),
+    .hist0_0_m_omask_V_q1(32'd0),
+    .hist0_0_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_0_m_omask_V_we1),
+    .hist0_1_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_1_m_omask_V_address0),
+    .hist0_1_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_1_m_omask_V_ce0),
+    .hist0_1_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_1_m_omask_V_d0),
+    .hist0_1_m_omask_V_q0(cmpCtx_hists_sg0_1_s_q0),
+    .hist0_1_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_1_m_omask_V_we0),
+    .hist0_1_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_1_m_omask_V_address1),
+    .hist0_1_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_1_m_omask_V_ce1),
+    .hist0_1_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_1_m_omask_V_d1),
+    .hist0_1_m_omask_V_q1(32'd0),
+    .hist0_1_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_1_m_omask_V_we1),
+    .hist0_2_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_2_m_omask_V_address0),
+    .hist0_2_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_2_m_omask_V_ce0),
+    .hist0_2_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_2_m_omask_V_d0),
+    .hist0_2_m_omask_V_q0(cmpCtx_hists_sg0_2_s_q0),
+    .hist0_2_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_2_m_omask_V_we0),
+    .hist0_2_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_2_m_omask_V_address1),
+    .hist0_2_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_2_m_omask_V_ce1),
+    .hist0_2_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_2_m_omask_V_d1),
+    .hist0_2_m_omask_V_q1(32'd0),
+    .hist0_2_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_2_m_omask_V_we1),
+    .hist0_3_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_3_m_omask_V_address0),
+    .hist0_3_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_3_m_omask_V_ce0),
+    .hist0_3_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_3_m_omask_V_d0),
+    .hist0_3_m_omask_V_q0(cmpCtx_hists_sg0_3_s_q0),
+    .hist0_3_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_3_m_omask_V_we0),
+    .hist0_3_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_3_m_omask_V_address1),
+    .hist0_3_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_3_m_omask_V_ce1),
+    .hist0_3_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_3_m_omask_V_d1),
+    .hist0_3_m_omask_V_q1(32'd0),
+    .hist0_3_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_3_m_omask_V_we1),
+    .hist0_4_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_4_m_omask_V_address0),
+    .hist0_4_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_4_m_omask_V_ce0),
+    .hist0_4_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_4_m_omask_V_d0),
+    .hist0_4_m_omask_V_q0(cmpCtx_hists_sg0_4_s_q0),
+    .hist0_4_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_4_m_omask_V_we0),
+    .hist0_4_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_4_m_omask_V_address1),
+    .hist0_4_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_4_m_omask_V_ce1),
+    .hist0_4_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_4_m_omask_V_d1),
+    .hist0_4_m_omask_V_q1(32'd0),
+    .hist0_4_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_4_m_omask_V_we1),
+    .hist0_5_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_5_m_omask_V_address0),
+    .hist0_5_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_5_m_omask_V_ce0),
+    .hist0_5_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_5_m_omask_V_d0),
+    .hist0_5_m_omask_V_q0(cmpCtx_hists_sg0_5_s_q0),
+    .hist0_5_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_5_m_omask_V_we0),
+    .hist0_5_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_5_m_omask_V_address1),
+    .hist0_5_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_5_m_omask_V_ce1),
+    .hist0_5_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_5_m_omask_V_d1),
+    .hist0_5_m_omask_V_q1(32'd0),
+    .hist0_5_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_5_m_omask_V_we1),
+    .hist0_6_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_6_m_omask_V_address0),
+    .hist0_6_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_6_m_omask_V_ce0),
+    .hist0_6_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_6_m_omask_V_d0),
+    .hist0_6_m_omask_V_q0(cmpCtx_hists_sg0_6_s_q0),
+    .hist0_6_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_6_m_omask_V_we0),
+    .hist0_6_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_6_m_omask_V_address1),
+    .hist0_6_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_6_m_omask_V_ce1),
+    .hist0_6_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_6_m_omask_V_d1),
+    .hist0_6_m_omask_V_q1(32'd0),
+    .hist0_6_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_6_m_omask_V_we1),
+    .hist0_7_m_omask_V_address0(grp_write_adcs4_fu_697_hist0_7_m_omask_V_address0),
+    .hist0_7_m_omask_V_ce0(grp_write_adcs4_fu_697_hist0_7_m_omask_V_ce0),
+    .hist0_7_m_omask_V_d0(grp_write_adcs4_fu_697_hist0_7_m_omask_V_d0),
+    .hist0_7_m_omask_V_q0(cmpCtx_hists_sg0_7_s_q0),
+    .hist0_7_m_omask_V_we0(grp_write_adcs4_fu_697_hist0_7_m_omask_V_we0),
+    .hist0_7_m_omask_V_address1(grp_write_adcs4_fu_697_hist0_7_m_omask_V_address1),
+    .hist0_7_m_omask_V_ce1(grp_write_adcs4_fu_697_hist0_7_m_omask_V_ce1),
+    .hist0_7_m_omask_V_d1(grp_write_adcs4_fu_697_hist0_7_m_omask_V_d1),
+    .hist0_7_m_omask_V_q1(32'd0),
+    .hist0_7_m_omask_V_we1(grp_write_adcs4_fu_697_hist0_7_m_omask_V_we1),
+    .hist0_0_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_address0),
+    .hist0_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_ce0),
+    .hist0_0_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_d0),
+    .hist0_0_m_maxcnt_V_q0(cmpCtx_hists_sg0_0_3_q0),
+    .hist0_0_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_we0),
+    .hist0_0_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_address1),
+    .hist0_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_ce1),
+    .hist0_0_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_d1),
+    .hist0_0_m_maxcnt_V_q1(10'd0),
+    .hist0_0_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_we1),
+    .hist0_1_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_address0),
+    .hist0_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_ce0),
+    .hist0_1_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_d0),
+    .hist0_1_m_maxcnt_V_q0(cmpCtx_hists_sg0_1_3_q0),
+    .hist0_1_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_we0),
+    .hist0_1_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_address1),
+    .hist0_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_ce1),
+    .hist0_1_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_d1),
+    .hist0_1_m_maxcnt_V_q1(10'd0),
+    .hist0_1_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_we1),
+    .hist0_2_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_address0),
+    .hist0_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_ce0),
+    .hist0_2_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_d0),
+    .hist0_2_m_maxcnt_V_q0(cmpCtx_hists_sg0_2_3_q0),
+    .hist0_2_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_we0),
+    .hist0_2_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_address1),
+    .hist0_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_ce1),
+    .hist0_2_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_d1),
+    .hist0_2_m_maxcnt_V_q1(10'd0),
+    .hist0_2_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_we1),
+    .hist0_3_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_address0),
+    .hist0_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_ce0),
+    .hist0_3_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_d0),
+    .hist0_3_m_maxcnt_V_q0(cmpCtx_hists_sg0_3_3_q0),
+    .hist0_3_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_we0),
+    .hist0_3_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_address1),
+    .hist0_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_ce1),
+    .hist0_3_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_d1),
+    .hist0_3_m_maxcnt_V_q1(10'd0),
+    .hist0_3_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_we1),
+    .hist0_4_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_address0),
+    .hist0_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_ce0),
+    .hist0_4_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_d0),
+    .hist0_4_m_maxcnt_V_q0(cmpCtx_hists_sg0_4_3_q0),
+    .hist0_4_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_we0),
+    .hist0_4_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_address1),
+    .hist0_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_ce1),
+    .hist0_4_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_d1),
+    .hist0_4_m_maxcnt_V_q1(10'd0),
+    .hist0_4_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_we1),
+    .hist0_5_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_address0),
+    .hist0_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_ce0),
+    .hist0_5_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_d0),
+    .hist0_5_m_maxcnt_V_q0(cmpCtx_hists_sg0_5_3_q0),
+    .hist0_5_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_we0),
+    .hist0_5_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_address1),
+    .hist0_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_ce1),
+    .hist0_5_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_d1),
+    .hist0_5_m_maxcnt_V_q1(10'd0),
+    .hist0_5_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_we1),
+    .hist0_6_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_address0),
+    .hist0_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_ce0),
+    .hist0_6_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_d0),
+    .hist0_6_m_maxcnt_V_q0(cmpCtx_hists_sg0_6_3_q0),
+    .hist0_6_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_we0),
+    .hist0_6_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_address1),
+    .hist0_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_ce1),
+    .hist0_6_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_d1),
+    .hist0_6_m_maxcnt_V_q1(10'd0),
+    .hist0_6_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_we1),
+    .hist0_7_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_address0),
+    .hist0_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_ce0),
+    .hist0_7_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_d0),
+    .hist0_7_m_maxcnt_V_q0(cmpCtx_hists_sg0_7_3_q0),
+    .hist0_7_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_we0),
+    .hist0_7_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_address1),
+    .hist0_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_ce1),
+    .hist0_7_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_d1),
+    .hist0_7_m_maxcnt_V_q1(10'd0),
+    .hist0_7_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_we1),
+    .hist0_0_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_address0),
+    .hist0_0_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_ce0),
+    .hist0_0_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_d0),
+    .hist0_0_m_nobits_V_q0(cmpCtx_hists_sg0_0_4_q0),
+    .hist0_0_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_we0),
+    .hist0_0_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_address1),
+    .hist0_0_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_ce1),
+    .hist0_0_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_d1),
+    .hist0_0_m_nobits_V_q1(4'd0),
+    .hist0_0_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_we1),
+    .hist0_1_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_address0),
+    .hist0_1_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_ce0),
+    .hist0_1_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_d0),
+    .hist0_1_m_nobits_V_q0(cmpCtx_hists_sg0_1_4_q0),
+    .hist0_1_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_we0),
+    .hist0_1_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_address1),
+    .hist0_1_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_ce1),
+    .hist0_1_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_d1),
+    .hist0_1_m_nobits_V_q1(4'd0),
+    .hist0_1_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_we1),
+    .hist0_2_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_address0),
+    .hist0_2_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_ce0),
+    .hist0_2_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_d0),
+    .hist0_2_m_nobits_V_q0(cmpCtx_hists_sg0_2_4_q0),
+    .hist0_2_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_we0),
+    .hist0_2_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_address1),
+    .hist0_2_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_ce1),
+    .hist0_2_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_d1),
+    .hist0_2_m_nobits_V_q1(4'd0),
+    .hist0_2_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_we1),
+    .hist0_3_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_address0),
+    .hist0_3_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_ce0),
+    .hist0_3_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_d0),
+    .hist0_3_m_nobits_V_q0(cmpCtx_hists_sg0_3_4_q0),
+    .hist0_3_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_we0),
+    .hist0_3_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_address1),
+    .hist0_3_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_ce1),
+    .hist0_3_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_d1),
+    .hist0_3_m_nobits_V_q1(4'd0),
+    .hist0_3_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_we1),
+    .hist0_4_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_address0),
+    .hist0_4_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_ce0),
+    .hist0_4_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_d0),
+    .hist0_4_m_nobits_V_q0(cmpCtx_hists_sg0_4_4_q0),
+    .hist0_4_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_we0),
+    .hist0_4_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_address1),
+    .hist0_4_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_ce1),
+    .hist0_4_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_d1),
+    .hist0_4_m_nobits_V_q1(4'd0),
+    .hist0_4_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_we1),
+    .hist0_5_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_address0),
+    .hist0_5_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_ce0),
+    .hist0_5_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_d0),
+    .hist0_5_m_nobits_V_q0(cmpCtx_hists_sg0_5_4_q0),
+    .hist0_5_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_we0),
+    .hist0_5_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_address1),
+    .hist0_5_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_ce1),
+    .hist0_5_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_d1),
+    .hist0_5_m_nobits_V_q1(4'd0),
+    .hist0_5_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_we1),
+    .hist0_6_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_address0),
+    .hist0_6_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_ce0),
+    .hist0_6_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_d0),
+    .hist0_6_m_nobits_V_q0(cmpCtx_hists_sg0_6_4_q0),
+    .hist0_6_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_we0),
+    .hist0_6_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_address1),
+    .hist0_6_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_ce1),
+    .hist0_6_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_d1),
+    .hist0_6_m_nobits_V_q1(4'd0),
+    .hist0_6_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_we1),
+    .hist0_7_m_nobits_V_address0(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_address0),
+    .hist0_7_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_ce0),
+    .hist0_7_m_nobits_V_d0(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_d0),
+    .hist0_7_m_nobits_V_q0(cmpCtx_hists_sg0_7_4_q0),
+    .hist0_7_m_nobits_V_we0(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_we0),
+    .hist0_7_m_nobits_V_address1(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_address1),
+    .hist0_7_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_ce1),
+    .hist0_7_m_nobits_V_d1(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_d1),
+    .hist0_7_m_nobits_V_q1(4'd0),
+    .hist0_7_m_nobits_V_we1(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_we1),
+    .hist0_0_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_address0),
+    .hist0_0_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_ce0),
+    .hist0_0_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_d0),
+    .hist0_0_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V_q0),
+    .hist0_0_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_we0),
+    .hist0_0_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_address1),
+    .hist0_0_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_ce1),
+    .hist0_0_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_d1),
+    .hist0_0_m_bins_0_V_q1(10'd0),
+    .hist0_0_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_we1),
+    .hist0_0_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_address0),
+    .hist0_0_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_ce0),
+    .hist0_0_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_d0),
+    .hist0_0_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V1_q0),
+    .hist0_0_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_we0),
+    .hist0_0_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_address1),
+    .hist0_0_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_ce1),
+    .hist0_0_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_d1),
+    .hist0_0_m_bins_1_V_q1(10'd0),
+    .hist0_0_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_we1),
+    .hist0_1_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_address0),
+    .hist0_1_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_ce0),
+    .hist0_1_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_d0),
+    .hist0_1_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V34_q0),
+    .hist0_1_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_we0),
+    .hist0_1_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_address1),
+    .hist0_1_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_ce1),
+    .hist0_1_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_d1),
+    .hist0_1_m_bins_0_V_q1(10'd0),
+    .hist0_1_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_we1),
+    .hist0_1_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_address0),
+    .hist0_1_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_ce0),
+    .hist0_1_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_d0),
+    .hist0_1_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V342_q0),
+    .hist0_1_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_we0),
+    .hist0_1_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_address1),
+    .hist0_1_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_ce1),
+    .hist0_1_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_d1),
+    .hist0_1_m_bins_1_V_q1(10'd0),
+    .hist0_1_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_we1),
+    .hist0_2_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_address0),
+    .hist0_2_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_ce0),
+    .hist0_2_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_d0),
+    .hist0_2_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V35_q0),
+    .hist0_2_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_we0),
+    .hist0_2_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_address1),
+    .hist0_2_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_ce1),
+    .hist0_2_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_d1),
+    .hist0_2_m_bins_0_V_q1(10'd0),
+    .hist0_2_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_we1),
+    .hist0_2_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_address0),
+    .hist0_2_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_ce0),
+    .hist0_2_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_d0),
+    .hist0_2_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V353_q0),
+    .hist0_2_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_we0),
+    .hist0_2_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_address1),
+    .hist0_2_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_ce1),
+    .hist0_2_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_d1),
+    .hist0_2_m_bins_1_V_q1(10'd0),
+    .hist0_2_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_we1),
+    .hist0_3_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_address0),
+    .hist0_3_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_ce0),
+    .hist0_3_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_d0),
+    .hist0_3_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V36_q0),
+    .hist0_3_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_we0),
+    .hist0_3_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_address1),
+    .hist0_3_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_ce1),
+    .hist0_3_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_d1),
+    .hist0_3_m_bins_0_V_q1(10'd0),
+    .hist0_3_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_we1),
+    .hist0_3_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_address0),
+    .hist0_3_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_ce0),
+    .hist0_3_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_d0),
+    .hist0_3_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V364_q0),
+    .hist0_3_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_we0),
+    .hist0_3_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_address1),
+    .hist0_3_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_ce1),
+    .hist0_3_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_d1),
+    .hist0_3_m_bins_1_V_q1(10'd0),
+    .hist0_3_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_we1),
+    .hist0_4_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_address0),
+    .hist0_4_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_ce0),
+    .hist0_4_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_d0),
+    .hist0_4_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V37_q0),
+    .hist0_4_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_we0),
+    .hist0_4_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_address1),
+    .hist0_4_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_ce1),
+    .hist0_4_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_d1),
+    .hist0_4_m_bins_0_V_q1(10'd0),
+    .hist0_4_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_we1),
+    .hist0_4_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_address0),
+    .hist0_4_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_ce0),
+    .hist0_4_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_d0),
+    .hist0_4_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V375_q0),
+    .hist0_4_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_we0),
+    .hist0_4_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_address1),
+    .hist0_4_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_ce1),
+    .hist0_4_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_d1),
+    .hist0_4_m_bins_1_V_q1(10'd0),
+    .hist0_4_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_we1),
+    .hist0_5_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_address0),
+    .hist0_5_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_ce0),
+    .hist0_5_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_d0),
+    .hist0_5_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V38_q0),
+    .hist0_5_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_we0),
+    .hist0_5_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_address1),
+    .hist0_5_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_ce1),
+    .hist0_5_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_d1),
+    .hist0_5_m_bins_0_V_q1(10'd0),
+    .hist0_5_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_we1),
+    .hist0_5_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_address0),
+    .hist0_5_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_ce0),
+    .hist0_5_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_d0),
+    .hist0_5_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V386_q0),
+    .hist0_5_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_we0),
+    .hist0_5_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_address1),
+    .hist0_5_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_ce1),
+    .hist0_5_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_d1),
+    .hist0_5_m_bins_1_V_q1(10'd0),
+    .hist0_5_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_we1),
+    .hist0_6_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_address0),
+    .hist0_6_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_ce0),
+    .hist0_6_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_d0),
+    .hist0_6_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V39_q0),
+    .hist0_6_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_we0),
+    .hist0_6_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_address1),
+    .hist0_6_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_ce1),
+    .hist0_6_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_d1),
+    .hist0_6_m_bins_0_V_q1(10'd0),
+    .hist0_6_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_we1),
+    .hist0_6_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_address0),
+    .hist0_6_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_ce0),
+    .hist0_6_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_d0),
+    .hist0_6_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V397_q0),
+    .hist0_6_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_we0),
+    .hist0_6_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_address1),
+    .hist0_6_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_ce1),
+    .hist0_6_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_d1),
+    .hist0_6_m_bins_1_V_q1(10'd0),
+    .hist0_6_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_we1),
+    .hist0_7_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_address0),
+    .hist0_7_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_ce0),
+    .hist0_7_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_d0),
+    .hist0_7_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V40_q0),
+    .hist0_7_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_we0),
+    .hist0_7_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_address1),
+    .hist0_7_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_ce1),
+    .hist0_7_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_d1),
+    .hist0_7_m_bins_0_V_q1(10'd0),
+    .hist0_7_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_we1),
+    .hist0_7_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_address0),
+    .hist0_7_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_ce0),
+    .hist0_7_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_d0),
+    .hist0_7_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V408_q0),
+    .hist0_7_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_we0),
+    .hist0_7_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_address1),
+    .hist0_7_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_ce1),
+    .hist0_7_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_d1),
+    .hist0_7_m_bins_1_V_q1(10'd0),
+    .hist0_7_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_we1),
+    .hist1_0_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_0_m_omask_V_address0),
+    .hist1_0_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_0_m_omask_V_ce0),
+    .hist1_0_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_0_m_omask_V_d0),
+    .hist1_0_m_omask_V_q0(cmpCtx_hists_sg1_0_s_q0),
+    .hist1_0_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_0_m_omask_V_we0),
+    .hist1_0_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_0_m_omask_V_address1),
+    .hist1_0_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_0_m_omask_V_ce1),
+    .hist1_0_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_0_m_omask_V_d1),
+    .hist1_0_m_omask_V_q1(32'd0),
+    .hist1_0_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_0_m_omask_V_we1),
+    .hist1_1_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_1_m_omask_V_address0),
+    .hist1_1_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_1_m_omask_V_ce0),
+    .hist1_1_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_1_m_omask_V_d0),
+    .hist1_1_m_omask_V_q0(cmpCtx_hists_sg1_1_s_q0),
+    .hist1_1_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_1_m_omask_V_we0),
+    .hist1_1_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_1_m_omask_V_address1),
+    .hist1_1_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_1_m_omask_V_ce1),
+    .hist1_1_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_1_m_omask_V_d1),
+    .hist1_1_m_omask_V_q1(32'd0),
+    .hist1_1_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_1_m_omask_V_we1),
+    .hist1_2_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_2_m_omask_V_address0),
+    .hist1_2_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_2_m_omask_V_ce0),
+    .hist1_2_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_2_m_omask_V_d0),
+    .hist1_2_m_omask_V_q0(cmpCtx_hists_sg1_2_s_q0),
+    .hist1_2_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_2_m_omask_V_we0),
+    .hist1_2_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_2_m_omask_V_address1),
+    .hist1_2_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_2_m_omask_V_ce1),
+    .hist1_2_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_2_m_omask_V_d1),
+    .hist1_2_m_omask_V_q1(32'd0),
+    .hist1_2_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_2_m_omask_V_we1),
+    .hist1_3_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_3_m_omask_V_address0),
+    .hist1_3_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_3_m_omask_V_ce0),
+    .hist1_3_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_3_m_omask_V_d0),
+    .hist1_3_m_omask_V_q0(cmpCtx_hists_sg1_3_s_q0),
+    .hist1_3_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_3_m_omask_V_we0),
+    .hist1_3_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_3_m_omask_V_address1),
+    .hist1_3_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_3_m_omask_V_ce1),
+    .hist1_3_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_3_m_omask_V_d1),
+    .hist1_3_m_omask_V_q1(32'd0),
+    .hist1_3_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_3_m_omask_V_we1),
+    .hist1_4_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_4_m_omask_V_address0),
+    .hist1_4_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_4_m_omask_V_ce0),
+    .hist1_4_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_4_m_omask_V_d0),
+    .hist1_4_m_omask_V_q0(cmpCtx_hists_sg1_4_s_q0),
+    .hist1_4_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_4_m_omask_V_we0),
+    .hist1_4_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_4_m_omask_V_address1),
+    .hist1_4_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_4_m_omask_V_ce1),
+    .hist1_4_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_4_m_omask_V_d1),
+    .hist1_4_m_omask_V_q1(32'd0),
+    .hist1_4_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_4_m_omask_V_we1),
+    .hist1_5_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_5_m_omask_V_address0),
+    .hist1_5_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_5_m_omask_V_ce0),
+    .hist1_5_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_5_m_omask_V_d0),
+    .hist1_5_m_omask_V_q0(cmpCtx_hists_sg1_5_s_q0),
+    .hist1_5_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_5_m_omask_V_we0),
+    .hist1_5_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_5_m_omask_V_address1),
+    .hist1_5_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_5_m_omask_V_ce1),
+    .hist1_5_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_5_m_omask_V_d1),
+    .hist1_5_m_omask_V_q1(32'd0),
+    .hist1_5_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_5_m_omask_V_we1),
+    .hist1_6_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_6_m_omask_V_address0),
+    .hist1_6_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_6_m_omask_V_ce0),
+    .hist1_6_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_6_m_omask_V_d0),
+    .hist1_6_m_omask_V_q0(cmpCtx_hists_sg1_6_s_q0),
+    .hist1_6_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_6_m_omask_V_we0),
+    .hist1_6_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_6_m_omask_V_address1),
+    .hist1_6_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_6_m_omask_V_ce1),
+    .hist1_6_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_6_m_omask_V_d1),
+    .hist1_6_m_omask_V_q1(32'd0),
+    .hist1_6_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_6_m_omask_V_we1),
+    .hist1_7_m_omask_V_address0(grp_write_adcs4_fu_697_hist1_7_m_omask_V_address0),
+    .hist1_7_m_omask_V_ce0(grp_write_adcs4_fu_697_hist1_7_m_omask_V_ce0),
+    .hist1_7_m_omask_V_d0(grp_write_adcs4_fu_697_hist1_7_m_omask_V_d0),
+    .hist1_7_m_omask_V_q0(cmpCtx_hists_sg1_7_s_q0),
+    .hist1_7_m_omask_V_we0(grp_write_adcs4_fu_697_hist1_7_m_omask_V_we0),
+    .hist1_7_m_omask_V_address1(grp_write_adcs4_fu_697_hist1_7_m_omask_V_address1),
+    .hist1_7_m_omask_V_ce1(grp_write_adcs4_fu_697_hist1_7_m_omask_V_ce1),
+    .hist1_7_m_omask_V_d1(grp_write_adcs4_fu_697_hist1_7_m_omask_V_d1),
+    .hist1_7_m_omask_V_q1(32'd0),
+    .hist1_7_m_omask_V_we1(grp_write_adcs4_fu_697_hist1_7_m_omask_V_we1),
+    .hist1_0_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_address0),
+    .hist1_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_ce0),
+    .hist1_0_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_d0),
+    .hist1_0_m_maxcnt_V_q0(cmpCtx_hists_sg1_0_3_q0),
+    .hist1_0_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_we0),
+    .hist1_0_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_address1),
+    .hist1_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_ce1),
+    .hist1_0_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_d1),
+    .hist1_0_m_maxcnt_V_q1(10'd0),
+    .hist1_0_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_we1),
+    .hist1_1_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_address0),
+    .hist1_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_ce0),
+    .hist1_1_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_d0),
+    .hist1_1_m_maxcnt_V_q0(cmpCtx_hists_sg1_1_3_q0),
+    .hist1_1_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_we0),
+    .hist1_1_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_address1),
+    .hist1_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_ce1),
+    .hist1_1_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_d1),
+    .hist1_1_m_maxcnt_V_q1(10'd0),
+    .hist1_1_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_we1),
+    .hist1_2_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_address0),
+    .hist1_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_ce0),
+    .hist1_2_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_d0),
+    .hist1_2_m_maxcnt_V_q0(cmpCtx_hists_sg1_2_3_q0),
+    .hist1_2_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_we0),
+    .hist1_2_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_address1),
+    .hist1_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_ce1),
+    .hist1_2_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_d1),
+    .hist1_2_m_maxcnt_V_q1(10'd0),
+    .hist1_2_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_we1),
+    .hist1_3_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_address0),
+    .hist1_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_ce0),
+    .hist1_3_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_d0),
+    .hist1_3_m_maxcnt_V_q0(cmpCtx_hists_sg1_3_3_q0),
+    .hist1_3_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_we0),
+    .hist1_3_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_address1),
+    .hist1_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_ce1),
+    .hist1_3_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_d1),
+    .hist1_3_m_maxcnt_V_q1(10'd0),
+    .hist1_3_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_we1),
+    .hist1_4_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_address0),
+    .hist1_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_ce0),
+    .hist1_4_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_d0),
+    .hist1_4_m_maxcnt_V_q0(cmpCtx_hists_sg1_4_3_q0),
+    .hist1_4_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_we0),
+    .hist1_4_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_address1),
+    .hist1_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_ce1),
+    .hist1_4_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_d1),
+    .hist1_4_m_maxcnt_V_q1(10'd0),
+    .hist1_4_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_we1),
+    .hist1_5_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_address0),
+    .hist1_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_ce0),
+    .hist1_5_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_d0),
+    .hist1_5_m_maxcnt_V_q0(cmpCtx_hists_sg1_5_3_q0),
+    .hist1_5_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_we0),
+    .hist1_5_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_address1),
+    .hist1_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_ce1),
+    .hist1_5_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_d1),
+    .hist1_5_m_maxcnt_V_q1(10'd0),
+    .hist1_5_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_we1),
+    .hist1_6_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_address0),
+    .hist1_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_ce0),
+    .hist1_6_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_d0),
+    .hist1_6_m_maxcnt_V_q0(cmpCtx_hists_sg1_6_3_q0),
+    .hist1_6_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_we0),
+    .hist1_6_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_address1),
+    .hist1_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_ce1),
+    .hist1_6_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_d1),
+    .hist1_6_m_maxcnt_V_q1(10'd0),
+    .hist1_6_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_we1),
+    .hist1_7_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_address0),
+    .hist1_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_ce0),
+    .hist1_7_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_d0),
+    .hist1_7_m_maxcnt_V_q0(cmpCtx_hists_sg1_7_3_q0),
+    .hist1_7_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_we0),
+    .hist1_7_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_address1),
+    .hist1_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_ce1),
+    .hist1_7_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_d1),
+    .hist1_7_m_maxcnt_V_q1(10'd0),
+    .hist1_7_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_we1),
+    .hist1_0_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_address0),
+    .hist1_0_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_ce0),
+    .hist1_0_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_d0),
+    .hist1_0_m_nobits_V_q0(cmpCtx_hists_sg1_0_4_q0),
+    .hist1_0_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_we0),
+    .hist1_0_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_address1),
+    .hist1_0_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_ce1),
+    .hist1_0_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_d1),
+    .hist1_0_m_nobits_V_q1(4'd0),
+    .hist1_0_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_we1),
+    .hist1_1_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_address0),
+    .hist1_1_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_ce0),
+    .hist1_1_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_d0),
+    .hist1_1_m_nobits_V_q0(cmpCtx_hists_sg1_1_4_q0),
+    .hist1_1_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_we0),
+    .hist1_1_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_address1),
+    .hist1_1_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_ce1),
+    .hist1_1_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_d1),
+    .hist1_1_m_nobits_V_q1(4'd0),
+    .hist1_1_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_we1),
+    .hist1_2_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_address0),
+    .hist1_2_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_ce0),
+    .hist1_2_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_d0),
+    .hist1_2_m_nobits_V_q0(cmpCtx_hists_sg1_2_4_q0),
+    .hist1_2_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_we0),
+    .hist1_2_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_address1),
+    .hist1_2_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_ce1),
+    .hist1_2_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_d1),
+    .hist1_2_m_nobits_V_q1(4'd0),
+    .hist1_2_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_we1),
+    .hist1_3_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_address0),
+    .hist1_3_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_ce0),
+    .hist1_3_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_d0),
+    .hist1_3_m_nobits_V_q0(cmpCtx_hists_sg1_3_4_q0),
+    .hist1_3_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_we0),
+    .hist1_3_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_address1),
+    .hist1_3_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_ce1),
+    .hist1_3_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_d1),
+    .hist1_3_m_nobits_V_q1(4'd0),
+    .hist1_3_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_we1),
+    .hist1_4_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_address0),
+    .hist1_4_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_ce0),
+    .hist1_4_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_d0),
+    .hist1_4_m_nobits_V_q0(cmpCtx_hists_sg1_4_4_q0),
+    .hist1_4_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_we0),
+    .hist1_4_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_address1),
+    .hist1_4_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_ce1),
+    .hist1_4_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_d1),
+    .hist1_4_m_nobits_V_q1(4'd0),
+    .hist1_4_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_we1),
+    .hist1_5_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_address0),
+    .hist1_5_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_ce0),
+    .hist1_5_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_d0),
+    .hist1_5_m_nobits_V_q0(cmpCtx_hists_sg1_5_4_q0),
+    .hist1_5_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_we0),
+    .hist1_5_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_address1),
+    .hist1_5_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_ce1),
+    .hist1_5_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_d1),
+    .hist1_5_m_nobits_V_q1(4'd0),
+    .hist1_5_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_we1),
+    .hist1_6_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_address0),
+    .hist1_6_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_ce0),
+    .hist1_6_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_d0),
+    .hist1_6_m_nobits_V_q0(cmpCtx_hists_sg1_6_4_q0),
+    .hist1_6_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_we0),
+    .hist1_6_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_address1),
+    .hist1_6_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_ce1),
+    .hist1_6_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_d1),
+    .hist1_6_m_nobits_V_q1(4'd0),
+    .hist1_6_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_we1),
+    .hist1_7_m_nobits_V_address0(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_address0),
+    .hist1_7_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_ce0),
+    .hist1_7_m_nobits_V_d0(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_d0),
+    .hist1_7_m_nobits_V_q0(cmpCtx_hists_sg1_7_4_q0),
+    .hist1_7_m_nobits_V_we0(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_we0),
+    .hist1_7_m_nobits_V_address1(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_address1),
+    .hist1_7_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_ce1),
+    .hist1_7_m_nobits_V_d1(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_d1),
+    .hist1_7_m_nobits_V_q1(4'd0),
+    .hist1_7_m_nobits_V_we1(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_we1),
+    .hist1_0_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_address0),
+    .hist1_0_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_ce0),
+    .hist1_0_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_d0),
+    .hist1_0_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V_q0),
+    .hist1_0_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_we0),
+    .hist1_0_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_address1),
+    .hist1_0_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_ce1),
+    .hist1_0_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_d1),
+    .hist1_0_m_bins_0_V_q1(10'd0),
+    .hist1_0_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_we1),
+    .hist1_0_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_address0),
+    .hist1_0_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_ce0),
+    .hist1_0_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_d0),
+    .hist1_0_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V9_q0),
+    .hist1_0_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_we0),
+    .hist1_0_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_address1),
+    .hist1_0_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_ce1),
+    .hist1_0_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_d1),
+    .hist1_0_m_bins_1_V_q1(10'd0),
+    .hist1_0_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_we1),
+    .hist1_1_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_address0),
+    .hist1_1_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_ce0),
+    .hist1_1_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_d0),
+    .hist1_1_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V62_q0),
+    .hist1_1_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_we0),
+    .hist1_1_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_address1),
+    .hist1_1_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_ce1),
+    .hist1_1_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_d1),
+    .hist1_1_m_bins_0_V_q1(10'd0),
+    .hist1_1_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_we1),
+    .hist1_1_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_address0),
+    .hist1_1_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_ce0),
+    .hist1_1_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_d0),
+    .hist1_1_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6210_q0),
+    .hist1_1_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_we0),
+    .hist1_1_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_address1),
+    .hist1_1_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_ce1),
+    .hist1_1_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_d1),
+    .hist1_1_m_bins_1_V_q1(10'd0),
+    .hist1_1_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_we1),
+    .hist1_2_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_address0),
+    .hist1_2_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_ce0),
+    .hist1_2_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_d0),
+    .hist1_2_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V63_q0),
+    .hist1_2_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_we0),
+    .hist1_2_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_address1),
+    .hist1_2_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_ce1),
+    .hist1_2_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_d1),
+    .hist1_2_m_bins_0_V_q1(10'd0),
+    .hist1_2_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_we1),
+    .hist1_2_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_address0),
+    .hist1_2_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_ce0),
+    .hist1_2_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_d0),
+    .hist1_2_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6311_q0),
+    .hist1_2_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_we0),
+    .hist1_2_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_address1),
+    .hist1_2_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_ce1),
+    .hist1_2_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_d1),
+    .hist1_2_m_bins_1_V_q1(10'd0),
+    .hist1_2_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_we1),
+    .hist1_3_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_address0),
+    .hist1_3_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_ce0),
+    .hist1_3_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_d0),
+    .hist1_3_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V64_q0),
+    .hist1_3_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_we0),
+    .hist1_3_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_address1),
+    .hist1_3_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_ce1),
+    .hist1_3_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_d1),
+    .hist1_3_m_bins_0_V_q1(10'd0),
+    .hist1_3_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_we1),
+    .hist1_3_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_address0),
+    .hist1_3_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_ce0),
+    .hist1_3_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_d0),
+    .hist1_3_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6412_q0),
+    .hist1_3_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_we0),
+    .hist1_3_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_address1),
+    .hist1_3_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_ce1),
+    .hist1_3_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_d1),
+    .hist1_3_m_bins_1_V_q1(10'd0),
+    .hist1_3_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_we1),
+    .hist1_4_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_address0),
+    .hist1_4_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_ce0),
+    .hist1_4_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_d0),
+    .hist1_4_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V65_q0),
+    .hist1_4_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_we0),
+    .hist1_4_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_address1),
+    .hist1_4_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_ce1),
+    .hist1_4_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_d1),
+    .hist1_4_m_bins_0_V_q1(10'd0),
+    .hist1_4_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_we1),
+    .hist1_4_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_address0),
+    .hist1_4_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_ce0),
+    .hist1_4_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_d0),
+    .hist1_4_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6513_q0),
+    .hist1_4_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_we0),
+    .hist1_4_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_address1),
+    .hist1_4_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_ce1),
+    .hist1_4_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_d1),
+    .hist1_4_m_bins_1_V_q1(10'd0),
+    .hist1_4_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_we1),
+    .hist1_5_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_address0),
+    .hist1_5_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_ce0),
+    .hist1_5_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_d0),
+    .hist1_5_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V66_q0),
+    .hist1_5_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_we0),
+    .hist1_5_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_address1),
+    .hist1_5_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_ce1),
+    .hist1_5_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_d1),
+    .hist1_5_m_bins_0_V_q1(10'd0),
+    .hist1_5_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_we1),
+    .hist1_5_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_address0),
+    .hist1_5_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_ce0),
+    .hist1_5_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_d0),
+    .hist1_5_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6614_q0),
+    .hist1_5_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_we0),
+    .hist1_5_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_address1),
+    .hist1_5_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_ce1),
+    .hist1_5_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_d1),
+    .hist1_5_m_bins_1_V_q1(10'd0),
+    .hist1_5_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_we1),
+    .hist1_6_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_address0),
+    .hist1_6_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_ce0),
+    .hist1_6_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_d0),
+    .hist1_6_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V67_q0),
+    .hist1_6_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_we0),
+    .hist1_6_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_address1),
+    .hist1_6_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_ce1),
+    .hist1_6_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_d1),
+    .hist1_6_m_bins_0_V_q1(10'd0),
+    .hist1_6_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_we1),
+    .hist1_6_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_address0),
+    .hist1_6_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_ce0),
+    .hist1_6_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_d0),
+    .hist1_6_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6715_q0),
+    .hist1_6_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_we0),
+    .hist1_6_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_address1),
+    .hist1_6_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_ce1),
+    .hist1_6_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_d1),
+    .hist1_6_m_bins_1_V_q1(10'd0),
+    .hist1_6_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_we1),
+    .hist1_7_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_address0),
+    .hist1_7_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_ce0),
+    .hist1_7_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_d0),
+    .hist1_7_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V68_q0),
+    .hist1_7_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_we0),
+    .hist1_7_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_address1),
+    .hist1_7_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_ce1),
+    .hist1_7_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_d1),
+    .hist1_7_m_bins_0_V_q1(10'd0),
+    .hist1_7_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_we1),
+    .hist1_7_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_address0),
+    .hist1_7_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_ce0),
+    .hist1_7_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_d0),
+    .hist1_7_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6816_q0),
+    .hist1_7_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_we0),
+    .hist1_7_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_address1),
+    .hist1_7_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_ce1),
+    .hist1_7_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_d1),
+    .hist1_7_m_bins_1_V_q1(10'd0),
+    .hist1_7_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_we1),
+    .hist2_0_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_0_m_omask_V_address0),
+    .hist2_0_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_0_m_omask_V_ce0),
+    .hist2_0_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_0_m_omask_V_d0),
+    .hist2_0_m_omask_V_q0(cmpCtx_hists_sg2_0_s_q0),
+    .hist2_0_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_0_m_omask_V_we0),
+    .hist2_0_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_0_m_omask_V_address1),
+    .hist2_0_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_0_m_omask_V_ce1),
+    .hist2_0_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_0_m_omask_V_d1),
+    .hist2_0_m_omask_V_q1(32'd0),
+    .hist2_0_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_0_m_omask_V_we1),
+    .hist2_1_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_1_m_omask_V_address0),
+    .hist2_1_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_1_m_omask_V_ce0),
+    .hist2_1_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_1_m_omask_V_d0),
+    .hist2_1_m_omask_V_q0(cmpCtx_hists_sg2_1_s_q0),
+    .hist2_1_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_1_m_omask_V_we0),
+    .hist2_1_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_1_m_omask_V_address1),
+    .hist2_1_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_1_m_omask_V_ce1),
+    .hist2_1_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_1_m_omask_V_d1),
+    .hist2_1_m_omask_V_q1(32'd0),
+    .hist2_1_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_1_m_omask_V_we1),
+    .hist2_2_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_2_m_omask_V_address0),
+    .hist2_2_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_2_m_omask_V_ce0),
+    .hist2_2_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_2_m_omask_V_d0),
+    .hist2_2_m_omask_V_q0(cmpCtx_hists_sg2_2_s_q0),
+    .hist2_2_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_2_m_omask_V_we0),
+    .hist2_2_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_2_m_omask_V_address1),
+    .hist2_2_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_2_m_omask_V_ce1),
+    .hist2_2_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_2_m_omask_V_d1),
+    .hist2_2_m_omask_V_q1(32'd0),
+    .hist2_2_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_2_m_omask_V_we1),
+    .hist2_3_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_3_m_omask_V_address0),
+    .hist2_3_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_3_m_omask_V_ce0),
+    .hist2_3_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_3_m_omask_V_d0),
+    .hist2_3_m_omask_V_q0(cmpCtx_hists_sg2_3_s_q0),
+    .hist2_3_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_3_m_omask_V_we0),
+    .hist2_3_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_3_m_omask_V_address1),
+    .hist2_3_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_3_m_omask_V_ce1),
+    .hist2_3_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_3_m_omask_V_d1),
+    .hist2_3_m_omask_V_q1(32'd0),
+    .hist2_3_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_3_m_omask_V_we1),
+    .hist2_4_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_4_m_omask_V_address0),
+    .hist2_4_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_4_m_omask_V_ce0),
+    .hist2_4_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_4_m_omask_V_d0),
+    .hist2_4_m_omask_V_q0(cmpCtx_hists_sg2_4_s_q0),
+    .hist2_4_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_4_m_omask_V_we0),
+    .hist2_4_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_4_m_omask_V_address1),
+    .hist2_4_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_4_m_omask_V_ce1),
+    .hist2_4_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_4_m_omask_V_d1),
+    .hist2_4_m_omask_V_q1(32'd0),
+    .hist2_4_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_4_m_omask_V_we1),
+    .hist2_5_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_5_m_omask_V_address0),
+    .hist2_5_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_5_m_omask_V_ce0),
+    .hist2_5_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_5_m_omask_V_d0),
+    .hist2_5_m_omask_V_q0(cmpCtx_hists_sg2_5_s_q0),
+    .hist2_5_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_5_m_omask_V_we0),
+    .hist2_5_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_5_m_omask_V_address1),
+    .hist2_5_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_5_m_omask_V_ce1),
+    .hist2_5_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_5_m_omask_V_d1),
+    .hist2_5_m_omask_V_q1(32'd0),
+    .hist2_5_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_5_m_omask_V_we1),
+    .hist2_6_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_6_m_omask_V_address0),
+    .hist2_6_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_6_m_omask_V_ce0),
+    .hist2_6_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_6_m_omask_V_d0),
+    .hist2_6_m_omask_V_q0(cmpCtx_hists_sg2_6_s_q0),
+    .hist2_6_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_6_m_omask_V_we0),
+    .hist2_6_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_6_m_omask_V_address1),
+    .hist2_6_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_6_m_omask_V_ce1),
+    .hist2_6_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_6_m_omask_V_d1),
+    .hist2_6_m_omask_V_q1(32'd0),
+    .hist2_6_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_6_m_omask_V_we1),
+    .hist2_7_m_omask_V_address0(grp_write_adcs4_fu_697_hist2_7_m_omask_V_address0),
+    .hist2_7_m_omask_V_ce0(grp_write_adcs4_fu_697_hist2_7_m_omask_V_ce0),
+    .hist2_7_m_omask_V_d0(grp_write_adcs4_fu_697_hist2_7_m_omask_V_d0),
+    .hist2_7_m_omask_V_q0(cmpCtx_hists_sg2_7_s_q0),
+    .hist2_7_m_omask_V_we0(grp_write_adcs4_fu_697_hist2_7_m_omask_V_we0),
+    .hist2_7_m_omask_V_address1(grp_write_adcs4_fu_697_hist2_7_m_omask_V_address1),
+    .hist2_7_m_omask_V_ce1(grp_write_adcs4_fu_697_hist2_7_m_omask_V_ce1),
+    .hist2_7_m_omask_V_d1(grp_write_adcs4_fu_697_hist2_7_m_omask_V_d1),
+    .hist2_7_m_omask_V_q1(32'd0),
+    .hist2_7_m_omask_V_we1(grp_write_adcs4_fu_697_hist2_7_m_omask_V_we1),
+    .hist2_0_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_address0),
+    .hist2_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_ce0),
+    .hist2_0_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_d0),
+    .hist2_0_m_maxcnt_V_q0(cmpCtx_hists_sg2_0_3_q0),
+    .hist2_0_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_we0),
+    .hist2_0_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_address1),
+    .hist2_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_ce1),
+    .hist2_0_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_d1),
+    .hist2_0_m_maxcnt_V_q1(10'd0),
+    .hist2_0_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_we1),
+    .hist2_1_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_address0),
+    .hist2_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_ce0),
+    .hist2_1_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_d0),
+    .hist2_1_m_maxcnt_V_q0(cmpCtx_hists_sg2_1_3_q0),
+    .hist2_1_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_we0),
+    .hist2_1_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_address1),
+    .hist2_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_ce1),
+    .hist2_1_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_d1),
+    .hist2_1_m_maxcnt_V_q1(10'd0),
+    .hist2_1_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_we1),
+    .hist2_2_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_address0),
+    .hist2_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_ce0),
+    .hist2_2_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_d0),
+    .hist2_2_m_maxcnt_V_q0(cmpCtx_hists_sg2_2_3_q0),
+    .hist2_2_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_we0),
+    .hist2_2_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_address1),
+    .hist2_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_ce1),
+    .hist2_2_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_d1),
+    .hist2_2_m_maxcnt_V_q1(10'd0),
+    .hist2_2_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_we1),
+    .hist2_3_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_address0),
+    .hist2_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_ce0),
+    .hist2_3_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_d0),
+    .hist2_3_m_maxcnt_V_q0(cmpCtx_hists_sg2_3_3_q0),
+    .hist2_3_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_we0),
+    .hist2_3_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_address1),
+    .hist2_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_ce1),
+    .hist2_3_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_d1),
+    .hist2_3_m_maxcnt_V_q1(10'd0),
+    .hist2_3_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_we1),
+    .hist2_4_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_address0),
+    .hist2_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_ce0),
+    .hist2_4_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_d0),
+    .hist2_4_m_maxcnt_V_q0(cmpCtx_hists_sg2_4_3_q0),
+    .hist2_4_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_we0),
+    .hist2_4_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_address1),
+    .hist2_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_ce1),
+    .hist2_4_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_d1),
+    .hist2_4_m_maxcnt_V_q1(10'd0),
+    .hist2_4_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_we1),
+    .hist2_5_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_address0),
+    .hist2_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_ce0),
+    .hist2_5_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_d0),
+    .hist2_5_m_maxcnt_V_q0(cmpCtx_hists_sg2_5_3_q0),
+    .hist2_5_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_we0),
+    .hist2_5_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_address1),
+    .hist2_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_ce1),
+    .hist2_5_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_d1),
+    .hist2_5_m_maxcnt_V_q1(10'd0),
+    .hist2_5_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_we1),
+    .hist2_6_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_address0),
+    .hist2_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_ce0),
+    .hist2_6_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_d0),
+    .hist2_6_m_maxcnt_V_q0(cmpCtx_hists_sg2_6_3_q0),
+    .hist2_6_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_we0),
+    .hist2_6_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_address1),
+    .hist2_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_ce1),
+    .hist2_6_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_d1),
+    .hist2_6_m_maxcnt_V_q1(10'd0),
+    .hist2_6_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_we1),
+    .hist2_7_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_address0),
+    .hist2_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_ce0),
+    .hist2_7_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_d0),
+    .hist2_7_m_maxcnt_V_q0(cmpCtx_hists_sg2_7_3_q0),
+    .hist2_7_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_we0),
+    .hist2_7_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_address1),
+    .hist2_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_ce1),
+    .hist2_7_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_d1),
+    .hist2_7_m_maxcnt_V_q1(10'd0),
+    .hist2_7_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_we1),
+    .hist2_0_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_address0),
+    .hist2_0_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_ce0),
+    .hist2_0_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_d0),
+    .hist2_0_m_nobits_V_q0(cmpCtx_hists_sg2_0_4_q0),
+    .hist2_0_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_we0),
+    .hist2_0_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_address1),
+    .hist2_0_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_ce1),
+    .hist2_0_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_d1),
+    .hist2_0_m_nobits_V_q1(4'd0),
+    .hist2_0_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_we1),
+    .hist2_1_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_address0),
+    .hist2_1_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_ce0),
+    .hist2_1_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_d0),
+    .hist2_1_m_nobits_V_q0(cmpCtx_hists_sg2_1_4_q0),
+    .hist2_1_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_we0),
+    .hist2_1_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_address1),
+    .hist2_1_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_ce1),
+    .hist2_1_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_d1),
+    .hist2_1_m_nobits_V_q1(4'd0),
+    .hist2_1_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_we1),
+    .hist2_2_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_address0),
+    .hist2_2_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_ce0),
+    .hist2_2_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_d0),
+    .hist2_2_m_nobits_V_q0(cmpCtx_hists_sg2_2_4_q0),
+    .hist2_2_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_we0),
+    .hist2_2_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_address1),
+    .hist2_2_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_ce1),
+    .hist2_2_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_d1),
+    .hist2_2_m_nobits_V_q1(4'd0),
+    .hist2_2_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_we1),
+    .hist2_3_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_address0),
+    .hist2_3_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_ce0),
+    .hist2_3_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_d0),
+    .hist2_3_m_nobits_V_q0(cmpCtx_hists_sg2_3_4_q0),
+    .hist2_3_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_we0),
+    .hist2_3_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_address1),
+    .hist2_3_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_ce1),
+    .hist2_3_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_d1),
+    .hist2_3_m_nobits_V_q1(4'd0),
+    .hist2_3_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_we1),
+    .hist2_4_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_address0),
+    .hist2_4_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_ce0),
+    .hist2_4_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_d0),
+    .hist2_4_m_nobits_V_q0(cmpCtx_hists_sg2_4_4_q0),
+    .hist2_4_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_we0),
+    .hist2_4_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_address1),
+    .hist2_4_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_ce1),
+    .hist2_4_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_d1),
+    .hist2_4_m_nobits_V_q1(4'd0),
+    .hist2_4_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_we1),
+    .hist2_5_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_address0),
+    .hist2_5_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_ce0),
+    .hist2_5_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_d0),
+    .hist2_5_m_nobits_V_q0(cmpCtx_hists_sg2_5_4_q0),
+    .hist2_5_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_we0),
+    .hist2_5_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_address1),
+    .hist2_5_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_ce1),
+    .hist2_5_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_d1),
+    .hist2_5_m_nobits_V_q1(4'd0),
+    .hist2_5_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_we1),
+    .hist2_6_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_address0),
+    .hist2_6_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_ce0),
+    .hist2_6_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_d0),
+    .hist2_6_m_nobits_V_q0(cmpCtx_hists_sg2_6_4_q0),
+    .hist2_6_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_we0),
+    .hist2_6_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_address1),
+    .hist2_6_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_ce1),
+    .hist2_6_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_d1),
+    .hist2_6_m_nobits_V_q1(4'd0),
+    .hist2_6_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_we1),
+    .hist2_7_m_nobits_V_address0(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_address0),
+    .hist2_7_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_ce0),
+    .hist2_7_m_nobits_V_d0(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_d0),
+    .hist2_7_m_nobits_V_q0(cmpCtx_hists_sg2_7_4_q0),
+    .hist2_7_m_nobits_V_we0(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_we0),
+    .hist2_7_m_nobits_V_address1(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_address1),
+    .hist2_7_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_ce1),
+    .hist2_7_m_nobits_V_d1(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_d1),
+    .hist2_7_m_nobits_V_q1(4'd0),
+    .hist2_7_m_nobits_V_we1(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_we1),
+    .hist2_0_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_address0),
+    .hist2_0_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_ce0),
+    .hist2_0_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_d0),
+    .hist2_0_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V_q0),
+    .hist2_0_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_we0),
+    .hist2_0_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_address1),
+    .hist2_0_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_ce1),
+    .hist2_0_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_d1),
+    .hist2_0_m_bins_0_V_q1(10'd0),
+    .hist2_0_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_we1),
+    .hist2_0_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_address0),
+    .hist2_0_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_ce0),
+    .hist2_0_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_d0),
+    .hist2_0_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V17_q0),
+    .hist2_0_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_we0),
+    .hist2_0_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_address1),
+    .hist2_0_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_ce1),
+    .hist2_0_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_d1),
+    .hist2_0_m_bins_1_V_q1(10'd0),
+    .hist2_0_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_we1),
+    .hist2_1_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_address0),
+    .hist2_1_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_ce0),
+    .hist2_1_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_d0),
+    .hist2_1_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V90_q0),
+    .hist2_1_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_we0),
+    .hist2_1_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_address1),
+    .hist2_1_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_ce1),
+    .hist2_1_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_d1),
+    .hist2_1_m_bins_0_V_q1(10'd0),
+    .hist2_1_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_we1),
+    .hist2_1_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_address0),
+    .hist2_1_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_ce0),
+    .hist2_1_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_d0),
+    .hist2_1_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9018_q0),
+    .hist2_1_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_we0),
+    .hist2_1_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_address1),
+    .hist2_1_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_ce1),
+    .hist2_1_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_d1),
+    .hist2_1_m_bins_1_V_q1(10'd0),
+    .hist2_1_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_we1),
+    .hist2_2_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_address0),
+    .hist2_2_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_ce0),
+    .hist2_2_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_d0),
+    .hist2_2_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V91_q0),
+    .hist2_2_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_we0),
+    .hist2_2_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_address1),
+    .hist2_2_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_ce1),
+    .hist2_2_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_d1),
+    .hist2_2_m_bins_0_V_q1(10'd0),
+    .hist2_2_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_we1),
+    .hist2_2_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_address0),
+    .hist2_2_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_ce0),
+    .hist2_2_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_d0),
+    .hist2_2_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9119_q0),
+    .hist2_2_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_we0),
+    .hist2_2_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_address1),
+    .hist2_2_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_ce1),
+    .hist2_2_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_d1),
+    .hist2_2_m_bins_1_V_q1(10'd0),
+    .hist2_2_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_we1),
+    .hist2_3_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_address0),
+    .hist2_3_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_ce0),
+    .hist2_3_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_d0),
+    .hist2_3_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V92_q0),
+    .hist2_3_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_we0),
+    .hist2_3_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_address1),
+    .hist2_3_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_ce1),
+    .hist2_3_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_d1),
+    .hist2_3_m_bins_0_V_q1(10'd0),
+    .hist2_3_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_we1),
+    .hist2_3_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_address0),
+    .hist2_3_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_ce0),
+    .hist2_3_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_d0),
+    .hist2_3_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9220_q0),
+    .hist2_3_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_we0),
+    .hist2_3_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_address1),
+    .hist2_3_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_ce1),
+    .hist2_3_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_d1),
+    .hist2_3_m_bins_1_V_q1(10'd0),
+    .hist2_3_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_we1),
+    .hist2_4_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_address0),
+    .hist2_4_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_ce0),
+    .hist2_4_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_d0),
+    .hist2_4_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V93_q0),
+    .hist2_4_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_we0),
+    .hist2_4_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_address1),
+    .hist2_4_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_ce1),
+    .hist2_4_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_d1),
+    .hist2_4_m_bins_0_V_q1(10'd0),
+    .hist2_4_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_we1),
+    .hist2_4_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_address0),
+    .hist2_4_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_ce0),
+    .hist2_4_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_d0),
+    .hist2_4_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9321_q0),
+    .hist2_4_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_we0),
+    .hist2_4_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_address1),
+    .hist2_4_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_ce1),
+    .hist2_4_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_d1),
+    .hist2_4_m_bins_1_V_q1(10'd0),
+    .hist2_4_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_we1),
+    .hist2_5_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_address0),
+    .hist2_5_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_ce0),
+    .hist2_5_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_d0),
+    .hist2_5_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V94_q0),
+    .hist2_5_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_we0),
+    .hist2_5_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_address1),
+    .hist2_5_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_ce1),
+    .hist2_5_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_d1),
+    .hist2_5_m_bins_0_V_q1(10'd0),
+    .hist2_5_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_we1),
+    .hist2_5_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_address0),
+    .hist2_5_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_ce0),
+    .hist2_5_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_d0),
+    .hist2_5_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9422_q0),
+    .hist2_5_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_we0),
+    .hist2_5_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_address1),
+    .hist2_5_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_ce1),
+    .hist2_5_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_d1),
+    .hist2_5_m_bins_1_V_q1(10'd0),
+    .hist2_5_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_we1),
+    .hist2_6_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_address0),
+    .hist2_6_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_ce0),
+    .hist2_6_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_d0),
+    .hist2_6_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V95_q0),
+    .hist2_6_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_we0),
+    .hist2_6_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_address1),
+    .hist2_6_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_ce1),
+    .hist2_6_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_d1),
+    .hist2_6_m_bins_0_V_q1(10'd0),
+    .hist2_6_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_we1),
+    .hist2_6_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_address0),
+    .hist2_6_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_ce0),
+    .hist2_6_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_d0),
+    .hist2_6_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9523_q0),
+    .hist2_6_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_we0),
+    .hist2_6_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_address1),
+    .hist2_6_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_ce1),
+    .hist2_6_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_d1),
+    .hist2_6_m_bins_1_V_q1(10'd0),
+    .hist2_6_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_we1),
+    .hist2_7_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_address0),
+    .hist2_7_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_ce0),
+    .hist2_7_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_d0),
+    .hist2_7_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V96_q0),
+    .hist2_7_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_we0),
+    .hist2_7_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_address1),
+    .hist2_7_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_ce1),
+    .hist2_7_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_d1),
+    .hist2_7_m_bins_0_V_q1(10'd0),
+    .hist2_7_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_we1),
+    .hist2_7_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_address0),
+    .hist2_7_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_ce0),
+    .hist2_7_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_d0),
+    .hist2_7_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9624_q0),
+    .hist2_7_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_we0),
+    .hist2_7_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_address1),
+    .hist2_7_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_ce1),
+    .hist2_7_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_d1),
+    .hist2_7_m_bins_1_V_q1(10'd0),
+    .hist2_7_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_we1),
+    .hist3_0_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_0_m_omask_V_address0),
+    .hist3_0_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_0_m_omask_V_ce0),
+    .hist3_0_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_0_m_omask_V_d0),
+    .hist3_0_m_omask_V_q0(cmpCtx_hists_sg3_0_s_q0),
+    .hist3_0_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_0_m_omask_V_we0),
+    .hist3_0_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_0_m_omask_V_address1),
+    .hist3_0_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_0_m_omask_V_ce1),
+    .hist3_0_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_0_m_omask_V_d1),
+    .hist3_0_m_omask_V_q1(32'd0),
+    .hist3_0_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_0_m_omask_V_we1),
+    .hist3_1_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_1_m_omask_V_address0),
+    .hist3_1_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_1_m_omask_V_ce0),
+    .hist3_1_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_1_m_omask_V_d0),
+    .hist3_1_m_omask_V_q0(cmpCtx_hists_sg3_1_s_q0),
+    .hist3_1_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_1_m_omask_V_we0),
+    .hist3_1_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_1_m_omask_V_address1),
+    .hist3_1_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_1_m_omask_V_ce1),
+    .hist3_1_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_1_m_omask_V_d1),
+    .hist3_1_m_omask_V_q1(32'd0),
+    .hist3_1_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_1_m_omask_V_we1),
+    .hist3_2_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_2_m_omask_V_address0),
+    .hist3_2_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_2_m_omask_V_ce0),
+    .hist3_2_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_2_m_omask_V_d0),
+    .hist3_2_m_omask_V_q0(cmpCtx_hists_sg3_2_s_q0),
+    .hist3_2_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_2_m_omask_V_we0),
+    .hist3_2_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_2_m_omask_V_address1),
+    .hist3_2_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_2_m_omask_V_ce1),
+    .hist3_2_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_2_m_omask_V_d1),
+    .hist3_2_m_omask_V_q1(32'd0),
+    .hist3_2_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_2_m_omask_V_we1),
+    .hist3_3_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_3_m_omask_V_address0),
+    .hist3_3_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_3_m_omask_V_ce0),
+    .hist3_3_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_3_m_omask_V_d0),
+    .hist3_3_m_omask_V_q0(cmpCtx_hists_sg3_3_s_q0),
+    .hist3_3_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_3_m_omask_V_we0),
+    .hist3_3_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_3_m_omask_V_address1),
+    .hist3_3_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_3_m_omask_V_ce1),
+    .hist3_3_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_3_m_omask_V_d1),
+    .hist3_3_m_omask_V_q1(32'd0),
+    .hist3_3_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_3_m_omask_V_we1),
+    .hist3_4_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_4_m_omask_V_address0),
+    .hist3_4_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_4_m_omask_V_ce0),
+    .hist3_4_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_4_m_omask_V_d0),
+    .hist3_4_m_omask_V_q0(cmpCtx_hists_sg3_4_s_q0),
+    .hist3_4_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_4_m_omask_V_we0),
+    .hist3_4_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_4_m_omask_V_address1),
+    .hist3_4_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_4_m_omask_V_ce1),
+    .hist3_4_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_4_m_omask_V_d1),
+    .hist3_4_m_omask_V_q1(32'd0),
+    .hist3_4_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_4_m_omask_V_we1),
+    .hist3_5_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_5_m_omask_V_address0),
+    .hist3_5_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_5_m_omask_V_ce0),
+    .hist3_5_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_5_m_omask_V_d0),
+    .hist3_5_m_omask_V_q0(cmpCtx_hists_sg3_5_s_q0),
+    .hist3_5_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_5_m_omask_V_we0),
+    .hist3_5_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_5_m_omask_V_address1),
+    .hist3_5_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_5_m_omask_V_ce1),
+    .hist3_5_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_5_m_omask_V_d1),
+    .hist3_5_m_omask_V_q1(32'd0),
+    .hist3_5_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_5_m_omask_V_we1),
+    .hist3_6_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_6_m_omask_V_address0),
+    .hist3_6_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_6_m_omask_V_ce0),
+    .hist3_6_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_6_m_omask_V_d0),
+    .hist3_6_m_omask_V_q0(cmpCtx_hists_sg3_6_s_q0),
+    .hist3_6_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_6_m_omask_V_we0),
+    .hist3_6_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_6_m_omask_V_address1),
+    .hist3_6_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_6_m_omask_V_ce1),
+    .hist3_6_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_6_m_omask_V_d1),
+    .hist3_6_m_omask_V_q1(32'd0),
+    .hist3_6_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_6_m_omask_V_we1),
+    .hist3_7_m_omask_V_address0(grp_write_adcs4_fu_697_hist3_7_m_omask_V_address0),
+    .hist3_7_m_omask_V_ce0(grp_write_adcs4_fu_697_hist3_7_m_omask_V_ce0),
+    .hist3_7_m_omask_V_d0(grp_write_adcs4_fu_697_hist3_7_m_omask_V_d0),
+    .hist3_7_m_omask_V_q0(cmpCtx_hists_sg3_7_s_q0),
+    .hist3_7_m_omask_V_we0(grp_write_adcs4_fu_697_hist3_7_m_omask_V_we0),
+    .hist3_7_m_omask_V_address1(grp_write_adcs4_fu_697_hist3_7_m_omask_V_address1),
+    .hist3_7_m_omask_V_ce1(grp_write_adcs4_fu_697_hist3_7_m_omask_V_ce1),
+    .hist3_7_m_omask_V_d1(grp_write_adcs4_fu_697_hist3_7_m_omask_V_d1),
+    .hist3_7_m_omask_V_q1(32'd0),
+    .hist3_7_m_omask_V_we1(grp_write_adcs4_fu_697_hist3_7_m_omask_V_we1),
+    .hist3_0_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_address0),
+    .hist3_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_ce0),
+    .hist3_0_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_d0),
+    .hist3_0_m_maxcnt_V_q0(cmpCtx_hists_sg3_0_3_q0),
+    .hist3_0_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_we0),
+    .hist3_0_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_address1),
+    .hist3_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_ce1),
+    .hist3_0_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_d1),
+    .hist3_0_m_maxcnt_V_q1(10'd0),
+    .hist3_0_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_we1),
+    .hist3_1_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_address0),
+    .hist3_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_ce0),
+    .hist3_1_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_d0),
+    .hist3_1_m_maxcnt_V_q0(cmpCtx_hists_sg3_1_3_q0),
+    .hist3_1_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_we0),
+    .hist3_1_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_address1),
+    .hist3_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_ce1),
+    .hist3_1_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_d1),
+    .hist3_1_m_maxcnt_V_q1(10'd0),
+    .hist3_1_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_we1),
+    .hist3_2_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_address0),
+    .hist3_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_ce0),
+    .hist3_2_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_d0),
+    .hist3_2_m_maxcnt_V_q0(cmpCtx_hists_sg3_2_3_q0),
+    .hist3_2_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_we0),
+    .hist3_2_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_address1),
+    .hist3_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_ce1),
+    .hist3_2_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_d1),
+    .hist3_2_m_maxcnt_V_q1(10'd0),
+    .hist3_2_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_we1),
+    .hist3_3_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_address0),
+    .hist3_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_ce0),
+    .hist3_3_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_d0),
+    .hist3_3_m_maxcnt_V_q0(cmpCtx_hists_sg3_3_3_q0),
+    .hist3_3_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_we0),
+    .hist3_3_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_address1),
+    .hist3_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_ce1),
+    .hist3_3_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_d1),
+    .hist3_3_m_maxcnt_V_q1(10'd0),
+    .hist3_3_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_we1),
+    .hist3_4_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_address0),
+    .hist3_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_ce0),
+    .hist3_4_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_d0),
+    .hist3_4_m_maxcnt_V_q0(cmpCtx_hists_sg3_4_3_q0),
+    .hist3_4_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_we0),
+    .hist3_4_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_address1),
+    .hist3_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_ce1),
+    .hist3_4_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_d1),
+    .hist3_4_m_maxcnt_V_q1(10'd0),
+    .hist3_4_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_we1),
+    .hist3_5_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_address0),
+    .hist3_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_ce0),
+    .hist3_5_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_d0),
+    .hist3_5_m_maxcnt_V_q0(cmpCtx_hists_sg3_5_3_q0),
+    .hist3_5_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_we0),
+    .hist3_5_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_address1),
+    .hist3_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_ce1),
+    .hist3_5_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_d1),
+    .hist3_5_m_maxcnt_V_q1(10'd0),
+    .hist3_5_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_we1),
+    .hist3_6_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_address0),
+    .hist3_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_ce0),
+    .hist3_6_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_d0),
+    .hist3_6_m_maxcnt_V_q0(cmpCtx_hists_sg3_6_3_q0),
+    .hist3_6_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_we0),
+    .hist3_6_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_address1),
+    .hist3_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_ce1),
+    .hist3_6_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_d1),
+    .hist3_6_m_maxcnt_V_q1(10'd0),
+    .hist3_6_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_we1),
+    .hist3_7_m_maxcnt_V_address0(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_address0),
+    .hist3_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_ce0),
+    .hist3_7_m_maxcnt_V_d0(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_d0),
+    .hist3_7_m_maxcnt_V_q0(cmpCtx_hists_sg3_7_3_q0),
+    .hist3_7_m_maxcnt_V_we0(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_we0),
+    .hist3_7_m_maxcnt_V_address1(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_address1),
+    .hist3_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_ce1),
+    .hist3_7_m_maxcnt_V_d1(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_d1),
+    .hist3_7_m_maxcnt_V_q1(10'd0),
+    .hist3_7_m_maxcnt_V_we1(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_we1),
+    .hist3_0_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_address0),
+    .hist3_0_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_ce0),
+    .hist3_0_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_d0),
+    .hist3_0_m_nobits_V_q0(cmpCtx_hists_sg3_0_4_q0),
+    .hist3_0_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_we0),
+    .hist3_0_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_address1),
+    .hist3_0_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_ce1),
+    .hist3_0_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_d1),
+    .hist3_0_m_nobits_V_q1(4'd0),
+    .hist3_0_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_we1),
+    .hist3_1_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_address0),
+    .hist3_1_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_ce0),
+    .hist3_1_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_d0),
+    .hist3_1_m_nobits_V_q0(cmpCtx_hists_sg3_1_4_q0),
+    .hist3_1_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_we0),
+    .hist3_1_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_address1),
+    .hist3_1_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_ce1),
+    .hist3_1_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_d1),
+    .hist3_1_m_nobits_V_q1(4'd0),
+    .hist3_1_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_we1),
+    .hist3_2_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_address0),
+    .hist3_2_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_ce0),
+    .hist3_2_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_d0),
+    .hist3_2_m_nobits_V_q0(cmpCtx_hists_sg3_2_4_q0),
+    .hist3_2_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_we0),
+    .hist3_2_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_address1),
+    .hist3_2_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_ce1),
+    .hist3_2_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_d1),
+    .hist3_2_m_nobits_V_q1(4'd0),
+    .hist3_2_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_we1),
+    .hist3_3_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_address0),
+    .hist3_3_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_ce0),
+    .hist3_3_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_d0),
+    .hist3_3_m_nobits_V_q0(cmpCtx_hists_sg3_3_4_q0),
+    .hist3_3_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_we0),
+    .hist3_3_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_address1),
+    .hist3_3_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_ce1),
+    .hist3_3_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_d1),
+    .hist3_3_m_nobits_V_q1(4'd0),
+    .hist3_3_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_we1),
+    .hist3_4_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_address0),
+    .hist3_4_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_ce0),
+    .hist3_4_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_d0),
+    .hist3_4_m_nobits_V_q0(cmpCtx_hists_sg3_4_4_q0),
+    .hist3_4_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_we0),
+    .hist3_4_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_address1),
+    .hist3_4_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_ce1),
+    .hist3_4_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_d1),
+    .hist3_4_m_nobits_V_q1(4'd0),
+    .hist3_4_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_we1),
+    .hist3_5_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_address0),
+    .hist3_5_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_ce0),
+    .hist3_5_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_d0),
+    .hist3_5_m_nobits_V_q0(cmpCtx_hists_sg3_5_4_q0),
+    .hist3_5_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_we0),
+    .hist3_5_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_address1),
+    .hist3_5_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_ce1),
+    .hist3_5_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_d1),
+    .hist3_5_m_nobits_V_q1(4'd0),
+    .hist3_5_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_we1),
+    .hist3_6_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_address0),
+    .hist3_6_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_ce0),
+    .hist3_6_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_d0),
+    .hist3_6_m_nobits_V_q0(cmpCtx_hists_sg3_6_4_q0),
+    .hist3_6_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_we0),
+    .hist3_6_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_address1),
+    .hist3_6_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_ce1),
+    .hist3_6_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_d1),
+    .hist3_6_m_nobits_V_q1(4'd0),
+    .hist3_6_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_we1),
+    .hist3_7_m_nobits_V_address0(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_address0),
+    .hist3_7_m_nobits_V_ce0(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_ce0),
+    .hist3_7_m_nobits_V_d0(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_d0),
+    .hist3_7_m_nobits_V_q0(cmpCtx_hists_sg3_7_4_q0),
+    .hist3_7_m_nobits_V_we0(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_we0),
+    .hist3_7_m_nobits_V_address1(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_address1),
+    .hist3_7_m_nobits_V_ce1(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_ce1),
+    .hist3_7_m_nobits_V_d1(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_d1),
+    .hist3_7_m_nobits_V_q1(4'd0),
+    .hist3_7_m_nobits_V_we1(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_we1),
+    .hist3_0_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_address0),
+    .hist3_0_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_ce0),
+    .hist3_0_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_d0),
+    .hist3_0_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V_q0),
+    .hist3_0_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_we0),
+    .hist3_0_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_address1),
+    .hist3_0_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_ce1),
+    .hist3_0_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_d1),
+    .hist3_0_m_bins_0_V_q1(10'd0),
+    .hist3_0_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_we1),
+    .hist3_0_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_address0),
+    .hist3_0_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_ce0),
+    .hist3_0_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_d0),
+    .hist3_0_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V25_q0),
+    .hist3_0_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_we0),
+    .hist3_0_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_address1),
+    .hist3_0_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_ce1),
+    .hist3_0_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_d1),
+    .hist3_0_m_bins_1_V_q1(10'd0),
+    .hist3_0_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_we1),
+    .hist3_1_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_address0),
+    .hist3_1_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_ce0),
+    .hist3_1_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_d0),
+    .hist3_1_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V118_q0),
+    .hist3_1_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_we0),
+    .hist3_1_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_address1),
+    .hist3_1_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_ce1),
+    .hist3_1_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_d1),
+    .hist3_1_m_bins_0_V_q1(10'd0),
+    .hist3_1_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_we1),
+    .hist3_1_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_address0),
+    .hist3_1_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_ce0),
+    .hist3_1_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_d0),
+    .hist3_1_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V11826_q0),
+    .hist3_1_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_we0),
+    .hist3_1_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_address1),
+    .hist3_1_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_ce1),
+    .hist3_1_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_d1),
+    .hist3_1_m_bins_1_V_q1(10'd0),
+    .hist3_1_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_we1),
+    .hist3_2_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_address0),
+    .hist3_2_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_ce0),
+    .hist3_2_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_d0),
+    .hist3_2_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V119_q0),
+    .hist3_2_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_we0),
+    .hist3_2_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_address1),
+    .hist3_2_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_ce1),
+    .hist3_2_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_d1),
+    .hist3_2_m_bins_0_V_q1(10'd0),
+    .hist3_2_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_we1),
+    .hist3_2_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_address0),
+    .hist3_2_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_ce0),
+    .hist3_2_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_d0),
+    .hist3_2_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V11927_q0),
+    .hist3_2_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_we0),
+    .hist3_2_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_address1),
+    .hist3_2_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_ce1),
+    .hist3_2_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_d1),
+    .hist3_2_m_bins_1_V_q1(10'd0),
+    .hist3_2_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_we1),
+    .hist3_3_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_address0),
+    .hist3_3_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_ce0),
+    .hist3_3_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_d0),
+    .hist3_3_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V120_q0),
+    .hist3_3_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_we0),
+    .hist3_3_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_address1),
+    .hist3_3_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_ce1),
+    .hist3_3_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_d1),
+    .hist3_3_m_bins_0_V_q1(10'd0),
+    .hist3_3_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_we1),
+    .hist3_3_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_address0),
+    .hist3_3_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_ce0),
+    .hist3_3_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_d0),
+    .hist3_3_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12028_q0),
+    .hist3_3_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_we0),
+    .hist3_3_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_address1),
+    .hist3_3_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_ce1),
+    .hist3_3_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_d1),
+    .hist3_3_m_bins_1_V_q1(10'd0),
+    .hist3_3_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_we1),
+    .hist3_4_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_address0),
+    .hist3_4_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_ce0),
+    .hist3_4_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_d0),
+    .hist3_4_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V121_q0),
+    .hist3_4_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_we0),
+    .hist3_4_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_address1),
+    .hist3_4_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_ce1),
+    .hist3_4_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_d1),
+    .hist3_4_m_bins_0_V_q1(10'd0),
+    .hist3_4_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_we1),
+    .hist3_4_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_address0),
+    .hist3_4_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_ce0),
+    .hist3_4_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_d0),
+    .hist3_4_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12129_q0),
+    .hist3_4_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_we0),
+    .hist3_4_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_address1),
+    .hist3_4_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_ce1),
+    .hist3_4_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_d1),
+    .hist3_4_m_bins_1_V_q1(10'd0),
+    .hist3_4_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_we1),
+    .hist3_5_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_address0),
+    .hist3_5_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_ce0),
+    .hist3_5_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_d0),
+    .hist3_5_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V122_q0),
+    .hist3_5_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_we0),
+    .hist3_5_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_address1),
+    .hist3_5_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_ce1),
+    .hist3_5_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_d1),
+    .hist3_5_m_bins_0_V_q1(10'd0),
+    .hist3_5_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_we1),
+    .hist3_5_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_address0),
+    .hist3_5_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_ce0),
+    .hist3_5_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_d0),
+    .hist3_5_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12230_q0),
+    .hist3_5_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_we0),
+    .hist3_5_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_address1),
+    .hist3_5_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_ce1),
+    .hist3_5_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_d1),
+    .hist3_5_m_bins_1_V_q1(10'd0),
+    .hist3_5_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_we1),
+    .hist3_6_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_address0),
+    .hist3_6_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_ce0),
+    .hist3_6_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_d0),
+    .hist3_6_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V123_q0),
+    .hist3_6_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_we0),
+    .hist3_6_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_address1),
+    .hist3_6_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_ce1),
+    .hist3_6_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_d1),
+    .hist3_6_m_bins_0_V_q1(10'd0),
+    .hist3_6_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_we1),
+    .hist3_6_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_address0),
+    .hist3_6_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_ce0),
+    .hist3_6_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_d0),
+    .hist3_6_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12331_q0),
+    .hist3_6_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_we0),
+    .hist3_6_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_address1),
+    .hist3_6_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_ce1),
+    .hist3_6_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_d1),
+    .hist3_6_m_bins_1_V_q1(10'd0),
+    .hist3_6_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_we1),
+    .hist3_7_m_bins_0_V_address0(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_address0),
+    .hist3_7_m_bins_0_V_ce0(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_ce0),
+    .hist3_7_m_bins_0_V_d0(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_d0),
+    .hist3_7_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V124_q0),
+    .hist3_7_m_bins_0_V_we0(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_we0),
+    .hist3_7_m_bins_0_V_address1(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_address1),
+    .hist3_7_m_bins_0_V_ce1(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_ce1),
+    .hist3_7_m_bins_0_V_d1(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_d1),
+    .hist3_7_m_bins_0_V_q1(10'd0),
+    .hist3_7_m_bins_0_V_we1(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_we1),
+    .hist3_7_m_bins_1_V_address0(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_address0),
+    .hist3_7_m_bins_1_V_ce0(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_ce0),
+    .hist3_7_m_bins_1_V_d0(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_d0),
+    .hist3_7_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12432_q0),
+    .hist3_7_m_bins_1_V_we0(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_we0),
+    .hist3_7_m_bins_1_V_address1(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_address1),
+    .hist3_7_m_bins_1_V_ce1(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_ce1),
+    .hist3_7_m_bins_1_V_d1(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_d1),
+    .hist3_7_m_bins_1_V_q1(10'd0),
+    .hist3_7_m_bins_1_V_we1(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_we1),
+    .ichan(tmp_15_reg_1601),
     .ap_clk(ap_clk),
     .ap_rst(ap_rst),
-    .bAxis_m_cur(grp_write_adcs4_fu_702_bAxis_m_cur),
-    .bAxis_m_cur_read(bAxis_m_cur_fu_512),
-    .bAxis_m_idx(grp_write_adcs4_fu_702_bAxis_m_idx),
-    .bAxis_m_idx_read(reg_1105),
-    .mAxis_TDATA(grp_write_adcs4_fu_702_mAxis_TDATA),
-    .mAxis_TKEEP(grp_write_adcs4_fu_702_mAxis_TKEEP),
-    .mAxis_TSTRB(grp_write_adcs4_fu_702_mAxis_TSTRB),
-    .mAxis_TUSER(grp_write_adcs4_fu_702_mAxis_TUSER),
-    .mAxis_TLAST(grp_write_adcs4_fu_702_mAxis_TLAST),
-    .mAxis_TID(grp_write_adcs4_fu_702_mAxis_TID),
-    .mAxis_TDEST(grp_write_adcs4_fu_702_mAxis_TDEST),
-    .offsets_address0(grp_write_adcs4_fu_702_offsets_address0),
-    .offsets_ce0(grp_write_adcs4_fu_702_offsets_ce0),
-    .offsets_d0(grp_write_adcs4_fu_702_offsets_d0),
-    .offsets_q0(32'd0),
-    .offsets_we0(grp_write_adcs4_fu_702_offsets_we0),
-    .offsets_address1(grp_write_adcs4_fu_702_offsets_address1),
-    .offsets_ce1(grp_write_adcs4_fu_702_offsets_ce1),
-    .offsets_d1(grp_write_adcs4_fu_702_offsets_d1),
-    .offsets_q1(32'd0),
-    .offsets_we1(grp_write_adcs4_fu_702_offsets_we1),
-    .adcs0_0_V_address0(grp_write_adcs4_fu_702_adcs0_0_V_address0),
-    .adcs0_0_V_ce0(grp_write_adcs4_fu_702_adcs0_0_V_ce0),
-    .adcs0_0_V_d0(grp_write_adcs4_fu_702_adcs0_0_V_d0),
-    .adcs0_0_V_q0(cmpCtx_adcs_sg0_0_V_q0),
-    .adcs0_0_V_we0(grp_write_adcs4_fu_702_adcs0_0_V_we0),
-    .adcs0_0_V_address1(grp_write_adcs4_fu_702_adcs0_0_V_address1),
-    .adcs0_0_V_ce1(grp_write_adcs4_fu_702_adcs0_0_V_ce1),
-    .adcs0_0_V_d1(grp_write_adcs4_fu_702_adcs0_0_V_d1),
-    .adcs0_0_V_q1(12'd0),
-    .adcs0_0_V_we1(grp_write_adcs4_fu_702_adcs0_0_V_we1),
-    .adcs0_1_V_address0(grp_write_adcs4_fu_702_adcs0_1_V_address0),
-    .adcs0_1_V_ce0(grp_write_adcs4_fu_702_adcs0_1_V_ce0),
-    .adcs0_1_V_d0(grp_write_adcs4_fu_702_adcs0_1_V_d0),
-    .adcs0_1_V_q0(cmpCtx_adcs_sg0_1_V_q0),
-    .adcs0_1_V_we0(grp_write_adcs4_fu_702_adcs0_1_V_we0),
-    .adcs0_1_V_address1(grp_write_adcs4_fu_702_adcs0_1_V_address1),
-    .adcs0_1_V_ce1(grp_write_adcs4_fu_702_adcs0_1_V_ce1),
-    .adcs0_1_V_d1(grp_write_adcs4_fu_702_adcs0_1_V_d1),
-    .adcs0_1_V_q1(12'd0),
-    .adcs0_1_V_we1(grp_write_adcs4_fu_702_adcs0_1_V_we1),
-    .adcs0_2_V_address0(grp_write_adcs4_fu_702_adcs0_2_V_address0),
-    .adcs0_2_V_ce0(grp_write_adcs4_fu_702_adcs0_2_V_ce0),
-    .adcs0_2_V_d0(grp_write_adcs4_fu_702_adcs0_2_V_d0),
-    .adcs0_2_V_q0(cmpCtx_adcs_sg0_2_V_q0),
-    .adcs0_2_V_we0(grp_write_adcs4_fu_702_adcs0_2_V_we0),
-    .adcs0_2_V_address1(grp_write_adcs4_fu_702_adcs0_2_V_address1),
-    .adcs0_2_V_ce1(grp_write_adcs4_fu_702_adcs0_2_V_ce1),
-    .adcs0_2_V_d1(grp_write_adcs4_fu_702_adcs0_2_V_d1),
-    .adcs0_2_V_q1(12'd0),
-    .adcs0_2_V_we1(grp_write_adcs4_fu_702_adcs0_2_V_we1),
-    .adcs0_3_V_address0(grp_write_adcs4_fu_702_adcs0_3_V_address0),
-    .adcs0_3_V_ce0(grp_write_adcs4_fu_702_adcs0_3_V_ce0),
-    .adcs0_3_V_d0(grp_write_adcs4_fu_702_adcs0_3_V_d0),
-    .adcs0_3_V_q0(cmpCtx_adcs_sg0_3_V_q0),
-    .adcs0_3_V_we0(grp_write_adcs4_fu_702_adcs0_3_V_we0),
-    .adcs0_3_V_address1(grp_write_adcs4_fu_702_adcs0_3_V_address1),
-    .adcs0_3_V_ce1(grp_write_adcs4_fu_702_adcs0_3_V_ce1),
-    .adcs0_3_V_d1(grp_write_adcs4_fu_702_adcs0_3_V_d1),
-    .adcs0_3_V_q1(12'd0),
-    .adcs0_3_V_we1(grp_write_adcs4_fu_702_adcs0_3_V_we1),
-    .adcs0_V_offset(isg_0_i_reg_670),
-    .adcs1_0_V_address0(grp_write_adcs4_fu_702_adcs1_0_V_address0),
-    .adcs1_0_V_ce0(grp_write_adcs4_fu_702_adcs1_0_V_ce0),
-    .adcs1_0_V_d0(grp_write_adcs4_fu_702_adcs1_0_V_d0),
-    .adcs1_0_V_q0(cmpCtx_adcs_sg1_0_V_q0),
-    .adcs1_0_V_we0(grp_write_adcs4_fu_702_adcs1_0_V_we0),
-    .adcs1_0_V_address1(grp_write_adcs4_fu_702_adcs1_0_V_address1),
-    .adcs1_0_V_ce1(grp_write_adcs4_fu_702_adcs1_0_V_ce1),
-    .adcs1_0_V_d1(grp_write_adcs4_fu_702_adcs1_0_V_d1),
-    .adcs1_0_V_q1(12'd0),
-    .adcs1_0_V_we1(grp_write_adcs4_fu_702_adcs1_0_V_we1),
-    .adcs1_1_V_address0(grp_write_adcs4_fu_702_adcs1_1_V_address0),
-    .adcs1_1_V_ce0(grp_write_adcs4_fu_702_adcs1_1_V_ce0),
-    .adcs1_1_V_d0(grp_write_adcs4_fu_702_adcs1_1_V_d0),
-    .adcs1_1_V_q0(cmpCtx_adcs_sg1_1_V_q0),
-    .adcs1_1_V_we0(grp_write_adcs4_fu_702_adcs1_1_V_we0),
-    .adcs1_1_V_address1(grp_write_adcs4_fu_702_adcs1_1_V_address1),
-    .adcs1_1_V_ce1(grp_write_adcs4_fu_702_adcs1_1_V_ce1),
-    .adcs1_1_V_d1(grp_write_adcs4_fu_702_adcs1_1_V_d1),
-    .adcs1_1_V_q1(12'd0),
-    .adcs1_1_V_we1(grp_write_adcs4_fu_702_adcs1_1_V_we1),
-    .adcs1_2_V_address0(grp_write_adcs4_fu_702_adcs1_2_V_address0),
-    .adcs1_2_V_ce0(grp_write_adcs4_fu_702_adcs1_2_V_ce0),
-    .adcs1_2_V_d0(grp_write_adcs4_fu_702_adcs1_2_V_d0),
-    .adcs1_2_V_q0(cmpCtx_adcs_sg1_2_V_q0),
-    .adcs1_2_V_we0(grp_write_adcs4_fu_702_adcs1_2_V_we0),
-    .adcs1_2_V_address1(grp_write_adcs4_fu_702_adcs1_2_V_address1),
-    .adcs1_2_V_ce1(grp_write_adcs4_fu_702_adcs1_2_V_ce1),
-    .adcs1_2_V_d1(grp_write_adcs4_fu_702_adcs1_2_V_d1),
-    .adcs1_2_V_q1(12'd0),
-    .adcs1_2_V_we1(grp_write_adcs4_fu_702_adcs1_2_V_we1),
-    .adcs1_3_V_address0(grp_write_adcs4_fu_702_adcs1_3_V_address0),
-    .adcs1_3_V_ce0(grp_write_adcs4_fu_702_adcs1_3_V_ce0),
-    .adcs1_3_V_d0(grp_write_adcs4_fu_702_adcs1_3_V_d0),
-    .adcs1_3_V_q0(cmpCtx_adcs_sg1_3_V_q0),
-    .adcs1_3_V_we0(grp_write_adcs4_fu_702_adcs1_3_V_we0),
-    .adcs1_3_V_address1(grp_write_adcs4_fu_702_adcs1_3_V_address1),
-    .adcs1_3_V_ce1(grp_write_adcs4_fu_702_adcs1_3_V_ce1),
-    .adcs1_3_V_d1(grp_write_adcs4_fu_702_adcs1_3_V_d1),
-    .adcs1_3_V_q1(12'd0),
-    .adcs1_3_V_we1(grp_write_adcs4_fu_702_adcs1_3_V_we1),
-    .adcs2_0_V_address0(grp_write_adcs4_fu_702_adcs2_0_V_address0),
-    .adcs2_0_V_ce0(grp_write_adcs4_fu_702_adcs2_0_V_ce0),
-    .adcs2_0_V_d0(grp_write_adcs4_fu_702_adcs2_0_V_d0),
-    .adcs2_0_V_q0(cmpCtx_adcs_sg2_0_V_q0),
-    .adcs2_0_V_we0(grp_write_adcs4_fu_702_adcs2_0_V_we0),
-    .adcs2_0_V_address1(grp_write_adcs4_fu_702_adcs2_0_V_address1),
-    .adcs2_0_V_ce1(grp_write_adcs4_fu_702_adcs2_0_V_ce1),
-    .adcs2_0_V_d1(grp_write_adcs4_fu_702_adcs2_0_V_d1),
-    .adcs2_0_V_q1(12'd0),
-    .adcs2_0_V_we1(grp_write_adcs4_fu_702_adcs2_0_V_we1),
-    .adcs2_1_V_address0(grp_write_adcs4_fu_702_adcs2_1_V_address0),
-    .adcs2_1_V_ce0(grp_write_adcs4_fu_702_adcs2_1_V_ce0),
-    .adcs2_1_V_d0(grp_write_adcs4_fu_702_adcs2_1_V_d0),
-    .adcs2_1_V_q0(cmpCtx_adcs_sg2_1_V_q0),
-    .adcs2_1_V_we0(grp_write_adcs4_fu_702_adcs2_1_V_we0),
-    .adcs2_1_V_address1(grp_write_adcs4_fu_702_adcs2_1_V_address1),
-    .adcs2_1_V_ce1(grp_write_adcs4_fu_702_adcs2_1_V_ce1),
-    .adcs2_1_V_d1(grp_write_adcs4_fu_702_adcs2_1_V_d1),
-    .adcs2_1_V_q1(12'd0),
-    .adcs2_1_V_we1(grp_write_adcs4_fu_702_adcs2_1_V_we1),
-    .adcs2_2_V_address0(grp_write_adcs4_fu_702_adcs2_2_V_address0),
-    .adcs2_2_V_ce0(grp_write_adcs4_fu_702_adcs2_2_V_ce0),
-    .adcs2_2_V_d0(grp_write_adcs4_fu_702_adcs2_2_V_d0),
-    .adcs2_2_V_q0(cmpCtx_adcs_sg2_2_V_q0),
-    .adcs2_2_V_we0(grp_write_adcs4_fu_702_adcs2_2_V_we0),
-    .adcs2_2_V_address1(grp_write_adcs4_fu_702_adcs2_2_V_address1),
-    .adcs2_2_V_ce1(grp_write_adcs4_fu_702_adcs2_2_V_ce1),
-    .adcs2_2_V_d1(grp_write_adcs4_fu_702_adcs2_2_V_d1),
-    .adcs2_2_V_q1(12'd0),
-    .adcs2_2_V_we1(grp_write_adcs4_fu_702_adcs2_2_V_we1),
-    .adcs2_3_V_address0(grp_write_adcs4_fu_702_adcs2_3_V_address0),
-    .adcs2_3_V_ce0(grp_write_adcs4_fu_702_adcs2_3_V_ce0),
-    .adcs2_3_V_d0(grp_write_adcs4_fu_702_adcs2_3_V_d0),
-    .adcs2_3_V_q0(cmpCtx_adcs_sg2_3_V_q0),
-    .adcs2_3_V_we0(grp_write_adcs4_fu_702_adcs2_3_V_we0),
-    .adcs2_3_V_address1(grp_write_adcs4_fu_702_adcs2_3_V_address1),
-    .adcs2_3_V_ce1(grp_write_adcs4_fu_702_adcs2_3_V_ce1),
-    .adcs2_3_V_d1(grp_write_adcs4_fu_702_adcs2_3_V_d1),
-    .adcs2_3_V_q1(12'd0),
-    .adcs2_3_V_we1(grp_write_adcs4_fu_702_adcs2_3_V_we1),
-    .adcs3_0_V_address0(grp_write_adcs4_fu_702_adcs3_0_V_address0),
-    .adcs3_0_V_ce0(grp_write_adcs4_fu_702_adcs3_0_V_ce0),
-    .adcs3_0_V_d0(grp_write_adcs4_fu_702_adcs3_0_V_d0),
-    .adcs3_0_V_q0(cmpCtx_adcs_sg3_0_V_q0),
-    .adcs3_0_V_we0(grp_write_adcs4_fu_702_adcs3_0_V_we0),
-    .adcs3_0_V_address1(grp_write_adcs4_fu_702_adcs3_0_V_address1),
-    .adcs3_0_V_ce1(grp_write_adcs4_fu_702_adcs3_0_V_ce1),
-    .adcs3_0_V_d1(grp_write_adcs4_fu_702_adcs3_0_V_d1),
-    .adcs3_0_V_q1(12'd0),
-    .adcs3_0_V_we1(grp_write_adcs4_fu_702_adcs3_0_V_we1),
-    .adcs3_1_V_address0(grp_write_adcs4_fu_702_adcs3_1_V_address0),
-    .adcs3_1_V_ce0(grp_write_adcs4_fu_702_adcs3_1_V_ce0),
-    .adcs3_1_V_d0(grp_write_adcs4_fu_702_adcs3_1_V_d0),
-    .adcs3_1_V_q0(cmpCtx_adcs_sg3_1_V_q0),
-    .adcs3_1_V_we0(grp_write_adcs4_fu_702_adcs3_1_V_we0),
-    .adcs3_1_V_address1(grp_write_adcs4_fu_702_adcs3_1_V_address1),
-    .adcs3_1_V_ce1(grp_write_adcs4_fu_702_adcs3_1_V_ce1),
-    .adcs3_1_V_d1(grp_write_adcs4_fu_702_adcs3_1_V_d1),
-    .adcs3_1_V_q1(12'd0),
-    .adcs3_1_V_we1(grp_write_adcs4_fu_702_adcs3_1_V_we1),
-    .adcs3_2_V_address0(grp_write_adcs4_fu_702_adcs3_2_V_address0),
-    .adcs3_2_V_ce0(grp_write_adcs4_fu_702_adcs3_2_V_ce0),
-    .adcs3_2_V_d0(grp_write_adcs4_fu_702_adcs3_2_V_d0),
-    .adcs3_2_V_q0(cmpCtx_adcs_sg3_2_V_q0),
-    .adcs3_2_V_we0(grp_write_adcs4_fu_702_adcs3_2_V_we0),
-    .adcs3_2_V_address1(grp_write_adcs4_fu_702_adcs3_2_V_address1),
-    .adcs3_2_V_ce1(grp_write_adcs4_fu_702_adcs3_2_V_ce1),
-    .adcs3_2_V_d1(grp_write_adcs4_fu_702_adcs3_2_V_d1),
-    .adcs3_2_V_q1(12'd0),
-    .adcs3_2_V_we1(grp_write_adcs4_fu_702_adcs3_2_V_we1),
-    .adcs3_3_V_address0(grp_write_adcs4_fu_702_adcs3_3_V_address0),
-    .adcs3_3_V_ce0(grp_write_adcs4_fu_702_adcs3_3_V_ce0),
-    .adcs3_3_V_d0(grp_write_adcs4_fu_702_adcs3_3_V_d0),
-    .adcs3_3_V_q0(cmpCtx_adcs_sg3_3_V_q0),
-    .adcs3_3_V_we0(grp_write_adcs4_fu_702_adcs3_3_V_we0),
-    .adcs3_3_V_address1(grp_write_adcs4_fu_702_adcs3_3_V_address1),
-    .adcs3_3_V_ce1(grp_write_adcs4_fu_702_adcs3_3_V_ce1),
-    .adcs3_3_V_d1(grp_write_adcs4_fu_702_adcs3_3_V_d1),
-    .adcs3_3_V_q1(12'd0),
-    .adcs3_3_V_we1(grp_write_adcs4_fu_702_adcs3_3_V_we1),
-    .hist0_0_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_0_m_omask_V_address0),
-    .hist0_0_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_0_m_omask_V_ce0),
-    .hist0_0_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_0_m_omask_V_d0),
-    .hist0_0_m_omask_V_q0(cmpCtx_hists_sg0_0_s_q0),
-    .hist0_0_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_0_m_omask_V_we0),
-    .hist0_0_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_0_m_omask_V_address1),
-    .hist0_0_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_0_m_omask_V_ce1),
-    .hist0_0_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_0_m_omask_V_d1),
-    .hist0_0_m_omask_V_q1(32'd0),
-    .hist0_0_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_0_m_omask_V_we1),
-    .hist0_1_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_1_m_omask_V_address0),
-    .hist0_1_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_1_m_omask_V_ce0),
-    .hist0_1_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_1_m_omask_V_d0),
-    .hist0_1_m_omask_V_q0(cmpCtx_hists_sg0_1_s_q0),
-    .hist0_1_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_1_m_omask_V_we0),
-    .hist0_1_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_1_m_omask_V_address1),
-    .hist0_1_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_1_m_omask_V_ce1),
-    .hist0_1_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_1_m_omask_V_d1),
-    .hist0_1_m_omask_V_q1(32'd0),
-    .hist0_1_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_1_m_omask_V_we1),
-    .hist0_2_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_2_m_omask_V_address0),
-    .hist0_2_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_2_m_omask_V_ce0),
-    .hist0_2_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_2_m_omask_V_d0),
-    .hist0_2_m_omask_V_q0(cmpCtx_hists_sg0_2_s_q0),
-    .hist0_2_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_2_m_omask_V_we0),
-    .hist0_2_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_2_m_omask_V_address1),
-    .hist0_2_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_2_m_omask_V_ce1),
-    .hist0_2_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_2_m_omask_V_d1),
-    .hist0_2_m_omask_V_q1(32'd0),
-    .hist0_2_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_2_m_omask_V_we1),
-    .hist0_3_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_3_m_omask_V_address0),
-    .hist0_3_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_3_m_omask_V_ce0),
-    .hist0_3_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_3_m_omask_V_d0),
-    .hist0_3_m_omask_V_q0(cmpCtx_hists_sg0_3_s_q0),
-    .hist0_3_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_3_m_omask_V_we0),
-    .hist0_3_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_3_m_omask_V_address1),
-    .hist0_3_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_3_m_omask_V_ce1),
-    .hist0_3_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_3_m_omask_V_d1),
-    .hist0_3_m_omask_V_q1(32'd0),
-    .hist0_3_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_3_m_omask_V_we1),
-    .hist0_4_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_4_m_omask_V_address0),
-    .hist0_4_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_4_m_omask_V_ce0),
-    .hist0_4_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_4_m_omask_V_d0),
-    .hist0_4_m_omask_V_q0(cmpCtx_hists_sg0_4_s_q0),
-    .hist0_4_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_4_m_omask_V_we0),
-    .hist0_4_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_4_m_omask_V_address1),
-    .hist0_4_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_4_m_omask_V_ce1),
-    .hist0_4_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_4_m_omask_V_d1),
-    .hist0_4_m_omask_V_q1(32'd0),
-    .hist0_4_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_4_m_omask_V_we1),
-    .hist0_5_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_5_m_omask_V_address0),
-    .hist0_5_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_5_m_omask_V_ce0),
-    .hist0_5_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_5_m_omask_V_d0),
-    .hist0_5_m_omask_V_q0(cmpCtx_hists_sg0_5_s_q0),
-    .hist0_5_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_5_m_omask_V_we0),
-    .hist0_5_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_5_m_omask_V_address1),
-    .hist0_5_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_5_m_omask_V_ce1),
-    .hist0_5_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_5_m_omask_V_d1),
-    .hist0_5_m_omask_V_q1(32'd0),
-    .hist0_5_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_5_m_omask_V_we1),
-    .hist0_6_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_6_m_omask_V_address0),
-    .hist0_6_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_6_m_omask_V_ce0),
-    .hist0_6_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_6_m_omask_V_d0),
-    .hist0_6_m_omask_V_q0(cmpCtx_hists_sg0_6_s_q0),
-    .hist0_6_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_6_m_omask_V_we0),
-    .hist0_6_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_6_m_omask_V_address1),
-    .hist0_6_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_6_m_omask_V_ce1),
-    .hist0_6_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_6_m_omask_V_d1),
-    .hist0_6_m_omask_V_q1(32'd0),
-    .hist0_6_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_6_m_omask_V_we1),
-    .hist0_7_m_omask_V_address0(grp_write_adcs4_fu_702_hist0_7_m_omask_V_address0),
-    .hist0_7_m_omask_V_ce0(grp_write_adcs4_fu_702_hist0_7_m_omask_V_ce0),
-    .hist0_7_m_omask_V_d0(grp_write_adcs4_fu_702_hist0_7_m_omask_V_d0),
-    .hist0_7_m_omask_V_q0(cmpCtx_hists_sg0_7_s_q0),
-    .hist0_7_m_omask_V_we0(grp_write_adcs4_fu_702_hist0_7_m_omask_V_we0),
-    .hist0_7_m_omask_V_address1(grp_write_adcs4_fu_702_hist0_7_m_omask_V_address1),
-    .hist0_7_m_omask_V_ce1(grp_write_adcs4_fu_702_hist0_7_m_omask_V_ce1),
-    .hist0_7_m_omask_V_d1(grp_write_adcs4_fu_702_hist0_7_m_omask_V_d1),
-    .hist0_7_m_omask_V_q1(32'd0),
-    .hist0_7_m_omask_V_we1(grp_write_adcs4_fu_702_hist0_7_m_omask_V_we1),
-    .hist0_0_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_address0),
-    .hist0_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_ce0),
-    .hist0_0_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_d0),
-    .hist0_0_m_maxcnt_V_q0(cmpCtx_hists_sg0_0_3_q0),
-    .hist0_0_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_we0),
-    .hist0_0_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_address1),
-    .hist0_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_ce1),
-    .hist0_0_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_d1),
-    .hist0_0_m_maxcnt_V_q1(10'd0),
-    .hist0_0_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_we1),
-    .hist0_1_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_address0),
-    .hist0_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_ce0),
-    .hist0_1_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_d0),
-    .hist0_1_m_maxcnt_V_q0(cmpCtx_hists_sg0_1_3_q0),
-    .hist0_1_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_we0),
-    .hist0_1_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_address1),
-    .hist0_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_ce1),
-    .hist0_1_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_d1),
-    .hist0_1_m_maxcnt_V_q1(10'd0),
-    .hist0_1_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_we1),
-    .hist0_2_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_address0),
-    .hist0_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_ce0),
-    .hist0_2_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_d0),
-    .hist0_2_m_maxcnt_V_q0(cmpCtx_hists_sg0_2_3_q0),
-    .hist0_2_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_we0),
-    .hist0_2_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_address1),
-    .hist0_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_ce1),
-    .hist0_2_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_d1),
-    .hist0_2_m_maxcnt_V_q1(10'd0),
-    .hist0_2_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_we1),
-    .hist0_3_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_address0),
-    .hist0_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_ce0),
-    .hist0_3_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_d0),
-    .hist0_3_m_maxcnt_V_q0(cmpCtx_hists_sg0_3_3_q0),
-    .hist0_3_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_we0),
-    .hist0_3_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_address1),
-    .hist0_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_ce1),
-    .hist0_3_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_d1),
-    .hist0_3_m_maxcnt_V_q1(10'd0),
-    .hist0_3_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_we1),
-    .hist0_4_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_address0),
-    .hist0_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_ce0),
-    .hist0_4_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_d0),
-    .hist0_4_m_maxcnt_V_q0(cmpCtx_hists_sg0_4_3_q0),
-    .hist0_4_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_we0),
-    .hist0_4_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_address1),
-    .hist0_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_ce1),
-    .hist0_4_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_d1),
-    .hist0_4_m_maxcnt_V_q1(10'd0),
-    .hist0_4_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_we1),
-    .hist0_5_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_address0),
-    .hist0_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_ce0),
-    .hist0_5_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_d0),
-    .hist0_5_m_maxcnt_V_q0(cmpCtx_hists_sg0_5_3_q0),
-    .hist0_5_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_we0),
-    .hist0_5_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_address1),
-    .hist0_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_ce1),
-    .hist0_5_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_d1),
-    .hist0_5_m_maxcnt_V_q1(10'd0),
-    .hist0_5_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_we1),
-    .hist0_6_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_address0),
-    .hist0_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_ce0),
-    .hist0_6_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_d0),
-    .hist0_6_m_maxcnt_V_q0(cmpCtx_hists_sg0_6_3_q0),
-    .hist0_6_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_we0),
-    .hist0_6_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_address1),
-    .hist0_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_ce1),
-    .hist0_6_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_d1),
-    .hist0_6_m_maxcnt_V_q1(10'd0),
-    .hist0_6_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_we1),
-    .hist0_7_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_address0),
-    .hist0_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_ce0),
-    .hist0_7_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_d0),
-    .hist0_7_m_maxcnt_V_q0(cmpCtx_hists_sg0_7_3_q0),
-    .hist0_7_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_we0),
-    .hist0_7_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_address1),
-    .hist0_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_ce1),
-    .hist0_7_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_d1),
-    .hist0_7_m_maxcnt_V_q1(10'd0),
-    .hist0_7_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_we1),
-    .hist0_0_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_address0),
-    .hist0_0_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_ce0),
-    .hist0_0_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_d0),
-    .hist0_0_m_nobits_V_q0(cmpCtx_hists_sg0_0_4_q0),
-    .hist0_0_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_we0),
-    .hist0_0_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_address1),
-    .hist0_0_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_ce1),
-    .hist0_0_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_d1),
-    .hist0_0_m_nobits_V_q1(4'd0),
-    .hist0_0_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_we1),
-    .hist0_1_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_address0),
-    .hist0_1_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_ce0),
-    .hist0_1_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_d0),
-    .hist0_1_m_nobits_V_q0(cmpCtx_hists_sg0_1_4_q0),
-    .hist0_1_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_we0),
-    .hist0_1_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_address1),
-    .hist0_1_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_ce1),
-    .hist0_1_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_d1),
-    .hist0_1_m_nobits_V_q1(4'd0),
-    .hist0_1_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_we1),
-    .hist0_2_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_address0),
-    .hist0_2_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_ce0),
-    .hist0_2_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_d0),
-    .hist0_2_m_nobits_V_q0(cmpCtx_hists_sg0_2_4_q0),
-    .hist0_2_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_we0),
-    .hist0_2_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_address1),
-    .hist0_2_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_ce1),
-    .hist0_2_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_d1),
-    .hist0_2_m_nobits_V_q1(4'd0),
-    .hist0_2_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_we1),
-    .hist0_3_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_address0),
-    .hist0_3_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_ce0),
-    .hist0_3_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_d0),
-    .hist0_3_m_nobits_V_q0(cmpCtx_hists_sg0_3_4_q0),
-    .hist0_3_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_we0),
-    .hist0_3_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_address1),
-    .hist0_3_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_ce1),
-    .hist0_3_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_d1),
-    .hist0_3_m_nobits_V_q1(4'd0),
-    .hist0_3_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_we1),
-    .hist0_4_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_address0),
-    .hist0_4_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_ce0),
-    .hist0_4_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_d0),
-    .hist0_4_m_nobits_V_q0(cmpCtx_hists_sg0_4_4_q0),
-    .hist0_4_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_we0),
-    .hist0_4_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_address1),
-    .hist0_4_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_ce1),
-    .hist0_4_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_d1),
-    .hist0_4_m_nobits_V_q1(4'd0),
-    .hist0_4_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_we1),
-    .hist0_5_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_address0),
-    .hist0_5_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_ce0),
-    .hist0_5_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_d0),
-    .hist0_5_m_nobits_V_q0(cmpCtx_hists_sg0_5_4_q0),
-    .hist0_5_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_we0),
-    .hist0_5_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_address1),
-    .hist0_5_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_ce1),
-    .hist0_5_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_d1),
-    .hist0_5_m_nobits_V_q1(4'd0),
-    .hist0_5_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_we1),
-    .hist0_6_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_address0),
-    .hist0_6_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_ce0),
-    .hist0_6_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_d0),
-    .hist0_6_m_nobits_V_q0(cmpCtx_hists_sg0_6_4_q0),
-    .hist0_6_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_we0),
-    .hist0_6_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_address1),
-    .hist0_6_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_ce1),
-    .hist0_6_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_d1),
-    .hist0_6_m_nobits_V_q1(4'd0),
-    .hist0_6_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_we1),
-    .hist0_7_m_nobits_V_address0(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_address0),
-    .hist0_7_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_ce0),
-    .hist0_7_m_nobits_V_d0(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_d0),
-    .hist0_7_m_nobits_V_q0(cmpCtx_hists_sg0_7_4_q0),
-    .hist0_7_m_nobits_V_we0(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_we0),
-    .hist0_7_m_nobits_V_address1(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_address1),
-    .hist0_7_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_ce1),
-    .hist0_7_m_nobits_V_d1(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_d1),
-    .hist0_7_m_nobits_V_q1(4'd0),
-    .hist0_7_m_nobits_V_we1(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_we1),
-    .hist0_0_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_address0),
-    .hist0_0_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_ce0),
-    .hist0_0_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_d0),
-    .hist0_0_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V_q0),
-    .hist0_0_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_we0),
-    .hist0_0_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_address1),
-    .hist0_0_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_ce1),
-    .hist0_0_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_d1),
-    .hist0_0_m_bins_0_V_q1(10'd0),
-    .hist0_0_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_we1),
-    .hist0_0_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_address0),
-    .hist0_0_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_ce0),
-    .hist0_0_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_d0),
-    .hist0_0_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V1_q0),
-    .hist0_0_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_we0),
-    .hist0_0_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_address1),
-    .hist0_0_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_ce1),
-    .hist0_0_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_d1),
-    .hist0_0_m_bins_1_V_q1(10'd0),
-    .hist0_0_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_we1),
-    .hist0_1_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_address0),
-    .hist0_1_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_ce0),
-    .hist0_1_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_d0),
-    .hist0_1_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V34_q0),
-    .hist0_1_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_we0),
-    .hist0_1_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_address1),
-    .hist0_1_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_ce1),
-    .hist0_1_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_d1),
-    .hist0_1_m_bins_0_V_q1(10'd0),
-    .hist0_1_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_we1),
-    .hist0_1_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_address0),
-    .hist0_1_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_ce0),
-    .hist0_1_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_d0),
-    .hist0_1_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V342_q0),
-    .hist0_1_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_we0),
-    .hist0_1_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_address1),
-    .hist0_1_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_ce1),
-    .hist0_1_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_d1),
-    .hist0_1_m_bins_1_V_q1(10'd0),
-    .hist0_1_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_we1),
-    .hist0_2_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_address0),
-    .hist0_2_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_ce0),
-    .hist0_2_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_d0),
-    .hist0_2_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V35_q0),
-    .hist0_2_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_we0),
-    .hist0_2_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_address1),
-    .hist0_2_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_ce1),
-    .hist0_2_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_d1),
-    .hist0_2_m_bins_0_V_q1(10'd0),
-    .hist0_2_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_we1),
-    .hist0_2_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_address0),
-    .hist0_2_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_ce0),
-    .hist0_2_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_d0),
-    .hist0_2_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V353_q0),
-    .hist0_2_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_we0),
-    .hist0_2_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_address1),
-    .hist0_2_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_ce1),
-    .hist0_2_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_d1),
-    .hist0_2_m_bins_1_V_q1(10'd0),
-    .hist0_2_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_we1),
-    .hist0_3_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_address0),
-    .hist0_3_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_ce0),
-    .hist0_3_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_d0),
-    .hist0_3_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V36_q0),
-    .hist0_3_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_we0),
-    .hist0_3_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_address1),
-    .hist0_3_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_ce1),
-    .hist0_3_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_d1),
-    .hist0_3_m_bins_0_V_q1(10'd0),
-    .hist0_3_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_we1),
-    .hist0_3_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_address0),
-    .hist0_3_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_ce0),
-    .hist0_3_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_d0),
-    .hist0_3_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V364_q0),
-    .hist0_3_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_we0),
-    .hist0_3_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_address1),
-    .hist0_3_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_ce1),
-    .hist0_3_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_d1),
-    .hist0_3_m_bins_1_V_q1(10'd0),
-    .hist0_3_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_we1),
-    .hist0_4_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_address0),
-    .hist0_4_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_ce0),
-    .hist0_4_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_d0),
-    .hist0_4_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V37_q0),
-    .hist0_4_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_we0),
-    .hist0_4_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_address1),
-    .hist0_4_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_ce1),
-    .hist0_4_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_d1),
-    .hist0_4_m_bins_0_V_q1(10'd0),
-    .hist0_4_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_we1),
-    .hist0_4_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_address0),
-    .hist0_4_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_ce0),
-    .hist0_4_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_d0),
-    .hist0_4_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V375_q0),
-    .hist0_4_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_we0),
-    .hist0_4_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_address1),
-    .hist0_4_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_ce1),
-    .hist0_4_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_d1),
-    .hist0_4_m_bins_1_V_q1(10'd0),
-    .hist0_4_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_we1),
-    .hist0_5_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_address0),
-    .hist0_5_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_ce0),
-    .hist0_5_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_d0),
-    .hist0_5_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V38_q0),
-    .hist0_5_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_we0),
-    .hist0_5_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_address1),
-    .hist0_5_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_ce1),
-    .hist0_5_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_d1),
-    .hist0_5_m_bins_0_V_q1(10'd0),
-    .hist0_5_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_we1),
-    .hist0_5_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_address0),
-    .hist0_5_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_ce0),
-    .hist0_5_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_d0),
-    .hist0_5_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V386_q0),
-    .hist0_5_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_we0),
-    .hist0_5_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_address1),
-    .hist0_5_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_ce1),
-    .hist0_5_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_d1),
-    .hist0_5_m_bins_1_V_q1(10'd0),
-    .hist0_5_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_we1),
-    .hist0_6_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_address0),
-    .hist0_6_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_ce0),
-    .hist0_6_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_d0),
-    .hist0_6_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V39_q0),
-    .hist0_6_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_we0),
-    .hist0_6_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_address1),
-    .hist0_6_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_ce1),
-    .hist0_6_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_d1),
-    .hist0_6_m_bins_0_V_q1(10'd0),
-    .hist0_6_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_we1),
-    .hist0_6_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_address0),
-    .hist0_6_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_ce0),
-    .hist0_6_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_d0),
-    .hist0_6_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V397_q0),
-    .hist0_6_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_we0),
-    .hist0_6_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_address1),
-    .hist0_6_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_ce1),
-    .hist0_6_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_d1),
-    .hist0_6_m_bins_1_V_q1(10'd0),
-    .hist0_6_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_we1),
-    .hist0_7_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_address0),
-    .hist0_7_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_ce0),
-    .hist0_7_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_d0),
-    .hist0_7_m_bins_0_V_q0(cmpCtx_hists_sg0_m_bins_V40_q0),
-    .hist0_7_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_we0),
-    .hist0_7_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_address1),
-    .hist0_7_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_ce1),
-    .hist0_7_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_d1),
-    .hist0_7_m_bins_0_V_q1(10'd0),
-    .hist0_7_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_we1),
-    .hist0_7_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_address0),
-    .hist0_7_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_ce0),
-    .hist0_7_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_d0),
-    .hist0_7_m_bins_1_V_q0(cmpCtx_hists_sg0_m_bins_V408_q0),
-    .hist0_7_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_we0),
-    .hist0_7_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_address1),
-    .hist0_7_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_ce1),
-    .hist0_7_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_d1),
-    .hist0_7_m_bins_1_V_q1(10'd0),
-    .hist0_7_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_we1),
-    .hist1_0_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_0_m_omask_V_address0),
-    .hist1_0_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_0_m_omask_V_ce0),
-    .hist1_0_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_0_m_omask_V_d0),
-    .hist1_0_m_omask_V_q0(cmpCtx_hists_sg1_0_s_q0),
-    .hist1_0_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_0_m_omask_V_we0),
-    .hist1_0_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_0_m_omask_V_address1),
-    .hist1_0_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_0_m_omask_V_ce1),
-    .hist1_0_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_0_m_omask_V_d1),
-    .hist1_0_m_omask_V_q1(32'd0),
-    .hist1_0_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_0_m_omask_V_we1),
-    .hist1_1_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_1_m_omask_V_address0),
-    .hist1_1_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_1_m_omask_V_ce0),
-    .hist1_1_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_1_m_omask_V_d0),
-    .hist1_1_m_omask_V_q0(cmpCtx_hists_sg1_1_s_q0),
-    .hist1_1_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_1_m_omask_V_we0),
-    .hist1_1_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_1_m_omask_V_address1),
-    .hist1_1_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_1_m_omask_V_ce1),
-    .hist1_1_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_1_m_omask_V_d1),
-    .hist1_1_m_omask_V_q1(32'd0),
-    .hist1_1_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_1_m_omask_V_we1),
-    .hist1_2_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_2_m_omask_V_address0),
-    .hist1_2_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_2_m_omask_V_ce0),
-    .hist1_2_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_2_m_omask_V_d0),
-    .hist1_2_m_omask_V_q0(cmpCtx_hists_sg1_2_s_q0),
-    .hist1_2_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_2_m_omask_V_we0),
-    .hist1_2_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_2_m_omask_V_address1),
-    .hist1_2_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_2_m_omask_V_ce1),
-    .hist1_2_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_2_m_omask_V_d1),
-    .hist1_2_m_omask_V_q1(32'd0),
-    .hist1_2_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_2_m_omask_V_we1),
-    .hist1_3_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_3_m_omask_V_address0),
-    .hist1_3_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_3_m_omask_V_ce0),
-    .hist1_3_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_3_m_omask_V_d0),
-    .hist1_3_m_omask_V_q0(cmpCtx_hists_sg1_3_s_q0),
-    .hist1_3_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_3_m_omask_V_we0),
-    .hist1_3_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_3_m_omask_V_address1),
-    .hist1_3_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_3_m_omask_V_ce1),
-    .hist1_3_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_3_m_omask_V_d1),
-    .hist1_3_m_omask_V_q1(32'd0),
-    .hist1_3_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_3_m_omask_V_we1),
-    .hist1_4_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_4_m_omask_V_address0),
-    .hist1_4_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_4_m_omask_V_ce0),
-    .hist1_4_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_4_m_omask_V_d0),
-    .hist1_4_m_omask_V_q0(cmpCtx_hists_sg1_4_s_q0),
-    .hist1_4_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_4_m_omask_V_we0),
-    .hist1_4_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_4_m_omask_V_address1),
-    .hist1_4_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_4_m_omask_V_ce1),
-    .hist1_4_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_4_m_omask_V_d1),
-    .hist1_4_m_omask_V_q1(32'd0),
-    .hist1_4_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_4_m_omask_V_we1),
-    .hist1_5_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_5_m_omask_V_address0),
-    .hist1_5_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_5_m_omask_V_ce0),
-    .hist1_5_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_5_m_omask_V_d0),
-    .hist1_5_m_omask_V_q0(cmpCtx_hists_sg1_5_s_q0),
-    .hist1_5_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_5_m_omask_V_we0),
-    .hist1_5_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_5_m_omask_V_address1),
-    .hist1_5_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_5_m_omask_V_ce1),
-    .hist1_5_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_5_m_omask_V_d1),
-    .hist1_5_m_omask_V_q1(32'd0),
-    .hist1_5_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_5_m_omask_V_we1),
-    .hist1_6_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_6_m_omask_V_address0),
-    .hist1_6_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_6_m_omask_V_ce0),
-    .hist1_6_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_6_m_omask_V_d0),
-    .hist1_6_m_omask_V_q0(cmpCtx_hists_sg1_6_s_q0),
-    .hist1_6_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_6_m_omask_V_we0),
-    .hist1_6_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_6_m_omask_V_address1),
-    .hist1_6_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_6_m_omask_V_ce1),
-    .hist1_6_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_6_m_omask_V_d1),
-    .hist1_6_m_omask_V_q1(32'd0),
-    .hist1_6_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_6_m_omask_V_we1),
-    .hist1_7_m_omask_V_address0(grp_write_adcs4_fu_702_hist1_7_m_omask_V_address0),
-    .hist1_7_m_omask_V_ce0(grp_write_adcs4_fu_702_hist1_7_m_omask_V_ce0),
-    .hist1_7_m_omask_V_d0(grp_write_adcs4_fu_702_hist1_7_m_omask_V_d0),
-    .hist1_7_m_omask_V_q0(cmpCtx_hists_sg1_7_s_q0),
-    .hist1_7_m_omask_V_we0(grp_write_adcs4_fu_702_hist1_7_m_omask_V_we0),
-    .hist1_7_m_omask_V_address1(grp_write_adcs4_fu_702_hist1_7_m_omask_V_address1),
-    .hist1_7_m_omask_V_ce1(grp_write_adcs4_fu_702_hist1_7_m_omask_V_ce1),
-    .hist1_7_m_omask_V_d1(grp_write_adcs4_fu_702_hist1_7_m_omask_V_d1),
-    .hist1_7_m_omask_V_q1(32'd0),
-    .hist1_7_m_omask_V_we1(grp_write_adcs4_fu_702_hist1_7_m_omask_V_we1),
-    .hist1_0_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_address0),
-    .hist1_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_ce0),
-    .hist1_0_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_d0),
-    .hist1_0_m_maxcnt_V_q0(cmpCtx_hists_sg1_0_3_q0),
-    .hist1_0_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_we0),
-    .hist1_0_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_address1),
-    .hist1_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_ce1),
-    .hist1_0_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_d1),
-    .hist1_0_m_maxcnt_V_q1(10'd0),
-    .hist1_0_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_we1),
-    .hist1_1_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_address0),
-    .hist1_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_ce0),
-    .hist1_1_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_d0),
-    .hist1_1_m_maxcnt_V_q0(cmpCtx_hists_sg1_1_3_q0),
-    .hist1_1_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_we0),
-    .hist1_1_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_address1),
-    .hist1_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_ce1),
-    .hist1_1_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_d1),
-    .hist1_1_m_maxcnt_V_q1(10'd0),
-    .hist1_1_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_we1),
-    .hist1_2_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_address0),
-    .hist1_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_ce0),
-    .hist1_2_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_d0),
-    .hist1_2_m_maxcnt_V_q0(cmpCtx_hists_sg1_2_3_q0),
-    .hist1_2_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_we0),
-    .hist1_2_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_address1),
-    .hist1_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_ce1),
-    .hist1_2_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_d1),
-    .hist1_2_m_maxcnt_V_q1(10'd0),
-    .hist1_2_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_we1),
-    .hist1_3_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_address0),
-    .hist1_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_ce0),
-    .hist1_3_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_d0),
-    .hist1_3_m_maxcnt_V_q0(cmpCtx_hists_sg1_3_3_q0),
-    .hist1_3_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_we0),
-    .hist1_3_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_address1),
-    .hist1_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_ce1),
-    .hist1_3_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_d1),
-    .hist1_3_m_maxcnt_V_q1(10'd0),
-    .hist1_3_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_we1),
-    .hist1_4_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_address0),
-    .hist1_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_ce0),
-    .hist1_4_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_d0),
-    .hist1_4_m_maxcnt_V_q0(cmpCtx_hists_sg1_4_3_q0),
-    .hist1_4_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_we0),
-    .hist1_4_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_address1),
-    .hist1_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_ce1),
-    .hist1_4_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_d1),
-    .hist1_4_m_maxcnt_V_q1(10'd0),
-    .hist1_4_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_we1),
-    .hist1_5_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_address0),
-    .hist1_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_ce0),
-    .hist1_5_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_d0),
-    .hist1_5_m_maxcnt_V_q0(cmpCtx_hists_sg1_5_3_q0),
-    .hist1_5_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_we0),
-    .hist1_5_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_address1),
-    .hist1_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_ce1),
-    .hist1_5_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_d1),
-    .hist1_5_m_maxcnt_V_q1(10'd0),
-    .hist1_5_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_we1),
-    .hist1_6_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_address0),
-    .hist1_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_ce0),
-    .hist1_6_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_d0),
-    .hist1_6_m_maxcnt_V_q0(cmpCtx_hists_sg1_6_3_q0),
-    .hist1_6_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_we0),
-    .hist1_6_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_address1),
-    .hist1_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_ce1),
-    .hist1_6_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_d1),
-    .hist1_6_m_maxcnt_V_q1(10'd0),
-    .hist1_6_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_we1),
-    .hist1_7_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_address0),
-    .hist1_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_ce0),
-    .hist1_7_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_d0),
-    .hist1_7_m_maxcnt_V_q0(cmpCtx_hists_sg1_7_3_q0),
-    .hist1_7_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_we0),
-    .hist1_7_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_address1),
-    .hist1_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_ce1),
-    .hist1_7_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_d1),
-    .hist1_7_m_maxcnt_V_q1(10'd0),
-    .hist1_7_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_we1),
-    .hist1_0_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_address0),
-    .hist1_0_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_ce0),
-    .hist1_0_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_d0),
-    .hist1_0_m_nobits_V_q0(cmpCtx_hists_sg1_0_4_q0),
-    .hist1_0_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_we0),
-    .hist1_0_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_address1),
-    .hist1_0_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_ce1),
-    .hist1_0_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_d1),
-    .hist1_0_m_nobits_V_q1(4'd0),
-    .hist1_0_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_we1),
-    .hist1_1_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_address0),
-    .hist1_1_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_ce0),
-    .hist1_1_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_d0),
-    .hist1_1_m_nobits_V_q0(cmpCtx_hists_sg1_1_4_q0),
-    .hist1_1_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_we0),
-    .hist1_1_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_address1),
-    .hist1_1_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_ce1),
-    .hist1_1_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_d1),
-    .hist1_1_m_nobits_V_q1(4'd0),
-    .hist1_1_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_we1),
-    .hist1_2_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_address0),
-    .hist1_2_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_ce0),
-    .hist1_2_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_d0),
-    .hist1_2_m_nobits_V_q0(cmpCtx_hists_sg1_2_4_q0),
-    .hist1_2_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_we0),
-    .hist1_2_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_address1),
-    .hist1_2_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_ce1),
-    .hist1_2_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_d1),
-    .hist1_2_m_nobits_V_q1(4'd0),
-    .hist1_2_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_we1),
-    .hist1_3_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_address0),
-    .hist1_3_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_ce0),
-    .hist1_3_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_d0),
-    .hist1_3_m_nobits_V_q0(cmpCtx_hists_sg1_3_4_q0),
-    .hist1_3_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_we0),
-    .hist1_3_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_address1),
-    .hist1_3_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_ce1),
-    .hist1_3_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_d1),
-    .hist1_3_m_nobits_V_q1(4'd0),
-    .hist1_3_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_we1),
-    .hist1_4_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_address0),
-    .hist1_4_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_ce0),
-    .hist1_4_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_d0),
-    .hist1_4_m_nobits_V_q0(cmpCtx_hists_sg1_4_4_q0),
-    .hist1_4_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_we0),
-    .hist1_4_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_address1),
-    .hist1_4_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_ce1),
-    .hist1_4_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_d1),
-    .hist1_4_m_nobits_V_q1(4'd0),
-    .hist1_4_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_we1),
-    .hist1_5_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_address0),
-    .hist1_5_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_ce0),
-    .hist1_5_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_d0),
-    .hist1_5_m_nobits_V_q0(cmpCtx_hists_sg1_5_4_q0),
-    .hist1_5_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_we0),
-    .hist1_5_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_address1),
-    .hist1_5_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_ce1),
-    .hist1_5_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_d1),
-    .hist1_5_m_nobits_V_q1(4'd0),
-    .hist1_5_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_we1),
-    .hist1_6_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_address0),
-    .hist1_6_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_ce0),
-    .hist1_6_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_d0),
-    .hist1_6_m_nobits_V_q0(cmpCtx_hists_sg1_6_4_q0),
-    .hist1_6_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_we0),
-    .hist1_6_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_address1),
-    .hist1_6_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_ce1),
-    .hist1_6_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_d1),
-    .hist1_6_m_nobits_V_q1(4'd0),
-    .hist1_6_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_we1),
-    .hist1_7_m_nobits_V_address0(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_address0),
-    .hist1_7_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_ce0),
-    .hist1_7_m_nobits_V_d0(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_d0),
-    .hist1_7_m_nobits_V_q0(cmpCtx_hists_sg1_7_4_q0),
-    .hist1_7_m_nobits_V_we0(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_we0),
-    .hist1_7_m_nobits_V_address1(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_address1),
-    .hist1_7_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_ce1),
-    .hist1_7_m_nobits_V_d1(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_d1),
-    .hist1_7_m_nobits_V_q1(4'd0),
-    .hist1_7_m_nobits_V_we1(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_we1),
-    .hist1_0_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_address0),
-    .hist1_0_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_ce0),
-    .hist1_0_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_d0),
-    .hist1_0_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V_q0),
-    .hist1_0_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_we0),
-    .hist1_0_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_address1),
-    .hist1_0_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_ce1),
-    .hist1_0_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_d1),
-    .hist1_0_m_bins_0_V_q1(10'd0),
-    .hist1_0_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_we1),
-    .hist1_0_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_address0),
-    .hist1_0_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_ce0),
-    .hist1_0_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_d0),
-    .hist1_0_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V9_q0),
-    .hist1_0_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_we0),
-    .hist1_0_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_address1),
-    .hist1_0_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_ce1),
-    .hist1_0_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_d1),
-    .hist1_0_m_bins_1_V_q1(10'd0),
-    .hist1_0_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_we1),
-    .hist1_1_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_address0),
-    .hist1_1_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_ce0),
-    .hist1_1_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_d0),
-    .hist1_1_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V62_q0),
-    .hist1_1_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_we0),
-    .hist1_1_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_address1),
-    .hist1_1_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_ce1),
-    .hist1_1_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_d1),
-    .hist1_1_m_bins_0_V_q1(10'd0),
-    .hist1_1_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_we1),
-    .hist1_1_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_address0),
-    .hist1_1_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_ce0),
-    .hist1_1_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_d0),
-    .hist1_1_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6210_q0),
-    .hist1_1_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_we0),
-    .hist1_1_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_address1),
-    .hist1_1_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_ce1),
-    .hist1_1_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_d1),
-    .hist1_1_m_bins_1_V_q1(10'd0),
-    .hist1_1_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_we1),
-    .hist1_2_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_address0),
-    .hist1_2_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_ce0),
-    .hist1_2_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_d0),
-    .hist1_2_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V63_q0),
-    .hist1_2_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_we0),
-    .hist1_2_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_address1),
-    .hist1_2_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_ce1),
-    .hist1_2_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_d1),
-    .hist1_2_m_bins_0_V_q1(10'd0),
-    .hist1_2_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_we1),
-    .hist1_2_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_address0),
-    .hist1_2_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_ce0),
-    .hist1_2_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_d0),
-    .hist1_2_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6311_q0),
-    .hist1_2_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_we0),
-    .hist1_2_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_address1),
-    .hist1_2_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_ce1),
-    .hist1_2_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_d1),
-    .hist1_2_m_bins_1_V_q1(10'd0),
-    .hist1_2_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_we1),
-    .hist1_3_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_address0),
-    .hist1_3_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_ce0),
-    .hist1_3_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_d0),
-    .hist1_3_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V64_q0),
-    .hist1_3_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_we0),
-    .hist1_3_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_address1),
-    .hist1_3_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_ce1),
-    .hist1_3_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_d1),
-    .hist1_3_m_bins_0_V_q1(10'd0),
-    .hist1_3_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_we1),
-    .hist1_3_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_address0),
-    .hist1_3_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_ce0),
-    .hist1_3_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_d0),
-    .hist1_3_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6412_q0),
-    .hist1_3_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_we0),
-    .hist1_3_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_address1),
-    .hist1_3_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_ce1),
-    .hist1_3_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_d1),
-    .hist1_3_m_bins_1_V_q1(10'd0),
-    .hist1_3_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_we1),
-    .hist1_4_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_address0),
-    .hist1_4_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_ce0),
-    .hist1_4_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_d0),
-    .hist1_4_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V65_q0),
-    .hist1_4_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_we0),
-    .hist1_4_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_address1),
-    .hist1_4_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_ce1),
-    .hist1_4_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_d1),
-    .hist1_4_m_bins_0_V_q1(10'd0),
-    .hist1_4_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_we1),
-    .hist1_4_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_address0),
-    .hist1_4_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_ce0),
-    .hist1_4_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_d0),
-    .hist1_4_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6513_q0),
-    .hist1_4_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_we0),
-    .hist1_4_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_address1),
-    .hist1_4_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_ce1),
-    .hist1_4_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_d1),
-    .hist1_4_m_bins_1_V_q1(10'd0),
-    .hist1_4_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_we1),
-    .hist1_5_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_address0),
-    .hist1_5_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_ce0),
-    .hist1_5_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_d0),
-    .hist1_5_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V66_q0),
-    .hist1_5_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_we0),
-    .hist1_5_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_address1),
-    .hist1_5_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_ce1),
-    .hist1_5_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_d1),
-    .hist1_5_m_bins_0_V_q1(10'd0),
-    .hist1_5_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_we1),
-    .hist1_5_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_address0),
-    .hist1_5_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_ce0),
-    .hist1_5_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_d0),
-    .hist1_5_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6614_q0),
-    .hist1_5_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_we0),
-    .hist1_5_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_address1),
-    .hist1_5_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_ce1),
-    .hist1_5_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_d1),
-    .hist1_5_m_bins_1_V_q1(10'd0),
-    .hist1_5_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_we1),
-    .hist1_6_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_address0),
-    .hist1_6_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_ce0),
-    .hist1_6_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_d0),
-    .hist1_6_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V67_q0),
-    .hist1_6_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_we0),
-    .hist1_6_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_address1),
-    .hist1_6_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_ce1),
-    .hist1_6_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_d1),
-    .hist1_6_m_bins_0_V_q1(10'd0),
-    .hist1_6_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_we1),
-    .hist1_6_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_address0),
-    .hist1_6_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_ce0),
-    .hist1_6_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_d0),
-    .hist1_6_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6715_q0),
-    .hist1_6_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_we0),
-    .hist1_6_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_address1),
-    .hist1_6_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_ce1),
-    .hist1_6_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_d1),
-    .hist1_6_m_bins_1_V_q1(10'd0),
-    .hist1_6_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_we1),
-    .hist1_7_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_address0),
-    .hist1_7_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_ce0),
-    .hist1_7_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_d0),
-    .hist1_7_m_bins_0_V_q0(cmpCtx_hists_sg1_m_bins_V68_q0),
-    .hist1_7_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_we0),
-    .hist1_7_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_address1),
-    .hist1_7_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_ce1),
-    .hist1_7_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_d1),
-    .hist1_7_m_bins_0_V_q1(10'd0),
-    .hist1_7_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_we1),
-    .hist1_7_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_address0),
-    .hist1_7_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_ce0),
-    .hist1_7_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_d0),
-    .hist1_7_m_bins_1_V_q0(cmpCtx_hists_sg1_m_bins_V6816_q0),
-    .hist1_7_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_we0),
-    .hist1_7_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_address1),
-    .hist1_7_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_ce1),
-    .hist1_7_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_d1),
-    .hist1_7_m_bins_1_V_q1(10'd0),
-    .hist1_7_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_we1),
-    .hist2_0_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_0_m_omask_V_address0),
-    .hist2_0_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_0_m_omask_V_ce0),
-    .hist2_0_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_0_m_omask_V_d0),
-    .hist2_0_m_omask_V_q0(cmpCtx_hists_sg2_0_s_q0),
-    .hist2_0_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_0_m_omask_V_we0),
-    .hist2_0_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_0_m_omask_V_address1),
-    .hist2_0_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_0_m_omask_V_ce1),
-    .hist2_0_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_0_m_omask_V_d1),
-    .hist2_0_m_omask_V_q1(32'd0),
-    .hist2_0_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_0_m_omask_V_we1),
-    .hist2_1_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_1_m_omask_V_address0),
-    .hist2_1_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_1_m_omask_V_ce0),
-    .hist2_1_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_1_m_omask_V_d0),
-    .hist2_1_m_omask_V_q0(cmpCtx_hists_sg2_1_s_q0),
-    .hist2_1_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_1_m_omask_V_we0),
-    .hist2_1_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_1_m_omask_V_address1),
-    .hist2_1_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_1_m_omask_V_ce1),
-    .hist2_1_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_1_m_omask_V_d1),
-    .hist2_1_m_omask_V_q1(32'd0),
-    .hist2_1_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_1_m_omask_V_we1),
-    .hist2_2_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_2_m_omask_V_address0),
-    .hist2_2_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_2_m_omask_V_ce0),
-    .hist2_2_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_2_m_omask_V_d0),
-    .hist2_2_m_omask_V_q0(cmpCtx_hists_sg2_2_s_q0),
-    .hist2_2_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_2_m_omask_V_we0),
-    .hist2_2_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_2_m_omask_V_address1),
-    .hist2_2_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_2_m_omask_V_ce1),
-    .hist2_2_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_2_m_omask_V_d1),
-    .hist2_2_m_omask_V_q1(32'd0),
-    .hist2_2_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_2_m_omask_V_we1),
-    .hist2_3_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_3_m_omask_V_address0),
-    .hist2_3_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_3_m_omask_V_ce0),
-    .hist2_3_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_3_m_omask_V_d0),
-    .hist2_3_m_omask_V_q0(cmpCtx_hists_sg2_3_s_q0),
-    .hist2_3_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_3_m_omask_V_we0),
-    .hist2_3_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_3_m_omask_V_address1),
-    .hist2_3_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_3_m_omask_V_ce1),
-    .hist2_3_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_3_m_omask_V_d1),
-    .hist2_3_m_omask_V_q1(32'd0),
-    .hist2_3_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_3_m_omask_V_we1),
-    .hist2_4_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_4_m_omask_V_address0),
-    .hist2_4_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_4_m_omask_V_ce0),
-    .hist2_4_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_4_m_omask_V_d0),
-    .hist2_4_m_omask_V_q0(cmpCtx_hists_sg2_4_s_q0),
-    .hist2_4_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_4_m_omask_V_we0),
-    .hist2_4_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_4_m_omask_V_address1),
-    .hist2_4_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_4_m_omask_V_ce1),
-    .hist2_4_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_4_m_omask_V_d1),
-    .hist2_4_m_omask_V_q1(32'd0),
-    .hist2_4_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_4_m_omask_V_we1),
-    .hist2_5_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_5_m_omask_V_address0),
-    .hist2_5_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_5_m_omask_V_ce0),
-    .hist2_5_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_5_m_omask_V_d0),
-    .hist2_5_m_omask_V_q0(cmpCtx_hists_sg2_5_s_q0),
-    .hist2_5_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_5_m_omask_V_we0),
-    .hist2_5_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_5_m_omask_V_address1),
-    .hist2_5_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_5_m_omask_V_ce1),
-    .hist2_5_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_5_m_omask_V_d1),
-    .hist2_5_m_omask_V_q1(32'd0),
-    .hist2_5_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_5_m_omask_V_we1),
-    .hist2_6_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_6_m_omask_V_address0),
-    .hist2_6_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_6_m_omask_V_ce0),
-    .hist2_6_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_6_m_omask_V_d0),
-    .hist2_6_m_omask_V_q0(cmpCtx_hists_sg2_6_s_q0),
-    .hist2_6_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_6_m_omask_V_we0),
-    .hist2_6_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_6_m_omask_V_address1),
-    .hist2_6_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_6_m_omask_V_ce1),
-    .hist2_6_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_6_m_omask_V_d1),
-    .hist2_6_m_omask_V_q1(32'd0),
-    .hist2_6_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_6_m_omask_V_we1),
-    .hist2_7_m_omask_V_address0(grp_write_adcs4_fu_702_hist2_7_m_omask_V_address0),
-    .hist2_7_m_omask_V_ce0(grp_write_adcs4_fu_702_hist2_7_m_omask_V_ce0),
-    .hist2_7_m_omask_V_d0(grp_write_adcs4_fu_702_hist2_7_m_omask_V_d0),
-    .hist2_7_m_omask_V_q0(cmpCtx_hists_sg2_7_s_q0),
-    .hist2_7_m_omask_V_we0(grp_write_adcs4_fu_702_hist2_7_m_omask_V_we0),
-    .hist2_7_m_omask_V_address1(grp_write_adcs4_fu_702_hist2_7_m_omask_V_address1),
-    .hist2_7_m_omask_V_ce1(grp_write_adcs4_fu_702_hist2_7_m_omask_V_ce1),
-    .hist2_7_m_omask_V_d1(grp_write_adcs4_fu_702_hist2_7_m_omask_V_d1),
-    .hist2_7_m_omask_V_q1(32'd0),
-    .hist2_7_m_omask_V_we1(grp_write_adcs4_fu_702_hist2_7_m_omask_V_we1),
-    .hist2_0_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_address0),
-    .hist2_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_ce0),
-    .hist2_0_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_d0),
-    .hist2_0_m_maxcnt_V_q0(cmpCtx_hists_sg2_0_3_q0),
-    .hist2_0_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_we0),
-    .hist2_0_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_address1),
-    .hist2_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_ce1),
-    .hist2_0_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_d1),
-    .hist2_0_m_maxcnt_V_q1(10'd0),
-    .hist2_0_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_we1),
-    .hist2_1_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_address0),
-    .hist2_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_ce0),
-    .hist2_1_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_d0),
-    .hist2_1_m_maxcnt_V_q0(cmpCtx_hists_sg2_1_3_q0),
-    .hist2_1_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_we0),
-    .hist2_1_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_address1),
-    .hist2_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_ce1),
-    .hist2_1_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_d1),
-    .hist2_1_m_maxcnt_V_q1(10'd0),
-    .hist2_1_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_we1),
-    .hist2_2_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_address0),
-    .hist2_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_ce0),
-    .hist2_2_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_d0),
-    .hist2_2_m_maxcnt_V_q0(cmpCtx_hists_sg2_2_3_q0),
-    .hist2_2_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_we0),
-    .hist2_2_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_address1),
-    .hist2_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_ce1),
-    .hist2_2_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_d1),
-    .hist2_2_m_maxcnt_V_q1(10'd0),
-    .hist2_2_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_we1),
-    .hist2_3_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_address0),
-    .hist2_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_ce0),
-    .hist2_3_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_d0),
-    .hist2_3_m_maxcnt_V_q0(cmpCtx_hists_sg2_3_3_q0),
-    .hist2_3_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_we0),
-    .hist2_3_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_address1),
-    .hist2_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_ce1),
-    .hist2_3_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_d1),
-    .hist2_3_m_maxcnt_V_q1(10'd0),
-    .hist2_3_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_we1),
-    .hist2_4_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_address0),
-    .hist2_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_ce0),
-    .hist2_4_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_d0),
-    .hist2_4_m_maxcnt_V_q0(cmpCtx_hists_sg2_4_3_q0),
-    .hist2_4_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_we0),
-    .hist2_4_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_address1),
-    .hist2_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_ce1),
-    .hist2_4_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_d1),
-    .hist2_4_m_maxcnt_V_q1(10'd0),
-    .hist2_4_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_we1),
-    .hist2_5_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_address0),
-    .hist2_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_ce0),
-    .hist2_5_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_d0),
-    .hist2_5_m_maxcnt_V_q0(cmpCtx_hists_sg2_5_3_q0),
-    .hist2_5_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_we0),
-    .hist2_5_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_address1),
-    .hist2_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_ce1),
-    .hist2_5_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_d1),
-    .hist2_5_m_maxcnt_V_q1(10'd0),
-    .hist2_5_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_we1),
-    .hist2_6_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_address0),
-    .hist2_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_ce0),
-    .hist2_6_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_d0),
-    .hist2_6_m_maxcnt_V_q0(cmpCtx_hists_sg2_6_3_q0),
-    .hist2_6_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_we0),
-    .hist2_6_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_address1),
-    .hist2_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_ce1),
-    .hist2_6_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_d1),
-    .hist2_6_m_maxcnt_V_q1(10'd0),
-    .hist2_6_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_we1),
-    .hist2_7_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_address0),
-    .hist2_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_ce0),
-    .hist2_7_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_d0),
-    .hist2_7_m_maxcnt_V_q0(cmpCtx_hists_sg2_7_3_q0),
-    .hist2_7_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_we0),
-    .hist2_7_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_address1),
-    .hist2_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_ce1),
-    .hist2_7_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_d1),
-    .hist2_7_m_maxcnt_V_q1(10'd0),
-    .hist2_7_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_we1),
-    .hist2_0_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_address0),
-    .hist2_0_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_ce0),
-    .hist2_0_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_d0),
-    .hist2_0_m_nobits_V_q0(cmpCtx_hists_sg2_0_4_q0),
-    .hist2_0_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_we0),
-    .hist2_0_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_address1),
-    .hist2_0_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_ce1),
-    .hist2_0_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_d1),
-    .hist2_0_m_nobits_V_q1(4'd0),
-    .hist2_0_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_we1),
-    .hist2_1_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_address0),
-    .hist2_1_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_ce0),
-    .hist2_1_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_d0),
-    .hist2_1_m_nobits_V_q0(cmpCtx_hists_sg2_1_4_q0),
-    .hist2_1_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_we0),
-    .hist2_1_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_address1),
-    .hist2_1_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_ce1),
-    .hist2_1_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_d1),
-    .hist2_1_m_nobits_V_q1(4'd0),
-    .hist2_1_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_we1),
-    .hist2_2_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_address0),
-    .hist2_2_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_ce0),
-    .hist2_2_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_d0),
-    .hist2_2_m_nobits_V_q0(cmpCtx_hists_sg2_2_4_q0),
-    .hist2_2_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_we0),
-    .hist2_2_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_address1),
-    .hist2_2_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_ce1),
-    .hist2_2_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_d1),
-    .hist2_2_m_nobits_V_q1(4'd0),
-    .hist2_2_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_we1),
-    .hist2_3_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_address0),
-    .hist2_3_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_ce0),
-    .hist2_3_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_d0),
-    .hist2_3_m_nobits_V_q0(cmpCtx_hists_sg2_3_4_q0),
-    .hist2_3_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_we0),
-    .hist2_3_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_address1),
-    .hist2_3_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_ce1),
-    .hist2_3_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_d1),
-    .hist2_3_m_nobits_V_q1(4'd0),
-    .hist2_3_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_we1),
-    .hist2_4_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_address0),
-    .hist2_4_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_ce0),
-    .hist2_4_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_d0),
-    .hist2_4_m_nobits_V_q0(cmpCtx_hists_sg2_4_4_q0),
-    .hist2_4_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_we0),
-    .hist2_4_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_address1),
-    .hist2_4_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_ce1),
-    .hist2_4_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_d1),
-    .hist2_4_m_nobits_V_q1(4'd0),
-    .hist2_4_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_we1),
-    .hist2_5_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_address0),
-    .hist2_5_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_ce0),
-    .hist2_5_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_d0),
-    .hist2_5_m_nobits_V_q0(cmpCtx_hists_sg2_5_4_q0),
-    .hist2_5_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_we0),
-    .hist2_5_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_address1),
-    .hist2_5_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_ce1),
-    .hist2_5_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_d1),
-    .hist2_5_m_nobits_V_q1(4'd0),
-    .hist2_5_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_we1),
-    .hist2_6_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_address0),
-    .hist2_6_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_ce0),
-    .hist2_6_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_d0),
-    .hist2_6_m_nobits_V_q0(cmpCtx_hists_sg2_6_4_q0),
-    .hist2_6_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_we0),
-    .hist2_6_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_address1),
-    .hist2_6_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_ce1),
-    .hist2_6_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_d1),
-    .hist2_6_m_nobits_V_q1(4'd0),
-    .hist2_6_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_we1),
-    .hist2_7_m_nobits_V_address0(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_address0),
-    .hist2_7_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_ce0),
-    .hist2_7_m_nobits_V_d0(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_d0),
-    .hist2_7_m_nobits_V_q0(cmpCtx_hists_sg2_7_4_q0),
-    .hist2_7_m_nobits_V_we0(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_we0),
-    .hist2_7_m_nobits_V_address1(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_address1),
-    .hist2_7_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_ce1),
-    .hist2_7_m_nobits_V_d1(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_d1),
-    .hist2_7_m_nobits_V_q1(4'd0),
-    .hist2_7_m_nobits_V_we1(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_we1),
-    .hist2_0_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_address0),
-    .hist2_0_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_ce0),
-    .hist2_0_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_d0),
-    .hist2_0_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V_q0),
-    .hist2_0_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_we0),
-    .hist2_0_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_address1),
-    .hist2_0_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_ce1),
-    .hist2_0_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_d1),
-    .hist2_0_m_bins_0_V_q1(10'd0),
-    .hist2_0_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_we1),
-    .hist2_0_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_address0),
-    .hist2_0_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_ce0),
-    .hist2_0_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_d0),
-    .hist2_0_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V17_q0),
-    .hist2_0_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_we0),
-    .hist2_0_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_address1),
-    .hist2_0_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_ce1),
-    .hist2_0_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_d1),
-    .hist2_0_m_bins_1_V_q1(10'd0),
-    .hist2_0_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_we1),
-    .hist2_1_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_address0),
-    .hist2_1_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_ce0),
-    .hist2_1_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_d0),
-    .hist2_1_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V90_q0),
-    .hist2_1_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_we0),
-    .hist2_1_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_address1),
-    .hist2_1_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_ce1),
-    .hist2_1_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_d1),
-    .hist2_1_m_bins_0_V_q1(10'd0),
-    .hist2_1_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_we1),
-    .hist2_1_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_address0),
-    .hist2_1_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_ce0),
-    .hist2_1_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_d0),
-    .hist2_1_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9018_q0),
-    .hist2_1_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_we0),
-    .hist2_1_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_address1),
-    .hist2_1_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_ce1),
-    .hist2_1_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_d1),
-    .hist2_1_m_bins_1_V_q1(10'd0),
-    .hist2_1_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_we1),
-    .hist2_2_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_address0),
-    .hist2_2_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_ce0),
-    .hist2_2_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_d0),
-    .hist2_2_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V91_q0),
-    .hist2_2_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_we0),
-    .hist2_2_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_address1),
-    .hist2_2_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_ce1),
-    .hist2_2_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_d1),
-    .hist2_2_m_bins_0_V_q1(10'd0),
-    .hist2_2_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_we1),
-    .hist2_2_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_address0),
-    .hist2_2_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_ce0),
-    .hist2_2_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_d0),
-    .hist2_2_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9119_q0),
-    .hist2_2_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_we0),
-    .hist2_2_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_address1),
-    .hist2_2_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_ce1),
-    .hist2_2_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_d1),
-    .hist2_2_m_bins_1_V_q1(10'd0),
-    .hist2_2_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_we1),
-    .hist2_3_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_address0),
-    .hist2_3_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_ce0),
-    .hist2_3_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_d0),
-    .hist2_3_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V92_q0),
-    .hist2_3_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_we0),
-    .hist2_3_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_address1),
-    .hist2_3_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_ce1),
-    .hist2_3_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_d1),
-    .hist2_3_m_bins_0_V_q1(10'd0),
-    .hist2_3_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_we1),
-    .hist2_3_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_address0),
-    .hist2_3_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_ce0),
-    .hist2_3_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_d0),
-    .hist2_3_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9220_q0),
-    .hist2_3_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_we0),
-    .hist2_3_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_address1),
-    .hist2_3_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_ce1),
-    .hist2_3_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_d1),
-    .hist2_3_m_bins_1_V_q1(10'd0),
-    .hist2_3_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_we1),
-    .hist2_4_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_address0),
-    .hist2_4_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_ce0),
-    .hist2_4_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_d0),
-    .hist2_4_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V93_q0),
-    .hist2_4_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_we0),
-    .hist2_4_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_address1),
-    .hist2_4_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_ce1),
-    .hist2_4_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_d1),
-    .hist2_4_m_bins_0_V_q1(10'd0),
-    .hist2_4_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_we1),
-    .hist2_4_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_address0),
-    .hist2_4_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_ce0),
-    .hist2_4_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_d0),
-    .hist2_4_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9321_q0),
-    .hist2_4_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_we0),
-    .hist2_4_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_address1),
-    .hist2_4_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_ce1),
-    .hist2_4_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_d1),
-    .hist2_4_m_bins_1_V_q1(10'd0),
-    .hist2_4_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_we1),
-    .hist2_5_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_address0),
-    .hist2_5_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_ce0),
-    .hist2_5_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_d0),
-    .hist2_5_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V94_q0),
-    .hist2_5_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_we0),
-    .hist2_5_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_address1),
-    .hist2_5_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_ce1),
-    .hist2_5_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_d1),
-    .hist2_5_m_bins_0_V_q1(10'd0),
-    .hist2_5_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_we1),
-    .hist2_5_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_address0),
-    .hist2_5_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_ce0),
-    .hist2_5_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_d0),
-    .hist2_5_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9422_q0),
-    .hist2_5_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_we0),
-    .hist2_5_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_address1),
-    .hist2_5_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_ce1),
-    .hist2_5_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_d1),
-    .hist2_5_m_bins_1_V_q1(10'd0),
-    .hist2_5_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_we1),
-    .hist2_6_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_address0),
-    .hist2_6_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_ce0),
-    .hist2_6_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_d0),
-    .hist2_6_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V95_q0),
-    .hist2_6_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_we0),
-    .hist2_6_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_address1),
-    .hist2_6_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_ce1),
-    .hist2_6_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_d1),
-    .hist2_6_m_bins_0_V_q1(10'd0),
-    .hist2_6_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_we1),
-    .hist2_6_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_address0),
-    .hist2_6_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_ce0),
-    .hist2_6_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_d0),
-    .hist2_6_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9523_q0),
-    .hist2_6_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_we0),
-    .hist2_6_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_address1),
-    .hist2_6_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_ce1),
-    .hist2_6_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_d1),
-    .hist2_6_m_bins_1_V_q1(10'd0),
-    .hist2_6_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_we1),
-    .hist2_7_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_address0),
-    .hist2_7_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_ce0),
-    .hist2_7_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_d0),
-    .hist2_7_m_bins_0_V_q0(cmpCtx_hists_sg2_m_bins_V96_q0),
-    .hist2_7_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_we0),
-    .hist2_7_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_address1),
-    .hist2_7_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_ce1),
-    .hist2_7_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_d1),
-    .hist2_7_m_bins_0_V_q1(10'd0),
-    .hist2_7_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_we1),
-    .hist2_7_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_address0),
-    .hist2_7_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_ce0),
-    .hist2_7_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_d0),
-    .hist2_7_m_bins_1_V_q0(cmpCtx_hists_sg2_m_bins_V9624_q0),
-    .hist2_7_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_we0),
-    .hist2_7_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_address1),
-    .hist2_7_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_ce1),
-    .hist2_7_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_d1),
-    .hist2_7_m_bins_1_V_q1(10'd0),
-    .hist2_7_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_we1),
-    .hist3_0_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_0_m_omask_V_address0),
-    .hist3_0_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_0_m_omask_V_ce0),
-    .hist3_0_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_0_m_omask_V_d0),
-    .hist3_0_m_omask_V_q0(cmpCtx_hists_sg3_0_s_q0),
-    .hist3_0_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_0_m_omask_V_we0),
-    .hist3_0_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_0_m_omask_V_address1),
-    .hist3_0_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_0_m_omask_V_ce1),
-    .hist3_0_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_0_m_omask_V_d1),
-    .hist3_0_m_omask_V_q1(32'd0),
-    .hist3_0_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_0_m_omask_V_we1),
-    .hist3_1_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_1_m_omask_V_address0),
-    .hist3_1_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_1_m_omask_V_ce0),
-    .hist3_1_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_1_m_omask_V_d0),
-    .hist3_1_m_omask_V_q0(cmpCtx_hists_sg3_1_s_q0),
-    .hist3_1_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_1_m_omask_V_we0),
-    .hist3_1_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_1_m_omask_V_address1),
-    .hist3_1_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_1_m_omask_V_ce1),
-    .hist3_1_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_1_m_omask_V_d1),
-    .hist3_1_m_omask_V_q1(32'd0),
-    .hist3_1_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_1_m_omask_V_we1),
-    .hist3_2_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_2_m_omask_V_address0),
-    .hist3_2_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_2_m_omask_V_ce0),
-    .hist3_2_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_2_m_omask_V_d0),
-    .hist3_2_m_omask_V_q0(cmpCtx_hists_sg3_2_s_q0),
-    .hist3_2_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_2_m_omask_V_we0),
-    .hist3_2_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_2_m_omask_V_address1),
-    .hist3_2_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_2_m_omask_V_ce1),
-    .hist3_2_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_2_m_omask_V_d1),
-    .hist3_2_m_omask_V_q1(32'd0),
-    .hist3_2_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_2_m_omask_V_we1),
-    .hist3_3_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_3_m_omask_V_address0),
-    .hist3_3_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_3_m_omask_V_ce0),
-    .hist3_3_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_3_m_omask_V_d0),
-    .hist3_3_m_omask_V_q0(cmpCtx_hists_sg3_3_s_q0),
-    .hist3_3_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_3_m_omask_V_we0),
-    .hist3_3_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_3_m_omask_V_address1),
-    .hist3_3_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_3_m_omask_V_ce1),
-    .hist3_3_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_3_m_omask_V_d1),
-    .hist3_3_m_omask_V_q1(32'd0),
-    .hist3_3_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_3_m_omask_V_we1),
-    .hist3_4_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_4_m_omask_V_address0),
-    .hist3_4_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_4_m_omask_V_ce0),
-    .hist3_4_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_4_m_omask_V_d0),
-    .hist3_4_m_omask_V_q0(cmpCtx_hists_sg3_4_s_q0),
-    .hist3_4_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_4_m_omask_V_we0),
-    .hist3_4_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_4_m_omask_V_address1),
-    .hist3_4_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_4_m_omask_V_ce1),
-    .hist3_4_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_4_m_omask_V_d1),
-    .hist3_4_m_omask_V_q1(32'd0),
-    .hist3_4_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_4_m_omask_V_we1),
-    .hist3_5_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_5_m_omask_V_address0),
-    .hist3_5_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_5_m_omask_V_ce0),
-    .hist3_5_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_5_m_omask_V_d0),
-    .hist3_5_m_omask_V_q0(cmpCtx_hists_sg3_5_s_q0),
-    .hist3_5_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_5_m_omask_V_we0),
-    .hist3_5_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_5_m_omask_V_address1),
-    .hist3_5_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_5_m_omask_V_ce1),
-    .hist3_5_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_5_m_omask_V_d1),
-    .hist3_5_m_omask_V_q1(32'd0),
-    .hist3_5_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_5_m_omask_V_we1),
-    .hist3_6_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_6_m_omask_V_address0),
-    .hist3_6_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_6_m_omask_V_ce0),
-    .hist3_6_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_6_m_omask_V_d0),
-    .hist3_6_m_omask_V_q0(cmpCtx_hists_sg3_6_s_q0),
-    .hist3_6_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_6_m_omask_V_we0),
-    .hist3_6_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_6_m_omask_V_address1),
-    .hist3_6_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_6_m_omask_V_ce1),
-    .hist3_6_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_6_m_omask_V_d1),
-    .hist3_6_m_omask_V_q1(32'd0),
-    .hist3_6_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_6_m_omask_V_we1),
-    .hist3_7_m_omask_V_address0(grp_write_adcs4_fu_702_hist3_7_m_omask_V_address0),
-    .hist3_7_m_omask_V_ce0(grp_write_adcs4_fu_702_hist3_7_m_omask_V_ce0),
-    .hist3_7_m_omask_V_d0(grp_write_adcs4_fu_702_hist3_7_m_omask_V_d0),
-    .hist3_7_m_omask_V_q0(cmpCtx_hists_sg3_7_s_q0),
-    .hist3_7_m_omask_V_we0(grp_write_adcs4_fu_702_hist3_7_m_omask_V_we0),
-    .hist3_7_m_omask_V_address1(grp_write_adcs4_fu_702_hist3_7_m_omask_V_address1),
-    .hist3_7_m_omask_V_ce1(grp_write_adcs4_fu_702_hist3_7_m_omask_V_ce1),
-    .hist3_7_m_omask_V_d1(grp_write_adcs4_fu_702_hist3_7_m_omask_V_d1),
-    .hist3_7_m_omask_V_q1(32'd0),
-    .hist3_7_m_omask_V_we1(grp_write_adcs4_fu_702_hist3_7_m_omask_V_we1),
-    .hist3_0_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_address0),
-    .hist3_0_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_ce0),
-    .hist3_0_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_d0),
-    .hist3_0_m_maxcnt_V_q0(cmpCtx_hists_sg3_0_3_q0),
-    .hist3_0_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_we0),
-    .hist3_0_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_address1),
-    .hist3_0_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_ce1),
-    .hist3_0_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_d1),
-    .hist3_0_m_maxcnt_V_q1(10'd0),
-    .hist3_0_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_we1),
-    .hist3_1_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_address0),
-    .hist3_1_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_ce0),
-    .hist3_1_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_d0),
-    .hist3_1_m_maxcnt_V_q0(cmpCtx_hists_sg3_1_3_q0),
-    .hist3_1_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_we0),
-    .hist3_1_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_address1),
-    .hist3_1_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_ce1),
-    .hist3_1_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_d1),
-    .hist3_1_m_maxcnt_V_q1(10'd0),
-    .hist3_1_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_we1),
-    .hist3_2_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_address0),
-    .hist3_2_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_ce0),
-    .hist3_2_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_d0),
-    .hist3_2_m_maxcnt_V_q0(cmpCtx_hists_sg3_2_3_q0),
-    .hist3_2_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_we0),
-    .hist3_2_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_address1),
-    .hist3_2_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_ce1),
-    .hist3_2_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_d1),
-    .hist3_2_m_maxcnt_V_q1(10'd0),
-    .hist3_2_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_we1),
-    .hist3_3_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_address0),
-    .hist3_3_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_ce0),
-    .hist3_3_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_d0),
-    .hist3_3_m_maxcnt_V_q0(cmpCtx_hists_sg3_3_3_q0),
-    .hist3_3_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_we0),
-    .hist3_3_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_address1),
-    .hist3_3_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_ce1),
-    .hist3_3_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_d1),
-    .hist3_3_m_maxcnt_V_q1(10'd0),
-    .hist3_3_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_we1),
-    .hist3_4_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_address0),
-    .hist3_4_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_ce0),
-    .hist3_4_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_d0),
-    .hist3_4_m_maxcnt_V_q0(cmpCtx_hists_sg3_4_3_q0),
-    .hist3_4_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_we0),
-    .hist3_4_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_address1),
-    .hist3_4_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_ce1),
-    .hist3_4_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_d1),
-    .hist3_4_m_maxcnt_V_q1(10'd0),
-    .hist3_4_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_we1),
-    .hist3_5_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_address0),
-    .hist3_5_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_ce0),
-    .hist3_5_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_d0),
-    .hist3_5_m_maxcnt_V_q0(cmpCtx_hists_sg3_5_3_q0),
-    .hist3_5_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_we0),
-    .hist3_5_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_address1),
-    .hist3_5_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_ce1),
-    .hist3_5_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_d1),
-    .hist3_5_m_maxcnt_V_q1(10'd0),
-    .hist3_5_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_we1),
-    .hist3_6_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_address0),
-    .hist3_6_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_ce0),
-    .hist3_6_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_d0),
-    .hist3_6_m_maxcnt_V_q0(cmpCtx_hists_sg3_6_3_q0),
-    .hist3_6_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_we0),
-    .hist3_6_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_address1),
-    .hist3_6_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_ce1),
-    .hist3_6_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_d1),
-    .hist3_6_m_maxcnt_V_q1(10'd0),
-    .hist3_6_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_we1),
-    .hist3_7_m_maxcnt_V_address0(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_address0),
-    .hist3_7_m_maxcnt_V_ce0(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_ce0),
-    .hist3_7_m_maxcnt_V_d0(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_d0),
-    .hist3_7_m_maxcnt_V_q0(cmpCtx_hists_sg3_7_3_q0),
-    .hist3_7_m_maxcnt_V_we0(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_we0),
-    .hist3_7_m_maxcnt_V_address1(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_address1),
-    .hist3_7_m_maxcnt_V_ce1(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_ce1),
-    .hist3_7_m_maxcnt_V_d1(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_d1),
-    .hist3_7_m_maxcnt_V_q1(10'd0),
-    .hist3_7_m_maxcnt_V_we1(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_we1),
-    .hist3_0_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_address0),
-    .hist3_0_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_ce0),
-    .hist3_0_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_d0),
-    .hist3_0_m_nobits_V_q0(cmpCtx_hists_sg3_0_4_q0),
-    .hist3_0_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_we0),
-    .hist3_0_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_address1),
-    .hist3_0_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_ce1),
-    .hist3_0_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_d1),
-    .hist3_0_m_nobits_V_q1(4'd0),
-    .hist3_0_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_we1),
-    .hist3_1_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_address0),
-    .hist3_1_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_ce0),
-    .hist3_1_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_d0),
-    .hist3_1_m_nobits_V_q0(cmpCtx_hists_sg3_1_4_q0),
-    .hist3_1_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_we0),
-    .hist3_1_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_address1),
-    .hist3_1_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_ce1),
-    .hist3_1_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_d1),
-    .hist3_1_m_nobits_V_q1(4'd0),
-    .hist3_1_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_we1),
-    .hist3_2_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_address0),
-    .hist3_2_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_ce0),
-    .hist3_2_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_d0),
-    .hist3_2_m_nobits_V_q0(cmpCtx_hists_sg3_2_4_q0),
-    .hist3_2_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_we0),
-    .hist3_2_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_address1),
-    .hist3_2_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_ce1),
-    .hist3_2_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_d1),
-    .hist3_2_m_nobits_V_q1(4'd0),
-    .hist3_2_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_we1),
-    .hist3_3_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_address0),
-    .hist3_3_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_ce0),
-    .hist3_3_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_d0),
-    .hist3_3_m_nobits_V_q0(cmpCtx_hists_sg3_3_4_q0),
-    .hist3_3_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_we0),
-    .hist3_3_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_address1),
-    .hist3_3_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_ce1),
-    .hist3_3_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_d1),
-    .hist3_3_m_nobits_V_q1(4'd0),
-    .hist3_3_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_we1),
-    .hist3_4_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_address0),
-    .hist3_4_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_ce0),
-    .hist3_4_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_d0),
-    .hist3_4_m_nobits_V_q0(cmpCtx_hists_sg3_4_4_q0),
-    .hist3_4_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_we0),
-    .hist3_4_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_address1),
-    .hist3_4_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_ce1),
-    .hist3_4_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_d1),
-    .hist3_4_m_nobits_V_q1(4'd0),
-    .hist3_4_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_we1),
-    .hist3_5_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_address0),
-    .hist3_5_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_ce0),
-    .hist3_5_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_d0),
-    .hist3_5_m_nobits_V_q0(cmpCtx_hists_sg3_5_4_q0),
-    .hist3_5_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_we0),
-    .hist3_5_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_address1),
-    .hist3_5_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_ce1),
-    .hist3_5_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_d1),
-    .hist3_5_m_nobits_V_q1(4'd0),
-    .hist3_5_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_we1),
-    .hist3_6_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_address0),
-    .hist3_6_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_ce0),
-    .hist3_6_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_d0),
-    .hist3_6_m_nobits_V_q0(cmpCtx_hists_sg3_6_4_q0),
-    .hist3_6_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_we0),
-    .hist3_6_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_address1),
-    .hist3_6_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_ce1),
-    .hist3_6_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_d1),
-    .hist3_6_m_nobits_V_q1(4'd0),
-    .hist3_6_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_we1),
-    .hist3_7_m_nobits_V_address0(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_address0),
-    .hist3_7_m_nobits_V_ce0(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_ce0),
-    .hist3_7_m_nobits_V_d0(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_d0),
-    .hist3_7_m_nobits_V_q0(cmpCtx_hists_sg3_7_4_q0),
-    .hist3_7_m_nobits_V_we0(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_we0),
-    .hist3_7_m_nobits_V_address1(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_address1),
-    .hist3_7_m_nobits_V_ce1(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_ce1),
-    .hist3_7_m_nobits_V_d1(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_d1),
-    .hist3_7_m_nobits_V_q1(4'd0),
-    .hist3_7_m_nobits_V_we1(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_we1),
-    .hist3_0_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_address0),
-    .hist3_0_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_ce0),
-    .hist3_0_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_d0),
-    .hist3_0_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V_q0),
-    .hist3_0_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_we0),
-    .hist3_0_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_address1),
-    .hist3_0_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_ce1),
-    .hist3_0_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_d1),
-    .hist3_0_m_bins_0_V_q1(10'd0),
-    .hist3_0_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_we1),
-    .hist3_0_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_address0),
-    .hist3_0_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_ce0),
-    .hist3_0_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_d0),
-    .hist3_0_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V25_q0),
-    .hist3_0_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_we0),
-    .hist3_0_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_address1),
-    .hist3_0_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_ce1),
-    .hist3_0_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_d1),
-    .hist3_0_m_bins_1_V_q1(10'd0),
-    .hist3_0_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_we1),
-    .hist3_1_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_address0),
-    .hist3_1_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_ce0),
-    .hist3_1_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_d0),
-    .hist3_1_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V118_q0),
-    .hist3_1_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_we0),
-    .hist3_1_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_address1),
-    .hist3_1_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_ce1),
-    .hist3_1_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_d1),
-    .hist3_1_m_bins_0_V_q1(10'd0),
-    .hist3_1_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_we1),
-    .hist3_1_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_address0),
-    .hist3_1_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_ce0),
-    .hist3_1_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_d0),
-    .hist3_1_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V11826_q0),
-    .hist3_1_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_we0),
-    .hist3_1_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_address1),
-    .hist3_1_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_ce1),
-    .hist3_1_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_d1),
-    .hist3_1_m_bins_1_V_q1(10'd0),
-    .hist3_1_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_we1),
-    .hist3_2_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_address0),
-    .hist3_2_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_ce0),
-    .hist3_2_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_d0),
-    .hist3_2_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V119_q0),
-    .hist3_2_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_we0),
-    .hist3_2_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_address1),
-    .hist3_2_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_ce1),
-    .hist3_2_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_d1),
-    .hist3_2_m_bins_0_V_q1(10'd0),
-    .hist3_2_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_we1),
-    .hist3_2_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_address0),
-    .hist3_2_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_ce0),
-    .hist3_2_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_d0),
-    .hist3_2_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V11927_q0),
-    .hist3_2_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_we0),
-    .hist3_2_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_address1),
-    .hist3_2_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_ce1),
-    .hist3_2_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_d1),
-    .hist3_2_m_bins_1_V_q1(10'd0),
-    .hist3_2_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_we1),
-    .hist3_3_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_address0),
-    .hist3_3_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_ce0),
-    .hist3_3_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_d0),
-    .hist3_3_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V120_q0),
-    .hist3_3_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_we0),
-    .hist3_3_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_address1),
-    .hist3_3_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_ce1),
-    .hist3_3_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_d1),
-    .hist3_3_m_bins_0_V_q1(10'd0),
-    .hist3_3_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_we1),
-    .hist3_3_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_address0),
-    .hist3_3_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_ce0),
-    .hist3_3_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_d0),
-    .hist3_3_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12028_q0),
-    .hist3_3_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_we0),
-    .hist3_3_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_address1),
-    .hist3_3_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_ce1),
-    .hist3_3_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_d1),
-    .hist3_3_m_bins_1_V_q1(10'd0),
-    .hist3_3_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_we1),
-    .hist3_4_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_address0),
-    .hist3_4_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_ce0),
-    .hist3_4_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_d0),
-    .hist3_4_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V121_q0),
-    .hist3_4_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_we0),
-    .hist3_4_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_address1),
-    .hist3_4_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_ce1),
-    .hist3_4_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_d1),
-    .hist3_4_m_bins_0_V_q1(10'd0),
-    .hist3_4_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_we1),
-    .hist3_4_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_address0),
-    .hist3_4_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_ce0),
-    .hist3_4_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_d0),
-    .hist3_4_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12129_q0),
-    .hist3_4_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_we0),
-    .hist3_4_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_address1),
-    .hist3_4_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_ce1),
-    .hist3_4_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_d1),
-    .hist3_4_m_bins_1_V_q1(10'd0),
-    .hist3_4_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_we1),
-    .hist3_5_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_address0),
-    .hist3_5_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_ce0),
-    .hist3_5_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_d0),
-    .hist3_5_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V122_q0),
-    .hist3_5_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_we0),
-    .hist3_5_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_address1),
-    .hist3_5_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_ce1),
-    .hist3_5_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_d1),
-    .hist3_5_m_bins_0_V_q1(10'd0),
-    .hist3_5_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_we1),
-    .hist3_5_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_address0),
-    .hist3_5_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_ce0),
-    .hist3_5_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_d0),
-    .hist3_5_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12230_q0),
-    .hist3_5_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_we0),
-    .hist3_5_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_address1),
-    .hist3_5_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_ce1),
-    .hist3_5_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_d1),
-    .hist3_5_m_bins_1_V_q1(10'd0),
-    .hist3_5_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_we1),
-    .hist3_6_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_address0),
-    .hist3_6_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_ce0),
-    .hist3_6_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_d0),
-    .hist3_6_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V123_q0),
-    .hist3_6_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_we0),
-    .hist3_6_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_address1),
-    .hist3_6_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_ce1),
-    .hist3_6_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_d1),
-    .hist3_6_m_bins_0_V_q1(10'd0),
-    .hist3_6_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_we1),
-    .hist3_6_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_address0),
-    .hist3_6_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_ce0),
-    .hist3_6_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_d0),
-    .hist3_6_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12331_q0),
-    .hist3_6_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_we0),
-    .hist3_6_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_address1),
-    .hist3_6_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_ce1),
-    .hist3_6_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_d1),
-    .hist3_6_m_bins_1_V_q1(10'd0),
-    .hist3_6_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_we1),
-    .hist3_7_m_bins_0_V_address0(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_address0),
-    .hist3_7_m_bins_0_V_ce0(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_ce0),
-    .hist3_7_m_bins_0_V_d0(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_d0),
-    .hist3_7_m_bins_0_V_q0(cmpCtx_hists_sg3_m_bins_V124_q0),
-    .hist3_7_m_bins_0_V_we0(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_we0),
-    .hist3_7_m_bins_0_V_address1(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_address1),
-    .hist3_7_m_bins_0_V_ce1(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_ce1),
-    .hist3_7_m_bins_0_V_d1(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_d1),
-    .hist3_7_m_bins_0_V_q1(10'd0),
-    .hist3_7_m_bins_0_V_we1(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_we1),
-    .hist3_7_m_bins_1_V_address0(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_address0),
-    .hist3_7_m_bins_1_V_ce0(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_ce0),
-    .hist3_7_m_bins_1_V_d0(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_d0),
-    .hist3_7_m_bins_1_V_q0(cmpCtx_hists_sg3_m_bins_V12432_q0),
-    .hist3_7_m_bins_1_V_we0(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_we0),
-    .hist3_7_m_bins_1_V_address1(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_address1),
-    .hist3_7_m_bins_1_V_ce1(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_ce1),
-    .hist3_7_m_bins_1_V_d1(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_d1),
-    .hist3_7_m_bins_1_V_q1(10'd0),
-    .hist3_7_m_bins_1_V_we1(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_we1),
-    .ichan(tmp_16_reg_1626),
     .adcs0_V_offset_ap_vld(1'b1),
     .ichan_ap_vld(1'b1),
     .bAxis_m_cur_read_ap_vld(1'b1),
     .bAxis_m_idx_read_ap_vld(1'b1),
     .hist0_0_m_omask_V_empty_n(1'b0),
-    .hist0_0_m_omask_V_read(grp_write_adcs4_fu_702_hist0_0_m_omask_V_read),
+    .hist0_0_m_omask_V_read(grp_write_adcs4_fu_697_hist0_0_m_omask_V_read),
     .hist0_1_m_omask_V_empty_n(1'b0),
-    .hist0_1_m_omask_V_read(grp_write_adcs4_fu_702_hist0_1_m_omask_V_read),
+    .hist0_1_m_omask_V_read(grp_write_adcs4_fu_697_hist0_1_m_omask_V_read),
     .hist0_2_m_omask_V_empty_n(1'b0),
-    .hist0_2_m_omask_V_read(grp_write_adcs4_fu_702_hist0_2_m_omask_V_read),
+    .hist0_2_m_omask_V_read(grp_write_adcs4_fu_697_hist0_2_m_omask_V_read),
     .hist0_3_m_omask_V_empty_n(1'b0),
-    .hist0_3_m_omask_V_read(grp_write_adcs4_fu_702_hist0_3_m_omask_V_read),
+    .hist0_3_m_omask_V_read(grp_write_adcs4_fu_697_hist0_3_m_omask_V_read),
     .hist0_4_m_omask_V_empty_n(1'b0),
-    .hist0_4_m_omask_V_read(grp_write_adcs4_fu_702_hist0_4_m_omask_V_read),
+    .hist0_4_m_omask_V_read(grp_write_adcs4_fu_697_hist0_4_m_omask_V_read),
     .hist0_5_m_omask_V_empty_n(1'b0),
-    .hist0_5_m_omask_V_read(grp_write_adcs4_fu_702_hist0_5_m_omask_V_read),
+    .hist0_5_m_omask_V_read(grp_write_adcs4_fu_697_hist0_5_m_omask_V_read),
     .hist0_6_m_omask_V_empty_n(1'b0),
-    .hist0_6_m_omask_V_read(grp_write_adcs4_fu_702_hist0_6_m_omask_V_read),
+    .hist0_6_m_omask_V_read(grp_write_adcs4_fu_697_hist0_6_m_omask_V_read),
     .hist0_7_m_omask_V_empty_n(1'b0),
-    .hist0_7_m_omask_V_read(grp_write_adcs4_fu_702_hist0_7_m_omask_V_read),
+    .hist0_7_m_omask_V_read(grp_write_adcs4_fu_697_hist0_7_m_omask_V_read),
     .hist0_0_m_maxcnt_V_empty_n(1'b0),
-    .hist0_0_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_read),
+    .hist0_0_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_read),
     .hist0_1_m_maxcnt_V_empty_n(1'b0),
-    .hist0_1_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_read),
+    .hist0_1_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_read),
     .hist0_2_m_maxcnt_V_empty_n(1'b0),
-    .hist0_2_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_read),
+    .hist0_2_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_read),
     .hist0_3_m_maxcnt_V_empty_n(1'b0),
-    .hist0_3_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_read),
+    .hist0_3_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_read),
     .hist0_4_m_maxcnt_V_empty_n(1'b0),
-    .hist0_4_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_read),
+    .hist0_4_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_read),
     .hist0_5_m_maxcnt_V_empty_n(1'b0),
-    .hist0_5_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_read),
+    .hist0_5_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_read),
     .hist0_6_m_maxcnt_V_empty_n(1'b0),
-    .hist0_6_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_read),
+    .hist0_6_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_read),
     .hist0_7_m_maxcnt_V_empty_n(1'b0),
-    .hist0_7_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_read),
+    .hist0_7_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_read),
     .hist0_0_m_nobits_V_empty_n(1'b0),
-    .hist0_0_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_0_m_nobits_V_read),
+    .hist0_0_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_0_m_nobits_V_read),
     .hist0_1_m_nobits_V_empty_n(1'b0),
-    .hist0_1_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_1_m_nobits_V_read),
+    .hist0_1_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_1_m_nobits_V_read),
     .hist0_2_m_nobits_V_empty_n(1'b0),
-    .hist0_2_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_2_m_nobits_V_read),
+    .hist0_2_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_2_m_nobits_V_read),
     .hist0_3_m_nobits_V_empty_n(1'b0),
-    .hist0_3_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_3_m_nobits_V_read),
+    .hist0_3_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_3_m_nobits_V_read),
     .hist0_4_m_nobits_V_empty_n(1'b0),
-    .hist0_4_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_4_m_nobits_V_read),
+    .hist0_4_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_4_m_nobits_V_read),
     .hist0_5_m_nobits_V_empty_n(1'b0),
-    .hist0_5_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_5_m_nobits_V_read),
+    .hist0_5_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_5_m_nobits_V_read),
     .hist0_6_m_nobits_V_empty_n(1'b0),
-    .hist0_6_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_6_m_nobits_V_read),
+    .hist0_6_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_6_m_nobits_V_read),
     .hist0_7_m_nobits_V_empty_n(1'b0),
-    .hist0_7_m_nobits_V_read(grp_write_adcs4_fu_702_hist0_7_m_nobits_V_read),
+    .hist0_7_m_nobits_V_read(grp_write_adcs4_fu_697_hist0_7_m_nobits_V_read),
     .hist0_0_m_bins_0_V_empty_n(1'b0),
-    .hist0_0_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_read),
+    .hist0_0_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_read),
     .hist0_0_m_bins_1_V_empty_n(1'b0),
-    .hist0_0_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_read),
+    .hist0_0_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_read),
     .hist0_1_m_bins_0_V_empty_n(1'b0),
-    .hist0_1_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_read),
+    .hist0_1_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_read),
     .hist0_1_m_bins_1_V_empty_n(1'b0),
-    .hist0_1_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_read),
+    .hist0_1_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_read),
     .hist0_2_m_bins_0_V_empty_n(1'b0),
-    .hist0_2_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_read),
+    .hist0_2_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_read),
     .hist0_2_m_bins_1_V_empty_n(1'b0),
-    .hist0_2_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_read),
+    .hist0_2_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_read),
     .hist0_3_m_bins_0_V_empty_n(1'b0),
-    .hist0_3_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_read),
+    .hist0_3_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_read),
     .hist0_3_m_bins_1_V_empty_n(1'b0),
-    .hist0_3_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_read),
+    .hist0_3_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_read),
     .hist0_4_m_bins_0_V_empty_n(1'b0),
-    .hist0_4_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_read),
+    .hist0_4_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_read),
     .hist0_4_m_bins_1_V_empty_n(1'b0),
-    .hist0_4_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_read),
+    .hist0_4_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_read),
     .hist0_5_m_bins_0_V_empty_n(1'b0),
-    .hist0_5_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_read),
+    .hist0_5_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_read),
     .hist0_5_m_bins_1_V_empty_n(1'b0),
-    .hist0_5_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_read),
+    .hist0_5_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_read),
     .hist0_6_m_bins_0_V_empty_n(1'b0),
-    .hist0_6_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_read),
+    .hist0_6_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_read),
     .hist0_6_m_bins_1_V_empty_n(1'b0),
-    .hist0_6_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_read),
+    .hist0_6_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_read),
     .hist0_7_m_bins_0_V_empty_n(1'b0),
-    .hist0_7_m_bins_0_V_read(grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_read),
+    .hist0_7_m_bins_0_V_read(grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_read),
     .hist0_7_m_bins_1_V_empty_n(1'b0),
-    .hist0_7_m_bins_1_V_read(grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_read),
+    .hist0_7_m_bins_1_V_read(grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_read),
     .hist1_0_m_omask_V_empty_n(1'b0),
-    .hist1_0_m_omask_V_read(grp_write_adcs4_fu_702_hist1_0_m_omask_V_read),
+    .hist1_0_m_omask_V_read(grp_write_adcs4_fu_697_hist1_0_m_omask_V_read),
     .hist1_1_m_omask_V_empty_n(1'b0),
-    .hist1_1_m_omask_V_read(grp_write_adcs4_fu_702_hist1_1_m_omask_V_read),
+    .hist1_1_m_omask_V_read(grp_write_adcs4_fu_697_hist1_1_m_omask_V_read),
     .hist1_2_m_omask_V_empty_n(1'b0),
-    .hist1_2_m_omask_V_read(grp_write_adcs4_fu_702_hist1_2_m_omask_V_read),
+    .hist1_2_m_omask_V_read(grp_write_adcs4_fu_697_hist1_2_m_omask_V_read),
     .hist1_3_m_omask_V_empty_n(1'b0),
-    .hist1_3_m_omask_V_read(grp_write_adcs4_fu_702_hist1_3_m_omask_V_read),
+    .hist1_3_m_omask_V_read(grp_write_adcs4_fu_697_hist1_3_m_omask_V_read),
     .hist1_4_m_omask_V_empty_n(1'b0),
-    .hist1_4_m_omask_V_read(grp_write_adcs4_fu_702_hist1_4_m_omask_V_read),
+    .hist1_4_m_omask_V_read(grp_write_adcs4_fu_697_hist1_4_m_omask_V_read),
     .hist1_5_m_omask_V_empty_n(1'b0),
-    .hist1_5_m_omask_V_read(grp_write_adcs4_fu_702_hist1_5_m_omask_V_read),
+    .hist1_5_m_omask_V_read(grp_write_adcs4_fu_697_hist1_5_m_omask_V_read),
     .hist1_6_m_omask_V_empty_n(1'b0),
-    .hist1_6_m_omask_V_read(grp_write_adcs4_fu_702_hist1_6_m_omask_V_read),
+    .hist1_6_m_omask_V_read(grp_write_adcs4_fu_697_hist1_6_m_omask_V_read),
     .hist1_7_m_omask_V_empty_n(1'b0),
-    .hist1_7_m_omask_V_read(grp_write_adcs4_fu_702_hist1_7_m_omask_V_read),
+    .hist1_7_m_omask_V_read(grp_write_adcs4_fu_697_hist1_7_m_omask_V_read),
     .hist1_0_m_maxcnt_V_empty_n(1'b0),
-    .hist1_0_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_read),
+    .hist1_0_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_read),
     .hist1_1_m_maxcnt_V_empty_n(1'b0),
-    .hist1_1_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_read),
+    .hist1_1_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_read),
     .hist1_2_m_maxcnt_V_empty_n(1'b0),
-    .hist1_2_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_read),
+    .hist1_2_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_read),
     .hist1_3_m_maxcnt_V_empty_n(1'b0),
-    .hist1_3_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_read),
+    .hist1_3_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_read),
     .hist1_4_m_maxcnt_V_empty_n(1'b0),
-    .hist1_4_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_read),
+    .hist1_4_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_read),
     .hist1_5_m_maxcnt_V_empty_n(1'b0),
-    .hist1_5_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_read),
+    .hist1_5_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_read),
     .hist1_6_m_maxcnt_V_empty_n(1'b0),
-    .hist1_6_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_read),
+    .hist1_6_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_read),
     .hist1_7_m_maxcnt_V_empty_n(1'b0),
-    .hist1_7_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_read),
+    .hist1_7_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_read),
     .hist1_0_m_nobits_V_empty_n(1'b0),
-    .hist1_0_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_0_m_nobits_V_read),
+    .hist1_0_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_0_m_nobits_V_read),
     .hist1_1_m_nobits_V_empty_n(1'b0),
-    .hist1_1_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_1_m_nobits_V_read),
+    .hist1_1_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_1_m_nobits_V_read),
     .hist1_2_m_nobits_V_empty_n(1'b0),
-    .hist1_2_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_2_m_nobits_V_read),
+    .hist1_2_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_2_m_nobits_V_read),
     .hist1_3_m_nobits_V_empty_n(1'b0),
-    .hist1_3_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_3_m_nobits_V_read),
+    .hist1_3_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_3_m_nobits_V_read),
     .hist1_4_m_nobits_V_empty_n(1'b0),
-    .hist1_4_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_4_m_nobits_V_read),
+    .hist1_4_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_4_m_nobits_V_read),
     .hist1_5_m_nobits_V_empty_n(1'b0),
-    .hist1_5_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_5_m_nobits_V_read),
+    .hist1_5_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_5_m_nobits_V_read),
     .hist1_6_m_nobits_V_empty_n(1'b0),
-    .hist1_6_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_6_m_nobits_V_read),
+    .hist1_6_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_6_m_nobits_V_read),
     .hist1_7_m_nobits_V_empty_n(1'b0),
-    .hist1_7_m_nobits_V_read(grp_write_adcs4_fu_702_hist1_7_m_nobits_V_read),
+    .hist1_7_m_nobits_V_read(grp_write_adcs4_fu_697_hist1_7_m_nobits_V_read),
     .hist1_0_m_bins_0_V_empty_n(1'b0),
-    .hist1_0_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_read),
+    .hist1_0_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_read),
     .hist1_0_m_bins_1_V_empty_n(1'b0),
-    .hist1_0_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_read),
+    .hist1_0_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_read),
     .hist1_1_m_bins_0_V_empty_n(1'b0),
-    .hist1_1_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_read),
+    .hist1_1_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_read),
     .hist1_1_m_bins_1_V_empty_n(1'b0),
-    .hist1_1_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_read),
+    .hist1_1_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_read),
     .hist1_2_m_bins_0_V_empty_n(1'b0),
-    .hist1_2_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_read),
+    .hist1_2_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_read),
     .hist1_2_m_bins_1_V_empty_n(1'b0),
-    .hist1_2_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_read),
+    .hist1_2_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_read),
     .hist1_3_m_bins_0_V_empty_n(1'b0),
-    .hist1_3_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_read),
+    .hist1_3_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_read),
     .hist1_3_m_bins_1_V_empty_n(1'b0),
-    .hist1_3_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_read),
+    .hist1_3_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_read),
     .hist1_4_m_bins_0_V_empty_n(1'b0),
-    .hist1_4_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_read),
+    .hist1_4_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_read),
     .hist1_4_m_bins_1_V_empty_n(1'b0),
-    .hist1_4_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_read),
+    .hist1_4_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_read),
     .hist1_5_m_bins_0_V_empty_n(1'b0),
-    .hist1_5_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_read),
+    .hist1_5_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_read),
     .hist1_5_m_bins_1_V_empty_n(1'b0),
-    .hist1_5_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_read),
+    .hist1_5_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_read),
     .hist1_6_m_bins_0_V_empty_n(1'b0),
-    .hist1_6_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_read),
+    .hist1_6_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_read),
     .hist1_6_m_bins_1_V_empty_n(1'b0),
-    .hist1_6_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_read),
+    .hist1_6_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_read),
     .hist1_7_m_bins_0_V_empty_n(1'b0),
-    .hist1_7_m_bins_0_V_read(grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_read),
+    .hist1_7_m_bins_0_V_read(grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_read),
     .hist1_7_m_bins_1_V_empty_n(1'b0),
-    .hist1_7_m_bins_1_V_read(grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_read),
+    .hist1_7_m_bins_1_V_read(grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_read),
     .hist2_0_m_omask_V_empty_n(1'b0),
-    .hist2_0_m_omask_V_read(grp_write_adcs4_fu_702_hist2_0_m_omask_V_read),
+    .hist2_0_m_omask_V_read(grp_write_adcs4_fu_697_hist2_0_m_omask_V_read),
     .hist2_1_m_omask_V_empty_n(1'b0),
-    .hist2_1_m_omask_V_read(grp_write_adcs4_fu_702_hist2_1_m_omask_V_read),
+    .hist2_1_m_omask_V_read(grp_write_adcs4_fu_697_hist2_1_m_omask_V_read),
     .hist2_2_m_omask_V_empty_n(1'b0),
-    .hist2_2_m_omask_V_read(grp_write_adcs4_fu_702_hist2_2_m_omask_V_read),
+    .hist2_2_m_omask_V_read(grp_write_adcs4_fu_697_hist2_2_m_omask_V_read),
     .hist2_3_m_omask_V_empty_n(1'b0),
-    .hist2_3_m_omask_V_read(grp_write_adcs4_fu_702_hist2_3_m_omask_V_read),
+    .hist2_3_m_omask_V_read(grp_write_adcs4_fu_697_hist2_3_m_omask_V_read),
     .hist2_4_m_omask_V_empty_n(1'b0),
-    .hist2_4_m_omask_V_read(grp_write_adcs4_fu_702_hist2_4_m_omask_V_read),
+    .hist2_4_m_omask_V_read(grp_write_adcs4_fu_697_hist2_4_m_omask_V_read),
     .hist2_5_m_omask_V_empty_n(1'b0),
-    .hist2_5_m_omask_V_read(grp_write_adcs4_fu_702_hist2_5_m_omask_V_read),
+    .hist2_5_m_omask_V_read(grp_write_adcs4_fu_697_hist2_5_m_omask_V_read),
     .hist2_6_m_omask_V_empty_n(1'b0),
-    .hist2_6_m_omask_V_read(grp_write_adcs4_fu_702_hist2_6_m_omask_V_read),
+    .hist2_6_m_omask_V_read(grp_write_adcs4_fu_697_hist2_6_m_omask_V_read),
     .hist2_7_m_omask_V_empty_n(1'b0),
-    .hist2_7_m_omask_V_read(grp_write_adcs4_fu_702_hist2_7_m_omask_V_read),
+    .hist2_7_m_omask_V_read(grp_write_adcs4_fu_697_hist2_7_m_omask_V_read),
     .hist2_0_m_maxcnt_V_empty_n(1'b0),
-    .hist2_0_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_read),
+    .hist2_0_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_read),
     .hist2_1_m_maxcnt_V_empty_n(1'b0),
-    .hist2_1_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_read),
+    .hist2_1_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_read),
     .hist2_2_m_maxcnt_V_empty_n(1'b0),
-    .hist2_2_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_read),
+    .hist2_2_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_read),
     .hist2_3_m_maxcnt_V_empty_n(1'b0),
-    .hist2_3_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_read),
+    .hist2_3_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_read),
     .hist2_4_m_maxcnt_V_empty_n(1'b0),
-    .hist2_4_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_read),
+    .hist2_4_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_read),
     .hist2_5_m_maxcnt_V_empty_n(1'b0),
-    .hist2_5_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_read),
+    .hist2_5_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_read),
     .hist2_6_m_maxcnt_V_empty_n(1'b0),
-    .hist2_6_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_read),
+    .hist2_6_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_read),
     .hist2_7_m_maxcnt_V_empty_n(1'b0),
-    .hist2_7_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_read),
+    .hist2_7_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_read),
     .hist2_0_m_nobits_V_empty_n(1'b0),
-    .hist2_0_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_0_m_nobits_V_read),
+    .hist2_0_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_0_m_nobits_V_read),
     .hist2_1_m_nobits_V_empty_n(1'b0),
-    .hist2_1_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_1_m_nobits_V_read),
+    .hist2_1_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_1_m_nobits_V_read),
     .hist2_2_m_nobits_V_empty_n(1'b0),
-    .hist2_2_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_2_m_nobits_V_read),
+    .hist2_2_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_2_m_nobits_V_read),
     .hist2_3_m_nobits_V_empty_n(1'b0),
-    .hist2_3_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_3_m_nobits_V_read),
+    .hist2_3_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_3_m_nobits_V_read),
     .hist2_4_m_nobits_V_empty_n(1'b0),
-    .hist2_4_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_4_m_nobits_V_read),
+    .hist2_4_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_4_m_nobits_V_read),
     .hist2_5_m_nobits_V_empty_n(1'b0),
-    .hist2_5_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_5_m_nobits_V_read),
+    .hist2_5_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_5_m_nobits_V_read),
     .hist2_6_m_nobits_V_empty_n(1'b0),
-    .hist2_6_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_6_m_nobits_V_read),
+    .hist2_6_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_6_m_nobits_V_read),
     .hist2_7_m_nobits_V_empty_n(1'b0),
-    .hist2_7_m_nobits_V_read(grp_write_adcs4_fu_702_hist2_7_m_nobits_V_read),
+    .hist2_7_m_nobits_V_read(grp_write_adcs4_fu_697_hist2_7_m_nobits_V_read),
     .hist2_0_m_bins_0_V_empty_n(1'b0),
-    .hist2_0_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_read),
+    .hist2_0_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_read),
     .hist2_0_m_bins_1_V_empty_n(1'b0),
-    .hist2_0_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_read),
+    .hist2_0_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_read),
     .hist2_1_m_bins_0_V_empty_n(1'b0),
-    .hist2_1_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_read),
+    .hist2_1_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_read),
     .hist2_1_m_bins_1_V_empty_n(1'b0),
-    .hist2_1_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_read),
+    .hist2_1_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_read),
     .hist2_2_m_bins_0_V_empty_n(1'b0),
-    .hist2_2_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_read),
+    .hist2_2_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_read),
     .hist2_2_m_bins_1_V_empty_n(1'b0),
-    .hist2_2_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_read),
+    .hist2_2_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_read),
     .hist2_3_m_bins_0_V_empty_n(1'b0),
-    .hist2_3_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_read),
+    .hist2_3_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_read),
     .hist2_3_m_bins_1_V_empty_n(1'b0),
-    .hist2_3_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_read),
+    .hist2_3_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_read),
     .hist2_4_m_bins_0_V_empty_n(1'b0),
-    .hist2_4_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_read),
+    .hist2_4_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_read),
     .hist2_4_m_bins_1_V_empty_n(1'b0),
-    .hist2_4_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_read),
+    .hist2_4_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_read),
     .hist2_5_m_bins_0_V_empty_n(1'b0),
-    .hist2_5_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_read),
+    .hist2_5_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_read),
     .hist2_5_m_bins_1_V_empty_n(1'b0),
-    .hist2_5_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_read),
+    .hist2_5_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_read),
     .hist2_6_m_bins_0_V_empty_n(1'b0),
-    .hist2_6_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_read),
+    .hist2_6_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_read),
     .hist2_6_m_bins_1_V_empty_n(1'b0),
-    .hist2_6_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_read),
+    .hist2_6_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_read),
     .hist2_7_m_bins_0_V_empty_n(1'b0),
-    .hist2_7_m_bins_0_V_read(grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_read),
+    .hist2_7_m_bins_0_V_read(grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_read),
     .hist2_7_m_bins_1_V_empty_n(1'b0),
-    .hist2_7_m_bins_1_V_read(grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_read),
+    .hist2_7_m_bins_1_V_read(grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_read),
     .hist3_0_m_omask_V_empty_n(1'b0),
-    .hist3_0_m_omask_V_read(grp_write_adcs4_fu_702_hist3_0_m_omask_V_read),
+    .hist3_0_m_omask_V_read(grp_write_adcs4_fu_697_hist3_0_m_omask_V_read),
     .hist3_1_m_omask_V_empty_n(1'b0),
-    .hist3_1_m_omask_V_read(grp_write_adcs4_fu_702_hist3_1_m_omask_V_read),
+    .hist3_1_m_omask_V_read(grp_write_adcs4_fu_697_hist3_1_m_omask_V_read),
     .hist3_2_m_omask_V_empty_n(1'b0),
-    .hist3_2_m_omask_V_read(grp_write_adcs4_fu_702_hist3_2_m_omask_V_read),
+    .hist3_2_m_omask_V_read(grp_write_adcs4_fu_697_hist3_2_m_omask_V_read),
     .hist3_3_m_omask_V_empty_n(1'b0),
-    .hist3_3_m_omask_V_read(grp_write_adcs4_fu_702_hist3_3_m_omask_V_read),
+    .hist3_3_m_omask_V_read(grp_write_adcs4_fu_697_hist3_3_m_omask_V_read),
     .hist3_4_m_omask_V_empty_n(1'b0),
-    .hist3_4_m_omask_V_read(grp_write_adcs4_fu_702_hist3_4_m_omask_V_read),
+    .hist3_4_m_omask_V_read(grp_write_adcs4_fu_697_hist3_4_m_omask_V_read),
     .hist3_5_m_omask_V_empty_n(1'b0),
-    .hist3_5_m_omask_V_read(grp_write_adcs4_fu_702_hist3_5_m_omask_V_read),
+    .hist3_5_m_omask_V_read(grp_write_adcs4_fu_697_hist3_5_m_omask_V_read),
     .hist3_6_m_omask_V_empty_n(1'b0),
-    .hist3_6_m_omask_V_read(grp_write_adcs4_fu_702_hist3_6_m_omask_V_read),
+    .hist3_6_m_omask_V_read(grp_write_adcs4_fu_697_hist3_6_m_omask_V_read),
     .hist3_7_m_omask_V_empty_n(1'b0),
-    .hist3_7_m_omask_V_read(grp_write_adcs4_fu_702_hist3_7_m_omask_V_read),
+    .hist3_7_m_omask_V_read(grp_write_adcs4_fu_697_hist3_7_m_omask_V_read),
     .hist3_0_m_maxcnt_V_empty_n(1'b0),
-    .hist3_0_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_read),
+    .hist3_0_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_read),
     .hist3_1_m_maxcnt_V_empty_n(1'b0),
-    .hist3_1_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_read),
+    .hist3_1_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_read),
     .hist3_2_m_maxcnt_V_empty_n(1'b0),
-    .hist3_2_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_read),
+    .hist3_2_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_read),
     .hist3_3_m_maxcnt_V_empty_n(1'b0),
-    .hist3_3_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_read),
+    .hist3_3_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_read),
     .hist3_4_m_maxcnt_V_empty_n(1'b0),
-    .hist3_4_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_read),
+    .hist3_4_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_read),
     .hist3_5_m_maxcnt_V_empty_n(1'b0),
-    .hist3_5_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_read),
+    .hist3_5_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_read),
     .hist3_6_m_maxcnt_V_empty_n(1'b0),
-    .hist3_6_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_read),
+    .hist3_6_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_read),
     .hist3_7_m_maxcnt_V_empty_n(1'b0),
-    .hist3_7_m_maxcnt_V_read(grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_read),
+    .hist3_7_m_maxcnt_V_read(grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_read),
     .hist3_0_m_nobits_V_empty_n(1'b0),
-    .hist3_0_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_0_m_nobits_V_read),
+    .hist3_0_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_0_m_nobits_V_read),
     .hist3_1_m_nobits_V_empty_n(1'b0),
-    .hist3_1_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_1_m_nobits_V_read),
+    .hist3_1_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_1_m_nobits_V_read),
     .hist3_2_m_nobits_V_empty_n(1'b0),
-    .hist3_2_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_2_m_nobits_V_read),
+    .hist3_2_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_2_m_nobits_V_read),
     .hist3_3_m_nobits_V_empty_n(1'b0),
-    .hist3_3_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_3_m_nobits_V_read),
+    .hist3_3_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_3_m_nobits_V_read),
     .hist3_4_m_nobits_V_empty_n(1'b0),
-    .hist3_4_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_4_m_nobits_V_read),
+    .hist3_4_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_4_m_nobits_V_read),
     .hist3_5_m_nobits_V_empty_n(1'b0),
-    .hist3_5_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_5_m_nobits_V_read),
+    .hist3_5_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_5_m_nobits_V_read),
     .hist3_6_m_nobits_V_empty_n(1'b0),
-    .hist3_6_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_6_m_nobits_V_read),
+    .hist3_6_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_6_m_nobits_V_read),
     .hist3_7_m_nobits_V_empty_n(1'b0),
-    .hist3_7_m_nobits_V_read(grp_write_adcs4_fu_702_hist3_7_m_nobits_V_read),
+    .hist3_7_m_nobits_V_read(grp_write_adcs4_fu_697_hist3_7_m_nobits_V_read),
     .hist3_0_m_bins_0_V_empty_n(1'b0),
-    .hist3_0_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_read),
+    .hist3_0_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_read),
     .hist3_0_m_bins_1_V_empty_n(1'b0),
-    .hist3_0_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_read),
+    .hist3_0_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_read),
     .hist3_1_m_bins_0_V_empty_n(1'b0),
-    .hist3_1_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_read),
+    .hist3_1_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_read),
     .hist3_1_m_bins_1_V_empty_n(1'b0),
-    .hist3_1_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_read),
+    .hist3_1_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_read),
     .hist3_2_m_bins_0_V_empty_n(1'b0),
-    .hist3_2_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_read),
+    .hist3_2_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_read),
     .hist3_2_m_bins_1_V_empty_n(1'b0),
-    .hist3_2_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_read),
+    .hist3_2_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_read),
     .hist3_3_m_bins_0_V_empty_n(1'b0),
-    .hist3_3_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_read),
+    .hist3_3_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_read),
     .hist3_3_m_bins_1_V_empty_n(1'b0),
-    .hist3_3_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_read),
+    .hist3_3_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_read),
     .hist3_4_m_bins_0_V_empty_n(1'b0),
-    .hist3_4_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_read),
+    .hist3_4_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_read),
     .hist3_4_m_bins_1_V_empty_n(1'b0),
-    .hist3_4_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_read),
+    .hist3_4_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_read),
     .hist3_5_m_bins_0_V_empty_n(1'b0),
-    .hist3_5_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_read),
+    .hist3_5_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_read),
     .hist3_5_m_bins_1_V_empty_n(1'b0),
-    .hist3_5_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_read),
+    .hist3_5_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_read),
     .hist3_6_m_bins_0_V_empty_n(1'b0),
-    .hist3_6_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_read),
+    .hist3_6_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_read),
     .hist3_6_m_bins_1_V_empty_n(1'b0),
-    .hist3_6_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_read),
+    .hist3_6_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_read),
     .hist3_7_m_bins_0_V_empty_n(1'b0),
-    .hist3_7_m_bins_0_V_read(grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_read),
+    .hist3_7_m_bins_0_V_read(grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_read),
     .hist3_7_m_bins_1_V_empty_n(1'b0),
-    .hist3_7_m_bins_1_V_read(grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_read),
+    .hist3_7_m_bins_1_V_read(grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_read),
     .adcs0_0_V_empty_n(1'b0),
-    .adcs0_0_V_read(grp_write_adcs4_fu_702_adcs0_0_V_read),
+    .adcs0_0_V_read(grp_write_adcs4_fu_697_adcs0_0_V_read),
     .adcs0_1_V_empty_n(1'b0),
-    .adcs0_1_V_read(grp_write_adcs4_fu_702_adcs0_1_V_read),
+    .adcs0_1_V_read(grp_write_adcs4_fu_697_adcs0_1_V_read),
     .adcs0_2_V_empty_n(1'b0),
-    .adcs0_2_V_read(grp_write_adcs4_fu_702_adcs0_2_V_read),
+    .adcs0_2_V_read(grp_write_adcs4_fu_697_adcs0_2_V_read),
     .adcs0_3_V_empty_n(1'b0),
-    .adcs0_3_V_read(grp_write_adcs4_fu_702_adcs0_3_V_read),
+    .adcs0_3_V_read(grp_write_adcs4_fu_697_adcs0_3_V_read),
     .adcs1_0_V_empty_n(1'b0),
-    .adcs1_0_V_read(grp_write_adcs4_fu_702_adcs1_0_V_read),
+    .adcs1_0_V_read(grp_write_adcs4_fu_697_adcs1_0_V_read),
     .adcs1_1_V_empty_n(1'b0),
-    .adcs1_1_V_read(grp_write_adcs4_fu_702_adcs1_1_V_read),
+    .adcs1_1_V_read(grp_write_adcs4_fu_697_adcs1_1_V_read),
     .adcs1_2_V_empty_n(1'b0),
-    .adcs1_2_V_read(grp_write_adcs4_fu_702_adcs1_2_V_read),
+    .adcs1_2_V_read(grp_write_adcs4_fu_697_adcs1_2_V_read),
     .adcs1_3_V_empty_n(1'b0),
-    .adcs1_3_V_read(grp_write_adcs4_fu_702_adcs1_3_V_read),
+    .adcs1_3_V_read(grp_write_adcs4_fu_697_adcs1_3_V_read),
     .adcs2_0_V_empty_n(1'b0),
-    .adcs2_0_V_read(grp_write_adcs4_fu_702_adcs2_0_V_read),
+    .adcs2_0_V_read(grp_write_adcs4_fu_697_adcs2_0_V_read),
     .adcs2_1_V_empty_n(1'b0),
-    .adcs2_1_V_read(grp_write_adcs4_fu_702_adcs2_1_V_read),
+    .adcs2_1_V_read(grp_write_adcs4_fu_697_adcs2_1_V_read),
     .adcs2_2_V_empty_n(1'b0),
-    .adcs2_2_V_read(grp_write_adcs4_fu_702_adcs2_2_V_read),
+    .adcs2_2_V_read(grp_write_adcs4_fu_697_adcs2_2_V_read),
     .adcs2_3_V_empty_n(1'b0),
-    .adcs2_3_V_read(grp_write_adcs4_fu_702_adcs2_3_V_read),
+    .adcs2_3_V_read(grp_write_adcs4_fu_697_adcs2_3_V_read),
     .adcs3_0_V_empty_n(1'b0),
-    .adcs3_0_V_read(grp_write_adcs4_fu_702_adcs3_0_V_read),
+    .adcs3_0_V_read(grp_write_adcs4_fu_697_adcs3_0_V_read),
     .adcs3_1_V_empty_n(1'b0),
-    .adcs3_1_V_read(grp_write_adcs4_fu_702_adcs3_1_V_read),
+    .adcs3_1_V_read(grp_write_adcs4_fu_697_adcs3_1_V_read),
     .adcs3_2_V_empty_n(1'b0),
-    .adcs3_2_V_read(grp_write_adcs4_fu_702_adcs3_2_V_read),
+    .adcs3_2_V_read(grp_write_adcs4_fu_697_adcs3_2_V_read),
     .adcs3_3_V_empty_n(1'b0),
-    .adcs3_3_V_read(grp_write_adcs4_fu_702_adcs3_3_V_read),
-    .mAxis_TVALID(grp_write_adcs4_fu_702_mAxis_TVALID),
+    .adcs3_3_V_read(grp_write_adcs4_fu_697_adcs3_3_V_read),
+    .mAxis_TVALID(grp_write_adcs4_fu_697_mAxis_TVALID),
     .mAxis_TREADY(mAxis_TREADY),
-    .ap_done(grp_write_adcs4_fu_702_ap_done),
-    .ap_start(grp_write_adcs4_fu_702_ap_start),
-    .ap_ready(grp_write_adcs4_fu_702_ap_ready),
-    .ap_idle(grp_write_adcs4_fu_702_ap_idle),
-    .ap_continue(grp_write_adcs4_fu_702_ap_continue)
+    .ap_done(grp_write_adcs4_fu_697_ap_done),
+    .ap_start(grp_write_adcs4_fu_697_ap_start),
+    .ap_ready(grp_write_adcs4_fu_697_ap_ready),
+    .ap_idle(grp_write_adcs4_fu_697_ap_idle),
+    .ap_continue(grp_write_adcs4_fu_697_ap_continue)
 );
 
-write_r StgValue_106_write_r_fu_1080(
+write_r StgValue_113_write_r_fu_1075(
     .ap_clk(ap_clk),
     .ap_rst(ap_rst),
-    .ap_start(StgValue_106_write_r_fu_1080_ap_start),
-    .ap_done(StgValue_106_write_r_fu_1080_ap_done),
-    .ap_idle(StgValue_106_write_r_fu_1080_ap_idle),
-    .ap_ready(StgValue_106_write_r_fu_1080_ap_ready),
-    .mAxis_TDATA(StgValue_106_write_r_fu_1080_mAxis_TDATA),
-    .mAxis_TVALID(StgValue_106_write_r_fu_1080_mAxis_TVALID),
+    .ap_start(StgValue_113_write_r_fu_1075_ap_start),
+    .ap_done(StgValue_113_write_r_fu_1075_ap_done),
+    .ap_idle(StgValue_113_write_r_fu_1075_ap_idle),
+    .ap_ready(StgValue_113_write_r_fu_1075_ap_ready),
+    .mAxis_TDATA(StgValue_113_write_r_fu_1075_mAxis_TDATA),
+    .mAxis_TVALID(StgValue_113_write_r_fu_1075_mAxis_TVALID),
     .mAxis_TREADY(mAxis_TREADY),
-    .mAxis_TKEEP(StgValue_106_write_r_fu_1080_mAxis_TKEEP),
-    .mAxis_TSTRB(StgValue_106_write_r_fu_1080_mAxis_TSTRB),
-    .mAxis_TUSER(StgValue_106_write_r_fu_1080_mAxis_TUSER),
-    .mAxis_TLAST(StgValue_106_write_r_fu_1080_mAxis_TLAST),
-    .mAxis_TID(StgValue_106_write_r_fu_1080_mAxis_TID),
-    .mAxis_TDEST(StgValue_106_write_r_fu_1080_mAxis_TDEST),
-    .w64(StgValue_106_write_r_fu_1080_w64),
-    .mAxis_TDATA_blk_n(StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n)
+    .mAxis_TKEEP(StgValue_113_write_r_fu_1075_mAxis_TKEEP),
+    .mAxis_TSTRB(StgValue_113_write_r_fu_1075_mAxis_TSTRB),
+    .mAxis_TUSER(StgValue_113_write_r_fu_1075_mAxis_TUSER),
+    .mAxis_TLAST(StgValue_113_write_r_fu_1075_mAxis_TLAST),
+    .mAxis_TID(StgValue_113_write_r_fu_1075_mAxis_TID),
+    .mAxis_TDEST(StgValue_113_write_r_fu_1075_mAxis_TDEST),
+    .w64(StgValue_113_write_r_fu_1075_w64),
+    .mAxis_TDATA_blk_n(StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n)
 );
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
         First <= 1'd1;
     end else begin
-        if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1111_p1))) begin
+        if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1106_p1))) begin
             First <= 1'd0;
         end
     end
@@ -5147,11 +5169,89 @@ end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
+        ap_enable_reg_pp0_iter0 <= 1'b0;
+    end else begin
+        if (((1'b1 == ap_condition_pp0_exit_iter0_state2) & (1'b1 == ap_CS_fsm_pp0_stage0) & (1'b0 == ap_block_pp0_stage0_subdone))) begin
+            ap_enable_reg_pp0_iter0 <= 1'b0;
+        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1))) begin
+            ap_enable_reg_pp0_iter0 <= 1'b1;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_enable_reg_pp0_iter1 <= 1'b0;
+    end else begin
+        if (((1'b1 == ap_condition_pp0_exit_iter0_state2) & (1'b0 == ap_block_pp0_stage0_subdone))) begin
+            ap_enable_reg_pp0_iter1 <= (1'b1 ^ ap_condition_pp0_exit_iter0_state2);
+        end else if ((1'b0 == ap_block_pp0_stage0_subdone)) begin
+            ap_enable_reg_pp0_iter1 <= ap_enable_reg_pp0_iter0;
+        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1))) begin
+            ap_enable_reg_pp0_iter1 <= 1'b0;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_enable_reg_pp1_iter0 <= 1'b0;
+    end else begin
+        if (((1'b1 == ap_condition_pp1_exit_iter0_state5) & (1'b1 == ap_CS_fsm_pp1_stage0) & (1'b0 == ap_block_pp1_stage0_subdone))) begin
+            ap_enable_reg_pp1_iter0 <= 1'b0;
+        end else if ((1'b1 == ap_CS_fsm_state4)) begin
+            ap_enable_reg_pp1_iter0 <= 1'b1;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_enable_reg_pp1_iter1 <= 1'b0;
+    end else begin
+        if (((1'b1 == ap_condition_pp1_exit_iter0_state5) & (1'b0 == ap_block_pp1_stage0_subdone))) begin
+            ap_enable_reg_pp1_iter1 <= (1'b1 ^ ap_condition_pp1_exit_iter0_state5);
+        end else if ((1'b0 == ap_block_pp1_stage0_subdone)) begin
+            ap_enable_reg_pp1_iter1 <= ap_enable_reg_pp1_iter0;
+        end else if ((1'b1 == ap_CS_fsm_state4)) begin
+            ap_enable_reg_pp1_iter1 <= 1'b0;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_enable_reg_pp2_iter0 <= 1'b0;
+    end else begin
+        if (((1'b1 == ap_condition_pp2_exit_iter0_state12) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0_subdone))) begin
+            ap_enable_reg_pp2_iter0 <= 1'b0;
+        end else if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
+            ap_enable_reg_pp2_iter0 <= 1'b1;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_enable_reg_pp2_iter1 <= 1'b0;
+    end else begin
+        if (((1'b1 == ap_condition_pp2_exit_iter0_state12) & (1'b0 == ap_block_pp2_stage0_subdone))) begin
+            ap_enable_reg_pp2_iter1 <= (1'b1 ^ ap_condition_pp2_exit_iter0_state12);
+        end else if ((1'b0 == ap_block_pp2_stage0_subdone)) begin
+            ap_enable_reg_pp2_iter1 <= ap_enable_reg_pp2_iter0;
+        end else if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
+            ap_enable_reg_pp2_iter1 <= 1'b0;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
         ap_reg_ioackin_mAxis_TREADY <= 1'b0;
     end else begin
-        if (((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1)) | ((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)) | ((1'b1 == ap_CS_fsm_state12) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)) | ((1'b1 == ap_CS_fsm_state10) & (1'b0 == ap_block_state10_io) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state11) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)) | ((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io) & (tmp_11_fu_1256_p2 == 1'd0)) | ((1'b1 == ap_CS_fsm_state5) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)) | ((1'b1 == ap_CS_fsm_state3) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)))) begin
+        if (((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1)) | ((1'b1 == ap_CS_fsm_state16) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)) | ((1'b1 == ap_CS_fsm_state15) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)) | ((1'b1 == ap_CS_fsm_state14) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)) | ((ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0_11001) & (exitcond_reg_1617 == 1'd0)) | ((ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (1'b0 == ap_block_pp1_stage0_11001) & (tmp_11_reg_1565 == 1'd1)) | ((ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (1'b0 == ap_block_pp0_stage0_11001) & (tmp_s_reg_1546 == 1'd1)))) begin
             ap_reg_ioackin_mAxis_TREADY <= 1'b0;
-        end else if ((((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state13)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state12)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state11)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state5)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state3)))) begin
+        end else if ((((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state16)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state15)) | ((mAxis_TREADY == 1'b1) & (1'b1 == ap_CS_fsm_state14)) | ((1'b0 == ap_block_pp2_stage0_01001) & (mAxis_TREADY == 1'b1) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (mAxis_TREADY == 1'b1) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (mAxis_TREADY == 1'b1) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
             ap_reg_ioackin_mAxis_TREADY <= 1'b1;
         end
     end
@@ -5159,185 +5259,145 @@ end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        ap_return_0_preg <= 32'd0;
+        ap_sync_reg_grp_write_adcs4_fu_697_ap_done <= 1'b0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            ap_return_0_preg <= monitorWrite_nbytes_s_fu_1470_p2;
+        if (((1'b0 == ap_block_state10_on_subcall_done) & (1'b1 == ap_CS_fsm_state10))) begin
+            ap_sync_reg_grp_write_adcs4_fu_697_ap_done <= 1'b0;
+        end else if ((grp_write_adcs4_fu_697_ap_done == 1'b1)) begin
+            ap_sync_reg_grp_write_adcs4_fu_697_ap_done <= 1'b1;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        ap_return_1_preg <= 32'd0;
+        ap_sync_reg_grp_write_adcs4_fu_697_ap_ready <= 1'b0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            ap_return_1_preg <= monitorWrite_npromot_fu_1502_p2;
+        if (((1'b0 == ap_block_state10_on_subcall_done) & (1'b1 == ap_CS_fsm_state10))) begin
+            ap_sync_reg_grp_write_adcs4_fu_697_ap_ready <= 1'b0;
+        end else if ((grp_write_adcs4_fu_697_ap_ready == 1'b1)) begin
+            ap_sync_reg_grp_write_adcs4_fu_697_ap_ready <= 1'b1;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        ap_return_2_preg <= 32'd0;
+        bAxis_m_cur_fu_514 <= 64'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            ap_return_2_preg <= monitorWrite_npacket_fu_1486_p2;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst == 1'b1) begin
-        ap_sync_reg_grp_write_adcs4_fu_702_ap_done <= 1'b0;
-    end else begin
-        if (((1'b0 == ap_block_state8_on_subcall_done) & (1'b1 == ap_CS_fsm_state8))) begin
-            ap_sync_reg_grp_write_adcs4_fu_702_ap_done <= 1'b0;
-        end else if ((grp_write_adcs4_fu_702_ap_done == 1'b1)) begin
-            ap_sync_reg_grp_write_adcs4_fu_702_ap_done <= 1'b1;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst == 1'b1) begin
-        ap_sync_reg_grp_write_adcs4_fu_702_ap_ready <= 1'b0;
-    end else begin
-        if (((1'b0 == ap_block_state8_on_subcall_done) & (1'b1 == ap_CS_fsm_state8))) begin
-            ap_sync_reg_grp_write_adcs4_fu_702_ap_ready <= 1'b0;
-        end else if ((grp_write_adcs4_fu_702_ap_ready == 1'b1)) begin
-            ap_sync_reg_grp_write_adcs4_fu_702_ap_ready <= 1'b1;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst == 1'b1) begin
-        bAxis_m_cur_fu_512 <= 64'd0;
-    end else begin
-        if ((~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-            bAxis_m_cur_fu_512 <= bAxis_m_cur_1_fu_1352_p2;
-        end else if (((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io) & (tmp_11_fu_1256_p2 == 1'd0))) begin
-            bAxis_m_cur_fu_512 <= 64'd0;
+        if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+            bAxis_m_cur_fu_514 <= bAxis_m_cur_1_fu_1347_p2;
+        end else if ((1'b1 == ap_CS_fsm_state7)) begin
+            bAxis_m_cur_fu_514 <= 64'd0;
         end else begin
-            bAxis_m_cur_fu_512 <= grp_write_adcs4_fu_702_bAxis_m_cur;
+            bAxis_m_cur_fu_514 <= grp_write_adcs4_fu_697_bAxis_m_cur;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        bAxis_m_idx_fu_516 <= 32'd0;
+        bAxis_m_idx_fu_518 <= 32'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io) & (tmp_11_fu_1256_p2 == 1'd0))) begin
-            bAxis_m_idx_fu_516 <= bAxis_m_idx_2_fu_1290_p1;
+        if ((1'b1 == ap_CS_fsm_state7)) begin
+            bAxis_m_idx_fu_518 <= bAxis_m_idx_2_fu_1285_p1;
         end else begin
-            bAxis_m_idx_fu_516 <= grp_write_adcs4_fu_702_bAxis_m_idx;
+            bAxis_m_idx_fu_518 <= grp_write_adcs4_fu_697_bAxis_m_idx;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-                cur_idx_cast_reg_1617[0] <= 1'b0;
-        cur_idx_cast_reg_1617[1] <= 1'b0;
-        cur_idx_cast_reg_1617[2] <= 1'b0;
-        cur_idx_cast_reg_1617[3] <= 1'b0;
-        cur_idx_cast_reg_1617[4] <= 1'b0;
-        cur_idx_cast_reg_1617[5] <= 1'b0;
+                cur_idx_cast_reg_1592[0] <= 1'b0;
+        cur_idx_cast_reg_1592[1] <= 1'b0;
+        cur_idx_cast_reg_1592[2] <= 1'b0;
+        cur_idx_cast_reg_1592[3] <= 1'b0;
+        cur_idx_cast_reg_1592[4] <= 1'b0;
+        cur_idx_cast_reg_1592[5] <= 1'b0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state6) & (exitcond_i_fu_1304_p2 == 1'd1))) begin
-                        cur_idx_cast_reg_1617[5 : 0] <= cur_idx_cast_fu_1320_p1[5 : 0];
+        if (((1'b1 == ap_CS_fsm_state8) & (exitcond_i_fu_1299_p2 == 1'd1))) begin
+                        cur_idx_cast_reg_1592[5 : 0] <= cur_idx_cast_fu_1315_p1[5 : 0];
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        grp_write_adcs4_fu_702_ap_start_reg <= 1'b0;
+        exitcond_reg_1617 <= 1'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state7) | ((ap_sync_grp_write_adcs4_fu_702_ap_ready == 1'b0) & (1'b1 == ap_CS_fsm_state8)))) begin
-            grp_write_adcs4_fu_702_ap_start_reg <= 1'b1;
-        end else if ((grp_write_adcs4_fu_702_ap_ready == 1'b1)) begin
-            grp_write_adcs4_fu_702_ap_start_reg <= 1'b0;
+        if (((1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0_11001))) begin
+            exitcond_reg_1617 <= exitcond_fu_1385_p2;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        ichan_0_i_reg_691 <= 8'd0;
+        grp_write_adcs4_fu_697_ap_start_reg <= 1'b0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state11) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            ichan_0_i_reg_691 <= ichan_reg_1660;
-        end else if ((~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9))) begin
-            ichan_0_i_reg_691 <= 8'd0;
+        if (((1'b1 == ap_CS_fsm_state9) | ((ap_sync_grp_write_adcs4_fu_697_ap_ready == 1'b0) & (1'b1 == ap_CS_fsm_state10)))) begin
+            grp_write_adcs4_fu_697_ap_start_reg <= 1'b1;
+        end else if ((grp_write_adcs4_fu_697_ap_ready == 1'b1)) begin
+            grp_write_adcs4_fu_697_ap_start_reg <= 1'b0;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        ichan_reg_1660 <= 8'd0;
+        ichan_0_i_reg_686 <= 8'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state10) & (1'b0 == ap_block_state10_io) & (exitcond_fu_1390_p2 == 1'd0))) begin
-            ichan_reg_1660 <= ichan_fu_1417_p2;
+        if (((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0_11001) & (exitcond_fu_1385_p2 == 1'd0))) begin
+            ichan_0_i_reg_686 <= ichan_fu_1412_p2;
+        end else if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
+            ichan_0_i_reg_686 <= 8'd0;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        idx1_0_i_reg_659 <= 3'd0;
+        idx1_0_i_reg_654 <= 3'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state5) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            idx1_0_i_reg_659 <= idx_reg_1594;
-        end else if (((1'b1 == ap_CS_fsm_state2) & (tmp_s_fu_1214_p2 == 1'd0))) begin
-            idx1_0_i_reg_659 <= 3'd0;
+        if (((ap_enable_reg_pp1_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (1'b0 == ap_block_pp1_stage0_11001) & (tmp_11_fu_1251_p2 == 1'd1))) begin
+            idx1_0_i_reg_654 <= idx_fu_1256_p2;
+        end else if ((1'b1 == ap_CS_fsm_state4)) begin
+            idx1_0_i_reg_654 <= 3'd0;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        idx_0_i_reg_646 <= 1'd0;
+        idx_0_i_reg_642 <= 1'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state3) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            idx_0_i_reg_646 <= 1'd1;
+        if (((ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (1'b0 == ap_block_pp0_stage0_11001) & (tmp_s_reg_1546 == 1'd1))) begin
+            idx_0_i_reg_642 <= 1'd1;
         end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1))) begin
-            idx_0_i_reg_646 <= 1'd0;
+            idx_0_i_reg_642 <= 1'd0;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        idx_reg_1594 <= 3'd0;
+        isg_0_i_reg_665 <= 6'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io))) begin
-            idx_reg_1594 <= idx_fu_1261_p2;
+        if (((1'b0 == ap_block_state10_on_subcall_done) & (1'b1 == ap_CS_fsm_state10))) begin
+            isg_0_i_reg_665 <= isg_reg_1582;
+        end else if ((1'b1 == ap_CS_fsm_state7)) begin
+            isg_0_i_reg_665 <= 6'd0;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        isg_0_i_reg_670 <= 6'd0;
+        isg_reg_1582 <= 6'd0;
     end else begin
-        if (((1'b0 == ap_block_state8_on_subcall_done) & (1'b1 == ap_CS_fsm_state8))) begin
-            isg_0_i_reg_670 <= isg_reg_1607;
-        end else if (((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io) & (tmp_11_fu_1256_p2 == 1'd0))) begin
-            isg_0_i_reg_670 <= 6'd0;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst == 1'b1) begin
-        isg_reg_1607 <= 6'd0;
-    end else begin
-        if ((1'b1 == ap_CS_fsm_state6)) begin
-            isg_reg_1607 <= isg_fu_1310_p2;
+        if ((1'b1 == ap_CS_fsm_state8)) begin
+            isg_reg_1582 <= isg_fu_1305_p2;
         end
     end
 end
@@ -5346,9 +5406,9 @@ always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
         lclMonitor_nbytes <= 32'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            lclMonitor_nbytes <= monitorWrite_nbytes_s_fu_1470_p2;
-        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1111_p1))) begin
+        if (((1'b1 == ap_CS_fsm_state15) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
+            lclMonitor_nbytes <= monitorWrite_nbytes_s_fu_1466_p2;
+        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1106_p1))) begin
             lclMonitor_nbytes <= 32'd0;
         end
     end
@@ -5358,9 +5418,9 @@ always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
         lclMonitor_npackets <= 32'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            lclMonitor_npackets <= monitorWrite_npacket_fu_1486_p2;
-        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1111_p1))) begin
+        if (((1'b1 == ap_CS_fsm_state16) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
+            lclMonitor_npackets <= monitorWrite_npacket_fu_1482_p2;
+        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1106_p1))) begin
             lclMonitor_npackets <= 32'd0;
         end
     end
@@ -5370,9 +5430,9 @@ always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
         lclMonitor_npromoted <= 32'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            lclMonitor_npromoted <= monitorWrite_npromot_fu_1502_p2;
-        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1111_p1))) begin
+        if (((1'b1 == ap_CS_fsm_state16) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
+            lclMonitor_npromoted <= monitorWrite_npromot_fu_1498_p2;
+        end else if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1) & (1'd1 == First_load_load_fu_1106_p1))) begin
             lclMonitor_npromoted <= 32'd0;
         end
     end
@@ -5380,138 +5440,136 @@ end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-                nbytes_reg_1665[3] <= 1'b0;
-        nbytes_reg_1665[4] <= 1'b0;
-        nbytes_reg_1665[5] <= 1'b0;
-        nbytes_reg_1665[6] <= 1'b0;
-        nbytes_reg_1665[7] <= 1'b0;
-        nbytes_reg_1665[8] <= 1'b0;
-        nbytes_reg_1665[9] <= 1'b0;
-        nbytes_reg_1665[10] <= 1'b0;
-        nbytes_reg_1665[11] <= 1'b0;
-        nbytes_reg_1665[12] <= 1'b0;
-        nbytes_reg_1665[13] <= 1'b0;
-        nbytes_reg_1665[14] <= 1'b0;
-        nbytes_reg_1665[15] <= 1'b0;
-        nbytes_reg_1665[16] <= 1'b0;
-        nbytes_reg_1665[17] <= 1'b0;
-        nbytes_reg_1665[18] <= 1'b0;
-        nbytes_reg_1665[19] <= 1'b0;
-        nbytes_reg_1665[20] <= 1'b0;
-        nbytes_reg_1665[21] <= 1'b0;
-        nbytes_reg_1665[22] <= 1'b0;
-        nbytes_reg_1665[23] <= 1'b0;
-        nbytes_reg_1665[24] <= 1'b0;
-        nbytes_reg_1665[25] <= 1'b0;
-        nbytes_reg_1665[26] <= 1'b0;
-        nbytes_reg_1665[27] <= 1'b0;
-        nbytes_reg_1665[28] <= 1'b0;
-        nbytes_reg_1665[29] <= 1'b0;
+        odx_2_reg_677 <= 27'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state12) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-                        nbytes_reg_1665[29 : 3] <= nbytes_fu_1439_p2[29 : 3];
+        if (((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0_11001) & (exitcond_fu_1385_p2 == 1'd0))) begin
+            odx_2_reg_677 <= odx_1_fu_1406_p2;
+        end else if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
+            odx_2_reg_677 <= odx_cast_fu_1375_p1;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        odx_1_reg_1655 <= 27'd0;
+        odx_reg_1611 <= 27'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state10) & (1'b0 == ap_block_state10_io) & (exitcond_fu_1390_p2 == 1'd0))) begin
-            odx_1_reg_1655 <= odx_1_fu_1411_p2;
+        if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
+            odx_reg_1611 <= odx_fu_1379_p2;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        odx_2_reg_682 <= 27'd0;
+        reg_1100 <= 32'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state11) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-            odx_2_reg_682 <= odx_1_reg_1655;
-        end else if ((~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9))) begin
-            odx_2_reg_682 <= odx_cast_fu_1380_p1;
+        if ((((1'b1 == ap_CS_fsm_state8) & (exitcond_i_fu_1299_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state8) & (exitcond_i_fu_1299_p2 == 1'd0)))) begin
+            reg_1100 <= bAxis_m_idx_fu_518;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        odx_reg_1636 <= 27'd0;
+        tmp_11_reg_1565 <= 1'd0;
     end else begin
-        if ((~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9))) begin
-            odx_reg_1636 <= odx_fu_1384_p2;
+        if (((1'b1 == ap_CS_fsm_pp1_stage0) & (1'b0 == ap_block_pp1_stage0_11001))) begin
+            tmp_11_reg_1565 <= tmp_11_fu_1251_p2;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        reg_1105 <= 32'd0;
+        tmp_13_reg_1597 <= 1'd0;
     end else begin
-        if ((((1'b1 == ap_CS_fsm_state6) & (exitcond_i_fu_1304_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state6) & (exitcond_i_fu_1304_p2 == 1'd0)))) begin
-            reg_1105 <= bAxis_m_idx_fu_516;
+        if (((1'b1 == ap_CS_fsm_state8) & (exitcond_i_fu_1299_p2 == 1'd1))) begin
+            tmp_13_reg_1597 <= tmp_13_fu_1319_p2;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        tmp_14_reg_1622 <= 1'd0;
+                tmp_15_reg_1601[2] <= 1'b0;
+        tmp_15_reg_1601[3] <= 1'b0;
+        tmp_15_reg_1601[4] <= 1'b0;
+        tmp_15_reg_1601[5] <= 1'b0;
+        tmp_15_reg_1601[6] <= 1'b0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state6) & (exitcond_i_fu_1304_p2 == 1'd1))) begin
-            tmp_14_reg_1622 <= tmp_14_fu_1324_p2;
+        if ((1'b1 == ap_CS_fsm_state9)) begin
+                        tmp_15_reg_1601[6 : 2] <= tmp_15_fu_1329_p3[6 : 2];
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-                tmp_16_reg_1626[2] <= 1'b0;
-        tmp_16_reg_1626[3] <= 1'b0;
-        tmp_16_reg_1626[4] <= 1'b0;
-        tmp_16_reg_1626[5] <= 1'b0;
-        tmp_16_reg_1626[6] <= 1'b0;
+                tmp_29_cast_reg_1555[0] <= 1'b0;
     end else begin
-        if ((1'b1 == ap_CS_fsm_state7)) begin
-                        tmp_16_reg_1626[6 : 2] <= tmp_16_fu_1334_p3[6 : 2];
+        if ((1'b1 == ap_CS_fsm_state4)) begin
+                        tmp_29_cast_reg_1555[0] <= tmp_29_cast_fu_1229_p1[0];
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-                tmp_29_cast_reg_1581[0] <= 1'b0;
+                tmp_31_cast_reg_1560[0] <= 1'b0;
+        tmp_31_cast_reg_1560[1] <= 1'b0;
+        tmp_31_cast_reg_1560[2] <= 1'b0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state2) & (tmp_s_fu_1214_p2 == 1'd0))) begin
-                        tmp_29_cast_reg_1581[0] <= tmp_29_cast_fu_1229_p1[0];
+        if ((1'b1 == ap_CS_fsm_state4)) begin
+                        tmp_31_cast_reg_1560[2 : 0] <= tmp_31_cast_fu_1243_p1[2 : 0];
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-                tmp_31_cast_reg_1586[0] <= 1'b0;
-        tmp_31_cast_reg_1586[1] <= 1'b0;
-        tmp_31_cast_reg_1586[2] <= 1'b0;
+        tmp_s_reg_1546 <= 1'd0;
     end else begin
-        if (((1'b1 == ap_CS_fsm_state2) & (tmp_s_fu_1214_p2 == 1'd0))) begin
-                        tmp_31_cast_reg_1586[2 : 0] <= tmp_31_cast_fu_1243_p1[2 : 0];
+        if (((1'b1 == ap_CS_fsm_pp0_stage0) & (1'b0 == ap_block_pp0_stage0_11001))) begin
+            tmp_s_reg_1546 <= tmp_s_fu_1209_p2;
         end
     end
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        StgValue_106_write_r_fu_1080_ap_start = 1'b1;
+    if (((1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        StgValue_113_write_r_fu_1075_ap_start = 1'b1;
     end else begin
-        StgValue_106_write_r_fu_1080_ap_start = 1'b0;
+        StgValue_113_write_r_fu_1075_ap_start = 1'b0;
     end
 end
 
 always @ (*) begin
-    if ((((ap_start == 1'b0) & (1'b1 == ap_CS_fsm_state1)) | ((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)))) begin
+    if ((tmp_s_fu_1209_p2 == 1'd0)) begin
+        ap_condition_pp0_exit_iter0_state2 = 1'b1;
+    end else begin
+        ap_condition_pp0_exit_iter0_state2 = 1'b0;
+    end
+end
+
+always @ (*) begin
+    if ((tmp_11_fu_1251_p2 == 1'd0)) begin
+        ap_condition_pp1_exit_iter0_state5 = 1'b1;
+    end else begin
+        ap_condition_pp1_exit_iter0_state5 = 1'b0;
+    end
+end
+
+always @ (*) begin
+    if ((exitcond_fu_1385_p2 == 1'd1)) begin
+        ap_condition_pp2_exit_iter0_state12 = 1'b1;
+    end else begin
+        ap_condition_pp2_exit_iter0_state12 = 1'b0;
+    end
+end
+
+always @ (*) begin
+    if ((((ap_start == 1'b0) & (1'b1 == ap_CS_fsm_state1)) | ((1'b1 == ap_CS_fsm_state16) & (ap_sig_ioackin_mAxis_TREADY == 1'b1)))) begin
         ap_done = 1'b1;
     end else begin
         ap_done = 1'b0;
@@ -5527,34 +5585,42 @@ always @ (*) begin
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
+    if (((ap_enable_reg_pp0_iter0 == 1'b0) & (ap_enable_reg_pp0_iter1 == 1'b0))) begin
+        ap_idle_pp0 = 1'b1;
+    end else begin
+        ap_idle_pp0 = 1'b0;
+    end
+end
+
+always @ (*) begin
+    if (((ap_enable_reg_pp1_iter0 == 1'b0) & (ap_enable_reg_pp1_iter1 == 1'b0))) begin
+        ap_idle_pp1 = 1'b1;
+    end else begin
+        ap_idle_pp1 = 1'b0;
+    end
+end
+
+always @ (*) begin
+    if (((ap_enable_reg_pp2_iter0 == 1'b0) & (ap_enable_reg_pp2_iter1 == 1'b0))) begin
+        ap_idle_pp2 = 1'b1;
+    end else begin
+        ap_idle_pp2 = 1'b0;
+    end
+end
+
+always @ (*) begin
+    if (((ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (1'b0 == ap_block_pp0_stage0) & (tmp_s_reg_1546 == 1'd1))) begin
+        ap_phi_mux_idx_0_i_phi_fu_646_p4 = 1'd1;
+    end else begin
+        ap_phi_mux_idx_0_i_phi_fu_646_p4 = idx_0_i_reg_642;
+    end
+end
+
+always @ (*) begin
+    if (((1'b1 == ap_CS_fsm_state16) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
         ap_ready = 1'b1;
     end else begin
         ap_ready = 1'b0;
-    end
-end
-
-always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-        ap_return_0 = monitorWrite_nbytes_s_fu_1470_p2;
-    end else begin
-        ap_return_0 = ap_return_0_preg;
-    end
-end
-
-always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-        ap_return_1 = monitorWrite_npromot_fu_1502_p2;
-    end else begin
-        ap_return_1 = ap_return_1_preg;
-    end
-end
-
-always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-        ap_return_2 = monitorWrite_npacket_fu_1486_p2;
-    end else begin
-        ap_return_2 = ap_return_2_preg;
     end
 end
 
@@ -5567,43 +5633,41 @@ always @ (*) begin
 end
 
 always @ (*) begin
-    if (((1'b0 == ap_block_state8_on_subcall_done) & (1'b1 == ap_CS_fsm_state8))) begin
-        grp_write_adcs4_fu_702_ap_continue = 1'b1;
+    if (((1'b0 == ap_block_state10_on_subcall_done) & (1'b1 == ap_CS_fsm_state10))) begin
+        grp_write_adcs4_fu_697_ap_continue = 1'b1;
     end else begin
-        grp_write_adcs4_fu_702_ap_continue = 1'b0;
+        grp_write_adcs4_fu_697_ap_continue = 1'b0;
     end
 end
 
 always @ (*) begin
-    if ((1'b1 == ap_CS_fsm_state13)) begin
+    if ((1'b1 == ap_CS_fsm_state16)) begin
         mAxis_TDATA = 64'd8109629009190453248;
-    end else if ((1'b1 == ap_CS_fsm_state12)) begin
-        mAxis_TDATA = statusId_fu_1455_p3;
-    end else if ((1'b1 == ap_CS_fsm_state11)) begin
-        mAxis_TDATA = w64_fu_1423_p3;
-    end else if (((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1))) begin
+    end else if ((1'b1 == ap_CS_fsm_state15)) begin
+        mAxis_TDATA = statusId_fu_1454_p3;
+    end else if ((1'b1 == ap_CS_fsm_state14)) begin
         mAxis_TDATA = 64'd139912586215971;
-    end else if ((1'b1 == ap_CS_fsm_state5)) begin
+    end else if (((1'b0 == ap_block_pp2_stage0_01001) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0))) begin
+        mAxis_TDATA = w64_fu_1418_p3;
+    end else if (((1'b0 == ap_block_pp1_stage0_01001) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1))) begin
         mAxis_TDATA = pktCtx_m_hdrsBuf_q0;
-    end else if (((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0))) begin
-        mAxis_TDATA = pktCtx_m_lasttimesta;
-    end else if ((1'b1 == ap_CS_fsm_state3)) begin
-        mAxis_TDATA = tmp_data_V_1_fu_1247_p1;
+    end else if (((1'b0 == ap_block_pp0_stage0_01001) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1))) begin
+        mAxis_TDATA = tmp_data_V_1_fu_1219_p1;
     end else if (((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1))) begin
-        mAxis_TDATA = recHeader_fu_1201_p2;
-    end else if (((1'b1 == StgValue_106_write_r_fu_1080_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TDATA = StgValue_106_write_r_fu_1080_mAxis_TDATA;
-    end else if (((1'b1 == ap_CS_fsm_state8) & (grp_write_adcs4_fu_702_mAxis_TVALID == 1'b1))) begin
-        mAxis_TDATA = grp_write_adcs4_fu_702_mAxis_TDATA;
+        mAxis_TDATA = recHeader_fu_1196_p2;
+    end else if (((1'b1 == StgValue_113_write_r_fu_1075_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TDATA = StgValue_113_write_r_fu_1075_mAxis_TDATA;
+    end else if (((1'b1 == ap_CS_fsm_state10) & (grp_write_adcs4_fu_697_mAxis_TVALID == 1'b1))) begin
+        mAxis_TDATA = grp_write_adcs4_fu_697_mAxis_TDATA;
     end else begin
         mAxis_TDATA = 'bx;
     end
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TDATA_blk_n = StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n;
-    end else if (((1'b1 == ap_CS_fsm_state13) | (1'b1 == ap_CS_fsm_state12) | (1'b1 == ap_CS_fsm_state11) | (1'b1 == ap_CS_fsm_state5) | (1'b1 == ap_CS_fsm_state3) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)))) begin
+    if (((1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TDATA_blk_n = StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n;
+    end else if (((1'b1 == ap_CS_fsm_state16) | (1'b1 == ap_CS_fsm_state15) | (1'b1 == ap_CS_fsm_state14) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (1'b0 == ap_block_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (1'b0 == ap_block_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TDATA_blk_n = mAxis_TREADY;
     end else begin
         mAxis_TDATA_blk_n = 1'b1;
@@ -5611,109 +5675,109 @@ always @ (*) begin
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) | (1'b1 == ap_CS_fsm_state12) | (1'b1 == ap_CS_fsm_state11) | (1'b1 == ap_CS_fsm_state5) | (1'b1 == ap_CS_fsm_state3) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)))) begin
+    if (((1'b1 == ap_CS_fsm_state16) | (1'b1 == ap_CS_fsm_state15) | (1'b1 == ap_CS_fsm_state14) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b0 == ap_block_pp2_stage0_01001) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TDEST = 1'd0;
-    end else if (((1'b1 == StgValue_106_write_r_fu_1080_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TDEST = StgValue_106_write_r_fu_1080_mAxis_TDEST;
-    end else if (((1'b1 == ap_CS_fsm_state8) & (grp_write_adcs4_fu_702_mAxis_TVALID == 1'b1))) begin
-        mAxis_TDEST = grp_write_adcs4_fu_702_mAxis_TDEST;
+    end else if (((1'b1 == StgValue_113_write_r_fu_1075_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TDEST = StgValue_113_write_r_fu_1075_mAxis_TDEST;
+    end else if (((1'b1 == ap_CS_fsm_state10) & (grp_write_adcs4_fu_697_mAxis_TVALID == 1'b1))) begin
+        mAxis_TDEST = grp_write_adcs4_fu_697_mAxis_TDEST;
     end else begin
         mAxis_TDEST = 'bx;
     end
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) | (1'b1 == ap_CS_fsm_state12) | (1'b1 == ap_CS_fsm_state11) | (1'b1 == ap_CS_fsm_state5) | (1'b1 == ap_CS_fsm_state3) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)))) begin
+    if (((1'b1 == ap_CS_fsm_state16) | (1'b1 == ap_CS_fsm_state15) | (1'b1 == ap_CS_fsm_state14) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b0 == ap_block_pp2_stage0_01001) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TID = 1'd0;
-    end else if (((1'b1 == StgValue_106_write_r_fu_1080_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TID = StgValue_106_write_r_fu_1080_mAxis_TID;
-    end else if (((1'b1 == ap_CS_fsm_state8) & (grp_write_adcs4_fu_702_mAxis_TVALID == 1'b1))) begin
-        mAxis_TID = grp_write_adcs4_fu_702_mAxis_TID;
+    end else if (((1'b1 == StgValue_113_write_r_fu_1075_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TID = StgValue_113_write_r_fu_1075_mAxis_TID;
+    end else if (((1'b1 == ap_CS_fsm_state10) & (grp_write_adcs4_fu_697_mAxis_TVALID == 1'b1))) begin
+        mAxis_TID = grp_write_adcs4_fu_697_mAxis_TID;
     end else begin
         mAxis_TID = 'bx;
     end
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) | (1'b1 == ap_CS_fsm_state12) | (1'b1 == ap_CS_fsm_state11) | (1'b1 == ap_CS_fsm_state5) | (1'b1 == ap_CS_fsm_state3) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)))) begin
+    if (((1'b1 == ap_CS_fsm_state16) | (1'b1 == ap_CS_fsm_state15) | (1'b1 == ap_CS_fsm_state14) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b0 == ap_block_pp2_stage0_01001) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TKEEP = 8'd255;
-    end else if (((1'b1 == StgValue_106_write_r_fu_1080_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TKEEP = StgValue_106_write_r_fu_1080_mAxis_TKEEP;
-    end else if (((1'b1 == ap_CS_fsm_state8) & (grp_write_adcs4_fu_702_mAxis_TVALID == 1'b1))) begin
-        mAxis_TKEEP = grp_write_adcs4_fu_702_mAxis_TKEEP;
+    end else if (((1'b1 == StgValue_113_write_r_fu_1075_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TKEEP = StgValue_113_write_r_fu_1075_mAxis_TKEEP;
+    end else if (((1'b1 == ap_CS_fsm_state10) & (grp_write_adcs4_fu_697_mAxis_TVALID == 1'b1))) begin
+        mAxis_TKEEP = grp_write_adcs4_fu_697_mAxis_TKEEP;
     end else begin
         mAxis_TKEEP = 'bx;
     end
 end
 
 always @ (*) begin
-    if ((1'b1 == ap_CS_fsm_state13)) begin
+    if ((1'b1 == ap_CS_fsm_state16)) begin
         mAxis_TLAST = 1'd1;
-    end else if (((1'b1 == ap_CS_fsm_state12) | (1'b1 == ap_CS_fsm_state11) | (1'b1 == ap_CS_fsm_state5) | (1'b1 == ap_CS_fsm_state3) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)))) begin
+    end else if (((1'b1 == ap_CS_fsm_state15) | (1'b1 == ap_CS_fsm_state14) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b0 == ap_block_pp2_stage0_01001) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TLAST = 1'd0;
-    end else if (((1'b1 == StgValue_106_write_r_fu_1080_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TLAST = StgValue_106_write_r_fu_1080_mAxis_TLAST;
-    end else if (((1'b1 == ap_CS_fsm_state8) & (grp_write_adcs4_fu_702_mAxis_TVALID == 1'b1))) begin
-        mAxis_TLAST = grp_write_adcs4_fu_702_mAxis_TLAST;
+    end else if (((1'b1 == StgValue_113_write_r_fu_1075_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TLAST = StgValue_113_write_r_fu_1075_mAxis_TLAST;
+    end else if (((1'b1 == ap_CS_fsm_state10) & (grp_write_adcs4_fu_697_mAxis_TVALID == 1'b1))) begin
+        mAxis_TLAST = grp_write_adcs4_fu_697_mAxis_TLAST;
     end else begin
         mAxis_TLAST = 'bx;
     end
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) | (1'b1 == ap_CS_fsm_state12) | (1'b1 == ap_CS_fsm_state11) | (1'b1 == ap_CS_fsm_state5) | (1'b1 == ap_CS_fsm_state3) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)))) begin
+    if (((1'b1 == ap_CS_fsm_state16) | (1'b1 == ap_CS_fsm_state15) | (1'b1 == ap_CS_fsm_state14) | ((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((1'b0 == ap_block_pp2_stage0_01001) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TSTRB = 8'd0;
-    end else if (((1'b1 == StgValue_106_write_r_fu_1080_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TSTRB = StgValue_106_write_r_fu_1080_mAxis_TSTRB;
-    end else if (((1'b1 == ap_CS_fsm_state8) & (grp_write_adcs4_fu_702_mAxis_TVALID == 1'b1))) begin
-        mAxis_TSTRB = grp_write_adcs4_fu_702_mAxis_TSTRB;
+    end else if (((1'b1 == StgValue_113_write_r_fu_1075_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TSTRB = StgValue_113_write_r_fu_1075_mAxis_TSTRB;
+    end else if (((1'b1 == ap_CS_fsm_state10) & (grp_write_adcs4_fu_697_mAxis_TVALID == 1'b1))) begin
+        mAxis_TSTRB = grp_write_adcs4_fu_697_mAxis_TSTRB;
     end else begin
         mAxis_TSTRB = 'bx;
     end
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state13) | (1'b1 == ap_CS_fsm_state12) | (1'b1 == ap_CS_fsm_state11) | (1'b1 == ap_CS_fsm_state5) | (1'b1 == ap_CS_fsm_state3) | ((1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)))) begin
+    if (((1'b1 == ap_CS_fsm_state16) | (1'b1 == ap_CS_fsm_state15) | (1'b1 == ap_CS_fsm_state14) | ((1'b0 == ap_block_pp2_stage0_01001) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TUSER = 4'd0;
     end else if (((1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1))) begin
         mAxis_TUSER = 4'd2;
-    end else if (((1'b1 == StgValue_106_write_r_fu_1080_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TUSER = StgValue_106_write_r_fu_1080_mAxis_TUSER;
-    end else if (((1'b1 == ap_CS_fsm_state8) & (grp_write_adcs4_fu_702_mAxis_TVALID == 1'b1))) begin
-        mAxis_TUSER = grp_write_adcs4_fu_702_mAxis_TUSER;
+    end else if (((1'b1 == StgValue_113_write_r_fu_1075_mAxis_TVALID) & (1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TUSER = StgValue_113_write_r_fu_1075_mAxis_TUSER;
+    end else if (((1'b1 == ap_CS_fsm_state10) & (grp_write_adcs4_fu_697_mAxis_TVALID == 1'b1))) begin
+        mAxis_TUSER = grp_write_adcs4_fu_697_mAxis_TUSER;
     end else begin
         mAxis_TUSER = 'bx;
     end
 end
 
 always @ (*) begin
-    if ((((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state13)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state12)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state10) & (exitcond_fu_1390_p2 == 1'd1)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state11)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state4) & (tmp_11_fu_1256_p2 == 1'd0)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state5)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state3)))) begin
+    if ((((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state1) & (ap_start == 1'b1)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state16)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state15)) | ((ap_reg_ioackin_mAxis_TREADY == 1'b0) & (1'b1 == ap_CS_fsm_state14)) | ((1'b0 == ap_block_pp2_stage0_01001) & (ap_reg_ioackin_mAxis_TREADY == 1'b0) & (ap_enable_reg_pp2_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (exitcond_reg_1617 == 1'd0)) | ((1'b0 == ap_block_pp1_stage0_01001) & (ap_reg_ioackin_mAxis_TREADY == 1'b0) & (ap_enable_reg_pp1_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (tmp_11_reg_1565 == 1'd1)) | ((1'b0 == ap_block_pp0_stage0_01001) & (ap_reg_ioackin_mAxis_TREADY == 1'b0) & (ap_enable_reg_pp0_iter1 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (tmp_s_reg_1546 == 1'd1)))) begin
         mAxis_TVALID = 1'b1;
-    end else if (((1'b1 == ap_CS_fsm_state9) & (tmp_14_reg_1622 == 1'd0))) begin
-        mAxis_TVALID = StgValue_106_write_r_fu_1080_mAxis_TVALID;
-    end else if ((1'b1 == ap_CS_fsm_state8)) begin
-        mAxis_TVALID = grp_write_adcs4_fu_702_mAxis_TVALID;
+    end else if (((1'b1 == ap_CS_fsm_state11) & (tmp_13_reg_1597 == 1'd0))) begin
+        mAxis_TVALID = StgValue_113_write_r_fu_1075_mAxis_TVALID;
+    end else if ((1'b1 == ap_CS_fsm_state10)) begin
+        mAxis_TVALID = grp_write_adcs4_fu_697_mAxis_TVALID;
     end else begin
         mAxis_TVALID = 1'b0;
     end
 end
 
 always @ (*) begin
-    if ((1'b1 == ap_CS_fsm_state10)) begin
-        offsets_address0 = tmp_21_fu_1395_p1;
-    end else if ((1'b1 == ap_CS_fsm_state9)) begin
+    if (((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0))) begin
+        offsets_address0 = tmp_24_fu_1390_p1;
+    end else if ((1'b1 == ap_CS_fsm_state11)) begin
         offsets_address0 = 64'd128;
-    end else if ((1'b1 == ap_CS_fsm_state8)) begin
-        offsets_address0 = grp_write_adcs4_fu_702_offsets_address0;
+    end else if ((1'b1 == ap_CS_fsm_state10)) begin
+        offsets_address0 = grp_write_adcs4_fu_697_offsets_address0;
     end else begin
         offsets_address0 = 'bx;
     end
 end
 
 always @ (*) begin
-    if ((1'b1 == ap_CS_fsm_state10)) begin
-        offsets_address1 = tmp_23_fu_1406_p1;
-    end else if ((1'b1 == ap_CS_fsm_state9)) begin
+    if (((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0))) begin
+        offsets_address1 = tmp_26_fu_1401_p1;
+    end else if ((1'b1 == ap_CS_fsm_state11)) begin
         offsets_address1 = 64'd129;
     end else begin
         offsets_address1 = 'bx;
@@ -5721,17 +5785,17 @@ always @ (*) begin
 end
 
 always @ (*) begin
-    if ((((1'b1 == ap_CS_fsm_state10) & (1'b0 == ap_block_state10_io)) | (~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9)))) begin
+    if ((((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0_11001)) | (~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11)))) begin
         offsets_ce0 = 1'b1;
-    end else if ((1'b1 == ap_CS_fsm_state8)) begin
-        offsets_ce0 = grp_write_adcs4_fu_702_offsets_ce0;
+    end else if ((1'b1 == ap_CS_fsm_state10)) begin
+        offsets_ce0 = grp_write_adcs4_fu_697_offsets_ce0;
     end else begin
         offsets_ce0 = 1'b0;
     end
 end
 
 always @ (*) begin
-    if ((((1'b1 == ap_CS_fsm_state10) & (1'b0 == ap_block_state10_io)) | (~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9)))) begin
+    if ((((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp2_stage0) & (1'b0 == ap_block_pp2_stage0_11001)) | (~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11)))) begin
         offsets_ce1 = 1'b1;
     end else begin
         offsets_ce1 = 1'b0;
@@ -5739,27 +5803,27 @@ always @ (*) begin
 end
 
 always @ (*) begin
-    if ((1'b1 == ap_CS_fsm_state9)) begin
-        offsets_d0 = reg_1105;
-    end else if ((1'b1 == ap_CS_fsm_state8)) begin
-        offsets_d0 = grp_write_adcs4_fu_702_offsets_d0;
+    if ((1'b1 == ap_CS_fsm_state11)) begin
+        offsets_d0 = reg_1100;
+    end else if ((1'b1 == ap_CS_fsm_state10)) begin
+        offsets_d0 = grp_write_adcs4_fu_697_offsets_d0;
     end else begin
         offsets_d0 = 'bx;
     end
 end
 
 always @ (*) begin
-    if ((~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9))) begin
+    if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
         offsets_we0 = 1'b1;
-    end else if ((1'b1 == ap_CS_fsm_state8)) begin
-        offsets_we0 = grp_write_adcs4_fu_702_offsets_we0;
+    end else if ((1'b1 == ap_CS_fsm_state10)) begin
+        offsets_we0 = grp_write_adcs4_fu_697_offsets_we0;
     end else begin
         offsets_we0 = 1'b0;
     end
 end
 
 always @ (*) begin
-    if ((~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9))) begin
+    if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
         offsets_we1 = 1'b1;
     end else begin
         offsets_we1 = 1'b0;
@@ -5767,7 +5831,7 @@ always @ (*) begin
 end
 
 always @ (*) begin
-    if ((1'b1 == ap_CS_fsm_state2)) begin
+    if (((ap_enable_reg_pp0_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage0) & (1'b0 == ap_block_pp0_stage0_11001))) begin
         pktCtx_m_excsBuf_ce0 = 1'b1;
     end else begin
         pktCtx_m_excsBuf_ce0 = 1'b0;
@@ -5775,7 +5839,7 @@ always @ (*) begin
 end
 
 always @ (*) begin
-    if (((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io))) begin
+    if (((ap_enable_reg_pp1_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp1_stage0) & (1'b0 == ap_block_pp1_stage0_11001))) begin
         pktCtx_m_hdrsBuf_ce0 = 1'b1;
     end else begin
         pktCtx_m_hdrsBuf_ce0 = 1'b0;
@@ -5786,93 +5850,87 @@ always @ (*) begin
     case (ap_CS_fsm)
         ap_ST_fsm_state1 : begin
             if ((~((ap_start == 1'b0) | (ap_sig_ioackin_mAxis_TREADY == 1'b0)) & (1'b1 == ap_CS_fsm_state1))) begin
-                ap_NS_fsm = ap_ST_fsm_state2;
+                ap_NS_fsm = ap_ST_fsm_pp0_stage0;
             end else begin
                 ap_NS_fsm = ap_ST_fsm_state1;
             end
         end
-        ap_ST_fsm_state2 : begin
-            if (((1'b1 == ap_CS_fsm_state2) & (tmp_s_fu_1214_p2 == 1'd0))) begin
+        ap_ST_fsm_pp0_stage0 : begin
+            if (~((ap_enable_reg_pp0_iter0 == 1'b1) & (1'b0 == ap_block_pp0_stage0_subdone) & (tmp_s_fu_1209_p2 == 1'd0))) begin
+                ap_NS_fsm = ap_ST_fsm_pp0_stage0;
+            end else if (((ap_enable_reg_pp0_iter0 == 1'b1) & (1'b0 == ap_block_pp0_stage0_subdone) & (tmp_s_fu_1209_p2 == 1'd0))) begin
                 ap_NS_fsm = ap_ST_fsm_state4;
             end else begin
-                ap_NS_fsm = ap_ST_fsm_state3;
-            end
-        end
-        ap_ST_fsm_state3 : begin
-            if (((1'b1 == ap_CS_fsm_state3) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-                ap_NS_fsm = ap_ST_fsm_state2;
-            end else begin
-                ap_NS_fsm = ap_ST_fsm_state3;
+                ap_NS_fsm = ap_ST_fsm_pp0_stage0;
             end
         end
         ap_ST_fsm_state4 : begin
-            if (((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io) & (tmp_11_fu_1256_p2 == 1'd0))) begin
-                ap_NS_fsm = ap_ST_fsm_state6;
-            end else if (((1'b1 == ap_CS_fsm_state4) & (1'b0 == ap_block_state4_io) & (tmp_11_fu_1256_p2 == 1'd1))) begin
-                ap_NS_fsm = ap_ST_fsm_state5;
-            end else begin
-                ap_NS_fsm = ap_ST_fsm_state4;
-            end
+            ap_NS_fsm = ap_ST_fsm_pp1_stage0;
         end
-        ap_ST_fsm_state5 : begin
-            if (((1'b1 == ap_CS_fsm_state5) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-                ap_NS_fsm = ap_ST_fsm_state4;
-            end else begin
-                ap_NS_fsm = ap_ST_fsm_state5;
-            end
-        end
-        ap_ST_fsm_state6 : begin
-            if (((1'b1 == ap_CS_fsm_state6) & (exitcond_i_fu_1304_p2 == 1'd1))) begin
-                ap_NS_fsm = ap_ST_fsm_state9;
-            end else begin
+        ap_ST_fsm_pp1_stage0 : begin
+            if (~((ap_enable_reg_pp1_iter0 == 1'b1) & (1'b0 == ap_block_pp1_stage0_subdone) & (tmp_11_fu_1251_p2 == 1'd0))) begin
+                ap_NS_fsm = ap_ST_fsm_pp1_stage0;
+            end else if (((ap_enable_reg_pp1_iter0 == 1'b1) & (1'b0 == ap_block_pp1_stage0_subdone) & (tmp_11_fu_1251_p2 == 1'd0))) begin
                 ap_NS_fsm = ap_ST_fsm_state7;
+            end else begin
+                ap_NS_fsm = ap_ST_fsm_pp1_stage0;
             end
         end
         ap_ST_fsm_state7 : begin
             ap_NS_fsm = ap_ST_fsm_state8;
         end
         ap_ST_fsm_state8 : begin
-            if (((1'b0 == ap_block_state8_on_subcall_done) & (1'b1 == ap_CS_fsm_state8))) begin
-                ap_NS_fsm = ap_ST_fsm_state6;
-            end else begin
-                ap_NS_fsm = ap_ST_fsm_state8;
-            end
-        end
-        ap_ST_fsm_state9 : begin
-            if ((~((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0)) & (1'b1 == ap_CS_fsm_state9))) begin
-                ap_NS_fsm = ap_ST_fsm_state10;
+            if (((1'b1 == ap_CS_fsm_state8) & (exitcond_i_fu_1299_p2 == 1'd1))) begin
+                ap_NS_fsm = ap_ST_fsm_state11;
             end else begin
                 ap_NS_fsm = ap_ST_fsm_state9;
             end
         end
+        ap_ST_fsm_state9 : begin
+            ap_NS_fsm = ap_ST_fsm_state10;
+        end
         ap_ST_fsm_state10 : begin
-            if (((1'b1 == ap_CS_fsm_state10) & (1'b0 == ap_block_state10_io) & (exitcond_fu_1390_p2 == 1'd1))) begin
-                ap_NS_fsm = ap_ST_fsm_state12;
-            end else if (((1'b1 == ap_CS_fsm_state10) & (1'b0 == ap_block_state10_io) & (exitcond_fu_1390_p2 == 1'd0))) begin
-                ap_NS_fsm = ap_ST_fsm_state11;
+            if (((1'b0 == ap_block_state10_on_subcall_done) & (1'b1 == ap_CS_fsm_state10))) begin
+                ap_NS_fsm = ap_ST_fsm_state8;
             end else begin
                 ap_NS_fsm = ap_ST_fsm_state10;
             end
         end
         ap_ST_fsm_state11 : begin
-            if (((1'b1 == ap_CS_fsm_state11) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-                ap_NS_fsm = ap_ST_fsm_state10;
+            if ((~((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0)) & (1'b1 == ap_CS_fsm_state11))) begin
+                ap_NS_fsm = ap_ST_fsm_pp2_stage0;
             end else begin
                 ap_NS_fsm = ap_ST_fsm_state11;
             end
         end
-        ap_ST_fsm_state12 : begin
-            if (((1'b1 == ap_CS_fsm_state12) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
-                ap_NS_fsm = ap_ST_fsm_state13;
+        ap_ST_fsm_pp2_stage0 : begin
+            if (~((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b0 == ap_block_pp2_stage0_subdone) & (exitcond_fu_1385_p2 == 1'd1))) begin
+                ap_NS_fsm = ap_ST_fsm_pp2_stage0;
+            end else if (((ap_enable_reg_pp2_iter0 == 1'b1) & (1'b0 == ap_block_pp2_stage0_subdone) & (exitcond_fu_1385_p2 == 1'd1))) begin
+                ap_NS_fsm = ap_ST_fsm_state14;
             end else begin
-                ap_NS_fsm = ap_ST_fsm_state12;
+                ap_NS_fsm = ap_ST_fsm_pp2_stage0;
             end
         end
-        ap_ST_fsm_state13 : begin
-            if (((1'b1 == ap_CS_fsm_state13) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
+        ap_ST_fsm_state14 : begin
+            if (((1'b1 == ap_CS_fsm_state14) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
+                ap_NS_fsm = ap_ST_fsm_state15;
+            end else begin
+                ap_NS_fsm = ap_ST_fsm_state14;
+            end
+        end
+        ap_ST_fsm_state15 : begin
+            if (((1'b1 == ap_CS_fsm_state15) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
+                ap_NS_fsm = ap_ST_fsm_state16;
+            end else begin
+                ap_NS_fsm = ap_ST_fsm_state15;
+            end
+        end
+        ap_ST_fsm_state16 : begin
+            if (((1'b1 == ap_CS_fsm_state16) & (ap_sig_ioackin_mAxis_TREADY == 1'b1))) begin
                 ap_NS_fsm = ap_ST_fsm_state1;
             end else begin
-                ap_NS_fsm = ap_ST_fsm_state13;
+                ap_NS_fsm = ap_ST_fsm_state16;
             end
         end
         default : begin
@@ -5881,898 +5939,955 @@ always @ (*) begin
     endcase
 end
 
-assign First_load_load_fu_1111_p1 = First;
+assign First_load_load_fu_1106_p1 = First;
 
-assign StgValue_106_write_r_fu_1080_w64 = bAxis_m_cur_fu_512 << tmp_18_fu_1348_p1;
+assign StgValue_113_write_r_fu_1075_w64 = bAxis_m_cur_fu_514 << tmp_17_fu_1343_p1;
+
+assign ap_CS_fsm_pp0_stage0 = ap_CS_fsm[32'd1];
+
+assign ap_CS_fsm_pp1_stage0 = ap_CS_fsm[32'd3];
+
+assign ap_CS_fsm_pp2_stage0 = ap_CS_fsm[32'd9];
 
 assign ap_CS_fsm_state1 = ap_CS_fsm[32'd0];
 
-assign ap_CS_fsm_state10 = ap_CS_fsm[32'd9];
+assign ap_CS_fsm_state10 = ap_CS_fsm[32'd7];
 
-assign ap_CS_fsm_state11 = ap_CS_fsm[32'd10];
+assign ap_CS_fsm_state11 = ap_CS_fsm[32'd8];
 
-assign ap_CS_fsm_state12 = ap_CS_fsm[32'd11];
+assign ap_CS_fsm_state14 = ap_CS_fsm[32'd10];
 
-assign ap_CS_fsm_state13 = ap_CS_fsm[32'd12];
+assign ap_CS_fsm_state15 = ap_CS_fsm[32'd11];
 
-assign ap_CS_fsm_state2 = ap_CS_fsm[32'd1];
+assign ap_CS_fsm_state16 = ap_CS_fsm[32'd12];
 
-assign ap_CS_fsm_state3 = ap_CS_fsm[32'd2];
+assign ap_CS_fsm_state4 = ap_CS_fsm[32'd2];
 
-assign ap_CS_fsm_state4 = ap_CS_fsm[32'd3];
+assign ap_CS_fsm_state7 = ap_CS_fsm[32'd4];
 
-assign ap_CS_fsm_state5 = ap_CS_fsm[32'd4];
+assign ap_CS_fsm_state8 = ap_CS_fsm[32'd5];
 
-assign ap_CS_fsm_state6 = ap_CS_fsm[32'd5];
+assign ap_CS_fsm_state9 = ap_CS_fsm[32'd6];
 
-assign ap_CS_fsm_state7 = ap_CS_fsm[32'd6];
+assign ap_block_pp0_stage0 = ~(1'b1 == 1'b1);
 
-assign ap_CS_fsm_state8 = ap_CS_fsm[32'd7];
-
-assign ap_CS_fsm_state9 = ap_CS_fsm[32'd8];
+assign ap_block_pp0_stage0_01001 = ~(1'b1 == 1'b1);
 
 always @ (*) begin
-    ap_block_state10_io = ((ap_sig_ioackin_mAxis_TREADY == 1'b0) & (exitcond_fu_1390_p2 == 1'd1));
+    ap_block_pp0_stage0_11001 = ((1'b1 == ap_block_state3_io) & (ap_enable_reg_pp0_iter1 == 1'b1));
 end
 
 always @ (*) begin
-    ap_block_state4_io = ((ap_sig_ioackin_mAxis_TREADY == 1'b0) & (tmp_11_fu_1256_p2 == 1'd0));
+    ap_block_pp0_stage0_subdone = ((1'b1 == ap_block_state3_io) & (ap_enable_reg_pp0_iter1 == 1'b1));
+end
+
+assign ap_block_pp1_stage0 = ~(1'b1 == 1'b1);
+
+assign ap_block_pp1_stage0_01001 = ~(1'b1 == 1'b1);
+
+always @ (*) begin
+    ap_block_pp1_stage0_11001 = ((1'b1 == ap_block_state6_io) & (ap_enable_reg_pp1_iter1 == 1'b1));
 end
 
 always @ (*) begin
-    ap_block_state8_on_subcall_done = ((ap_sync_grp_write_adcs4_fu_702_ap_ready & ap_sync_grp_write_adcs4_fu_702_ap_done) == 1'b0);
+    ap_block_pp1_stage0_subdone = ((1'b1 == ap_block_state6_io) & (ap_enable_reg_pp1_iter1 == 1'b1));
+end
+
+assign ap_block_pp2_stage0 = ~(1'b1 == 1'b1);
+
+assign ap_block_pp2_stage0_01001 = ~(1'b1 == 1'b1);
+
+always @ (*) begin
+    ap_block_pp2_stage0_11001 = ((1'b1 == ap_block_state13_io) & (ap_enable_reg_pp2_iter1 == 1'b1));
 end
 
 always @ (*) begin
-    ap_block_state9 = ((1'b0 == StgValue_106_write_r_fu_1080_mAxis_TDATA_blk_n) & (tmp_14_reg_1622 == 1'd0));
+    ap_block_pp2_stage0_subdone = ((1'b1 == ap_block_state13_io) & (ap_enable_reg_pp2_iter1 == 1'b1));
 end
 
-assign ap_sync_grp_write_adcs4_fu_702_ap_done = (grp_write_adcs4_fu_702_ap_done | ap_sync_reg_grp_write_adcs4_fu_702_ap_done);
+always @ (*) begin
+    ap_block_state10_on_subcall_done = ((ap_sync_grp_write_adcs4_fu_697_ap_ready & ap_sync_grp_write_adcs4_fu_697_ap_done) == 1'b0);
+end
 
-assign ap_sync_grp_write_adcs4_fu_702_ap_ready = (grp_write_adcs4_fu_702_ap_ready | ap_sync_reg_grp_write_adcs4_fu_702_ap_ready);
+always @ (*) begin
+    ap_block_state11 = ((1'b0 == StgValue_113_write_r_fu_1075_mAxis_TDATA_blk_n) & (tmp_13_reg_1597 == 1'd0));
+end
 
-assign bAxis_m_cur_1_fu_1352_p2 = bAxis_m_cur_fu_512 << tmp_18_fu_1348_p1;
+assign ap_block_state12_pp2_stage0_iter0 = ~(1'b1 == 1'b1);
 
-assign bAxis_m_idx_2_fu_1290_p1 = bdx_fu_1284_p2;
+always @ (*) begin
+    ap_block_state13_io = ((ap_sig_ioackin_mAxis_TREADY == 1'b0) & (exitcond_reg_1617 == 1'd0));
+end
 
-assign bdx_fu_1284_p2 = (tmp_15_fu_1276_p3 + 10'd128);
+assign ap_block_state13_pp2_stage0_iter1 = ~(1'b1 == 1'b1);
 
-assign cmpCtx_adcs_sg0_0_V_address0 = grp_write_adcs4_fu_702_adcs0_0_V_address0;
+assign ap_block_state2_pp0_stage0_iter0 = ~(1'b1 == 1'b1);
 
-assign cmpCtx_adcs_sg0_0_V_ce0 = grp_write_adcs4_fu_702_adcs0_0_V_ce0;
+always @ (*) begin
+    ap_block_state3_io = ((ap_sig_ioackin_mAxis_TREADY == 1'b0) & (tmp_s_reg_1546 == 1'd1));
+end
 
-assign cmpCtx_adcs_sg0_1_V_address0 = grp_write_adcs4_fu_702_adcs0_1_V_address0;
+assign ap_block_state3_pp0_stage0_iter1 = ~(1'b1 == 1'b1);
 
-assign cmpCtx_adcs_sg0_1_V_ce0 = grp_write_adcs4_fu_702_adcs0_1_V_ce0;
+assign ap_block_state5_pp1_stage0_iter0 = ~(1'b1 == 1'b1);
 
-assign cmpCtx_adcs_sg0_2_V_address0 = grp_write_adcs4_fu_702_adcs0_2_V_address0;
+always @ (*) begin
+    ap_block_state6_io = ((ap_sig_ioackin_mAxis_TREADY == 1'b0) & (tmp_11_reg_1565 == 1'd1));
+end
 
-assign cmpCtx_adcs_sg0_2_V_ce0 = grp_write_adcs4_fu_702_adcs0_2_V_ce0;
+assign ap_block_state6_pp1_stage0_iter1 = ~(1'b1 == 1'b1);
 
-assign cmpCtx_adcs_sg0_3_V_address0 = grp_write_adcs4_fu_702_adcs0_3_V_address0;
+assign ap_enable_pp0 = (ap_idle_pp0 ^ 1'b1);
 
-assign cmpCtx_adcs_sg0_3_V_ce0 = grp_write_adcs4_fu_702_adcs0_3_V_ce0;
+assign ap_enable_pp1 = (ap_idle_pp1 ^ 1'b1);
 
-assign cmpCtx_adcs_sg1_0_V_address0 = grp_write_adcs4_fu_702_adcs1_0_V_address0;
+assign ap_enable_pp2 = (ap_idle_pp2 ^ 1'b1);
 
-assign cmpCtx_adcs_sg1_0_V_ce0 = grp_write_adcs4_fu_702_adcs1_0_V_ce0;
+assign ap_sync_grp_write_adcs4_fu_697_ap_done = (grp_write_adcs4_fu_697_ap_done | ap_sync_reg_grp_write_adcs4_fu_697_ap_done);
 
-assign cmpCtx_adcs_sg1_1_V_address0 = grp_write_adcs4_fu_702_adcs1_1_V_address0;
+assign ap_sync_grp_write_adcs4_fu_697_ap_ready = (grp_write_adcs4_fu_697_ap_ready | ap_sync_reg_grp_write_adcs4_fu_697_ap_ready);
 
-assign cmpCtx_adcs_sg1_1_V_ce0 = grp_write_adcs4_fu_702_adcs1_1_V_ce0;
+assign bAxis_m_cur_1_fu_1347_p2 = bAxis_m_cur_fu_514 << tmp_17_fu_1343_p1;
 
-assign cmpCtx_adcs_sg1_2_V_address0 = grp_write_adcs4_fu_702_adcs1_2_V_address0;
+assign bAxis_m_idx_2_fu_1285_p1 = bdx_fu_1279_p2;
 
-assign cmpCtx_adcs_sg1_2_V_ce0 = grp_write_adcs4_fu_702_adcs1_2_V_ce0;
+assign bdx_fu_1279_p2 = (tmp_22_fu_1271_p3 + 10'd64);
 
-assign cmpCtx_adcs_sg1_3_V_address0 = grp_write_adcs4_fu_702_adcs1_3_V_address0;
+assign cmpCtx_adcs_sg0_0_V_address0 = grp_write_adcs4_fu_697_adcs0_0_V_address0;
 
-assign cmpCtx_adcs_sg1_3_V_ce0 = grp_write_adcs4_fu_702_adcs1_3_V_ce0;
+assign cmpCtx_adcs_sg0_0_V_ce0 = grp_write_adcs4_fu_697_adcs0_0_V_ce0;
 
-assign cmpCtx_adcs_sg2_0_V_address0 = grp_write_adcs4_fu_702_adcs2_0_V_address0;
+assign cmpCtx_adcs_sg0_1_V_address0 = grp_write_adcs4_fu_697_adcs0_1_V_address0;
 
-assign cmpCtx_adcs_sg2_0_V_ce0 = grp_write_adcs4_fu_702_adcs2_0_V_ce0;
+assign cmpCtx_adcs_sg0_1_V_ce0 = grp_write_adcs4_fu_697_adcs0_1_V_ce0;
 
-assign cmpCtx_adcs_sg2_1_V_address0 = grp_write_adcs4_fu_702_adcs2_1_V_address0;
+assign cmpCtx_adcs_sg0_2_V_address0 = grp_write_adcs4_fu_697_adcs0_2_V_address0;
 
-assign cmpCtx_adcs_sg2_1_V_ce0 = grp_write_adcs4_fu_702_adcs2_1_V_ce0;
+assign cmpCtx_adcs_sg0_2_V_ce0 = grp_write_adcs4_fu_697_adcs0_2_V_ce0;
 
-assign cmpCtx_adcs_sg2_2_V_address0 = grp_write_adcs4_fu_702_adcs2_2_V_address0;
+assign cmpCtx_adcs_sg0_3_V_address0 = grp_write_adcs4_fu_697_adcs0_3_V_address0;
 
-assign cmpCtx_adcs_sg2_2_V_ce0 = grp_write_adcs4_fu_702_adcs2_2_V_ce0;
+assign cmpCtx_adcs_sg0_3_V_ce0 = grp_write_adcs4_fu_697_adcs0_3_V_ce0;
 
-assign cmpCtx_adcs_sg2_3_V_address0 = grp_write_adcs4_fu_702_adcs2_3_V_address0;
+assign cmpCtx_adcs_sg1_0_V_address0 = grp_write_adcs4_fu_697_adcs1_0_V_address0;
 
-assign cmpCtx_adcs_sg2_3_V_ce0 = grp_write_adcs4_fu_702_adcs2_3_V_ce0;
+assign cmpCtx_adcs_sg1_0_V_ce0 = grp_write_adcs4_fu_697_adcs1_0_V_ce0;
 
-assign cmpCtx_adcs_sg3_0_V_address0 = grp_write_adcs4_fu_702_adcs3_0_V_address0;
+assign cmpCtx_adcs_sg1_1_V_address0 = grp_write_adcs4_fu_697_adcs1_1_V_address0;
 
-assign cmpCtx_adcs_sg3_0_V_ce0 = grp_write_adcs4_fu_702_adcs3_0_V_ce0;
+assign cmpCtx_adcs_sg1_1_V_ce0 = grp_write_adcs4_fu_697_adcs1_1_V_ce0;
 
-assign cmpCtx_adcs_sg3_1_V_address0 = grp_write_adcs4_fu_702_adcs3_1_V_address0;
+assign cmpCtx_adcs_sg1_2_V_address0 = grp_write_adcs4_fu_697_adcs1_2_V_address0;
 
-assign cmpCtx_adcs_sg3_1_V_ce0 = grp_write_adcs4_fu_702_adcs3_1_V_ce0;
+assign cmpCtx_adcs_sg1_2_V_ce0 = grp_write_adcs4_fu_697_adcs1_2_V_ce0;
 
-assign cmpCtx_adcs_sg3_2_V_address0 = grp_write_adcs4_fu_702_adcs3_2_V_address0;
+assign cmpCtx_adcs_sg1_3_V_address0 = grp_write_adcs4_fu_697_adcs1_3_V_address0;
 
-assign cmpCtx_adcs_sg3_2_V_ce0 = grp_write_adcs4_fu_702_adcs3_2_V_ce0;
+assign cmpCtx_adcs_sg1_3_V_ce0 = grp_write_adcs4_fu_697_adcs1_3_V_ce0;
 
-assign cmpCtx_adcs_sg3_3_V_address0 = grp_write_adcs4_fu_702_adcs3_3_V_address0;
+assign cmpCtx_adcs_sg2_0_V_address0 = grp_write_adcs4_fu_697_adcs2_0_V_address0;
 
-assign cmpCtx_adcs_sg3_3_V_ce0 = grp_write_adcs4_fu_702_adcs3_3_V_ce0;
+assign cmpCtx_adcs_sg2_0_V_ce0 = grp_write_adcs4_fu_697_adcs2_0_V_ce0;
 
-assign cmpCtx_hists_sg0_0_3_address0 = grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_address0;
+assign cmpCtx_adcs_sg2_1_V_address0 = grp_write_adcs4_fu_697_adcs2_1_V_address0;
 
-assign cmpCtx_hists_sg0_0_3_ce0 = grp_write_adcs4_fu_702_hist0_0_m_maxcnt_V_ce0;
+assign cmpCtx_adcs_sg2_1_V_ce0 = grp_write_adcs4_fu_697_adcs2_1_V_ce0;
 
-assign cmpCtx_hists_sg0_0_4_address0 = grp_write_adcs4_fu_702_hist0_0_m_nobits_V_address0;
+assign cmpCtx_adcs_sg2_2_V_address0 = grp_write_adcs4_fu_697_adcs2_2_V_address0;
 
-assign cmpCtx_hists_sg0_0_4_ce0 = grp_write_adcs4_fu_702_hist0_0_m_nobits_V_ce0;
+assign cmpCtx_adcs_sg2_2_V_ce0 = grp_write_adcs4_fu_697_adcs2_2_V_ce0;
 
-assign cmpCtx_hists_sg0_0_s_address0 = grp_write_adcs4_fu_702_hist0_0_m_omask_V_address0;
+assign cmpCtx_adcs_sg2_3_V_address0 = grp_write_adcs4_fu_697_adcs2_3_V_address0;
 
-assign cmpCtx_hists_sg0_0_s_ce0 = grp_write_adcs4_fu_702_hist0_0_m_omask_V_ce0;
+assign cmpCtx_adcs_sg2_3_V_ce0 = grp_write_adcs4_fu_697_adcs2_3_V_ce0;
 
-assign cmpCtx_hists_sg0_1_3_address0 = grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_address0;
+assign cmpCtx_adcs_sg3_0_V_address0 = grp_write_adcs4_fu_697_adcs3_0_V_address0;
 
-assign cmpCtx_hists_sg0_1_3_ce0 = grp_write_adcs4_fu_702_hist0_1_m_maxcnt_V_ce0;
+assign cmpCtx_adcs_sg3_0_V_ce0 = grp_write_adcs4_fu_697_adcs3_0_V_ce0;
 
-assign cmpCtx_hists_sg0_1_4_address0 = grp_write_adcs4_fu_702_hist0_1_m_nobits_V_address0;
+assign cmpCtx_adcs_sg3_1_V_address0 = grp_write_adcs4_fu_697_adcs3_1_V_address0;
 
-assign cmpCtx_hists_sg0_1_4_ce0 = grp_write_adcs4_fu_702_hist0_1_m_nobits_V_ce0;
+assign cmpCtx_adcs_sg3_1_V_ce0 = grp_write_adcs4_fu_697_adcs3_1_V_ce0;
 
-assign cmpCtx_hists_sg0_1_s_address0 = grp_write_adcs4_fu_702_hist0_1_m_omask_V_address0;
+assign cmpCtx_adcs_sg3_2_V_address0 = grp_write_adcs4_fu_697_adcs3_2_V_address0;
 
-assign cmpCtx_hists_sg0_1_s_ce0 = grp_write_adcs4_fu_702_hist0_1_m_omask_V_ce0;
+assign cmpCtx_adcs_sg3_2_V_ce0 = grp_write_adcs4_fu_697_adcs3_2_V_ce0;
 
-assign cmpCtx_hists_sg0_2_3_address0 = grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_address0;
+assign cmpCtx_adcs_sg3_3_V_address0 = grp_write_adcs4_fu_697_adcs3_3_V_address0;
 
-assign cmpCtx_hists_sg0_2_3_ce0 = grp_write_adcs4_fu_702_hist0_2_m_maxcnt_V_ce0;
+assign cmpCtx_adcs_sg3_3_V_ce0 = grp_write_adcs4_fu_697_adcs3_3_V_ce0;
 
-assign cmpCtx_hists_sg0_2_4_address0 = grp_write_adcs4_fu_702_hist0_2_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_0_3_address0 = grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_2_4_ce0 = grp_write_adcs4_fu_702_hist0_2_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_0_3_ce0 = grp_write_adcs4_fu_697_hist0_0_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_2_s_address0 = grp_write_adcs4_fu_702_hist0_2_m_omask_V_address0;
+assign cmpCtx_hists_sg0_0_4_address0 = grp_write_adcs4_fu_697_hist0_0_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_2_s_ce0 = grp_write_adcs4_fu_702_hist0_2_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_0_4_ce0 = grp_write_adcs4_fu_697_hist0_0_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_3_3_address0 = grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_0_s_address0 = grp_write_adcs4_fu_697_hist0_0_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_3_3_ce0 = grp_write_adcs4_fu_702_hist0_3_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_0_s_ce0 = grp_write_adcs4_fu_697_hist0_0_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_3_4_address0 = grp_write_adcs4_fu_702_hist0_3_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_1_3_address0 = grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_3_4_ce0 = grp_write_adcs4_fu_702_hist0_3_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_1_3_ce0 = grp_write_adcs4_fu_697_hist0_1_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_3_s_address0 = grp_write_adcs4_fu_702_hist0_3_m_omask_V_address0;
+assign cmpCtx_hists_sg0_1_4_address0 = grp_write_adcs4_fu_697_hist0_1_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_3_s_ce0 = grp_write_adcs4_fu_702_hist0_3_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_1_4_ce0 = grp_write_adcs4_fu_697_hist0_1_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_4_3_address0 = grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_1_s_address0 = grp_write_adcs4_fu_697_hist0_1_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_4_3_ce0 = grp_write_adcs4_fu_702_hist0_4_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_1_s_ce0 = grp_write_adcs4_fu_697_hist0_1_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_4_4_address0 = grp_write_adcs4_fu_702_hist0_4_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_2_3_address0 = grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_4_4_ce0 = grp_write_adcs4_fu_702_hist0_4_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_2_3_ce0 = grp_write_adcs4_fu_697_hist0_2_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_4_s_address0 = grp_write_adcs4_fu_702_hist0_4_m_omask_V_address0;
+assign cmpCtx_hists_sg0_2_4_address0 = grp_write_adcs4_fu_697_hist0_2_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_4_s_ce0 = grp_write_adcs4_fu_702_hist0_4_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_2_4_ce0 = grp_write_adcs4_fu_697_hist0_2_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_5_3_address0 = grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_2_s_address0 = grp_write_adcs4_fu_697_hist0_2_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_5_3_ce0 = grp_write_adcs4_fu_702_hist0_5_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_2_s_ce0 = grp_write_adcs4_fu_697_hist0_2_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_5_4_address0 = grp_write_adcs4_fu_702_hist0_5_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_3_3_address0 = grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_5_4_ce0 = grp_write_adcs4_fu_702_hist0_5_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_3_3_ce0 = grp_write_adcs4_fu_697_hist0_3_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_5_s_address0 = grp_write_adcs4_fu_702_hist0_5_m_omask_V_address0;
+assign cmpCtx_hists_sg0_3_4_address0 = grp_write_adcs4_fu_697_hist0_3_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_5_s_ce0 = grp_write_adcs4_fu_702_hist0_5_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_3_4_ce0 = grp_write_adcs4_fu_697_hist0_3_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_6_3_address0 = grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_3_s_address0 = grp_write_adcs4_fu_697_hist0_3_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_6_3_ce0 = grp_write_adcs4_fu_702_hist0_6_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_3_s_ce0 = grp_write_adcs4_fu_697_hist0_3_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_6_4_address0 = grp_write_adcs4_fu_702_hist0_6_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_4_3_address0 = grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_6_4_ce0 = grp_write_adcs4_fu_702_hist0_6_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_4_3_ce0 = grp_write_adcs4_fu_697_hist0_4_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_6_s_address0 = grp_write_adcs4_fu_702_hist0_6_m_omask_V_address0;
+assign cmpCtx_hists_sg0_4_4_address0 = grp_write_adcs4_fu_697_hist0_4_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_6_s_ce0 = grp_write_adcs4_fu_702_hist0_6_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_4_4_ce0 = grp_write_adcs4_fu_697_hist0_4_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_7_3_address0 = grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_4_s_address0 = grp_write_adcs4_fu_697_hist0_4_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_7_3_ce0 = grp_write_adcs4_fu_702_hist0_7_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_4_s_ce0 = grp_write_adcs4_fu_697_hist0_4_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_7_4_address0 = grp_write_adcs4_fu_702_hist0_7_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_5_3_address0 = grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_7_4_ce0 = grp_write_adcs4_fu_702_hist0_7_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_5_3_ce0 = grp_write_adcs4_fu_697_hist0_5_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_7_s_address0 = grp_write_adcs4_fu_702_hist0_7_m_omask_V_address0;
+assign cmpCtx_hists_sg0_5_4_address0 = grp_write_adcs4_fu_697_hist0_5_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_7_s_ce0 = grp_write_adcs4_fu_702_hist0_7_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_5_4_ce0 = grp_write_adcs4_fu_697_hist0_5_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V1_address0 = grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_5_s_address0 = grp_write_adcs4_fu_697_hist0_5_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V1_ce0 = grp_write_adcs4_fu_702_hist0_0_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_5_s_ce0 = grp_write_adcs4_fu_697_hist0_5_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V342_address0 = grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_6_3_address0 = grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V342_ce0 = grp_write_adcs4_fu_702_hist0_1_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_6_3_ce0 = grp_write_adcs4_fu_697_hist0_6_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V34_address0 = grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_6_4_address0 = grp_write_adcs4_fu_697_hist0_6_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V34_ce0 = grp_write_adcs4_fu_702_hist0_1_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_6_4_ce0 = grp_write_adcs4_fu_697_hist0_6_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V353_address0 = grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_6_s_address0 = grp_write_adcs4_fu_697_hist0_6_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V353_ce0 = grp_write_adcs4_fu_702_hist0_2_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_6_s_ce0 = grp_write_adcs4_fu_697_hist0_6_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V35_address0 = grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_7_3_address0 = grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V35_ce0 = grp_write_adcs4_fu_702_hist0_2_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_7_3_ce0 = grp_write_adcs4_fu_697_hist0_7_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V364_address0 = grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_7_4_address0 = grp_write_adcs4_fu_697_hist0_7_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V364_ce0 = grp_write_adcs4_fu_702_hist0_3_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_7_4_ce0 = grp_write_adcs4_fu_697_hist0_7_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V36_address0 = grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_7_s_address0 = grp_write_adcs4_fu_697_hist0_7_m_omask_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V36_ce0 = grp_write_adcs4_fu_702_hist0_3_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_7_s_ce0 = grp_write_adcs4_fu_697_hist0_7_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V375_address0 = grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V1_address0 = grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V375_ce0 = grp_write_adcs4_fu_702_hist0_4_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V1_ce0 = grp_write_adcs4_fu_697_hist0_0_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V37_address0 = grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V342_address0 = grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V37_ce0 = grp_write_adcs4_fu_702_hist0_4_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V342_ce0 = grp_write_adcs4_fu_697_hist0_1_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V386_address0 = grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V34_address0 = grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V386_ce0 = grp_write_adcs4_fu_702_hist0_5_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V34_ce0 = grp_write_adcs4_fu_697_hist0_1_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V38_address0 = grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V353_address0 = grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V38_ce0 = grp_write_adcs4_fu_702_hist0_5_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V353_ce0 = grp_write_adcs4_fu_697_hist0_2_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V397_address0 = grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V35_address0 = grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V397_ce0 = grp_write_adcs4_fu_702_hist0_6_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V35_ce0 = grp_write_adcs4_fu_697_hist0_2_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V39_address0 = grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V364_address0 = grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V39_ce0 = grp_write_adcs4_fu_702_hist0_6_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V364_ce0 = grp_write_adcs4_fu_697_hist0_3_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V408_address0 = grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V36_address0 = grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V408_ce0 = grp_write_adcs4_fu_702_hist0_7_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V36_ce0 = grp_write_adcs4_fu_697_hist0_3_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V40_address0 = grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V375_address0 = grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V40_ce0 = grp_write_adcs4_fu_702_hist0_7_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V375_ce0 = grp_write_adcs4_fu_697_hist0_4_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg0_m_bins_V_address0 = grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V37_address0 = grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg0_m_bins_V_ce0 = grp_write_adcs4_fu_702_hist0_0_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V37_ce0 = grp_write_adcs4_fu_697_hist0_4_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_0_3_address0 = grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V386_address0 = grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_0_3_ce0 = grp_write_adcs4_fu_702_hist1_0_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V386_ce0 = grp_write_adcs4_fu_697_hist0_5_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg1_0_4_address0 = grp_write_adcs4_fu_702_hist1_0_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V38_address0 = grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_0_4_ce0 = grp_write_adcs4_fu_702_hist1_0_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V38_ce0 = grp_write_adcs4_fu_697_hist0_5_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_0_s_address0 = grp_write_adcs4_fu_702_hist1_0_m_omask_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V397_address0 = grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_0_s_ce0 = grp_write_adcs4_fu_702_hist1_0_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V397_ce0 = grp_write_adcs4_fu_697_hist0_6_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg1_1_3_address0 = grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V39_address0 = grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_1_3_ce0 = grp_write_adcs4_fu_702_hist1_1_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V39_ce0 = grp_write_adcs4_fu_697_hist0_6_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_1_4_address0 = grp_write_adcs4_fu_702_hist1_1_m_nobits_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V408_address0 = grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_1_4_ce0 = grp_write_adcs4_fu_702_hist1_1_m_nobits_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V408_ce0 = grp_write_adcs4_fu_697_hist0_7_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg1_1_s_address0 = grp_write_adcs4_fu_702_hist1_1_m_omask_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V40_address0 = grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_1_s_ce0 = grp_write_adcs4_fu_702_hist1_1_m_omask_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V40_ce0 = grp_write_adcs4_fu_697_hist0_7_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_2_3_address0 = grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg0_m_bins_V_address0 = grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_2_3_ce0 = grp_write_adcs4_fu_702_hist1_2_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg0_m_bins_V_ce0 = grp_write_adcs4_fu_697_hist0_0_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_2_4_address0 = grp_write_adcs4_fu_702_hist1_2_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_0_3_address0 = grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_2_4_ce0 = grp_write_adcs4_fu_702_hist1_2_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_0_3_ce0 = grp_write_adcs4_fu_697_hist1_0_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_2_s_address0 = grp_write_adcs4_fu_702_hist1_2_m_omask_V_address0;
+assign cmpCtx_hists_sg1_0_4_address0 = grp_write_adcs4_fu_697_hist1_0_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_2_s_ce0 = grp_write_adcs4_fu_702_hist1_2_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_0_4_ce0 = grp_write_adcs4_fu_697_hist1_0_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_3_3_address0 = grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_0_s_address0 = grp_write_adcs4_fu_697_hist1_0_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_3_3_ce0 = grp_write_adcs4_fu_702_hist1_3_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_0_s_ce0 = grp_write_adcs4_fu_697_hist1_0_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_3_4_address0 = grp_write_adcs4_fu_702_hist1_3_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_1_3_address0 = grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_3_4_ce0 = grp_write_adcs4_fu_702_hist1_3_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_1_3_ce0 = grp_write_adcs4_fu_697_hist1_1_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_3_s_address0 = grp_write_adcs4_fu_702_hist1_3_m_omask_V_address0;
+assign cmpCtx_hists_sg1_1_4_address0 = grp_write_adcs4_fu_697_hist1_1_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_3_s_ce0 = grp_write_adcs4_fu_702_hist1_3_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_1_4_ce0 = grp_write_adcs4_fu_697_hist1_1_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_4_3_address0 = grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_1_s_address0 = grp_write_adcs4_fu_697_hist1_1_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_4_3_ce0 = grp_write_adcs4_fu_702_hist1_4_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_1_s_ce0 = grp_write_adcs4_fu_697_hist1_1_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_4_4_address0 = grp_write_adcs4_fu_702_hist1_4_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_2_3_address0 = grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_4_4_ce0 = grp_write_adcs4_fu_702_hist1_4_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_2_3_ce0 = grp_write_adcs4_fu_697_hist1_2_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_4_s_address0 = grp_write_adcs4_fu_702_hist1_4_m_omask_V_address0;
+assign cmpCtx_hists_sg1_2_4_address0 = grp_write_adcs4_fu_697_hist1_2_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_4_s_ce0 = grp_write_adcs4_fu_702_hist1_4_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_2_4_ce0 = grp_write_adcs4_fu_697_hist1_2_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_5_3_address0 = grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_2_s_address0 = grp_write_adcs4_fu_697_hist1_2_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_5_3_ce0 = grp_write_adcs4_fu_702_hist1_5_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_2_s_ce0 = grp_write_adcs4_fu_697_hist1_2_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_5_4_address0 = grp_write_adcs4_fu_702_hist1_5_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_3_3_address0 = grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_5_4_ce0 = grp_write_adcs4_fu_702_hist1_5_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_3_3_ce0 = grp_write_adcs4_fu_697_hist1_3_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_5_s_address0 = grp_write_adcs4_fu_702_hist1_5_m_omask_V_address0;
+assign cmpCtx_hists_sg1_3_4_address0 = grp_write_adcs4_fu_697_hist1_3_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_5_s_ce0 = grp_write_adcs4_fu_702_hist1_5_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_3_4_ce0 = grp_write_adcs4_fu_697_hist1_3_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_6_3_address0 = grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_3_s_address0 = grp_write_adcs4_fu_697_hist1_3_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_6_3_ce0 = grp_write_adcs4_fu_702_hist1_6_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_3_s_ce0 = grp_write_adcs4_fu_697_hist1_3_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_6_4_address0 = grp_write_adcs4_fu_702_hist1_6_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_4_3_address0 = grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_6_4_ce0 = grp_write_adcs4_fu_702_hist1_6_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_4_3_ce0 = grp_write_adcs4_fu_697_hist1_4_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_6_s_address0 = grp_write_adcs4_fu_702_hist1_6_m_omask_V_address0;
+assign cmpCtx_hists_sg1_4_4_address0 = grp_write_adcs4_fu_697_hist1_4_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_6_s_ce0 = grp_write_adcs4_fu_702_hist1_6_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_4_4_ce0 = grp_write_adcs4_fu_697_hist1_4_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_7_3_address0 = grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_4_s_address0 = grp_write_adcs4_fu_697_hist1_4_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_7_3_ce0 = grp_write_adcs4_fu_702_hist1_7_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_4_s_ce0 = grp_write_adcs4_fu_697_hist1_4_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_7_4_address0 = grp_write_adcs4_fu_702_hist1_7_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_5_3_address0 = grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_7_4_ce0 = grp_write_adcs4_fu_702_hist1_7_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_5_3_ce0 = grp_write_adcs4_fu_697_hist1_5_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_7_s_address0 = grp_write_adcs4_fu_702_hist1_7_m_omask_V_address0;
+assign cmpCtx_hists_sg1_5_4_address0 = grp_write_adcs4_fu_697_hist1_5_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_7_s_ce0 = grp_write_adcs4_fu_702_hist1_7_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_5_4_ce0 = grp_write_adcs4_fu_697_hist1_5_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V6210_address0 = grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_5_s_address0 = grp_write_adcs4_fu_697_hist1_5_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V6210_ce0 = grp_write_adcs4_fu_702_hist1_1_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_5_s_ce0 = grp_write_adcs4_fu_697_hist1_5_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V62_address0 = grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_6_3_address0 = grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V62_ce0 = grp_write_adcs4_fu_702_hist1_1_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_6_3_ce0 = grp_write_adcs4_fu_697_hist1_6_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V6311_address0 = grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_6_4_address0 = grp_write_adcs4_fu_697_hist1_6_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V6311_ce0 = grp_write_adcs4_fu_702_hist1_2_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_6_4_ce0 = grp_write_adcs4_fu_697_hist1_6_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V63_address0 = grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_6_s_address0 = grp_write_adcs4_fu_697_hist1_6_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V63_ce0 = grp_write_adcs4_fu_702_hist1_2_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_6_s_ce0 = grp_write_adcs4_fu_697_hist1_6_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V6412_address0 = grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_7_3_address0 = grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V6412_ce0 = grp_write_adcs4_fu_702_hist1_3_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_7_3_ce0 = grp_write_adcs4_fu_697_hist1_7_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V64_address0 = grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_7_4_address0 = grp_write_adcs4_fu_697_hist1_7_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V64_ce0 = grp_write_adcs4_fu_702_hist1_3_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_7_4_ce0 = grp_write_adcs4_fu_697_hist1_7_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V6513_address0 = grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_7_s_address0 = grp_write_adcs4_fu_697_hist1_7_m_omask_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V6513_ce0 = grp_write_adcs4_fu_702_hist1_4_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_7_s_ce0 = grp_write_adcs4_fu_697_hist1_7_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V65_address0 = grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V6210_address0 = grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V65_ce0 = grp_write_adcs4_fu_702_hist1_4_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V6210_ce0 = grp_write_adcs4_fu_697_hist1_1_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V6614_address0 = grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V62_address0 = grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V6614_ce0 = grp_write_adcs4_fu_702_hist1_5_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V62_ce0 = grp_write_adcs4_fu_697_hist1_1_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V66_address0 = grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V6311_address0 = grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V66_ce0 = grp_write_adcs4_fu_702_hist1_5_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V6311_ce0 = grp_write_adcs4_fu_697_hist1_2_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V6715_address0 = grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V63_address0 = grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V6715_ce0 = grp_write_adcs4_fu_702_hist1_6_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V63_ce0 = grp_write_adcs4_fu_697_hist1_2_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V67_address0 = grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V6412_address0 = grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V67_ce0 = grp_write_adcs4_fu_702_hist1_6_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V6412_ce0 = grp_write_adcs4_fu_697_hist1_3_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V6816_address0 = grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V64_address0 = grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V6816_ce0 = grp_write_adcs4_fu_702_hist1_7_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V64_ce0 = grp_write_adcs4_fu_697_hist1_3_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V68_address0 = grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V6513_address0 = grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V68_ce0 = grp_write_adcs4_fu_702_hist1_7_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V6513_ce0 = grp_write_adcs4_fu_697_hist1_4_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V9_address0 = grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V65_address0 = grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V9_ce0 = grp_write_adcs4_fu_702_hist1_0_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V65_ce0 = grp_write_adcs4_fu_697_hist1_4_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg1_m_bins_V_address0 = grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V6614_address0 = grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg1_m_bins_V_ce0 = grp_write_adcs4_fu_702_hist1_0_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V6614_ce0 = grp_write_adcs4_fu_697_hist1_5_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_0_3_address0 = grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V66_address0 = grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_0_3_ce0 = grp_write_adcs4_fu_702_hist2_0_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V66_ce0 = grp_write_adcs4_fu_697_hist1_5_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg2_0_4_address0 = grp_write_adcs4_fu_702_hist2_0_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V6715_address0 = grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_0_4_ce0 = grp_write_adcs4_fu_702_hist2_0_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V6715_ce0 = grp_write_adcs4_fu_697_hist1_6_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_0_s_address0 = grp_write_adcs4_fu_702_hist2_0_m_omask_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V67_address0 = grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_0_s_ce0 = grp_write_adcs4_fu_702_hist2_0_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V67_ce0 = grp_write_adcs4_fu_697_hist1_6_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg2_1_3_address0 = grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V6816_address0 = grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_1_3_ce0 = grp_write_adcs4_fu_702_hist2_1_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V6816_ce0 = grp_write_adcs4_fu_697_hist1_7_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_1_4_address0 = grp_write_adcs4_fu_702_hist2_1_m_nobits_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V68_address0 = grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_1_4_ce0 = grp_write_adcs4_fu_702_hist2_1_m_nobits_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V68_ce0 = grp_write_adcs4_fu_697_hist1_7_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg2_1_s_address0 = grp_write_adcs4_fu_702_hist2_1_m_omask_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V9_address0 = grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_1_s_ce0 = grp_write_adcs4_fu_702_hist2_1_m_omask_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V9_ce0 = grp_write_adcs4_fu_697_hist1_0_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_2_3_address0 = grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg1_m_bins_V_address0 = grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_2_3_ce0 = grp_write_adcs4_fu_702_hist2_2_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg1_m_bins_V_ce0 = grp_write_adcs4_fu_697_hist1_0_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg2_2_4_address0 = grp_write_adcs4_fu_702_hist2_2_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_0_3_address0 = grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_2_4_ce0 = grp_write_adcs4_fu_702_hist2_2_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_0_3_ce0 = grp_write_adcs4_fu_697_hist2_0_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_2_s_address0 = grp_write_adcs4_fu_702_hist2_2_m_omask_V_address0;
+assign cmpCtx_hists_sg2_0_4_address0 = grp_write_adcs4_fu_697_hist2_0_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_2_s_ce0 = grp_write_adcs4_fu_702_hist2_2_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_0_4_ce0 = grp_write_adcs4_fu_697_hist2_0_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_3_3_address0 = grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_0_s_address0 = grp_write_adcs4_fu_697_hist2_0_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_3_3_ce0 = grp_write_adcs4_fu_702_hist2_3_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_0_s_ce0 = grp_write_adcs4_fu_697_hist2_0_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_3_4_address0 = grp_write_adcs4_fu_702_hist2_3_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_1_3_address0 = grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_3_4_ce0 = grp_write_adcs4_fu_702_hist2_3_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_1_3_ce0 = grp_write_adcs4_fu_697_hist2_1_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_3_s_address0 = grp_write_adcs4_fu_702_hist2_3_m_omask_V_address0;
+assign cmpCtx_hists_sg2_1_4_address0 = grp_write_adcs4_fu_697_hist2_1_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_3_s_ce0 = grp_write_adcs4_fu_702_hist2_3_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_1_4_ce0 = grp_write_adcs4_fu_697_hist2_1_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_4_3_address0 = grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_1_s_address0 = grp_write_adcs4_fu_697_hist2_1_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_4_3_ce0 = grp_write_adcs4_fu_702_hist2_4_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_1_s_ce0 = grp_write_adcs4_fu_697_hist2_1_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_4_4_address0 = grp_write_adcs4_fu_702_hist2_4_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_2_3_address0 = grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_4_4_ce0 = grp_write_adcs4_fu_702_hist2_4_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_2_3_ce0 = grp_write_adcs4_fu_697_hist2_2_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_4_s_address0 = grp_write_adcs4_fu_702_hist2_4_m_omask_V_address0;
+assign cmpCtx_hists_sg2_2_4_address0 = grp_write_adcs4_fu_697_hist2_2_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_4_s_ce0 = grp_write_adcs4_fu_702_hist2_4_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_2_4_ce0 = grp_write_adcs4_fu_697_hist2_2_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_5_3_address0 = grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_2_s_address0 = grp_write_adcs4_fu_697_hist2_2_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_5_3_ce0 = grp_write_adcs4_fu_702_hist2_5_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_2_s_ce0 = grp_write_adcs4_fu_697_hist2_2_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_5_4_address0 = grp_write_adcs4_fu_702_hist2_5_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_3_3_address0 = grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_5_4_ce0 = grp_write_adcs4_fu_702_hist2_5_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_3_3_ce0 = grp_write_adcs4_fu_697_hist2_3_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_5_s_address0 = grp_write_adcs4_fu_702_hist2_5_m_omask_V_address0;
+assign cmpCtx_hists_sg2_3_4_address0 = grp_write_adcs4_fu_697_hist2_3_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_5_s_ce0 = grp_write_adcs4_fu_702_hist2_5_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_3_4_ce0 = grp_write_adcs4_fu_697_hist2_3_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_6_3_address0 = grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_3_s_address0 = grp_write_adcs4_fu_697_hist2_3_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_6_3_ce0 = grp_write_adcs4_fu_702_hist2_6_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_3_s_ce0 = grp_write_adcs4_fu_697_hist2_3_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_6_4_address0 = grp_write_adcs4_fu_702_hist2_6_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_4_3_address0 = grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_6_4_ce0 = grp_write_adcs4_fu_702_hist2_6_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_4_3_ce0 = grp_write_adcs4_fu_697_hist2_4_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_6_s_address0 = grp_write_adcs4_fu_702_hist2_6_m_omask_V_address0;
+assign cmpCtx_hists_sg2_4_4_address0 = grp_write_adcs4_fu_697_hist2_4_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_6_s_ce0 = grp_write_adcs4_fu_702_hist2_6_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_4_4_ce0 = grp_write_adcs4_fu_697_hist2_4_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_7_3_address0 = grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_4_s_address0 = grp_write_adcs4_fu_697_hist2_4_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_7_3_ce0 = grp_write_adcs4_fu_702_hist2_7_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_4_s_ce0 = grp_write_adcs4_fu_697_hist2_4_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_7_4_address0 = grp_write_adcs4_fu_702_hist2_7_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_5_3_address0 = grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_7_4_ce0 = grp_write_adcs4_fu_702_hist2_7_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_5_3_ce0 = grp_write_adcs4_fu_697_hist2_5_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_7_s_address0 = grp_write_adcs4_fu_702_hist2_7_m_omask_V_address0;
+assign cmpCtx_hists_sg2_5_4_address0 = grp_write_adcs4_fu_697_hist2_5_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_7_s_ce0 = grp_write_adcs4_fu_702_hist2_7_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_5_4_ce0 = grp_write_adcs4_fu_697_hist2_5_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V17_address0 = grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_5_s_address0 = grp_write_adcs4_fu_697_hist2_5_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V17_ce0 = grp_write_adcs4_fu_702_hist2_0_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_5_s_ce0 = grp_write_adcs4_fu_697_hist2_5_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V9018_address0 = grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_6_3_address0 = grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V9018_ce0 = grp_write_adcs4_fu_702_hist2_1_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_6_3_ce0 = grp_write_adcs4_fu_697_hist2_6_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V90_address0 = grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_6_4_address0 = grp_write_adcs4_fu_697_hist2_6_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V90_ce0 = grp_write_adcs4_fu_702_hist2_1_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_6_4_ce0 = grp_write_adcs4_fu_697_hist2_6_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V9119_address0 = grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_6_s_address0 = grp_write_adcs4_fu_697_hist2_6_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V9119_ce0 = grp_write_adcs4_fu_702_hist2_2_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_6_s_ce0 = grp_write_adcs4_fu_697_hist2_6_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V91_address0 = grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_7_3_address0 = grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V91_ce0 = grp_write_adcs4_fu_702_hist2_2_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_7_3_ce0 = grp_write_adcs4_fu_697_hist2_7_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V9220_address0 = grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_7_4_address0 = grp_write_adcs4_fu_697_hist2_7_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V9220_ce0 = grp_write_adcs4_fu_702_hist2_3_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_7_4_ce0 = grp_write_adcs4_fu_697_hist2_7_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V92_address0 = grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_7_s_address0 = grp_write_adcs4_fu_697_hist2_7_m_omask_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V92_ce0 = grp_write_adcs4_fu_702_hist2_3_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_7_s_ce0 = grp_write_adcs4_fu_697_hist2_7_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V9321_address0 = grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V17_address0 = grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V9321_ce0 = grp_write_adcs4_fu_702_hist2_4_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V17_ce0 = grp_write_adcs4_fu_697_hist2_0_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V93_address0 = grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V9018_address0 = grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V93_ce0 = grp_write_adcs4_fu_702_hist2_4_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V9018_ce0 = grp_write_adcs4_fu_697_hist2_1_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V9422_address0 = grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V90_address0 = grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V9422_ce0 = grp_write_adcs4_fu_702_hist2_5_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V90_ce0 = grp_write_adcs4_fu_697_hist2_1_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V94_address0 = grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V9119_address0 = grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V94_ce0 = grp_write_adcs4_fu_702_hist2_5_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V9119_ce0 = grp_write_adcs4_fu_697_hist2_2_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V9523_address0 = grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V91_address0 = grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V9523_ce0 = grp_write_adcs4_fu_702_hist2_6_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V91_ce0 = grp_write_adcs4_fu_697_hist2_2_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V95_address0 = grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V9220_address0 = grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V95_ce0 = grp_write_adcs4_fu_702_hist2_6_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V9220_ce0 = grp_write_adcs4_fu_697_hist2_3_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V9624_address0 = grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V92_address0 = grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V9624_ce0 = grp_write_adcs4_fu_702_hist2_7_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V92_ce0 = grp_write_adcs4_fu_697_hist2_3_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V96_address0 = grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V9321_address0 = grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V96_ce0 = grp_write_adcs4_fu_702_hist2_7_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V9321_ce0 = grp_write_adcs4_fu_697_hist2_4_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg2_m_bins_V_address0 = grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V93_address0 = grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg2_m_bins_V_ce0 = grp_write_adcs4_fu_702_hist2_0_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V93_ce0 = grp_write_adcs4_fu_697_hist2_4_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_0_3_address0 = grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V9422_address0 = grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_0_3_ce0 = grp_write_adcs4_fu_702_hist3_0_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V9422_ce0 = grp_write_adcs4_fu_697_hist2_5_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg3_0_4_address0 = grp_write_adcs4_fu_702_hist3_0_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V94_address0 = grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_0_4_ce0 = grp_write_adcs4_fu_702_hist3_0_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V94_ce0 = grp_write_adcs4_fu_697_hist2_5_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_0_s_address0 = grp_write_adcs4_fu_702_hist3_0_m_omask_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V9523_address0 = grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_0_s_ce0 = grp_write_adcs4_fu_702_hist3_0_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V9523_ce0 = grp_write_adcs4_fu_697_hist2_6_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg3_1_3_address0 = grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V95_address0 = grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_1_3_ce0 = grp_write_adcs4_fu_702_hist3_1_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V95_ce0 = grp_write_adcs4_fu_697_hist2_6_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_1_4_address0 = grp_write_adcs4_fu_702_hist3_1_m_nobits_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V9624_address0 = grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_1_4_ce0 = grp_write_adcs4_fu_702_hist3_1_m_nobits_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V9624_ce0 = grp_write_adcs4_fu_697_hist2_7_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg3_1_s_address0 = grp_write_adcs4_fu_702_hist3_1_m_omask_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V96_address0 = grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_1_s_ce0 = grp_write_adcs4_fu_702_hist3_1_m_omask_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V96_ce0 = grp_write_adcs4_fu_697_hist2_7_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_2_3_address0 = grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg2_m_bins_V_address0 = grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_2_3_ce0 = grp_write_adcs4_fu_702_hist3_2_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg2_m_bins_V_ce0 = grp_write_adcs4_fu_697_hist2_0_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_2_4_address0 = grp_write_adcs4_fu_702_hist3_2_m_nobits_V_address0;
+assign cmpCtx_hists_sg3_0_3_address0 = grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_2_4_ce0 = grp_write_adcs4_fu_702_hist3_2_m_nobits_V_ce0;
+assign cmpCtx_hists_sg3_0_3_ce0 = grp_write_adcs4_fu_697_hist3_0_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_2_s_address0 = grp_write_adcs4_fu_702_hist3_2_m_omask_V_address0;
+assign cmpCtx_hists_sg3_0_4_address0 = grp_write_adcs4_fu_697_hist3_0_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_2_s_ce0 = grp_write_adcs4_fu_702_hist3_2_m_omask_V_ce0;
+assign cmpCtx_hists_sg3_0_4_ce0 = grp_write_adcs4_fu_697_hist3_0_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_3_3_address0 = grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg3_0_s_address0 = grp_write_adcs4_fu_697_hist3_0_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_3_3_ce0 = grp_write_adcs4_fu_702_hist3_3_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg3_0_s_ce0 = grp_write_adcs4_fu_697_hist3_0_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_3_4_address0 = grp_write_adcs4_fu_702_hist3_3_m_nobits_V_address0;
+assign cmpCtx_hists_sg3_1_3_address0 = grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_3_4_ce0 = grp_write_adcs4_fu_702_hist3_3_m_nobits_V_ce0;
+assign cmpCtx_hists_sg3_1_3_ce0 = grp_write_adcs4_fu_697_hist3_1_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_3_s_address0 = grp_write_adcs4_fu_702_hist3_3_m_omask_V_address0;
+assign cmpCtx_hists_sg3_1_4_address0 = grp_write_adcs4_fu_697_hist3_1_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_3_s_ce0 = grp_write_adcs4_fu_702_hist3_3_m_omask_V_ce0;
+assign cmpCtx_hists_sg3_1_4_ce0 = grp_write_adcs4_fu_697_hist3_1_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_4_3_address0 = grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg3_1_s_address0 = grp_write_adcs4_fu_697_hist3_1_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_4_3_ce0 = grp_write_adcs4_fu_702_hist3_4_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg3_1_s_ce0 = grp_write_adcs4_fu_697_hist3_1_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_4_4_address0 = grp_write_adcs4_fu_702_hist3_4_m_nobits_V_address0;
+assign cmpCtx_hists_sg3_2_3_address0 = grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_4_4_ce0 = grp_write_adcs4_fu_702_hist3_4_m_nobits_V_ce0;
+assign cmpCtx_hists_sg3_2_3_ce0 = grp_write_adcs4_fu_697_hist3_2_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_4_s_address0 = grp_write_adcs4_fu_702_hist3_4_m_omask_V_address0;
+assign cmpCtx_hists_sg3_2_4_address0 = grp_write_adcs4_fu_697_hist3_2_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_4_s_ce0 = grp_write_adcs4_fu_702_hist3_4_m_omask_V_ce0;
+assign cmpCtx_hists_sg3_2_4_ce0 = grp_write_adcs4_fu_697_hist3_2_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_5_3_address0 = grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg3_2_s_address0 = grp_write_adcs4_fu_697_hist3_2_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_5_3_ce0 = grp_write_adcs4_fu_702_hist3_5_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg3_2_s_ce0 = grp_write_adcs4_fu_697_hist3_2_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_5_4_address0 = grp_write_adcs4_fu_702_hist3_5_m_nobits_V_address0;
+assign cmpCtx_hists_sg3_3_3_address0 = grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_5_4_ce0 = grp_write_adcs4_fu_702_hist3_5_m_nobits_V_ce0;
+assign cmpCtx_hists_sg3_3_3_ce0 = grp_write_adcs4_fu_697_hist3_3_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_5_s_address0 = grp_write_adcs4_fu_702_hist3_5_m_omask_V_address0;
+assign cmpCtx_hists_sg3_3_4_address0 = grp_write_adcs4_fu_697_hist3_3_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_5_s_ce0 = grp_write_adcs4_fu_702_hist3_5_m_omask_V_ce0;
+assign cmpCtx_hists_sg3_3_4_ce0 = grp_write_adcs4_fu_697_hist3_3_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_6_3_address0 = grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg3_3_s_address0 = grp_write_adcs4_fu_697_hist3_3_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_6_3_ce0 = grp_write_adcs4_fu_702_hist3_6_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg3_3_s_ce0 = grp_write_adcs4_fu_697_hist3_3_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_6_4_address0 = grp_write_adcs4_fu_702_hist3_6_m_nobits_V_address0;
+assign cmpCtx_hists_sg3_4_3_address0 = grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_6_4_ce0 = grp_write_adcs4_fu_702_hist3_6_m_nobits_V_ce0;
+assign cmpCtx_hists_sg3_4_3_ce0 = grp_write_adcs4_fu_697_hist3_4_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_6_s_address0 = grp_write_adcs4_fu_702_hist3_6_m_omask_V_address0;
+assign cmpCtx_hists_sg3_4_4_address0 = grp_write_adcs4_fu_697_hist3_4_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_6_s_ce0 = grp_write_adcs4_fu_702_hist3_6_m_omask_V_ce0;
+assign cmpCtx_hists_sg3_4_4_ce0 = grp_write_adcs4_fu_697_hist3_4_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_7_3_address0 = grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_address0;
+assign cmpCtx_hists_sg3_4_s_address0 = grp_write_adcs4_fu_697_hist3_4_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_7_3_ce0 = grp_write_adcs4_fu_702_hist3_7_m_maxcnt_V_ce0;
+assign cmpCtx_hists_sg3_4_s_ce0 = grp_write_adcs4_fu_697_hist3_4_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_7_4_address0 = grp_write_adcs4_fu_702_hist3_7_m_nobits_V_address0;
+assign cmpCtx_hists_sg3_5_3_address0 = grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_7_4_ce0 = grp_write_adcs4_fu_702_hist3_7_m_nobits_V_ce0;
+assign cmpCtx_hists_sg3_5_3_ce0 = grp_write_adcs4_fu_697_hist3_5_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_7_s_address0 = grp_write_adcs4_fu_702_hist3_7_m_omask_V_address0;
+assign cmpCtx_hists_sg3_5_4_address0 = grp_write_adcs4_fu_697_hist3_5_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_7_s_ce0 = grp_write_adcs4_fu_702_hist3_7_m_omask_V_ce0;
+assign cmpCtx_hists_sg3_5_4_ce0 = grp_write_adcs4_fu_697_hist3_5_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V11826_address0 = grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_5_s_address0 = grp_write_adcs4_fu_697_hist3_5_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V11826_ce0 = grp_write_adcs4_fu_702_hist3_1_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_5_s_ce0 = grp_write_adcs4_fu_697_hist3_5_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V118_address0 = grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_6_3_address0 = grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V118_ce0 = grp_write_adcs4_fu_702_hist3_1_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_6_3_ce0 = grp_write_adcs4_fu_697_hist3_6_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V11927_address0 = grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_6_4_address0 = grp_write_adcs4_fu_697_hist3_6_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V11927_ce0 = grp_write_adcs4_fu_702_hist3_2_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_6_4_ce0 = grp_write_adcs4_fu_697_hist3_6_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V119_address0 = grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_6_s_address0 = grp_write_adcs4_fu_697_hist3_6_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V119_ce0 = grp_write_adcs4_fu_702_hist3_2_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_6_s_ce0 = grp_write_adcs4_fu_697_hist3_6_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V12028_address0 = grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_7_3_address0 = grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V12028_ce0 = grp_write_adcs4_fu_702_hist3_3_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_7_3_ce0 = grp_write_adcs4_fu_697_hist3_7_m_maxcnt_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V120_address0 = grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_7_4_address0 = grp_write_adcs4_fu_697_hist3_7_m_nobits_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V120_ce0 = grp_write_adcs4_fu_702_hist3_3_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_7_4_ce0 = grp_write_adcs4_fu_697_hist3_7_m_nobits_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V12129_address0 = grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_7_s_address0 = grp_write_adcs4_fu_697_hist3_7_m_omask_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V12129_ce0 = grp_write_adcs4_fu_702_hist3_4_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_7_s_ce0 = grp_write_adcs4_fu_697_hist3_7_m_omask_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V121_address0 = grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V11826_address0 = grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V121_ce0 = grp_write_adcs4_fu_702_hist3_4_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V11826_ce0 = grp_write_adcs4_fu_697_hist3_1_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V12230_address0 = grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V118_address0 = grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V12230_ce0 = grp_write_adcs4_fu_702_hist3_5_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V118_ce0 = grp_write_adcs4_fu_697_hist3_1_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V122_address0 = grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V11927_address0 = grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V122_ce0 = grp_write_adcs4_fu_702_hist3_5_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V11927_ce0 = grp_write_adcs4_fu_697_hist3_2_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V12331_address0 = grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V119_address0 = grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V12331_ce0 = grp_write_adcs4_fu_702_hist3_6_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V119_ce0 = grp_write_adcs4_fu_697_hist3_2_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V123_address0 = grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V12028_address0 = grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V123_ce0 = grp_write_adcs4_fu_702_hist3_6_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V12028_ce0 = grp_write_adcs4_fu_697_hist3_3_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V12432_address0 = grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V120_address0 = grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V12432_ce0 = grp_write_adcs4_fu_702_hist3_7_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V120_ce0 = grp_write_adcs4_fu_697_hist3_3_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V124_address0 = grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V12129_address0 = grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V124_ce0 = grp_write_adcs4_fu_702_hist3_7_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V12129_ce0 = grp_write_adcs4_fu_697_hist3_4_m_bins_1_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V25_address0 = grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V121_address0 = grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V25_ce0 = grp_write_adcs4_fu_702_hist3_0_m_bins_1_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V121_ce0 = grp_write_adcs4_fu_697_hist3_4_m_bins_0_V_ce0;
 
-assign cmpCtx_hists_sg3_m_bins_V_address0 = grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_address0;
+assign cmpCtx_hists_sg3_m_bins_V12230_address0 = grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_address0;
 
-assign cmpCtx_hists_sg3_m_bins_V_ce0 = grp_write_adcs4_fu_702_hist3_0_m_bins_0_V_ce0;
+assign cmpCtx_hists_sg3_m_bins_V12230_ce0 = grp_write_adcs4_fu_697_hist3_5_m_bins_1_V_ce0;
 
-assign cur_idx_cast_fu_1320_p1 = cur_idx_fu_1316_p1;
+assign cmpCtx_hists_sg3_m_bins_V122_address0 = grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_address0;
 
-assign cur_idx_fu_1316_p1 = bAxis_m_idx_fu_516[5:0];
+assign cmpCtx_hists_sg3_m_bins_V122_ce0 = grp_write_adcs4_fu_697_hist3_5_m_bins_0_V_ce0;
 
-assign exitcond_fu_1390_p2 = ((odx_2_reg_682 == odx_reg_1636) ? 1'b1 : 1'b0);
+assign cmpCtx_hists_sg3_m_bins_V12331_address0 = grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_address0;
 
-assign exitcond_i_fu_1304_p2 = ((isg_0_i_reg_670 == 6'd32) ? 1'b1 : 1'b0);
+assign cmpCtx_hists_sg3_m_bins_V12331_ce0 = grp_write_adcs4_fu_697_hist3_6_m_bins_1_V_ce0;
 
-assign grp_write_adcs4_fu_702_ap_start = grp_write_adcs4_fu_702_ap_start_reg;
+assign cmpCtx_hists_sg3_m_bins_V123_address0 = grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_address0;
 
-assign ichan_fu_1417_p2 = (ichan_0_i_reg_691 + 8'd2);
+assign cmpCtx_hists_sg3_m_bins_V123_ce0 = grp_write_adcs4_fu_697_hist3_6_m_bins_0_V_ce0;
 
-assign id_fu_1445_p2 = (nbytes_fu_1439_p2 | 30'd318767104);
+assign cmpCtx_hists_sg3_m_bins_V12432_address0 = grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_address0;
 
-assign id_i_cast_fu_1451_p1 = id_fu_1445_p2;
+assign cmpCtx_hists_sg3_m_bins_V12432_ce0 = grp_write_adcs4_fu_697_hist3_7_m_bins_1_V_ce0;
 
-assign idx1_0_i_cast_cast_fu_1252_p1 = idx1_0_i_reg_659;
+assign cmpCtx_hists_sg3_m_bins_V124_address0 = grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_address0;
 
-assign idx_fu_1261_p2 = (idx1_0_i_reg_659 + 3'd1);
+assign cmpCtx_hists_sg3_m_bins_V124_ce0 = grp_write_adcs4_fu_697_hist3_7_m_bins_0_V_ce0;
 
-assign isg_fu_1310_p2 = (isg_0_i_reg_670 + 6'd1);
+assign cmpCtx_hists_sg3_m_bins_V25_address0 = grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_address0;
 
-assign monitorWrite_nbytes_s_fu_1470_p2 = (nbytes_cast_fu_1463_p1 + lclMonitor_nbytes);
+assign cmpCtx_hists_sg3_m_bins_V25_ce0 = grp_write_adcs4_fu_697_hist3_0_m_bins_1_V_ce0;
 
-assign monitorWrite_npacket_fu_1486_p2 = (lclMonitor_npackets + 32'd1);
+assign cmpCtx_hists_sg3_m_bins_V_address0 = grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_address0;
 
-assign monitorWrite_npromot_fu_1502_p2 = (lclMonitor_npromoted + 32'd1);
+assign cmpCtx_hists_sg3_m_bins_V_ce0 = grp_write_adcs4_fu_697_hist3_0_m_bins_0_V_ce0;
 
-assign nbytes_cast_fu_1463_p1 = nbytes_reg_1665;
+assign cur_idx_cast_fu_1315_p1 = cur_idx_fu_1311_p1;
 
-assign nbytes_fu_1439_p2 = (tmp_20_fu_1432_p3 + 30'd24);
+assign cur_idx_fu_1311_p1 = bAxis_m_idx_fu_518[5:0];
 
-assign odx_1_fu_1411_p2 = (odx_2_reg_682 + 27'd1);
+assign exitcond_fu_1385_p2 = ((odx_2_reg_677 == odx_reg_1611) ? 1'b1 : 1'b0);
 
-assign odx_cast_fu_1380_p1 = tmp_24_fu_1370_p4;
+assign exitcond_i_fu_1299_p2 = ((isg_0_i_reg_665 == 6'd32) ? 1'b1 : 1'b0);
 
-assign odx_fu_1384_p2 = (odx_cast_fu_1380_p1 + 27'd65);
+assign grp_write_adcs4_fu_697_ap_start = grp_write_adcs4_fu_697_ap_start_reg;
 
-assign pktCtx_m_excsBuf_address0 = tmp_4_fu_1219_p1;
+assign ichan_fu_1412_p2 = (ichan_0_i_reg_686 + 8'd2);
 
-assign pktCtx_m_hdrsBuf_address0 = tmp_12_fu_1267_p1;
+assign id_fu_1444_p2 = (nbytes_fu_1434_p2 | 30'd318767104);
 
-assign recHeader_fu_1201_p2 = (tmp_fu_1195_p2 | 64'd19);
+assign id_i_cast_fu_1450_p1 = id_fu_1444_p2;
 
-assign statusId_fu_1455_p3 = {{pktCtx_m_status_V_re}, {id_i_cast_fu_1451_p1}};
+assign idx1_0_i_cast_cast_fu_1247_p1 = idx1_0_i_reg_654;
 
-assign tmp_10_fu_1235_p3 = ((tmp_9_fu_1224_p2[0:0] === 1'b1) ? tmp_5_fu_1232_p1 : 3'd0);
+assign idx_fu_1256_p2 = (idx1_0_i_reg_654 + 3'd1);
 
-assign tmp_11_fu_1256_p1 = pktCtx_m_chdx_read;
+assign isg_fu_1305_p2 = (isg_0_i_reg_665 + 6'd1);
 
-assign tmp_11_fu_1256_p2 = (($signed(idx1_0_i_cast_cast_fu_1252_p1) < $signed(tmp_11_fu_1256_p1)) ? 1'b1 : 1'b0);
+assign monitorWrite_nbytes_s_fu_1466_p2 = (nbytes_cast_fu_1440_p1 + lclMonitor_nbytes);
 
-assign tmp_12_fu_1267_p1 = idx1_0_i_reg_659;
+assign monitorWrite_npacket_fu_1482_p2 = (lclMonitor_npackets + 32'd1);
 
-assign tmp_13_cast_fu_1155_p1 = pktCtx_m_cedx_read;
+assign monitorWrite_npromot_fu_1498_p2 = (lclMonitor_npromoted + 32'd1);
 
-assign tmp_13_fu_1272_p2 = (tmp_29_cast_reg_1581 + tmp_31_cast_reg_1586);
+assign nbytes_cast_fu_1440_p1 = nbytes_fu_1434_p2;
 
-assign tmp_14_fu_1324_p2 = ((cur_idx_fu_1316_p1 == 6'd0) ? 1'b1 : 1'b0);
+assign nbytes_fu_1434_p2 = (tmp_21_fu_1427_p3 + 30'd24);
 
-assign tmp_15_fu_1276_p3 = {{tmp_13_fu_1272_p2}, {6'd0}};
+assign odx_1_fu_1406_p2 = (odx_2_reg_677 + 27'd1);
 
-assign tmp_16_fu_1334_p3 = {{tmp_26_fu_1330_p1}, {2'd0}};
+assign odx_cast_fu_1375_p1 = tmp_27_fu_1365_p4;
 
-assign tmp_17_fu_1343_p2 = ($signed(7'd64) - $signed(cur_idx_cast_reg_1617));
+assign odx_fu_1379_p2 = (odx_cast_fu_1375_p1 + 27'd65);
 
-assign tmp_18_fu_1348_p1 = tmp_17_fu_1343_p2;
+assign pktCtx_m_excsBuf_address0 = tmp_9_fu_1214_p1;
 
-assign tmp_19_fu_1364_p2 = (reg_1105 + 32'd63);
+assign pktCtx_m_hdrsBuf_address0 = tmp_12_fu_1262_p1;
 
-assign tmp_1_fu_1159_p2 = ($signed(tmp_13_cast_fu_1155_p1) + $signed(tmp_4_cast_fu_1151_p1));
+assign recHeader_fu_1196_p2 = (tmp_fu_1190_p2 | 64'd19);
 
-assign tmp_20_fu_1432_p3 = {{odx_reg_1636}, {3'd0}};
+assign statusId_fu_1454_p3 = {{pktCtx_m_status_V_re}, {id_i_cast_fu_1450_p1}};
 
-assign tmp_21_fu_1395_p1 = ichan_0_i_reg_691;
+assign tmp_10_fu_1232_p0 = pktCtx_m_chdx_read;
 
-assign tmp_22_fu_1400_p2 = (ichan_0_i_reg_691 | 8'd1);
+assign tmp_10_fu_1232_p1 = tmp_10_fu_1232_p0[2:0];
 
-assign tmp_23_fu_1406_p1 = tmp_22_fu_1400_p2;
+assign tmp_11_fu_1251_p1 = pktCtx_m_chdx_read;
 
-assign tmp_24_fu_1370_p4 = {{tmp_19_fu_1364_p2[31:6]}};
+assign tmp_11_fu_1251_p2 = (($signed(idx1_0_i_cast_cast_fu_1247_p1) < $signed(tmp_11_fu_1251_p1)) ? 1'b1 : 1'b0);
 
-assign tmp_26_fu_1330_p1 = isg_0_i_reg_670[4:0];
+assign tmp_12_fu_1262_p1 = idx1_0_i_reg_654;
+
+assign tmp_13_fu_1319_p2 = ((cur_idx_fu_1311_p1 == 6'd0) ? 1'b1 : 1'b0);
+
+assign tmp_14_cast_fu_1150_p1 = pktCtx_m_cedx_read;
+
+assign tmp_14_fu_1235_p3 = ((tmp_5_fu_1224_p2[0:0] === 1'b1) ? tmp_10_fu_1232_p1 : 3'd0);
+
+assign tmp_15_fu_1329_p3 = {{tmp_29_fu_1325_p1}, {2'd0}};
+
+assign tmp_16_fu_1338_p2 = ($signed(7'd64) - $signed(cur_idx_cast_reg_1592));
+
+assign tmp_17_fu_1343_p1 = tmp_16_fu_1338_p2;
+
+assign tmp_19_fu_1359_p2 = (reg_1100 + 32'd63);
+
+assign tmp_1_fu_1154_p2 = ($signed(tmp_14_cast_fu_1150_p1) + $signed(tmp_4_cast_fu_1146_p1));
+
+assign tmp_20_fu_1267_p2 = (tmp_29_cast_reg_1555 + tmp_31_cast_reg_1560);
+
+assign tmp_21_fu_1427_p3 = {{odx_reg_1611}, {3'd0}};
+
+assign tmp_22_fu_1271_p3 = {{tmp_20_fu_1267_p2}, {6'd0}};
+
+assign tmp_24_fu_1390_p1 = ichan_0_i_reg_686;
+
+assign tmp_25_fu_1395_p2 = (ichan_0_i_reg_686 | 8'd1);
+
+assign tmp_26_fu_1401_p1 = tmp_25_fu_1395_p2;
+
+assign tmp_27_fu_1365_p4 = {{tmp_19_fu_1359_p2[31:6]}};
 
 assign tmp_29_cast_fu_1229_p1 = pktCtx_m_cedx_read;
 
-assign tmp_2_cast_fu_1147_p1 = tmp_2_fu_1139_p3;
+assign tmp_29_fu_1325_p1 = isg_0_i_reg_665[4:0];
 
-assign tmp_2_fu_1139_p3 = {{pktCtx_m_cedx_read}, {24'd0}};
+assign tmp_2_cast_fu_1142_p1 = tmp_2_fu_1134_p3;
 
-assign tmp_31_cast_fu_1243_p1 = tmp_10_fu_1235_p3;
+assign tmp_2_fu_1134_p3 = {{pktCtx_m_cedx_read}, {24'd0}};
 
-assign tmp_3_fu_1165_p3 = {{tmp_1_fu_1159_p2}, {8'd0}};
+assign tmp_31_cast_fu_1243_p1 = tmp_14_fu_1235_p3;
 
-assign tmp_4_cast_fu_1151_p0 = pktCtx_m_chdx_read;
+assign tmp_3_fu_1160_p3 = {{tmp_1_fu_1154_p2}, {8'd0}};
 
-assign tmp_4_cast_fu_1151_p1 = tmp_4_cast_fu_1151_p0;
+assign tmp_4_cast_fu_1146_p0 = pktCtx_m_chdx_read;
 
-assign tmp_4_fu_1219_p1 = idx_0_i_reg_646;
+assign tmp_4_cast_fu_1146_p1 = tmp_4_cast_fu_1146_p0;
 
-assign tmp_5_cast_fu_1173_p1 = $signed(tmp_3_fu_1165_p3);
+assign tmp_5_cast_fu_1168_p1 = $signed(tmp_3_fu_1160_p3);
 
-assign tmp_5_fu_1232_p0 = pktCtx_m_chdx_read;
+assign tmp_5_fu_1224_p0 = pktCtx_m_chdx_read;
 
-assign tmp_5_fu_1232_p1 = tmp_5_fu_1232_p0[2:0];
+assign tmp_5_fu_1224_p2 = (($signed(tmp_5_fu_1224_p0) > $signed(4'd0)) ? 1'b1 : 1'b0);
 
-assign tmp_6_fu_1177_p2 = ($signed(tmp_5_cast_fu_1173_p1) + $signed(14'd512));
+assign tmp_6_fu_1172_p2 = ($signed(tmp_5_cast_fu_1168_p1) + $signed(14'd256));
 
-assign tmp_7_fu_1183_p1 = $signed(tmp_6_fu_1177_p2);
+assign tmp_7_fu_1178_p1 = $signed(tmp_6_fu_1172_p2);
 
-assign tmp_8_fu_1187_p3 = {{pktCtx_m_status_V_re}, {tmp_2_cast_fu_1147_p1}};
+assign tmp_8_fu_1182_p3 = {{pktCtx_m_status_V_re}, {tmp_2_cast_fu_1142_p1}};
 
-assign tmp_9_fu_1224_p0 = pktCtx_m_chdx_read;
+assign tmp_9_fu_1214_p1 = ap_phi_mux_idx_0_i_phi_fu_646_p4;
 
-assign tmp_9_fu_1224_p2 = (($signed(tmp_9_fu_1224_p0) > $signed(4'd0)) ? 1'b1 : 1'b0);
+assign tmp_data_V_1_fu_1219_p1 = pktCtx_m_excsBuf_q0;
 
-assign tmp_data_V_1_fu_1247_p1 = pktCtx_m_excsBuf_q0;
+assign tmp_fu_1190_p2 = (tmp_8_fu_1182_p3 | tmp_7_fu_1178_p1);
 
-assign tmp_fu_1195_p2 = (tmp_8_fu_1187_p3 | tmp_7_fu_1183_p1);
+assign tmp_s_fu_1209_p2 = (tmp_tmp_fu_1203_p2 & pktCtx_m_cedx_read);
 
-assign tmp_s_fu_1214_p2 = (tmp_tmp_fu_1208_p2 & pktCtx_m_cedx_read);
+assign tmp_tmp_fu_1203_p2 = (ap_phi_mux_idx_0_i_phi_fu_646_p4 ^ 1'd1);
 
-assign tmp_tmp_fu_1208_p2 = (idx_0_i_reg_646 ^ 1'd1);
-
-assign w64_fu_1423_p3 = {{offsets_q1}, {offsets_q0}};
+assign w64_fu_1418_p3 = {{offsets_q1}, {offsets_q0}};
 
 always @ (posedge ap_clk) begin
-    tmp_29_cast_reg_1581[3:1] <= 3'b000;
-    tmp_31_cast_reg_1586[3] <= 1'b0;
-    cur_idx_cast_reg_1617[6] <= 1'b0;
-    tmp_16_reg_1626[1:0] <= 2'b00;
-    nbytes_reg_1665[2:0] <= 3'b000;
+    tmp_29_cast_reg_1555[3:1] <= 3'b000;
+    tmp_31_cast_reg_1560[3] <= 1'b0;
+    cur_idx_cast_reg_1592[6] <= 1'b0;
+    tmp_15_reg_1601[1:0] <= 2'b00;
 end
 
 endmodule //write_packet

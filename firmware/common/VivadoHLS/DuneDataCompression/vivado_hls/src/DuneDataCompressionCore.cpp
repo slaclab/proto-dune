@@ -362,7 +362,10 @@ void DuneDataCompressionCore (AxisIn            &sAxis,
    lclMonitorCfg.   update (lclCfg, monitor.cfg);
    lclMonitorCommon.update (lclCfg, monitor.common);
 
-   handle_packet (mAxis, sAxis, moduleIdx, lclCfg, monitor.read, monitor.write);
+   MonitorModule  rdMonitor;
+   MonitorModule  wrMonitor;
+
+   handle_packet (mAxis, sAxis, moduleIdx, lclCfg, rdMonitor.read, wrMonitor.write);
 
    return;
 }

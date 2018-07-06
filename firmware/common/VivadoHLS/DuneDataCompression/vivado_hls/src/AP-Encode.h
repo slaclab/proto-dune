@@ -644,6 +644,8 @@ static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
    // The total number of bits to insert cannot exceed 32.
    // This can be fixed, but at a later date
    // ----------------------------------------------------
+   assert (npending + nbits <= 64);
+#if 0
    if (npending + nbits > 32)
    {
       if (npending + nbits > 64)
@@ -656,7 +658,7 @@ static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
          std::cout << "Large number of encoding bits " << npending << ':' << nbits << std::endl;
       }
    }
-
+#endif
 
    uint64_t buf = 0;
    int     nbuf = npending + nbits;

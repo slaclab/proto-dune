@@ -16,46 +16,18 @@ module encode4 (
         etx_1_ha_m_cidx,
         etx_2_ha_m_cidx,
         etx_3_ha_m_cidx,
-        etx_0_ha_m_buf_address0,
-        etx_0_ha_m_buf_ce0,
-        etx_0_ha_m_buf_d0,
-        etx_0_ha_m_buf_q0,
-        etx_0_ha_m_buf_we0,
-        etx_0_ha_m_buf_address1,
-        etx_0_ha_m_buf_ce1,
-        etx_0_ha_m_buf_d1,
-        etx_0_ha_m_buf_q1,
-        etx_0_ha_m_buf_we1,
-        etx_1_ha_m_buf_address0,
-        etx_1_ha_m_buf_ce0,
-        etx_1_ha_m_buf_d0,
-        etx_1_ha_m_buf_q0,
-        etx_1_ha_m_buf_we0,
-        etx_1_ha_m_buf_address1,
-        etx_1_ha_m_buf_ce1,
-        etx_1_ha_m_buf_d1,
-        etx_1_ha_m_buf_q1,
-        etx_1_ha_m_buf_we1,
-        etx_2_ha_m_buf_address0,
-        etx_2_ha_m_buf_ce0,
-        etx_2_ha_m_buf_d0,
-        etx_2_ha_m_buf_q0,
-        etx_2_ha_m_buf_we0,
-        etx_2_ha_m_buf_address1,
-        etx_2_ha_m_buf_ce1,
-        etx_2_ha_m_buf_d1,
-        etx_2_ha_m_buf_q1,
-        etx_2_ha_m_buf_we1,
-        etx_3_ha_m_buf_address0,
-        etx_3_ha_m_buf_ce0,
-        etx_3_ha_m_buf_d0,
-        etx_3_ha_m_buf_q0,
-        etx_3_ha_m_buf_we0,
-        etx_3_ha_m_buf_address1,
-        etx_3_ha_m_buf_ce1,
-        etx_3_ha_m_buf_d1,
-        etx_3_ha_m_buf_q1,
-        etx_3_ha_m_buf_we1,
+        etx_0_ha_m_buf_din,
+        etx_0_ha_m_buf_full_n,
+        etx_0_ha_m_buf_write,
+        etx_1_ha_m_buf_din,
+        etx_1_ha_m_buf_full_n,
+        etx_1_ha_m_buf_write,
+        etx_2_ha_m_buf_din,
+        etx_2_ha_m_buf_full_n,
+        etx_2_ha_m_buf_write,
+        etx_3_ha_m_buf_din,
+        etx_3_ha_m_buf_full_n,
+        etx_3_ha_m_buf_write,
         etx_0_ba_m_ccur,
         etx_1_ba_m_ccur,
         etx_2_ba_m_ccur,
@@ -64,46 +36,18 @@ module encode4 (
         etx_1_ba_m_cidx,
         etx_2_ba_m_cidx,
         etx_3_ba_m_cidx,
-        etx_0_ba_m_buf_address0,
-        etx_0_ba_m_buf_ce0,
-        etx_0_ba_m_buf_d0,
-        etx_0_ba_m_buf_q0,
-        etx_0_ba_m_buf_we0,
-        etx_0_ba_m_buf_address1,
-        etx_0_ba_m_buf_ce1,
-        etx_0_ba_m_buf_d1,
-        etx_0_ba_m_buf_q1,
-        etx_0_ba_m_buf_we1,
-        etx_1_ba_m_buf_address0,
-        etx_1_ba_m_buf_ce0,
-        etx_1_ba_m_buf_d0,
-        etx_1_ba_m_buf_q0,
-        etx_1_ba_m_buf_we0,
-        etx_1_ba_m_buf_address1,
-        etx_1_ba_m_buf_ce1,
-        etx_1_ba_m_buf_d1,
-        etx_1_ba_m_buf_q1,
-        etx_1_ba_m_buf_we1,
-        etx_2_ba_m_buf_address0,
-        etx_2_ba_m_buf_ce0,
-        etx_2_ba_m_buf_d0,
-        etx_2_ba_m_buf_q0,
-        etx_2_ba_m_buf_we0,
-        etx_2_ba_m_buf_address1,
-        etx_2_ba_m_buf_ce1,
-        etx_2_ba_m_buf_d1,
-        etx_2_ba_m_buf_q1,
-        etx_2_ba_m_buf_we1,
-        etx_3_ba_m_buf_address0,
-        etx_3_ba_m_buf_ce0,
-        etx_3_ba_m_buf_d0,
-        etx_3_ba_m_buf_q0,
-        etx_3_ba_m_buf_we0,
-        etx_3_ba_m_buf_address1,
-        etx_3_ba_m_buf_ce1,
-        etx_3_ba_m_buf_d1,
-        etx_3_ba_m_buf_q1,
-        etx_3_ba_m_buf_we1,
+        etx_0_ba_m_buf_din,
+        etx_0_ba_m_buf_full_n,
+        etx_0_ba_m_buf_write,
+        etx_1_ba_m_buf_din,
+        etx_1_ba_m_buf_full_n,
+        etx_1_ba_m_buf_write,
+        etx_2_ba_m_buf_din,
+        etx_2_ba_m_buf_full_n,
+        etx_2_ba_m_buf_write,
+        etx_3_ba_m_buf_din,
+        etx_3_ba_m_buf_full_n,
+        etx_3_ba_m_buf_write,
         hists0_0_m_omask_V_address0,
         hists0_0_m_omask_V_ce0,
         hists0_0_m_omask_V_d0,
@@ -1871,12 +1815,8 @@ module encode4 (
         ap_rst,
         etx_0_ha_m_ccur_ap_vld,
         etx_0_ha_m_cidx_ap_vld,
-        etx_0_ha_m_buf_full_n,
-        etx_0_ha_m_buf_write,
         etx_0_ba_m_ccur_ap_vld,
         etx_0_ba_m_cidx_ap_vld,
-        etx_0_ba_m_buf_full_n,
-        etx_0_ba_m_buf_write,
         hists0_0_m_omask_V_empty_n,
         hists0_0_m_omask_V_read,
         hists0_1_m_omask_V_empty_n,
@@ -1968,12 +1908,8 @@ module encode4 (
         ap_done,
         etx_1_ha_m_ccur_ap_vld,
         etx_1_ha_m_cidx_ap_vld,
-        etx_1_ha_m_buf_full_n,
-        etx_1_ha_m_buf_write,
         etx_1_ba_m_ccur_ap_vld,
         etx_1_ba_m_cidx_ap_vld,
-        etx_1_ba_m_buf_full_n,
-        etx_1_ba_m_buf_write,
         hists1_0_m_omask_V_empty_n,
         hists1_0_m_omask_V_read,
         hists1_1_m_omask_V_empty_n,
@@ -2064,12 +2000,8 @@ module encode4 (
         adcs1_3_V_read,
         etx_2_ha_m_ccur_ap_vld,
         etx_2_ha_m_cidx_ap_vld,
-        etx_2_ha_m_buf_full_n,
-        etx_2_ha_m_buf_write,
         etx_2_ba_m_ccur_ap_vld,
         etx_2_ba_m_cidx_ap_vld,
-        etx_2_ba_m_buf_full_n,
-        etx_2_ba_m_buf_write,
         hists2_0_m_omask_V_empty_n,
         hists2_0_m_omask_V_read,
         hists2_1_m_omask_V_empty_n,
@@ -2160,12 +2092,8 @@ module encode4 (
         adcs2_3_V_read,
         etx_3_ha_m_ccur_ap_vld,
         etx_3_ha_m_cidx_ap_vld,
-        etx_3_ha_m_buf_full_n,
-        etx_3_ha_m_buf_write,
         etx_3_ba_m_ccur_ap_vld,
         etx_3_ba_m_cidx_ap_vld,
-        etx_3_ba_m_buf_full_n,
-        etx_3_ba_m_buf_write,
         hists3_0_m_omask_V_empty_n,
         hists3_0_m_omask_V_read,
         hists3_1_m_omask_V_empty_n,
@@ -2269,46 +2197,18 @@ output  [31:0] etx_0_ha_m_cidx;
 output  [31:0] etx_1_ha_m_cidx;
 output  [31:0] etx_2_ha_m_cidx;
 output  [31:0] etx_3_ha_m_cidx;
-output  [7:0] etx_0_ha_m_buf_address0;
-output   etx_0_ha_m_buf_ce0;
-output  [63:0] etx_0_ha_m_buf_d0;
-input  [63:0] etx_0_ha_m_buf_q0;
-output   etx_0_ha_m_buf_we0;
-output  [7:0] etx_0_ha_m_buf_address1;
-output   etx_0_ha_m_buf_ce1;
-output  [63:0] etx_0_ha_m_buf_d1;
-input  [63:0] etx_0_ha_m_buf_q1;
-output   etx_0_ha_m_buf_we1;
-output  [7:0] etx_1_ha_m_buf_address0;
-output   etx_1_ha_m_buf_ce0;
-output  [63:0] etx_1_ha_m_buf_d0;
-input  [63:0] etx_1_ha_m_buf_q0;
-output   etx_1_ha_m_buf_we0;
-output  [7:0] etx_1_ha_m_buf_address1;
-output   etx_1_ha_m_buf_ce1;
-output  [63:0] etx_1_ha_m_buf_d1;
-input  [63:0] etx_1_ha_m_buf_q1;
-output   etx_1_ha_m_buf_we1;
-output  [7:0] etx_2_ha_m_buf_address0;
-output   etx_2_ha_m_buf_ce0;
-output  [63:0] etx_2_ha_m_buf_d0;
-input  [63:0] etx_2_ha_m_buf_q0;
-output   etx_2_ha_m_buf_we0;
-output  [7:0] etx_2_ha_m_buf_address1;
-output   etx_2_ha_m_buf_ce1;
-output  [63:0] etx_2_ha_m_buf_d1;
-input  [63:0] etx_2_ha_m_buf_q1;
-output   etx_2_ha_m_buf_we1;
-output  [7:0] etx_3_ha_m_buf_address0;
-output   etx_3_ha_m_buf_ce0;
-output  [63:0] etx_3_ha_m_buf_d0;
-input  [63:0] etx_3_ha_m_buf_q0;
-output   etx_3_ha_m_buf_we0;
-output  [7:0] etx_3_ha_m_buf_address1;
-output   etx_3_ha_m_buf_ce1;
-output  [63:0] etx_3_ha_m_buf_d1;
-input  [63:0] etx_3_ha_m_buf_q1;
-output   etx_3_ha_m_buf_we1;
+output  [63:0] etx_0_ha_m_buf_din;
+input   etx_0_ha_m_buf_full_n;
+output   etx_0_ha_m_buf_write;
+output  [63:0] etx_1_ha_m_buf_din;
+input   etx_1_ha_m_buf_full_n;
+output   etx_1_ha_m_buf_write;
+output  [63:0] etx_2_ha_m_buf_din;
+input   etx_2_ha_m_buf_full_n;
+output   etx_2_ha_m_buf_write;
+output  [63:0] etx_3_ha_m_buf_din;
+input   etx_3_ha_m_buf_full_n;
+output   etx_3_ha_m_buf_write;
 output  [63:0] etx_0_ba_m_ccur;
 output  [63:0] etx_1_ba_m_ccur;
 output  [63:0] etx_2_ba_m_ccur;
@@ -2317,46 +2217,18 @@ output  [31:0] etx_0_ba_m_cidx;
 output  [31:0] etx_1_ba_m_cidx;
 output  [31:0] etx_2_ba_m_cidx;
 output  [31:0] etx_3_ba_m_cidx;
-output  [7:0] etx_0_ba_m_buf_address0;
-output   etx_0_ba_m_buf_ce0;
-output  [63:0] etx_0_ba_m_buf_d0;
-input  [63:0] etx_0_ba_m_buf_q0;
-output   etx_0_ba_m_buf_we0;
-output  [7:0] etx_0_ba_m_buf_address1;
-output   etx_0_ba_m_buf_ce1;
-output  [63:0] etx_0_ba_m_buf_d1;
-input  [63:0] etx_0_ba_m_buf_q1;
-output   etx_0_ba_m_buf_we1;
-output  [7:0] etx_1_ba_m_buf_address0;
-output   etx_1_ba_m_buf_ce0;
-output  [63:0] etx_1_ba_m_buf_d0;
-input  [63:0] etx_1_ba_m_buf_q0;
-output   etx_1_ba_m_buf_we0;
-output  [7:0] etx_1_ba_m_buf_address1;
-output   etx_1_ba_m_buf_ce1;
-output  [63:0] etx_1_ba_m_buf_d1;
-input  [63:0] etx_1_ba_m_buf_q1;
-output   etx_1_ba_m_buf_we1;
-output  [7:0] etx_2_ba_m_buf_address0;
-output   etx_2_ba_m_buf_ce0;
-output  [63:0] etx_2_ba_m_buf_d0;
-input  [63:0] etx_2_ba_m_buf_q0;
-output   etx_2_ba_m_buf_we0;
-output  [7:0] etx_2_ba_m_buf_address1;
-output   etx_2_ba_m_buf_ce1;
-output  [63:0] etx_2_ba_m_buf_d1;
-input  [63:0] etx_2_ba_m_buf_q1;
-output   etx_2_ba_m_buf_we1;
-output  [7:0] etx_3_ba_m_buf_address0;
-output   etx_3_ba_m_buf_ce0;
-output  [63:0] etx_3_ba_m_buf_d0;
-input  [63:0] etx_3_ba_m_buf_q0;
-output   etx_3_ba_m_buf_we0;
-output  [7:0] etx_3_ba_m_buf_address1;
-output   etx_3_ba_m_buf_ce1;
-output  [63:0] etx_3_ba_m_buf_d1;
-input  [63:0] etx_3_ba_m_buf_q1;
-output   etx_3_ba_m_buf_we1;
+output  [63:0] etx_0_ba_m_buf_din;
+input   etx_0_ba_m_buf_full_n;
+output   etx_0_ba_m_buf_write;
+output  [63:0] etx_1_ba_m_buf_din;
+input   etx_1_ba_m_buf_full_n;
+output   etx_1_ba_m_buf_write;
+output  [63:0] etx_2_ba_m_buf_din;
+input   etx_2_ba_m_buf_full_n;
+output   etx_2_ba_m_buf_write;
+output  [63:0] etx_3_ba_m_buf_din;
+input   etx_3_ba_m_buf_full_n;
+output   etx_3_ba_m_buf_write;
 output  [1:0] hists0_0_m_omask_V_address0;
 output   hists0_0_m_omask_V_ce0;
 output  [31:0] hists0_0_m_omask_V_d0;
@@ -4124,12 +3996,8 @@ input   ap_clk;
 input   ap_rst;
 output   etx_0_ha_m_ccur_ap_vld;
 output   etx_0_ha_m_cidx_ap_vld;
-input   etx_0_ha_m_buf_full_n;
-output   etx_0_ha_m_buf_write;
 output   etx_0_ba_m_ccur_ap_vld;
 output   etx_0_ba_m_cidx_ap_vld;
-input   etx_0_ba_m_buf_full_n;
-output   etx_0_ba_m_buf_write;
 input   hists0_0_m_omask_V_empty_n;
 output   hists0_0_m_omask_V_read;
 input   hists0_1_m_omask_V_empty_n;
@@ -4221,12 +4089,8 @@ output   adcs0_3_V_read;
 output   ap_done;
 output   etx_1_ha_m_ccur_ap_vld;
 output   etx_1_ha_m_cidx_ap_vld;
-input   etx_1_ha_m_buf_full_n;
-output   etx_1_ha_m_buf_write;
 output   etx_1_ba_m_ccur_ap_vld;
 output   etx_1_ba_m_cidx_ap_vld;
-input   etx_1_ba_m_buf_full_n;
-output   etx_1_ba_m_buf_write;
 input   hists1_0_m_omask_V_empty_n;
 output   hists1_0_m_omask_V_read;
 input   hists1_1_m_omask_V_empty_n;
@@ -4317,12 +4181,8 @@ input   adcs1_3_V_empty_n;
 output   adcs1_3_V_read;
 output   etx_2_ha_m_ccur_ap_vld;
 output   etx_2_ha_m_cidx_ap_vld;
-input   etx_2_ha_m_buf_full_n;
-output   etx_2_ha_m_buf_write;
 output   etx_2_ba_m_ccur_ap_vld;
 output   etx_2_ba_m_cidx_ap_vld;
-input   etx_2_ba_m_buf_full_n;
-output   etx_2_ba_m_buf_write;
 input   hists2_0_m_omask_V_empty_n;
 output   hists2_0_m_omask_V_read;
 input   hists2_1_m_omask_V_empty_n;
@@ -4413,12 +4273,8 @@ input   adcs2_3_V_empty_n;
 output   adcs2_3_V_read;
 output   etx_3_ha_m_ccur_ap_vld;
 output   etx_3_ha_m_cidx_ap_vld;
-input   etx_3_ha_m_buf_full_n;
-output   etx_3_ha_m_buf_write;
 output   etx_3_ba_m_ccur_ap_vld;
 output   etx_3_ba_m_cidx_ap_vld;
-input   etx_3_ba_m_buf_full_n;
-output   etx_3_ba_m_buf_write;
 input   hists3_0_m_omask_V_empty_n;
 output   hists3_0_m_omask_V_read;
 input   hists3_1_m_omask_V_empty_n;
@@ -4512,20 +4368,20 @@ output   ap_ready;
 output   ap_idle;
 input   ap_continue;
 
-wire    encode4_entry211_U0_ap_start;
-wire    encode4_entry211_U0_ap_done;
-wire    encode4_entry211_U0_ap_continue;
-wire    encode4_entry211_U0_ap_idle;
-wire    encode4_entry211_U0_ap_ready;
-wire    encode4_entry211_U0_hists0_m_omask_V_offset_read;
-wire   [4:0] encode4_entry211_U0_hists0_m_omask_V_offset_out_din;
-wire    encode4_entry211_U0_hists0_m_omask_V_offset_out_write;
-wire   [4:0] encode4_entry211_U0_hists0_m_omask_V_offset_out1_din;
-wire    encode4_entry211_U0_hists0_m_omask_V_offset_out1_write;
-wire   [4:0] encode4_entry211_U0_hists0_m_omask_V_offset_out2_din;
-wire    encode4_entry211_U0_hists0_m_omask_V_offset_out2_write;
-wire   [4:0] encode4_entry211_U0_hists0_m_omask_V_offset_out3_din;
-wire    encode4_entry211_U0_hists0_m_omask_V_offset_out3_write;
+wire    encode4_entry214_U0_ap_start;
+wire    encode4_entry214_U0_ap_done;
+wire    encode4_entry214_U0_ap_continue;
+wire    encode4_entry214_U0_ap_idle;
+wire    encode4_entry214_U0_ap_ready;
+wire    encode4_entry214_U0_hists0_m_omask_V_offset_read;
+wire   [4:0] encode4_entry214_U0_hists0_m_omask_V_offset_out_din;
+wire    encode4_entry214_U0_hists0_m_omask_V_offset_out_write;
+wire   [4:0] encode4_entry214_U0_hists0_m_omask_V_offset_out1_din;
+wire    encode4_entry214_U0_hists0_m_omask_V_offset_out1_write;
+wire   [4:0] encode4_entry214_U0_hists0_m_omask_V_offset_out2_din;
+wire    encode4_entry214_U0_hists0_m_omask_V_offset_out2_write;
+wire   [4:0] encode4_entry214_U0_hists0_m_omask_V_offset_out3_din;
+wire    encode4_entry214_U0_hists0_m_omask_V_offset_out3_write;
 wire    APE_encode150_U0_ap_start;
 wire    APE_encode150_U0_ap_done;
 wire    APE_encode150_U0_ap_continue;
@@ -4535,18 +4391,14 @@ wire   [63:0] APE_encode150_U0_etxOut_ha_m_ccur;
 wire    APE_encode150_U0_etxOut_ha_m_ccur_ap_vld;
 wire   [31:0] APE_encode150_U0_etxOut_ha_m_cidx;
 wire    APE_encode150_U0_etxOut_ha_m_cidx_ap_vld;
-wire   [7:0] APE_encode150_U0_etxOut_ha_m_buf_address0;
-wire    APE_encode150_U0_etxOut_ha_m_buf_ce0;
-wire    APE_encode150_U0_etxOut_ha_m_buf_we0;
-wire   [63:0] APE_encode150_U0_etxOut_ha_m_buf_d0;
+wire   [63:0] APE_encode150_U0_etxOut_ha_m_buf_din;
+wire    APE_encode150_U0_etxOut_ha_m_buf_write;
 wire   [63:0] APE_encode150_U0_etxOut_ba_m_ccur;
 wire    APE_encode150_U0_etxOut_ba_m_ccur_ap_vld;
 wire   [31:0] APE_encode150_U0_etxOut_ba_m_cidx;
 wire    APE_encode150_U0_etxOut_ba_m_cidx_ap_vld;
-wire   [7:0] APE_encode150_U0_etxOut_ba_m_buf_address0;
-wire    APE_encode150_U0_etxOut_ba_m_buf_ce0;
-wire    APE_encode150_U0_etxOut_ba_m_buf_we0;
-wire   [63:0] APE_encode150_U0_etxOut_ba_m_buf_d0;
+wire   [63:0] APE_encode150_U0_etxOut_ba_m_buf_din;
+wire    APE_encode150_U0_etxOut_ba_m_buf_write;
 wire   [1:0] APE_encode150_U0_hist_m_omask_V_address0;
 wire    APE_encode150_U0_hist_m_omask_V_ce0;
 wire   [1:0] APE_encode150_U0_hist_m_omask_V19_address0;
@@ -4636,10 +4488,6 @@ wire   [12:0] APE_encode150_U0_syms_V48_address0;
 wire    APE_encode150_U0_syms_V48_ce0;
 wire   [12:0] APE_encode150_U0_syms_V49_address0;
 wire    APE_encode150_U0_syms_V49_ce0;
-wire    APE_encode150_U0_etxOut_ha_m_buf_full_n;
-wire    APE_encode150_U0_etxOut_ha_m_buf_write;
-wire    APE_encode150_U0_etxOut_ba_m_buf_full_n;
-wire    APE_encode150_U0_etxOut_ba_m_buf_write;
 wire    APE_encode150_U0_hist_m_omask_V_full_n;
 wire    APE_encode150_U0_hist_m_omask_V_write;
 wire    APE_encode150_U0_hist_m_omask_V19_full_n;
@@ -4738,18 +4586,14 @@ wire   [63:0] APE_encode151_U0_etxOut_ha_m_ccur1;
 wire    APE_encode151_U0_etxOut_ha_m_ccur1_ap_vld;
 wire   [31:0] APE_encode151_U0_etxOut_ha_m_cidx4;
 wire    APE_encode151_U0_etxOut_ha_m_cidx4_ap_vld;
-wire   [7:0] APE_encode151_U0_etxOut_ha_m_buf7_address0;
-wire    APE_encode151_U0_etxOut_ha_m_buf7_ce0;
-wire    APE_encode151_U0_etxOut_ha_m_buf7_we0;
-wire   [63:0] APE_encode151_U0_etxOut_ha_m_buf7_d0;
+wire   [63:0] APE_encode151_U0_etxOut_ha_m_buf7_din;
+wire    APE_encode151_U0_etxOut_ha_m_buf7_write;
 wire   [63:0] APE_encode151_U0_etxOut_ba_m_ccur10;
 wire    APE_encode151_U0_etxOut_ba_m_ccur10_ap_vld;
 wire   [31:0] APE_encode151_U0_etxOut_ba_m_cidx13;
 wire    APE_encode151_U0_etxOut_ba_m_cidx13_ap_vld;
-wire   [7:0] APE_encode151_U0_etxOut_ba_m_buf16_address0;
-wire    APE_encode151_U0_etxOut_ba_m_buf16_ce0;
-wire    APE_encode151_U0_etxOut_ba_m_buf16_we0;
-wire   [63:0] APE_encode151_U0_etxOut_ba_m_buf16_d0;
+wire   [63:0] APE_encode151_U0_etxOut_ba_m_buf16_din;
+wire    APE_encode151_U0_etxOut_ba_m_buf16_write;
 wire   [1:0] APE_encode151_U0_hist_m_omask_V_address0;
 wire    APE_encode151_U0_hist_m_omask_V_ce0;
 wire   [1:0] APE_encode151_U0_hist_m_omask_V19_address0;
@@ -4839,10 +4683,6 @@ wire   [12:0] APE_encode151_U0_syms_V48_address0;
 wire    APE_encode151_U0_syms_V48_ce0;
 wire   [12:0] APE_encode151_U0_syms_V49_address0;
 wire    APE_encode151_U0_syms_V49_ce0;
-wire    APE_encode151_U0_etxOut_ha_m_buf7_full_n;
-wire    APE_encode151_U0_etxOut_ha_m_buf7_write;
-wire    APE_encode151_U0_etxOut_ba_m_buf16_full_n;
-wire    APE_encode151_U0_etxOut_ba_m_buf16_write;
 wire    APE_encode151_U0_hist_m_omask_V_full_n;
 wire    APE_encode151_U0_hist_m_omask_V_write;
 wire    APE_encode151_U0_hist_m_omask_V19_full_n;
@@ -4940,18 +4780,14 @@ wire   [63:0] APE_encode152_U0_etxOut_ha_m_ccur2;
 wire    APE_encode152_U0_etxOut_ha_m_ccur2_ap_vld;
 wire   [31:0] APE_encode152_U0_etxOut_ha_m_cidx5;
 wire    APE_encode152_U0_etxOut_ha_m_cidx5_ap_vld;
-wire   [7:0] APE_encode152_U0_etxOut_ha_m_buf8_address0;
-wire    APE_encode152_U0_etxOut_ha_m_buf8_ce0;
-wire    APE_encode152_U0_etxOut_ha_m_buf8_we0;
-wire   [63:0] APE_encode152_U0_etxOut_ha_m_buf8_d0;
+wire   [63:0] APE_encode152_U0_etxOut_ha_m_buf8_din;
+wire    APE_encode152_U0_etxOut_ha_m_buf8_write;
 wire   [63:0] APE_encode152_U0_etxOut_ba_m_ccur11;
 wire    APE_encode152_U0_etxOut_ba_m_ccur11_ap_vld;
 wire   [31:0] APE_encode152_U0_etxOut_ba_m_cidx14;
 wire    APE_encode152_U0_etxOut_ba_m_cidx14_ap_vld;
-wire   [7:0] APE_encode152_U0_etxOut_ba_m_buf17_address0;
-wire    APE_encode152_U0_etxOut_ba_m_buf17_ce0;
-wire    APE_encode152_U0_etxOut_ba_m_buf17_we0;
-wire   [63:0] APE_encode152_U0_etxOut_ba_m_buf17_d0;
+wire   [63:0] APE_encode152_U0_etxOut_ba_m_buf17_din;
+wire    APE_encode152_U0_etxOut_ba_m_buf17_write;
 wire   [1:0] APE_encode152_U0_hist_m_omask_V_address0;
 wire    APE_encode152_U0_hist_m_omask_V_ce0;
 wire   [1:0] APE_encode152_U0_hist_m_omask_V19_address0;
@@ -5041,10 +4877,6 @@ wire   [12:0] APE_encode152_U0_syms_V48_address0;
 wire    APE_encode152_U0_syms_V48_ce0;
 wire   [12:0] APE_encode152_U0_syms_V49_address0;
 wire    APE_encode152_U0_syms_V49_ce0;
-wire    APE_encode152_U0_etxOut_ha_m_buf8_full_n;
-wire    APE_encode152_U0_etxOut_ha_m_buf8_write;
-wire    APE_encode152_U0_etxOut_ba_m_buf17_full_n;
-wire    APE_encode152_U0_etxOut_ba_m_buf17_write;
 wire    APE_encode152_U0_hist_m_omask_V_full_n;
 wire    APE_encode152_U0_hist_m_omask_V_write;
 wire    APE_encode152_U0_hist_m_omask_V19_full_n;
@@ -5142,18 +4974,14 @@ wire   [63:0] APE_encode153_U0_etxOut_ha_m_ccur3;
 wire    APE_encode153_U0_etxOut_ha_m_ccur3_ap_vld;
 wire   [31:0] APE_encode153_U0_etxOut_ha_m_cidx6;
 wire    APE_encode153_U0_etxOut_ha_m_cidx6_ap_vld;
-wire   [7:0] APE_encode153_U0_etxOut_ha_m_buf9_address0;
-wire    APE_encode153_U0_etxOut_ha_m_buf9_ce0;
-wire    APE_encode153_U0_etxOut_ha_m_buf9_we0;
-wire   [63:0] APE_encode153_U0_etxOut_ha_m_buf9_d0;
+wire   [63:0] APE_encode153_U0_etxOut_ha_m_buf9_din;
+wire    APE_encode153_U0_etxOut_ha_m_buf9_write;
 wire   [63:0] APE_encode153_U0_etxOut_ba_m_ccur12;
 wire    APE_encode153_U0_etxOut_ba_m_ccur12_ap_vld;
 wire   [31:0] APE_encode153_U0_etxOut_ba_m_cidx15;
 wire    APE_encode153_U0_etxOut_ba_m_cidx15_ap_vld;
-wire   [7:0] APE_encode153_U0_etxOut_ba_m_buf18_address0;
-wire    APE_encode153_U0_etxOut_ba_m_buf18_ce0;
-wire    APE_encode153_U0_etxOut_ba_m_buf18_we0;
-wire   [63:0] APE_encode153_U0_etxOut_ba_m_buf18_d0;
+wire   [63:0] APE_encode153_U0_etxOut_ba_m_buf18_din;
+wire    APE_encode153_U0_etxOut_ba_m_buf18_write;
 wire   [1:0] APE_encode153_U0_hist_m_omask_V_address0;
 wire    APE_encode153_U0_hist_m_omask_V_ce0;
 wire   [1:0] APE_encode153_U0_hist_m_omask_V19_address0;
@@ -5243,10 +5071,6 @@ wire   [12:0] APE_encode153_U0_syms_V48_address0;
 wire    APE_encode153_U0_syms_V48_ce0;
 wire   [12:0] APE_encode153_U0_syms_V49_address0;
 wire    APE_encode153_U0_syms_V49_ce0;
-wire    APE_encode153_U0_etxOut_ha_m_buf9_full_n;
-wire    APE_encode153_U0_etxOut_ha_m_buf9_write;
-wire    APE_encode153_U0_etxOut_ba_m_buf18_full_n;
-wire    APE_encode153_U0_etxOut_ba_m_buf18_write;
 wire    APE_encode153_U0_hist_m_omask_V_full_n;
 wire    APE_encode153_U0_hist_m_omask_V_write;
 wire    APE_encode153_U0_hist_m_omask_V19_full_n;
@@ -5352,9 +5176,9 @@ wire    ap_sync_ready;
 reg    ap_sync_reg_APE_encode150_U0_ap_ready;
 wire    ap_sync_APE_encode150_U0_ap_ready;
 reg   [1:0] APE_encode150_U0_ap_ready_count;
-reg    ap_sync_reg_encode4_entry211_U0_ap_ready;
-wire    ap_sync_encode4_entry211_U0_ap_ready;
-reg   [1:0] encode4_entry211_U0_ap_ready_count;
+reg    ap_sync_reg_encode4_entry214_U0_ap_ready;
+wire    ap_sync_encode4_entry214_U0_ap_ready;
+reg   [1:0] encode4_entry214_U0_ap_ready_count;
 reg    ap_sync_reg_APE_encode151_U0_ap_ready;
 wire    ap_sync_APE_encode151_U0_ap_ready;
 reg   [1:0] APE_encode151_U0_ap_ready_count;
@@ -5364,8 +5188,8 @@ reg   [1:0] APE_encode152_U0_ap_ready_count;
 reg    ap_sync_reg_APE_encode153_U0_ap_ready;
 wire    ap_sync_APE_encode153_U0_ap_ready;
 reg   [1:0] APE_encode153_U0_ap_ready_count;
-wire    encode4_entry211_U0_start_full_n;
-wire    encode4_entry211_U0_start_write;
+wire    encode4_entry214_U0_start_full_n;
+wire    encode4_entry214_U0_start_write;
 wire    APE_encode150_U0_start_full_n;
 wire    APE_encode150_U0_start_write;
 wire    APE_encode151_U0_start_full_n;
@@ -5379,8 +5203,8 @@ wire    APE_encode153_U0_start_write;
 initial begin
 #0 ap_sync_reg_APE_encode150_U0_ap_ready = 1'b0;
 #0 APE_encode150_U0_ap_ready_count = 2'd0;
-#0 ap_sync_reg_encode4_entry211_U0_ap_ready = 1'b0;
-#0 encode4_entry211_U0_ap_ready_count = 2'd0;
+#0 ap_sync_reg_encode4_entry214_U0_ap_ready = 1'b0;
+#0 encode4_entry214_U0_ap_ready_count = 2'd0;
 #0 ap_sync_reg_APE_encode151_U0_ap_ready = 1'b0;
 #0 APE_encode151_U0_ap_ready_count = 2'd0;
 #0 ap_sync_reg_APE_encode152_U0_ap_ready = 1'b0;
@@ -5389,29 +5213,29 @@ initial begin
 #0 APE_encode153_U0_ap_ready_count = 2'd0;
 end
 
-encode4_entry211 encode4_entry211_U0(
+encode4_entry214 encode4_entry214_U0(
     .ap_clk(ap_clk),
     .ap_rst(ap_rst),
-    .ap_start(encode4_entry211_U0_ap_start),
-    .ap_done(encode4_entry211_U0_ap_done),
-    .ap_continue(encode4_entry211_U0_ap_continue),
-    .ap_idle(encode4_entry211_U0_ap_idle),
-    .ap_ready(encode4_entry211_U0_ap_ready),
+    .ap_start(encode4_entry214_U0_ap_start),
+    .ap_done(encode4_entry214_U0_ap_done),
+    .ap_continue(encode4_entry214_U0_ap_continue),
+    .ap_idle(encode4_entry214_U0_ap_idle),
+    .ap_ready(encode4_entry214_U0_ap_ready),
     .hists0_m_omask_V_offset_dout(hists0_m_omask_V_offset_dout),
     .hists0_m_omask_V_offset_empty_n(hists0_m_omask_V_offset_empty_n),
-    .hists0_m_omask_V_offset_read(encode4_entry211_U0_hists0_m_omask_V_offset_read),
-    .hists0_m_omask_V_offset_out_din(encode4_entry211_U0_hists0_m_omask_V_offset_out_din),
+    .hists0_m_omask_V_offset_read(encode4_entry214_U0_hists0_m_omask_V_offset_read),
+    .hists0_m_omask_V_offset_out_din(encode4_entry214_U0_hists0_m_omask_V_offset_out_din),
     .hists0_m_omask_V_offset_out_full_n(hists0_m_omask_V_off_3_full_n),
-    .hists0_m_omask_V_offset_out_write(encode4_entry211_U0_hists0_m_omask_V_offset_out_write),
-    .hists0_m_omask_V_offset_out1_din(encode4_entry211_U0_hists0_m_omask_V_offset_out1_din),
+    .hists0_m_omask_V_offset_out_write(encode4_entry214_U0_hists0_m_omask_V_offset_out_write),
+    .hists0_m_omask_V_offset_out1_din(encode4_entry214_U0_hists0_m_omask_V_offset_out1_din),
     .hists0_m_omask_V_offset_out1_full_n(hists0_m_omask_V_off_2_full_n),
-    .hists0_m_omask_V_offset_out1_write(encode4_entry211_U0_hists0_m_omask_V_offset_out1_write),
-    .hists0_m_omask_V_offset_out2_din(encode4_entry211_U0_hists0_m_omask_V_offset_out2_din),
+    .hists0_m_omask_V_offset_out1_write(encode4_entry214_U0_hists0_m_omask_V_offset_out1_write),
+    .hists0_m_omask_V_offset_out2_din(encode4_entry214_U0_hists0_m_omask_V_offset_out2_din),
     .hists0_m_omask_V_offset_out2_full_n(hists0_m_omask_V_off_1_full_n),
-    .hists0_m_omask_V_offset_out2_write(encode4_entry211_U0_hists0_m_omask_V_offset_out2_write),
-    .hists0_m_omask_V_offset_out3_din(encode4_entry211_U0_hists0_m_omask_V_offset_out3_din),
+    .hists0_m_omask_V_offset_out2_write(encode4_entry214_U0_hists0_m_omask_V_offset_out2_write),
+    .hists0_m_omask_V_offset_out3_din(encode4_entry214_U0_hists0_m_omask_V_offset_out3_din),
     .hists0_m_omask_V_offset_out3_full_n(hists0_m_omask_V_off_full_n),
-    .hists0_m_omask_V_offset_out3_write(encode4_entry211_U0_hists0_m_omask_V_offset_out3_write)
+    .hists0_m_omask_V_offset_out3_write(encode4_entry214_U0_hists0_m_omask_V_offset_out3_write)
 );
 
 APE_encode150 APE_encode150_U0(
@@ -5426,18 +5250,16 @@ APE_encode150 APE_encode150_U0(
     .etxOut_ha_m_ccur_ap_vld(APE_encode150_U0_etxOut_ha_m_ccur_ap_vld),
     .etxOut_ha_m_cidx(APE_encode150_U0_etxOut_ha_m_cidx),
     .etxOut_ha_m_cidx_ap_vld(APE_encode150_U0_etxOut_ha_m_cidx_ap_vld),
-    .etxOut_ha_m_buf_address0(APE_encode150_U0_etxOut_ha_m_buf_address0),
-    .etxOut_ha_m_buf_ce0(APE_encode150_U0_etxOut_ha_m_buf_ce0),
-    .etxOut_ha_m_buf_we0(APE_encode150_U0_etxOut_ha_m_buf_we0),
-    .etxOut_ha_m_buf_d0(APE_encode150_U0_etxOut_ha_m_buf_d0),
+    .etxOut_ha_m_buf_din(APE_encode150_U0_etxOut_ha_m_buf_din),
+    .etxOut_ha_m_buf_full_n(etx_0_ha_m_buf_full_n),
+    .etxOut_ha_m_buf_write(APE_encode150_U0_etxOut_ha_m_buf_write),
     .etxOut_ba_m_ccur(APE_encode150_U0_etxOut_ba_m_ccur),
     .etxOut_ba_m_ccur_ap_vld(APE_encode150_U0_etxOut_ba_m_ccur_ap_vld),
     .etxOut_ba_m_cidx(APE_encode150_U0_etxOut_ba_m_cidx),
     .etxOut_ba_m_cidx_ap_vld(APE_encode150_U0_etxOut_ba_m_cidx_ap_vld),
-    .etxOut_ba_m_buf_address0(APE_encode150_U0_etxOut_ba_m_buf_address0),
-    .etxOut_ba_m_buf_ce0(APE_encode150_U0_etxOut_ba_m_buf_ce0),
-    .etxOut_ba_m_buf_we0(APE_encode150_U0_etxOut_ba_m_buf_we0),
-    .etxOut_ba_m_buf_d0(APE_encode150_U0_etxOut_ba_m_buf_d0),
+    .etxOut_ba_m_buf_din(APE_encode150_U0_etxOut_ba_m_buf_din),
+    .etxOut_ba_m_buf_full_n(etx_0_ba_m_buf_full_n),
+    .etxOut_ba_m_buf_write(APE_encode150_U0_etxOut_ba_m_buf_write),
     .hist_m_omask_V_address0(APE_encode150_U0_hist_m_omask_V_address0),
     .hist_m_omask_V_ce0(APE_encode150_U0_hist_m_omask_V_ce0),
     .hist_m_omask_V_q0(hists0_0_m_omask_V_q0),
@@ -5587,18 +5409,16 @@ APE_encode151 APE_encode151_U0(
     .etxOut_ha_m_ccur1_ap_vld(APE_encode151_U0_etxOut_ha_m_ccur1_ap_vld),
     .etxOut_ha_m_cidx4(APE_encode151_U0_etxOut_ha_m_cidx4),
     .etxOut_ha_m_cidx4_ap_vld(APE_encode151_U0_etxOut_ha_m_cidx4_ap_vld),
-    .etxOut_ha_m_buf7_address0(APE_encode151_U0_etxOut_ha_m_buf7_address0),
-    .etxOut_ha_m_buf7_ce0(APE_encode151_U0_etxOut_ha_m_buf7_ce0),
-    .etxOut_ha_m_buf7_we0(APE_encode151_U0_etxOut_ha_m_buf7_we0),
-    .etxOut_ha_m_buf7_d0(APE_encode151_U0_etxOut_ha_m_buf7_d0),
+    .etxOut_ha_m_buf7_din(APE_encode151_U0_etxOut_ha_m_buf7_din),
+    .etxOut_ha_m_buf7_full_n(etx_1_ha_m_buf_full_n),
+    .etxOut_ha_m_buf7_write(APE_encode151_U0_etxOut_ha_m_buf7_write),
     .etxOut_ba_m_ccur10(APE_encode151_U0_etxOut_ba_m_ccur10),
     .etxOut_ba_m_ccur10_ap_vld(APE_encode151_U0_etxOut_ba_m_ccur10_ap_vld),
     .etxOut_ba_m_cidx13(APE_encode151_U0_etxOut_ba_m_cidx13),
     .etxOut_ba_m_cidx13_ap_vld(APE_encode151_U0_etxOut_ba_m_cidx13_ap_vld),
-    .etxOut_ba_m_buf16_address0(APE_encode151_U0_etxOut_ba_m_buf16_address0),
-    .etxOut_ba_m_buf16_ce0(APE_encode151_U0_etxOut_ba_m_buf16_ce0),
-    .etxOut_ba_m_buf16_we0(APE_encode151_U0_etxOut_ba_m_buf16_we0),
-    .etxOut_ba_m_buf16_d0(APE_encode151_U0_etxOut_ba_m_buf16_d0),
+    .etxOut_ba_m_buf16_din(APE_encode151_U0_etxOut_ba_m_buf16_din),
+    .etxOut_ba_m_buf16_full_n(etx_1_ba_m_buf_full_n),
+    .etxOut_ba_m_buf16_write(APE_encode151_U0_etxOut_ba_m_buf16_write),
     .hist_m_omask_V_address0(APE_encode151_U0_hist_m_omask_V_address0),
     .hist_m_omask_V_ce0(APE_encode151_U0_hist_m_omask_V_ce0),
     .hist_m_omask_V_q0(hists1_0_m_omask_V_q0),
@@ -5748,18 +5568,16 @@ APE_encode152 APE_encode152_U0(
     .etxOut_ha_m_ccur2_ap_vld(APE_encode152_U0_etxOut_ha_m_ccur2_ap_vld),
     .etxOut_ha_m_cidx5(APE_encode152_U0_etxOut_ha_m_cidx5),
     .etxOut_ha_m_cidx5_ap_vld(APE_encode152_U0_etxOut_ha_m_cidx5_ap_vld),
-    .etxOut_ha_m_buf8_address0(APE_encode152_U0_etxOut_ha_m_buf8_address0),
-    .etxOut_ha_m_buf8_ce0(APE_encode152_U0_etxOut_ha_m_buf8_ce0),
-    .etxOut_ha_m_buf8_we0(APE_encode152_U0_etxOut_ha_m_buf8_we0),
-    .etxOut_ha_m_buf8_d0(APE_encode152_U0_etxOut_ha_m_buf8_d0),
+    .etxOut_ha_m_buf8_din(APE_encode152_U0_etxOut_ha_m_buf8_din),
+    .etxOut_ha_m_buf8_full_n(etx_2_ha_m_buf_full_n),
+    .etxOut_ha_m_buf8_write(APE_encode152_U0_etxOut_ha_m_buf8_write),
     .etxOut_ba_m_ccur11(APE_encode152_U0_etxOut_ba_m_ccur11),
     .etxOut_ba_m_ccur11_ap_vld(APE_encode152_U0_etxOut_ba_m_ccur11_ap_vld),
     .etxOut_ba_m_cidx14(APE_encode152_U0_etxOut_ba_m_cidx14),
     .etxOut_ba_m_cidx14_ap_vld(APE_encode152_U0_etxOut_ba_m_cidx14_ap_vld),
-    .etxOut_ba_m_buf17_address0(APE_encode152_U0_etxOut_ba_m_buf17_address0),
-    .etxOut_ba_m_buf17_ce0(APE_encode152_U0_etxOut_ba_m_buf17_ce0),
-    .etxOut_ba_m_buf17_we0(APE_encode152_U0_etxOut_ba_m_buf17_we0),
-    .etxOut_ba_m_buf17_d0(APE_encode152_U0_etxOut_ba_m_buf17_d0),
+    .etxOut_ba_m_buf17_din(APE_encode152_U0_etxOut_ba_m_buf17_din),
+    .etxOut_ba_m_buf17_full_n(etx_2_ba_m_buf_full_n),
+    .etxOut_ba_m_buf17_write(APE_encode152_U0_etxOut_ba_m_buf17_write),
     .hist_m_omask_V_address0(APE_encode152_U0_hist_m_omask_V_address0),
     .hist_m_omask_V_ce0(APE_encode152_U0_hist_m_omask_V_ce0),
     .hist_m_omask_V_q0(hists2_0_m_omask_V_q0),
@@ -5909,18 +5727,16 @@ APE_encode153 APE_encode153_U0(
     .etxOut_ha_m_ccur3_ap_vld(APE_encode153_U0_etxOut_ha_m_ccur3_ap_vld),
     .etxOut_ha_m_cidx6(APE_encode153_U0_etxOut_ha_m_cidx6),
     .etxOut_ha_m_cidx6_ap_vld(APE_encode153_U0_etxOut_ha_m_cidx6_ap_vld),
-    .etxOut_ha_m_buf9_address0(APE_encode153_U0_etxOut_ha_m_buf9_address0),
-    .etxOut_ha_m_buf9_ce0(APE_encode153_U0_etxOut_ha_m_buf9_ce0),
-    .etxOut_ha_m_buf9_we0(APE_encode153_U0_etxOut_ha_m_buf9_we0),
-    .etxOut_ha_m_buf9_d0(APE_encode153_U0_etxOut_ha_m_buf9_d0),
+    .etxOut_ha_m_buf9_din(APE_encode153_U0_etxOut_ha_m_buf9_din),
+    .etxOut_ha_m_buf9_full_n(etx_3_ha_m_buf_full_n),
+    .etxOut_ha_m_buf9_write(APE_encode153_U0_etxOut_ha_m_buf9_write),
     .etxOut_ba_m_ccur12(APE_encode153_U0_etxOut_ba_m_ccur12),
     .etxOut_ba_m_ccur12_ap_vld(APE_encode153_U0_etxOut_ba_m_ccur12_ap_vld),
     .etxOut_ba_m_cidx15(APE_encode153_U0_etxOut_ba_m_cidx15),
     .etxOut_ba_m_cidx15_ap_vld(APE_encode153_U0_etxOut_ba_m_cidx15_ap_vld),
-    .etxOut_ba_m_buf18_address0(APE_encode153_U0_etxOut_ba_m_buf18_address0),
-    .etxOut_ba_m_buf18_ce0(APE_encode153_U0_etxOut_ba_m_buf18_ce0),
-    .etxOut_ba_m_buf18_we0(APE_encode153_U0_etxOut_ba_m_buf18_we0),
-    .etxOut_ba_m_buf18_d0(APE_encode153_U0_etxOut_ba_m_buf18_d0),
+    .etxOut_ba_m_buf18_din(APE_encode153_U0_etxOut_ba_m_buf18_din),
+    .etxOut_ba_m_buf18_full_n(etx_3_ba_m_buf_full_n),
+    .etxOut_ba_m_buf18_write(APE_encode153_U0_etxOut_ba_m_buf18_write),
     .hist_m_omask_V_address0(APE_encode153_U0_hist_m_omask_V_address0),
     .hist_m_omask_V_ce0(APE_encode153_U0_hist_m_omask_V_ce0),
     .hist_m_omask_V_q0(hists3_0_m_omask_V_q0),
@@ -6063,9 +5879,9 @@ fifo_w5_d2_A hists0_m_omask_V_off_3_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(encode4_entry211_U0_hists0_m_omask_V_offset_out_din),
+    .if_din(encode4_entry214_U0_hists0_m_omask_V_offset_out_din),
     .if_full_n(hists0_m_omask_V_off_3_full_n),
-    .if_write(encode4_entry211_U0_hists0_m_omask_V_offset_out_write),
+    .if_write(encode4_entry214_U0_hists0_m_omask_V_offset_out_write),
     .if_dout(hists0_m_omask_V_off_3_dout),
     .if_empty_n(hists0_m_omask_V_off_3_empty_n),
     .if_read(APE_encode150_U0_hist_m_omask_V_offset_read)
@@ -6076,9 +5892,9 @@ fifo_w5_d2_A hists0_m_omask_V_off_2_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(encode4_entry211_U0_hists0_m_omask_V_offset_out1_din),
+    .if_din(encode4_entry214_U0_hists0_m_omask_V_offset_out1_din),
     .if_full_n(hists0_m_omask_V_off_2_full_n),
-    .if_write(encode4_entry211_U0_hists0_m_omask_V_offset_out1_write),
+    .if_write(encode4_entry214_U0_hists0_m_omask_V_offset_out1_write),
     .if_dout(hists0_m_omask_V_off_2_dout),
     .if_empty_n(hists0_m_omask_V_off_2_empty_n),
     .if_read(APE_encode151_U0_hist_m_omask_V_offset_read)
@@ -6089,9 +5905,9 @@ fifo_w5_d2_A hists0_m_omask_V_off_1_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(encode4_entry211_U0_hists0_m_omask_V_offset_out2_din),
+    .if_din(encode4_entry214_U0_hists0_m_omask_V_offset_out2_din),
     .if_full_n(hists0_m_omask_V_off_1_full_n),
-    .if_write(encode4_entry211_U0_hists0_m_omask_V_offset_out2_write),
+    .if_write(encode4_entry214_U0_hists0_m_omask_V_offset_out2_write),
     .if_dout(hists0_m_omask_V_off_1_dout),
     .if_empty_n(hists0_m_omask_V_off_1_empty_n),
     .if_read(APE_encode152_U0_hist_m_omask_V_offset_read)
@@ -6102,9 +5918,9 @@ fifo_w5_d2_A hists0_m_omask_V_off_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(encode4_entry211_U0_hists0_m_omask_V_offset_out3_din),
+    .if_din(encode4_entry214_U0_hists0_m_omask_V_offset_out3_din),
     .if_full_n(hists0_m_omask_V_off_full_n),
-    .if_write(encode4_entry211_U0_hists0_m_omask_V_offset_out3_write),
+    .if_write(encode4_entry214_U0_hists0_m_omask_V_offset_out3_write),
     .if_dout(hists0_m_omask_V_off_dout),
     .if_empty_n(hists0_m_omask_V_off_empty_n),
     .if_read(APE_encode153_U0_hist_m_omask_V_offset_read)
@@ -6208,24 +6024,24 @@ end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        ap_sync_reg_encode4_entry211_U0_ap_ready <= 1'b0;
+        ap_sync_reg_encode4_entry214_U0_ap_ready <= 1'b0;
     end else begin
         if (((ap_sync_ready & ap_start) == 1'b1)) begin
-            ap_sync_reg_encode4_entry211_U0_ap_ready <= 1'b0;
+            ap_sync_reg_encode4_entry214_U0_ap_ready <= 1'b0;
         end else begin
-            ap_sync_reg_encode4_entry211_U0_ap_ready <= ap_sync_encode4_entry211_U0_ap_ready;
+            ap_sync_reg_encode4_entry214_U0_ap_ready <= ap_sync_encode4_entry214_U0_ap_ready;
         end
     end
 end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        encode4_entry211_U0_ap_ready_count <= 2'd0;
+        encode4_entry214_U0_ap_ready_count <= 2'd0;
     end else begin
-        if (((ap_sync_ready == 1'b1) & (encode4_entry211_U0_ap_ready == 1'b0))) begin
-            encode4_entry211_U0_ap_ready_count <= (encode4_entry211_U0_ap_ready_count - 2'd1);
-        end else if (((encode4_entry211_U0_ap_ready == 1'b1) & (ap_sync_ready == 1'b0))) begin
-            encode4_entry211_U0_ap_ready_count <= (encode4_entry211_U0_ap_ready_count + 2'd1);
+        if (((ap_sync_ready == 1'b1) & (encode4_entry214_U0_ap_ready == 1'b0))) begin
+            encode4_entry214_U0_ap_ready_count <= (encode4_entry214_U0_ap_ready_count - 2'd1);
+        end else if (((encode4_entry214_U0_ap_ready == 1'b1) & (ap_sync_ready == 1'b0))) begin
+            encode4_entry214_U0_ap_ready_count <= (encode4_entry214_U0_ap_ready_count + 2'd1);
         end
     end
 end
@@ -6233,14 +6049,6 @@ end
 assign APE_encode150_U0_ap_continue = ap_sync_continue;
 
 assign APE_encode150_U0_ap_start = ((ap_sync_reg_APE_encode150_U0_ap_ready ^ 1'b1) & ap_start);
-
-assign APE_encode150_U0_etxOut_ba_m_buf_full_n = etx_0_ba_m_buf_full_n;
-
-assign APE_encode150_U0_etxOut_ba_m_buf_write = 1'b0;
-
-assign APE_encode150_U0_etxOut_ha_m_buf_full_n = etx_0_ha_m_buf_full_n;
-
-assign APE_encode150_U0_etxOut_ha_m_buf_write = 1'b0;
 
 assign APE_encode150_U0_hist_m_bins_V1_full_n = hists0_0_m_bins_1_s_empty_n;
 
@@ -6426,14 +6234,6 @@ assign APE_encode151_U0_ap_continue = ap_sync_continue;
 
 assign APE_encode151_U0_ap_start = ((ap_sync_reg_APE_encode151_U0_ap_ready ^ 1'b1) & ap_start);
 
-assign APE_encode151_U0_etxOut_ba_m_buf16_full_n = etx_1_ba_m_buf_full_n;
-
-assign APE_encode151_U0_etxOut_ba_m_buf16_write = 1'b0;
-
-assign APE_encode151_U0_etxOut_ha_m_buf7_full_n = etx_1_ha_m_buf_full_n;
-
-assign APE_encode151_U0_etxOut_ha_m_buf7_write = 1'b0;
-
 assign APE_encode151_U0_hist_m_bins_V1_full_n = hists1_0_m_bins_1_s_empty_n;
 
 assign APE_encode151_U0_hist_m_bins_V1_write = 1'b0;
@@ -6618,14 +6418,6 @@ assign APE_encode152_U0_ap_continue = ap_sync_continue;
 
 assign APE_encode152_U0_ap_start = ((ap_sync_reg_APE_encode152_U0_ap_ready ^ 1'b1) & ap_start);
 
-assign APE_encode152_U0_etxOut_ba_m_buf17_full_n = etx_2_ba_m_buf_full_n;
-
-assign APE_encode152_U0_etxOut_ba_m_buf17_write = 1'b0;
-
-assign APE_encode152_U0_etxOut_ha_m_buf8_full_n = etx_2_ha_m_buf_full_n;
-
-assign APE_encode152_U0_etxOut_ha_m_buf8_write = 1'b0;
-
 assign APE_encode152_U0_hist_m_bins_V1_full_n = hists2_0_m_bins_1_s_empty_n;
 
 assign APE_encode152_U0_hist_m_bins_V1_write = 1'b0;
@@ -6809,14 +6601,6 @@ assign APE_encode152_U0_syms_V_write = 1'b0;
 assign APE_encode153_U0_ap_continue = ap_sync_continue;
 
 assign APE_encode153_U0_ap_start = ((ap_sync_reg_APE_encode153_U0_ap_ready ^ 1'b1) & ap_start);
-
-assign APE_encode153_U0_etxOut_ba_m_buf18_full_n = etx_3_ba_m_buf_full_n;
-
-assign APE_encode153_U0_etxOut_ba_m_buf18_write = 1'b0;
-
-assign APE_encode153_U0_etxOut_ha_m_buf9_full_n = etx_3_ha_m_buf_full_n;
-
-assign APE_encode153_U0_etxOut_ha_m_buf9_write = 1'b0;
 
 assign APE_encode153_U0_hist_m_bins_V1_full_n = hists3_0_m_bins_1_s_empty_n;
 
@@ -7288,7 +7072,7 @@ assign adcs3_3_V_we1 = 1'b0;
 
 assign ap_done = ap_sync_done;
 
-assign ap_idle = (encode4_entry211_U0_ap_idle & APE_encode153_U0_ap_idle & APE_encode152_U0_ap_idle & APE_encode151_U0_ap_idle & APE_encode150_U0_ap_idle);
+assign ap_idle = (encode4_entry214_U0_ap_idle & APE_encode153_U0_ap_idle & APE_encode152_U0_ap_idle & APE_encode151_U0_ap_idle & APE_encode150_U0_ap_idle);
 
 assign ap_ready = ap_sync_ready;
 
@@ -7304,33 +7088,19 @@ assign ap_sync_continue = (ap_sync_done & ap_continue);
 
 assign ap_sync_done = (APE_encode153_U0_ap_done & APE_encode152_U0_ap_done & APE_encode151_U0_ap_done & APE_encode150_U0_ap_done);
 
-assign ap_sync_encode4_entry211_U0_ap_ready = (encode4_entry211_U0_ap_ready | ap_sync_reg_encode4_entry211_U0_ap_ready);
+assign ap_sync_encode4_entry214_U0_ap_ready = (encode4_entry214_U0_ap_ready | ap_sync_reg_encode4_entry214_U0_ap_ready);
 
-assign ap_sync_ready = (ap_sync_encode4_entry211_U0_ap_ready & ap_sync_APE_encode153_U0_ap_ready & ap_sync_APE_encode152_U0_ap_ready & ap_sync_APE_encode151_U0_ap_ready & ap_sync_APE_encode150_U0_ap_ready);
+assign ap_sync_ready = (ap_sync_encode4_entry214_U0_ap_ready & ap_sync_APE_encode153_U0_ap_ready & ap_sync_APE_encode152_U0_ap_ready & ap_sync_APE_encode151_U0_ap_ready & ap_sync_APE_encode150_U0_ap_ready);
 
-assign encode4_entry211_U0_ap_continue = 1'b1;
+assign encode4_entry214_U0_ap_continue = 1'b1;
 
-assign encode4_entry211_U0_ap_start = ((ap_sync_reg_encode4_entry211_U0_ap_ready ^ 1'b1) & ap_start);
+assign encode4_entry214_U0_ap_start = ((ap_sync_reg_encode4_entry214_U0_ap_ready ^ 1'b1) & ap_start);
 
-assign encode4_entry211_U0_start_full_n = 1'b1;
+assign encode4_entry214_U0_start_full_n = 1'b1;
 
-assign encode4_entry211_U0_start_write = 1'b0;
+assign encode4_entry214_U0_start_write = 1'b0;
 
-assign etx_0_ba_m_buf_address0 = APE_encode150_U0_etxOut_ba_m_buf_address0;
-
-assign etx_0_ba_m_buf_address1 = 8'd0;
-
-assign etx_0_ba_m_buf_ce0 = APE_encode150_U0_etxOut_ba_m_buf_ce0;
-
-assign etx_0_ba_m_buf_ce1 = 1'b0;
-
-assign etx_0_ba_m_buf_d0 = APE_encode150_U0_etxOut_ba_m_buf_d0;
-
-assign etx_0_ba_m_buf_d1 = 64'd0;
-
-assign etx_0_ba_m_buf_we0 = APE_encode150_U0_etxOut_ba_m_buf_we0;
-
-assign etx_0_ba_m_buf_we1 = 1'b0;
+assign etx_0_ba_m_buf_din = APE_encode150_U0_etxOut_ba_m_buf_din;
 
 assign etx_0_ba_m_buf_write = APE_encode150_U0_etxOut_ba_m_buf_write;
 
@@ -7342,21 +7112,7 @@ assign etx_0_ba_m_cidx = APE_encode150_U0_etxOut_ba_m_cidx;
 
 assign etx_0_ba_m_cidx_ap_vld = APE_encode150_U0_etxOut_ba_m_cidx_ap_vld;
 
-assign etx_0_ha_m_buf_address0 = APE_encode150_U0_etxOut_ha_m_buf_address0;
-
-assign etx_0_ha_m_buf_address1 = 8'd0;
-
-assign etx_0_ha_m_buf_ce0 = APE_encode150_U0_etxOut_ha_m_buf_ce0;
-
-assign etx_0_ha_m_buf_ce1 = 1'b0;
-
-assign etx_0_ha_m_buf_d0 = APE_encode150_U0_etxOut_ha_m_buf_d0;
-
-assign etx_0_ha_m_buf_d1 = 64'd0;
-
-assign etx_0_ha_m_buf_we0 = APE_encode150_U0_etxOut_ha_m_buf_we0;
-
-assign etx_0_ha_m_buf_we1 = 1'b0;
+assign etx_0_ha_m_buf_din = APE_encode150_U0_etxOut_ha_m_buf_din;
 
 assign etx_0_ha_m_buf_write = APE_encode150_U0_etxOut_ha_m_buf_write;
 
@@ -7368,21 +7124,7 @@ assign etx_0_ha_m_cidx = APE_encode150_U0_etxOut_ha_m_cidx;
 
 assign etx_0_ha_m_cidx_ap_vld = APE_encode150_U0_etxOut_ha_m_cidx_ap_vld;
 
-assign etx_1_ba_m_buf_address0 = APE_encode151_U0_etxOut_ba_m_buf16_address0;
-
-assign etx_1_ba_m_buf_address1 = 8'd0;
-
-assign etx_1_ba_m_buf_ce0 = APE_encode151_U0_etxOut_ba_m_buf16_ce0;
-
-assign etx_1_ba_m_buf_ce1 = 1'b0;
-
-assign etx_1_ba_m_buf_d0 = APE_encode151_U0_etxOut_ba_m_buf16_d0;
-
-assign etx_1_ba_m_buf_d1 = 64'd0;
-
-assign etx_1_ba_m_buf_we0 = APE_encode151_U0_etxOut_ba_m_buf16_we0;
-
-assign etx_1_ba_m_buf_we1 = 1'b0;
+assign etx_1_ba_m_buf_din = APE_encode151_U0_etxOut_ba_m_buf16_din;
 
 assign etx_1_ba_m_buf_write = APE_encode151_U0_etxOut_ba_m_buf16_write;
 
@@ -7394,21 +7136,7 @@ assign etx_1_ba_m_cidx = APE_encode151_U0_etxOut_ba_m_cidx13;
 
 assign etx_1_ba_m_cidx_ap_vld = APE_encode151_U0_etxOut_ba_m_cidx13_ap_vld;
 
-assign etx_1_ha_m_buf_address0 = APE_encode151_U0_etxOut_ha_m_buf7_address0;
-
-assign etx_1_ha_m_buf_address1 = 8'd0;
-
-assign etx_1_ha_m_buf_ce0 = APE_encode151_U0_etxOut_ha_m_buf7_ce0;
-
-assign etx_1_ha_m_buf_ce1 = 1'b0;
-
-assign etx_1_ha_m_buf_d0 = APE_encode151_U0_etxOut_ha_m_buf7_d0;
-
-assign etx_1_ha_m_buf_d1 = 64'd0;
-
-assign etx_1_ha_m_buf_we0 = APE_encode151_U0_etxOut_ha_m_buf7_we0;
-
-assign etx_1_ha_m_buf_we1 = 1'b0;
+assign etx_1_ha_m_buf_din = APE_encode151_U0_etxOut_ha_m_buf7_din;
 
 assign etx_1_ha_m_buf_write = APE_encode151_U0_etxOut_ha_m_buf7_write;
 
@@ -7420,21 +7148,7 @@ assign etx_1_ha_m_cidx = APE_encode151_U0_etxOut_ha_m_cidx4;
 
 assign etx_1_ha_m_cidx_ap_vld = APE_encode151_U0_etxOut_ha_m_cidx4_ap_vld;
 
-assign etx_2_ba_m_buf_address0 = APE_encode152_U0_etxOut_ba_m_buf17_address0;
-
-assign etx_2_ba_m_buf_address1 = 8'd0;
-
-assign etx_2_ba_m_buf_ce0 = APE_encode152_U0_etxOut_ba_m_buf17_ce0;
-
-assign etx_2_ba_m_buf_ce1 = 1'b0;
-
-assign etx_2_ba_m_buf_d0 = APE_encode152_U0_etxOut_ba_m_buf17_d0;
-
-assign etx_2_ba_m_buf_d1 = 64'd0;
-
-assign etx_2_ba_m_buf_we0 = APE_encode152_U0_etxOut_ba_m_buf17_we0;
-
-assign etx_2_ba_m_buf_we1 = 1'b0;
+assign etx_2_ba_m_buf_din = APE_encode152_U0_etxOut_ba_m_buf17_din;
 
 assign etx_2_ba_m_buf_write = APE_encode152_U0_etxOut_ba_m_buf17_write;
 
@@ -7446,21 +7160,7 @@ assign etx_2_ba_m_cidx = APE_encode152_U0_etxOut_ba_m_cidx14;
 
 assign etx_2_ba_m_cidx_ap_vld = APE_encode152_U0_etxOut_ba_m_cidx14_ap_vld;
 
-assign etx_2_ha_m_buf_address0 = APE_encode152_U0_etxOut_ha_m_buf8_address0;
-
-assign etx_2_ha_m_buf_address1 = 8'd0;
-
-assign etx_2_ha_m_buf_ce0 = APE_encode152_U0_etxOut_ha_m_buf8_ce0;
-
-assign etx_2_ha_m_buf_ce1 = 1'b0;
-
-assign etx_2_ha_m_buf_d0 = APE_encode152_U0_etxOut_ha_m_buf8_d0;
-
-assign etx_2_ha_m_buf_d1 = 64'd0;
-
-assign etx_2_ha_m_buf_we0 = APE_encode152_U0_etxOut_ha_m_buf8_we0;
-
-assign etx_2_ha_m_buf_we1 = 1'b0;
+assign etx_2_ha_m_buf_din = APE_encode152_U0_etxOut_ha_m_buf8_din;
 
 assign etx_2_ha_m_buf_write = APE_encode152_U0_etxOut_ha_m_buf8_write;
 
@@ -7472,21 +7172,7 @@ assign etx_2_ha_m_cidx = APE_encode152_U0_etxOut_ha_m_cidx5;
 
 assign etx_2_ha_m_cidx_ap_vld = APE_encode152_U0_etxOut_ha_m_cidx5_ap_vld;
 
-assign etx_3_ba_m_buf_address0 = APE_encode153_U0_etxOut_ba_m_buf18_address0;
-
-assign etx_3_ba_m_buf_address1 = 8'd0;
-
-assign etx_3_ba_m_buf_ce0 = APE_encode153_U0_etxOut_ba_m_buf18_ce0;
-
-assign etx_3_ba_m_buf_ce1 = 1'b0;
-
-assign etx_3_ba_m_buf_d0 = APE_encode153_U0_etxOut_ba_m_buf18_d0;
-
-assign etx_3_ba_m_buf_d1 = 64'd0;
-
-assign etx_3_ba_m_buf_we0 = APE_encode153_U0_etxOut_ba_m_buf18_we0;
-
-assign etx_3_ba_m_buf_we1 = 1'b0;
+assign etx_3_ba_m_buf_din = APE_encode153_U0_etxOut_ba_m_buf18_din;
 
 assign etx_3_ba_m_buf_write = APE_encode153_U0_etxOut_ba_m_buf18_write;
 
@@ -7498,21 +7184,7 @@ assign etx_3_ba_m_cidx = APE_encode153_U0_etxOut_ba_m_cidx15;
 
 assign etx_3_ba_m_cidx_ap_vld = APE_encode153_U0_etxOut_ba_m_cidx15_ap_vld;
 
-assign etx_3_ha_m_buf_address0 = APE_encode153_U0_etxOut_ha_m_buf9_address0;
-
-assign etx_3_ha_m_buf_address1 = 8'd0;
-
-assign etx_3_ha_m_buf_ce0 = APE_encode153_U0_etxOut_ha_m_buf9_ce0;
-
-assign etx_3_ha_m_buf_ce1 = 1'b0;
-
-assign etx_3_ha_m_buf_d0 = APE_encode153_U0_etxOut_ha_m_buf9_d0;
-
-assign etx_3_ha_m_buf_d1 = 64'd0;
-
-assign etx_3_ha_m_buf_we0 = APE_encode153_U0_etxOut_ha_m_buf9_we0;
-
-assign etx_3_ha_m_buf_we1 = 1'b0;
+assign etx_3_ha_m_buf_din = APE_encode153_U0_etxOut_ha_m_buf9_din;
 
 assign etx_3_ha_m_buf_write = APE_encode153_U0_etxOut_ha_m_buf9_write;
 
@@ -8244,7 +7916,7 @@ assign hists0_7_m_omask_V_we0 = 1'b0;
 
 assign hists0_7_m_omask_V_we1 = 1'b0;
 
-assign hists0_m_omask_V_offset_read = encode4_entry211_U0_hists0_m_omask_V_offset_read;
+assign hists0_m_omask_V_offset_read = encode4_entry214_U0_hists0_m_omask_V_offset_read;
 
 assign hists1_0_m_bins_0_s_address0 = APE_encode151_U0_hist_m_bins_V_address0;
 

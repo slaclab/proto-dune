@@ -57,7 +57,7 @@ wire   [31:0] p_tmp_i_fu_80_p3;
 wire   [0:0] tmp_i_fu_60_p2;
 reg   [31:0] gbl_m_ncfgs_write_as_reg_50;
 wire    ap_CS_fsm_state2;
-wire   [31:0] tmp_i_255_fu_74_p2;
+wire   [31:0] tmp_i_265_fu_74_p2;
 reg   [1:0] ap_NS_fsm;
 reg    ap_condition_40;
 
@@ -209,9 +209,9 @@ assign monitor_cfg_m_mode = lclMonitorCfg_m_mode;
 
 assign monitor_cfg_m_ncfgs = gbl_m_ncfgs_write_as_reg_50;
 
-assign p_tmp_i_fu_80_p3 = ((First_1[0:0] === 1'b1) ? 32'd1 : tmp_i_255_fu_74_p2);
+assign p_tmp_i_fu_80_p3 = ((First_1[0:0] === 1'b1) ? 32'd1 : tmp_i_265_fu_74_p2);
 
-assign tmp_i_255_fu_74_p2 = (lclMonitorCfg_m_ncfg + 32'd1);
+assign tmp_i_265_fu_74_p2 = (lclMonitorCfg_m_ncfg + 32'd1);
 
 assign tmp_i_fu_60_p2 = ((p_read == 32'd0) ? 1'b1 : 1'b0);
 

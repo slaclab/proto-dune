@@ -18,7 +18,6 @@ module acquire_packet (
         pktCtx_m_chdx,
         pktCtx_m_cedx,
         pktCtx_m_status_V,
-        pktCtx_m_lasttimesta,
         pktCtx_m_hdrsBuf_address0,
         pktCtx_m_hdrsBuf_ce0,
         pktCtx_m_hdrsBuf_d0,
@@ -1806,7 +1805,6 @@ module acquire_packet (
         pktCtx_m_chdx_ap_vld,
         pktCtx_m_cedx_ap_vld,
         pktCtx_m_status_V_ap_vld,
-        pktCtx_m_lasttimesta_ap_vld,
         pktCtx_m_hdrsBuf_full_n,
         pktCtx_m_hdrsBuf_write,
         pktCtx_m_excsBuf_full_n,
@@ -2181,7 +2179,6 @@ input  [0:0] sAxis_TDEST;
 output  [3:0] pktCtx_m_chdx;
 output  [0:0] pktCtx_m_cedx;
 output  [31:0] pktCtx_m_status_V;
-output  [63:0] pktCtx_m_lasttimesta;
 output  [2:0] pktCtx_m_hdrsBuf_address0;
 output   pktCtx_m_hdrsBuf_ce0;
 output  [63:0] pktCtx_m_hdrsBuf_d0;
@@ -3969,7 +3966,6 @@ output   sAxis_TREADY;
 output   pktCtx_m_chdx_ap_vld;
 output   pktCtx_m_cedx_ap_vld;
 output   pktCtx_m_status_V_ap_vld;
-output   pktCtx_m_lasttimesta_ap_vld;
 input   pktCtx_m_hdrsBuf_full_n;
 output   pktCtx_m_hdrsBuf_write;
 input   pktCtx_m_excsBuf_full_n;
@@ -4338,7 +4334,6 @@ reg ap_ready;
 wire   [3:0] dataflow_in_loop_ACQ_U0_pktCtx_m_chdx;
 wire   [0:0] dataflow_in_loop_ACQ_U0_pktCtx_m_cedx;
 wire   [31:0] dataflow_in_loop_ACQ_U0_pktCtx_m_status_V;
-wire   [63:0] dataflow_in_loop_ACQ_U0_pktCtx_m_lasttimestamp;
 wire   [2:0] dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_address0;
 wire    dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_ce0;
 wire   [63:0] dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_d0;
@@ -5767,7 +5762,6 @@ wire    dataflow_in_loop_ACQ_U0_sAxis_TREADY;
 wire    dataflow_in_loop_ACQ_U0_pktCtx_m_chdx_ap_vld;
 wire    dataflow_in_loop_ACQ_U0_pktCtx_m_cedx_ap_vld;
 wire    dataflow_in_loop_ACQ_U0_pktCtx_m_status_V_ap_vld;
-wire    dataflow_in_loop_ACQ_U0_pktCtx_m_lasttimestamp_ap_vld;
 wire    dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_write;
 wire    dataflow_in_loop_ACQ_U0_pktCtx_m_excsBuf_write;
 wire    dataflow_in_loop_ACQ_U0_cmpCtx_adcs_sg0_0_V_write;
@@ -5983,7 +5977,6 @@ dataflow_in_loop_ACQ dataflow_in_loop_ACQ_U0(
     .pktCtx_m_chdx(dataflow_in_loop_ACQ_U0_pktCtx_m_chdx),
     .pktCtx_m_cedx(dataflow_in_loop_ACQ_U0_pktCtx_m_cedx),
     .pktCtx_m_status_V(dataflow_in_loop_ACQ_U0_pktCtx_m_status_V),
-    .pktCtx_m_lasttimestamp(dataflow_in_loop_ACQ_U0_pktCtx_m_lasttimestamp),
     .pktCtx_m_hdrsBuf_address0(dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_address0),
     .pktCtx_m_hdrsBuf_ce0(dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_ce0),
     .pktCtx_m_hdrsBuf_d0(dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_d0),
@@ -7770,7 +7763,6 @@ dataflow_in_loop_ACQ dataflow_in_loop_ACQ_U0(
     .pktCtx_m_chdx_ap_vld(dataflow_in_loop_ACQ_U0_pktCtx_m_chdx_ap_vld),
     .pktCtx_m_cedx_ap_vld(dataflow_in_loop_ACQ_U0_pktCtx_m_cedx_ap_vld),
     .pktCtx_m_status_V_ap_vld(dataflow_in_loop_ACQ_U0_pktCtx_m_status_V_ap_vld),
-    .pktCtx_m_lasttimestamp_ap_vld(dataflow_in_loop_ACQ_U0_pktCtx_m_lasttimestamp_ap_vld),
     .pktCtx_m_hdrsBuf_full_n(pktCtx_m_hdrsBuf_full_n),
     .pktCtx_m_hdrsBuf_write(dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_write),
     .pktCtx_m_excsBuf_full_n(pktCtx_m_excsBuf_full_n),
@@ -11431,10 +11423,6 @@ assign pktCtx_m_hdrsBuf_we0 = dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_we0;
 assign pktCtx_m_hdrsBuf_we1 = dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_we1;
 
 assign pktCtx_m_hdrsBuf_write = dataflow_in_loop_ACQ_U0_pktCtx_m_hdrsBuf_write;
-
-assign pktCtx_m_lasttimesta = dataflow_in_loop_ACQ_U0_pktCtx_m_lasttimestamp;
-
-assign pktCtx_m_lasttimesta_ap_vld = dataflow_in_loop_ACQ_U0_pktCtx_m_lasttimestamp_ap_vld;
 
 assign pktCtx_m_status_V = dataflow_in_loop_ACQ_U0_pktCtx_m_status_V;
 
