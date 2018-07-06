@@ -474,7 +474,7 @@ public:
       return;
   }
 
-   ReadStatus read (AxisIn &axis);
+   void read (AxisIn &axis);
 
 public:
     typedef uint64_t Data;
@@ -526,7 +526,7 @@ public:
 };
 /* ------------------------------------------------------------------------- */
 
-static ReadStatus  read_frame (ReadFrame      *frame,
+static        void read_frame (ReadFrame      *frame,
                                AxisIn          &axis);
 
 static void         read_wib0 (ReadStatus    &status,
@@ -620,11 +620,10 @@ static void print_read_frame (ReadFrame const *frame)
 
 
 
-inline ReadStatus ReadFrame::read (AxisIn &axis)
+inline void ReadFrame::read (AxisIn &axis)
 {
     #pragma HLS INLINE off
-    ReadStatus status = read_frame (this, axis);
-    return status;
+    read_frame (this, axis);
 }
 
 
@@ -643,8 +642,8 @@ inline ReadStatus ReadFrame::read (AxisIn &axis)
  *   the user field of the last word is not set
  *
 \* ---------------------------------------------------------------------- */
-static inline ReadStatus read_frame (ReadFrame     *frame,
-                                     AxisIn         &axis)
+static inline void read_frame (ReadFrame     *frame,
+                               AxisIn         &axis)
 {
    #pragma HLS INLINE
 
@@ -668,7 +667,7 @@ static inline ReadStatus read_frame (ReadFrame     *frame,
 
    print_read_frame (frame);
 
-   return status;
+   return;
 }
 /* ---------------------------------------------------------------------- */
 
