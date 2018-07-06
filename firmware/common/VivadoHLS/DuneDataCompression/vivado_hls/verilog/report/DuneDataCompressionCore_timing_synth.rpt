@@ -1,0 +1,84 @@
+Copyright 1986-2018 Xilinx, Inc. All Rights Reserved.
+-------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2018.1 (lin64) Build 2188600 Wed Apr  4 18:39:19 MDT 2018
+| Date         : Thu Jul  5 20:11:17 2018
+| Host         : rdusr219.slac.stanford.edu running 64-bit Red Hat Enterprise Linux Server release 6.10 (Santiago)
+| Command      : report_timing -file ./report/DuneDataCompressionCore_timing_synth.rpt
+| Design       : DuneDataCompressionCore
+| Device       : 7z045-ffg900
+| Speed File   : -2  PRODUCTION 1.11 2014-09-11
+-------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (MET) :             0.314ns  (required time - arrival time)
+  Source:                 handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/r_V_68_reg_3492_reg[7]/C
+                            (rising edge-triggered cell FDRE clocked by ap_clk  {rise@0.000ns fall@4.000ns period=8.000ns})
+  Destination:            handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/cv_m_lo_V_4_reg_3481_reg[0]/D
+                            (rising edge-triggered cell FDRE clocked by ap_clk  {rise@0.000ns fall@4.000ns period=8.000ns})
+  Path Group:             ap_clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            8.000ns  (ap_clk rise@8.000ns - ap_clk rise@0.000ns)
+  Data Path Delay:        7.619ns  (logic 3.792ns (49.771%)  route 3.827ns (50.229%))
+  Logic Levels:           10  (CARRY4=2 DSP48E1=1 LUT3=2 LUT4=1 LUT6=4)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 8.510 - 8.000 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock ap_clk rise edge)     0.000     0.000 r  
+                                                      0.000     0.000 r  ap_clk (IN)
+                         net (fo=28839, unset)        0.537     0.537    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/ap_clk
+                         FDRE                                         r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/r_V_68_reg_3492_reg[7]/C
+  -------------------------------------------------------------------    -------------------
+                         FDRE (Prop_fdre_C_Q)         0.233     0.770 f  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/r_V_68_reg_3492_reg[7]/Q
+                         net (fo=5, unplaced)         0.444     1.214    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/r_V_68_reg_3492_reg[11][7]
+                         LUT3 (Prop_lut3_I0_O)        0.123     1.337 f  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/nreduce_V_reg_3506[1]_i_4/O
+                         net (fo=3, unplaced)         0.425     1.762    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/nreduce_V_reg_3506[1]_i_4_n_0
+                         LUT6 (Prop_lut6_I0_O)        0.043     1.805 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/nreduce_V_reg_3506[3]_i_4__2/O
+                         net (fo=20, unplaced)        0.330     2.135    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/nreduce_V_reg_3506[3]_i_4__2_n_0
+                         LUT4 (Prop_lut4_I1_O)        0.043     2.178 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/etx_cv_m_hi_V_reg_1168[7]_i_6/O
+                         net (fo=1, unplaced)         0.539     2.717    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/etx_cv_m_hi_V_reg_1168[7]_i_6_n_0
+                         LUT6 (Prop_lut6_I1_O)        0.043     2.760 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/etx_cv_m_hi_V_reg_1168[7]_i_3__1/O
+                         net (fo=1, unplaced)         0.407     3.167    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/etx_cv_m_hi_V_reg_1168[7]_i_3__1_n_0
+                         LUT6 (Prop_lut6_I1_O)        0.043     3.210 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/etx_cv_m_hi_V_reg_1168[7]_i_2__2/O
+                         net (fo=3, unplaced)         0.425     3.635    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/range_V_fu_1981_p1[5]
+                         LUT6 (Prop_lut6_I0_O)        0.043     3.678 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/p_i_31__5/O
+                         net (fo=2, unplaced)         0.418     4.096    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/p_i_31__5_n_0
+                         LUT3 (Prop_lut3_I0_O)        0.043     4.139 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/p_i_35__4/O
+                         net (fo=1, unplaced)         0.000     4.139    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/p_i_35__4_n_0
+                         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.246     4.385 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/p_i_13__4/CO[3]
+                         net (fo=1, unplaced)         0.000     4.385    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/p_i_13__4_n_0
+                         CARRY4 (Prop_carry4_CI_O[0])
+                                                      0.114     4.499 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibKp_U629/DuneDataCompressibKp_DSP48_0_U/p_i_12__4/O[0]
+                         net (fo=2, unplaced)         0.419     4.918    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibLp_U630/DuneDataCompressibLp_DSP48_1_U/A[12]
+                         DSP48E1 (Prop_dsp48e1_A[12]_P[10])
+                                                      2.818     7.736 r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/DuneDataCompressibLp_U630/DuneDataCompressibLp_DSP48_1_U/p/P[10]
+                         net (fo=3, unplaced)         0.419     8.156    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/grp_fu_2934_p3[10]
+                         FDRE                                         r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/cv_m_lo_V_4_reg_3481_reg[0]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock ap_clk rise edge)     8.000     8.000 r  
+                                                      0.000     8.000 r  ap_clk (IN)
+                         net (fo=28839, unset)        0.510     8.510    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/ap_clk
+                         FDRE                                         r  handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/cv_m_lo_V_4_reg_3481_reg[0]/C
+                         clock pessimism              0.000     8.510    
+                         clock uncertainty           -0.035     8.475    
+                         FDRE (Setup_fdre_C_D)       -0.005     8.470    handle_packet_U0/process_packet_U0/grp_write_packet_fu_471/grp_write_adcs4_fu_702/encode4_U0/APE_encode150_U0/cv_m_lo_V_4_reg_3481_reg[0]
+  -------------------------------------------------------------------
+                         required time                          8.470    
+                         arrival time                          -8.156    
+  -------------------------------------------------------------------
+                         slack                                  0.314    
+
+
+
+
