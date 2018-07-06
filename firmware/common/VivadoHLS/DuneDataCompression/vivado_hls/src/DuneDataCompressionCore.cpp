@@ -197,7 +197,6 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
    #pragma HLS STREAM   variable=frame off
 
 
-   static   MonitorModule  lclMonitor;
    #pragma HLS RESOURCE variable=lclMonitor.read core=RAM_2P_LUTRAM
    //#pragma HLS RESOURCE variable=lclMonitor.read.summary         core=RAM_2P_LUTRAM
    //#pragma HLS RESOURCE variable=lclMonitor.read.errs            core=RAM_2P_LUTRAM
@@ -272,37 +271,25 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 /* ---------------------------------------------------------------------- */
 static void
  handle_packet (AxisOut                                              &mAxis,
-                AxisIn                                               &sAxis,
-                ModuleIdx_t                                       moduleIdx,
-                ModuleConfig const                                  &config,
-                MonitorRead                                    &monitorRead,
-                MonitorWrite                                  &monitorWrite);
+                AxisIn                                               &sAxis);
 
 
 static void
  acquire_packet (AxisIn                                               &sAxis,
                  PacketContext                                       &pktCtx,
-                 CompressionContext                                  &cmpCtx,
-                 ModuleIdx_t                                       moduleIdx,
-                 ModuleConfig const                                  &config,
-                 MonitorRead                                        &monitor);
+                 CompressionContext                                  &cmpCtx);
 
 
 static void
  process_packet (AxisOut                                              &mAxis,
                  PacketContext                                       &pktCtx,
-                 CompressionContext                                  &cmpCtx,
-                 MonitorWrite                                  &monitorwrite);
+                 CompressionContext                                  &cmpCtx);
 
 
 static void
  acquire_frame (AxisIn                                                &sAxis,
                 PacketContext                                        &pktCtx,
                 CompressionContext                                   &cmpCtx,
-                ModuleIdx_t                                        moduleIdx,
-                ModuleConfig const                                   &config,
-                MonitorRead                                      &gblMonitor,
-                MonitorRead                                      &lclMonitor,
                 int                                                   iframe);
 /* ====================================================================== */
 
@@ -351,21 +338,9 @@ void DuneDataCompressionCore (AxisIn            &sAxis,
 
    //#pragma HLS DATA_PACK variable=config
 
-   static MonitorCfg       lclMonitorCfg;
-   static MonitorCommon lclMonitorCommon;
-   static bool              First = true;
-   ModuleConfig                   lclCfg;
-
-
    #pragma HLS DATAFLOW
-   lclCfg.copy             (config, First);
-   lclMonitorCfg.   update (lclCfg, monitor.cfg);
-   lclMonitorCommon.update (lclCfg, monitor.common);
 
-   MonitorModule  rdMonitor;
-   MonitorModule  wrMonitor;
-
-   handle_packet (mAxis, sAxis, moduleIdx, lclCfg, rdMonitor.read, wrMonitor.write);
+   handle_packet (mAxis, sAxis);
 
    return;
 }
@@ -393,11 +368,7 @@ void DuneDataCompressionCore (AxisIn            &sAxis,
  *
 \* ----------------------------------------------------------------------- */
 static void handle_packet (AxisOut                   &mAxis,
-                           AxisIn                    &sAxis,
-                           ModuleIdx_t            moduleIdx,
-                           ModuleConfig const       &config,
-                           MonitorRead         &monitorRead,
-                           MonitorWrite       &monitorWrite)
+                           AxisIn                    &sAxis)
 {
    #pragma HLS DATAFLOW
 
@@ -420,8 +391,8 @@ static void handle_packet (AxisOut                   &mAxis,
    // -------------------------------------------------
    HISTOGRAM_statement (cmpCtx.hists.set_ids (MODULE_K_NPARALLEL));
 
-   acquire_packet (sAxis, pktCtx, cmpCtx, moduleIdx, config, monitorRead);
-   process_packet (mAxis, pktCtx, cmpCtx, monitorWrite);
+   acquire_packet (sAxis, pktCtx, cmpCtx);
+   process_packet (mAxis, pktCtx, cmpCtx);
 
    return;
 }
@@ -455,10 +426,7 @@ static void handle_packet (AxisOut                   &mAxis,
 \* ----------------------------------------------------------------------- */
 void acquire_packet (AxisIn                                        &sAxis,
                      PacketContext                                &pktCtx,
-                     CompressionContext                           &cmpCtx,
-                     ModuleIdx_t                                moduleIdx,
-                     ModuleConfig  const                          &config,
-                     MonitorRead                                 &monitor)
+                     CompressionContext                           &cmpCtx )
 {
    #pragma HLS INLINE off
 
@@ -467,15 +435,13 @@ void acquire_packet (AxisIn                                        &sAxis,
    // Accumulates the statistics and status
    // associated with the reading of a WIB frame.
    // -------------------------------------------
-   static MonitorRead lclMonitor;
 
    /// STRIP --- if (config.init) lclMonitor.init ();
 
    ACQUIRE_LOOP:
    for (int idx = 0; idx < PACKET_K_NSAMPLES; idx++)
    {
-      acquire_frame (sAxis,  pktCtx,      cmpCtx, moduleIdx,
-                     config, monitor, lclMonitor,      idx);
+      acquire_frame (sAxis,  pktCtx,      cmpCtx, idx);
    }
 
    //// monitor = lclMonitor;
@@ -524,10 +490,6 @@ void acquire_packet (AxisIn                                        &sAxis,
 static void acquire_frame (AxisIn                                        &sAxis,
                            PacketContext                                &pktCtx,
                            CompressionContext                           &cmpCtx,
-                           ModuleIdx_t                                moduleIdx,
-                           ModuleConfig const                           &config,
-                           MonitorRead                              &gblMonitor,
-                           MonitorRead                              &lclMonitor,
                            int                                           iframe)
 {
    #pragma HLS INLINE
@@ -539,7 +501,7 @@ static void acquire_frame (AxisIn                                        &sAxis,
 
    frame.read        (sAxis);
    /// STRIP -- lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
-   process_frame     (frame, iframe, config, pktCtx, cmpCtx);
+   process_frame     (frame, iframe, pktCtx, cmpCtx);
 }
 /* ----------------------------------------------------------------------- */
 
@@ -555,12 +517,11 @@ static void acquire_frame (AxisIn                                        &sAxis,
 static void process_packet
            (AxisOut                                                  &mAxis,
             PacketContext                                           &pktCtx,
-            CompressionContext                                      &cmpCtx,
-            MonitorWrite                                      &monitorWrite)
+            CompressionContext                                      &cmpCtx )
 {
    #pragma HLS INLINE off
 
-   write_packet  (mAxis,  pktCtx, cmpCtx, monitorWrite);
+   write_packet  (mAxis,  pktCtx, cmpCtx);
 
    return;
 }

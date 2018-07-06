@@ -7,7 +7,7 @@
 
 `timescale 1 ns / 1 ps 
 
-(* CORE_GENERATION_INFO="DuneDataCompressionCore,hls_ip_2018_1,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=1,HLS_INPUT_PART=xc7z045ffg900-2,HLS_INPUT_CLOCK=8.000000,HLS_INPUT_ARCH=dataflow,HLS_SYN_CLOCK=9.459500,HLS_SYN_LAT=95492,HLS_SYN_TPT=54320,HLS_SYN_MEM=143,HLS_SYN_DSP=8,HLS_SYN_FF=29687,HLS_SYN_LUT=57411}" *)
+(* CORE_GENERATION_INFO="DuneDataCompressionCore,hls_ip_2018_1,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=1,HLS_INPUT_PART=xc7z045ffg900-2,HLS_INPUT_CLOCK=8.000000,HLS_INPUT_ARCH=dataflow,HLS_SYN_CLOCK=9.459500,HLS_SYN_LAT=95492,HLS_SYN_TPT=54320,HLS_SYN_MEM=143,HLS_SYN_DSP=8,HLS_SYN_FF=29216,HLS_SYN_LUT=56245}" *)
 
 module DuneDataCompressionCore (
         s_axi_BUS_A_AWVALID,
@@ -107,105 +107,15 @@ wire    ap_idle;
 wire   [31:0] config_init;
 wire   [31:0] config_mode;
 wire   [31:0] config_limit;
+wire   [31:0] monitor_common_pattern;
+wire   [31:0] monitor_cfg_m_mode;
+wire   [31:0] monitor_cfg_m_ncfgs;
 wire   [31:0] monitor_read_summary_mask_V;
 wire   [31:0] monitor_read_summary_nframes;
 wire   [31:0] monitor_write_nbytes;
 wire   [31:0] monitor_write_npromoted;
 wire   [31:0] monitor_write_ndropped;
 wire   [31:0] monitor_write_npackets;
-wire    DuneDataCompressionC_2_U0_ap_start;
-wire    DuneDataCompressionC_2_U0_ap_done;
-wire    DuneDataCompressionC_2_U0_ap_continue;
-wire    DuneDataCompressionC_2_U0_ap_idle;
-wire    DuneDataCompressionC_2_U0_ap_ready;
-wire    DuneDataCompressionC_2_U0_start_out;
-wire    DuneDataCompressionC_2_U0_start_write;
-wire   [31:0] DuneDataCompressionC_2_U0_config_init_out_din;
-wire    DuneDataCompressionC_2_U0_config_init_out_write;
-wire   [31:0] DuneDataCompressionC_2_U0_config_mode_out_din;
-wire    DuneDataCompressionC_2_U0_config_mode_out_write;
-wire   [31:0] DuneDataCompressionC_2_U0_config_limit_out_din;
-wire    DuneDataCompressionC_2_U0_config_limit_out_write;
-wire    DuneDataCompressionC_1_U0_ap_start;
-wire    DuneDataCompressionC_1_U0_ap_done;
-wire    DuneDataCompressionC_1_U0_ap_continue;
-wire    DuneDataCompressionC_1_U0_ap_idle;
-wire    DuneDataCompressionC_1_U0_ap_ready;
-wire    DuneDataCompressionC_1_U0_start_out;
-wire    DuneDataCompressionC_1_U0_start_write;
-wire    DuneDataCompressionC_1_U0_config_init_read;
-wire    DuneDataCompressionC_1_U0_config_mode_read;
-wire    DuneDataCompressionC_1_U0_config_limit_read;
-wire   [31:0] DuneDataCompressionC_1_U0_config_init_out_din;
-wire    DuneDataCompressionC_1_U0_config_init_out_write;
-wire   [31:0] DuneDataCompressionC_1_U0_config_mode_out_din;
-wire    DuneDataCompressionC_1_U0_config_mode_out_write;
-wire   [31:0] DuneDataCompressionC_1_U0_config_limit_out_din;
-wire    DuneDataCompressionC_1_U0_config_limit_out_write;
-wire    Block_proc_U0_ap_start;
-wire    Block_proc_U0_ap_done;
-wire    Block_proc_U0_ap_continue;
-wire    Block_proc_U0_ap_idle;
-wire    Block_proc_U0_ap_ready;
-wire    Block_proc_U0_config_mode_read;
-wire    Block_proc_U0_config_init_read;
-wire   [31:0] Block_proc_U0_ap_return_0;
-wire   [31:0] Block_proc_U0_ap_return_1;
-wire    ap_channel_done_newret1;
-wire    newret1_full_n;
-reg    ap_sync_reg_channel_write_newret1;
-wire    ap_sync_channel_write_newret1;
-wire    ap_channel_done_newret;
-wire    newret_full_n;
-reg    ap_sync_reg_channel_write_newret;
-wire    ap_sync_channel_write_newret;
-wire    copy_U0_ap_start;
-wire    copy_U0_ap_done;
-wire    copy_U0_ap_continue;
-wire    copy_U0_ap_idle;
-wire    copy_U0_ap_ready;
-wire   [31:0] copy_U0_ap_return_0;
-wire   [31:0] copy_U0_ap_return_1;
-wire    ap_channel_done_lclCfg_mode;
-wire    lclCfg_mode_full_n;
-reg    ap_sync_reg_channel_write_lclCfg_mode;
-wire    ap_sync_channel_write_lclCfg_mode;
-wire    ap_channel_done_lclCfg_init;
-wire    lclCfg_init_full_n;
-reg    ap_sync_reg_channel_write_lclCfg_init;
-wire    ap_sync_channel_write_lclCfg_init;
-wire    Block_proc206_U0_ap_start;
-wire    Block_proc206_U0_ap_done;
-wire    Block_proc206_U0_ap_continue;
-wire    Block_proc206_U0_ap_idle;
-wire    Block_proc206_U0_ap_ready;
-wire   [31:0] Block_proc206_U0_ap_return_0;
-wire   [31:0] Block_proc206_U0_ap_return_1;
-wire    ap_channel_done_lclCfg_mode_load_loc;
-wire    lclCfg_mode_load_loc_full_n;
-reg    ap_sync_reg_channel_write_lclCfg_mode_load_loc;
-wire    ap_sync_channel_write_lclCfg_mode_load_loc;
-wire    ap_channel_done_lclCfg_init_load_loc;
-wire    lclCfg_init_load_loc_full_n;
-reg    ap_sync_reg_channel_write_lclCfg_init_load_loc;
-wire    ap_sync_channel_write_lclCfg_init_load_loc;
-wire    Block_proc207_U0_ap_start;
-wire    Block_proc207_U0_ap_done;
-wire    Block_proc207_U0_ap_continue;
-wire    Block_proc207_U0_ap_idle;
-wire    Block_proc207_U0_ap_ready;
-wire   [31:0] Block_proc207_U0_monitor_cfg_m_mode;
-wire    Block_proc207_U0_monitor_cfg_m_mode_ap_vld;
-wire   [31:0] Block_proc207_U0_monitor_cfg_m_ncfgs;
-wire    Block_proc207_U0_monitor_cfg_m_ncfgs_ap_vld;
-wire    ap_sync_continue;
-wire    update_U0_ap_start;
-wire    update_U0_ap_done;
-wire    update_U0_ap_continue;
-wire    update_U0_ap_idle;
-wire    update_U0_ap_ready;
-wire   [31:0] update_U0_gbl_pattern;
-wire    update_U0_gbl_pattern_ap_vld;
 wire   [63:0] handle_packet_U0_mAxis_TDATA;
 wire   [7:0] handle_packet_U0_mAxis_TKEEP;
 wire   [7:0] handle_packet_U0_mAxis_TSTRB;
@@ -220,75 +130,11 @@ wire    handle_packet_U0_ap_start;
 wire    handle_packet_U0_ap_ready;
 wire    handle_packet_U0_ap_idle;
 wire    handle_packet_U0_ap_continue;
-wire    config_init_c3_full_n;
-wire   [31:0] config_init_c3_dout;
-wire    config_init_c3_empty_n;
-wire    config_mode_c4_full_n;
-wire   [31:0] config_mode_c4_dout;
-wire    config_mode_c4_empty_n;
-wire    config_limit_c5_full_n;
-wire   [31:0] config_limit_c5_dout;
-wire    config_limit_c5_empty_n;
-wire    config_init_c_full_n;
-wire   [31:0] config_init_c_dout;
-wire    config_init_c_empty_n;
-wire    config_mode_c_full_n;
-wire   [31:0] config_mode_c_dout;
-wire    config_mode_c_empty_n;
-wire   [31:0] newret_dout;
-wire    newret_empty_n;
-wire   [31:0] newret1_dout;
-wire    newret1_empty_n;
-wire   [31:0] lclCfg_init_dout;
-wire    lclCfg_init_empty_n;
-wire   [31:0] lclCfg_mode_dout;
-wire    lclCfg_mode_empty_n;
-wire   [31:0] lclCfg_init_load_loc_dout;
-wire    lclCfg_init_load_loc_empty_n;
-wire   [31:0] lclCfg_mode_load_loc_dout;
-wire    lclCfg_mode_load_loc_empty_n;
+wire    ap_sync_continue;
 wire    ap_sync_done;
 wire    ap_sync_ready;
-reg    ap_sync_reg_handle_packet_U0_ap_ready;
-wire    ap_sync_handle_packet_U0_ap_ready;
-reg   [1:0] handle_packet_U0_ap_ready_count;
-reg    ap_sync_reg_DuneDataCompressionC_2_U0_ap_ready;
-wire    ap_sync_DuneDataCompressionC_2_U0_ap_ready;
-reg   [1:0] DuneDataCompressionC_2_U0_ap_ready_count;
-wire   [0:0] start_for_DuneDataCompressionC_1_U0_din;
-wire    start_for_DuneDataCompressionC_1_U0_full_n;
-wire   [0:0] start_for_DuneDataCompressionC_1_U0_dout;
-wire    start_for_DuneDataCompressionC_1_U0_empty_n;
-wire   [0:0] start_for_Block_proc_U0_din;
-wire    start_for_Block_proc_U0_full_n;
-wire   [0:0] start_for_Block_proc_U0_dout;
-wire    start_for_Block_proc_U0_empty_n;
-wire    Block_proc_U0_start_full_n;
-wire    Block_proc_U0_start_write;
-wire    copy_U0_start_full_n;
-wire    copy_U0_start_write;
-wire    Block_proc206_U0_start_full_n;
-wire    Block_proc206_U0_start_write;
-wire    Block_proc207_U0_start_full_n;
-wire    Block_proc207_U0_start_write;
-wire    update_U0_start_full_n;
-wire    update_U0_start_write;
 wire    handle_packet_U0_start_full_n;
 wire    handle_packet_U0_start_write;
-
-// power-on initialization
-initial begin
-#0 ap_sync_reg_channel_write_newret1 = 1'b0;
-#0 ap_sync_reg_channel_write_newret = 1'b0;
-#0 ap_sync_reg_channel_write_lclCfg_mode = 1'b0;
-#0 ap_sync_reg_channel_write_lclCfg_init = 1'b0;
-#0 ap_sync_reg_channel_write_lclCfg_mode_load_loc = 1'b0;
-#0 ap_sync_reg_channel_write_lclCfg_init_load_loc = 1'b0;
-#0 ap_sync_reg_handle_packet_U0_ap_ready = 1'b0;
-#0 handle_packet_U0_ap_ready_count = 2'd0;
-#0 ap_sync_reg_DuneDataCompressionC_2_U0_ap_ready = 1'b0;
-#0 DuneDataCompressionC_2_U0_ap_ready_count = 2'd0;
-end
 
 DuneDataCompressionCore_BUS_A_s_axi #(
     .C_S_AXI_ADDR_WIDTH( C_S_AXI_BUS_A_ADDR_WIDTH ),
@@ -322,148 +168,15 @@ DuneDataCompressionCore_BUS_A_s_axi_U(
     .config_init(config_init),
     .config_mode(config_mode),
     .config_limit(config_limit),
-    .monitor_common_pattern(update_U0_gbl_pattern),
-    .monitor_common_pattern_ap_vld(update_U0_gbl_pattern_ap_vld),
-    .monitor_cfg_m_mode(Block_proc207_U0_monitor_cfg_m_mode),
-    .monitor_cfg_m_mode_ap_vld(Block_proc207_U0_monitor_cfg_m_mode_ap_vld),
-    .monitor_cfg_m_ncfgs(Block_proc207_U0_monitor_cfg_m_ncfgs),
-    .monitor_cfg_m_ncfgs_ap_vld(Block_proc207_U0_monitor_cfg_m_ncfgs_ap_vld),
+    .monitor_common_pattern(monitor_common_pattern),
+    .monitor_cfg_m_mode(monitor_cfg_m_mode),
+    .monitor_cfg_m_ncfgs(monitor_cfg_m_ncfgs),
     .monitor_read_summary_mask_V(monitor_read_summary_mask_V),
     .monitor_read_summary_nframes(monitor_read_summary_nframes),
     .monitor_write_nbytes(monitor_write_nbytes),
     .monitor_write_npromoted(monitor_write_npromoted),
     .monitor_write_ndropped(monitor_write_ndropped),
     .monitor_write_npackets(monitor_write_npackets)
-);
-
-DuneDataCompressionC_2 DuneDataCompressionC_2_U0(
-    .ap_clk(ap_clk),
-    .ap_rst(ap_rst_n_inv),
-    .ap_start(DuneDataCompressionC_2_U0_ap_start),
-    .start_full_n(start_for_DuneDataCompressionC_1_U0_full_n),
-    .ap_done(DuneDataCompressionC_2_U0_ap_done),
-    .ap_continue(DuneDataCompressionC_2_U0_ap_continue),
-    .ap_idle(DuneDataCompressionC_2_U0_ap_idle),
-    .ap_ready(DuneDataCompressionC_2_U0_ap_ready),
-    .start_out(DuneDataCompressionC_2_U0_start_out),
-    .start_write(DuneDataCompressionC_2_U0_start_write),
-    .config_init(config_init),
-    .config_mode(config_mode),
-    .config_limit(config_limit),
-    .config_init_out_din(DuneDataCompressionC_2_U0_config_init_out_din),
-    .config_init_out_full_n(config_init_c3_full_n),
-    .config_init_out_write(DuneDataCompressionC_2_U0_config_init_out_write),
-    .config_mode_out_din(DuneDataCompressionC_2_U0_config_mode_out_din),
-    .config_mode_out_full_n(config_mode_c4_full_n),
-    .config_mode_out_write(DuneDataCompressionC_2_U0_config_mode_out_write),
-    .config_limit_out_din(DuneDataCompressionC_2_U0_config_limit_out_din),
-    .config_limit_out_full_n(config_limit_c5_full_n),
-    .config_limit_out_write(DuneDataCompressionC_2_U0_config_limit_out_write)
-);
-
-DuneDataCompressionC_1 DuneDataCompressionC_1_U0(
-    .ap_clk(ap_clk),
-    .ap_rst(ap_rst_n_inv),
-    .ap_start(DuneDataCompressionC_1_U0_ap_start),
-    .start_full_n(start_for_Block_proc_U0_full_n),
-    .ap_done(DuneDataCompressionC_1_U0_ap_done),
-    .ap_continue(DuneDataCompressionC_1_U0_ap_continue),
-    .ap_idle(DuneDataCompressionC_1_U0_ap_idle),
-    .ap_ready(DuneDataCompressionC_1_U0_ap_ready),
-    .start_out(DuneDataCompressionC_1_U0_start_out),
-    .start_write(DuneDataCompressionC_1_U0_start_write),
-    .config_init_dout(config_init_c3_dout),
-    .config_init_empty_n(config_init_c3_empty_n),
-    .config_init_read(DuneDataCompressionC_1_U0_config_init_read),
-    .config_mode_dout(config_mode_c4_dout),
-    .config_mode_empty_n(config_mode_c4_empty_n),
-    .config_mode_read(DuneDataCompressionC_1_U0_config_mode_read),
-    .config_limit_dout(config_limit_c5_dout),
-    .config_limit_empty_n(config_limit_c5_empty_n),
-    .config_limit_read(DuneDataCompressionC_1_U0_config_limit_read),
-    .config_init_out_din(DuneDataCompressionC_1_U0_config_init_out_din),
-    .config_init_out_full_n(config_init_c_full_n),
-    .config_init_out_write(DuneDataCompressionC_1_U0_config_init_out_write),
-    .config_mode_out_din(DuneDataCompressionC_1_U0_config_mode_out_din),
-    .config_mode_out_full_n(config_mode_c_full_n),
-    .config_mode_out_write(DuneDataCompressionC_1_U0_config_mode_out_write),
-    .config_limit_out_din(DuneDataCompressionC_1_U0_config_limit_out_din),
-    .config_limit_out_full_n(1'b1),
-    .config_limit_out_write(DuneDataCompressionC_1_U0_config_limit_out_write)
-);
-
-Block_proc Block_proc_U0(
-    .ap_clk(ap_clk),
-    .ap_rst(ap_rst_n_inv),
-    .ap_start(Block_proc_U0_ap_start),
-    .ap_done(Block_proc_U0_ap_done),
-    .ap_continue(Block_proc_U0_ap_continue),
-    .ap_idle(Block_proc_U0_ap_idle),
-    .ap_ready(Block_proc_U0_ap_ready),
-    .config_mode_dout(config_mode_c_dout),
-    .config_mode_empty_n(config_mode_c_empty_n),
-    .config_mode_read(Block_proc_U0_config_mode_read),
-    .config_init_dout(config_init_c_dout),
-    .config_init_empty_n(config_init_c_empty_n),
-    .config_init_read(Block_proc_U0_config_init_read),
-    .ap_return_0(Block_proc_U0_ap_return_0),
-    .ap_return_1(Block_proc_U0_ap_return_1)
-);
-
-copy copy_U0(
-    .ap_clk(ap_clk),
-    .ap_rst(ap_rst_n_inv),
-    .ap_start(copy_U0_ap_start),
-    .ap_done(copy_U0_ap_done),
-    .ap_continue(copy_U0_ap_continue),
-    .ap_idle(copy_U0_ap_idle),
-    .ap_ready(copy_U0_ap_ready),
-    .src_init_read(newret1_dout),
-    .src_mode_read(newret_dout),
-    .ap_return_0(copy_U0_ap_return_0),
-    .ap_return_1(copy_U0_ap_return_1)
-);
-
-Block_proc206 Block_proc206_U0(
-    .ap_clk(ap_clk),
-    .ap_rst(ap_rst_n_inv),
-    .ap_start(Block_proc206_U0_ap_start),
-    .ap_done(Block_proc206_U0_ap_done),
-    .ap_continue(Block_proc206_U0_ap_continue),
-    .ap_idle(Block_proc206_U0_ap_idle),
-    .ap_ready(Block_proc206_U0_ap_ready),
-    .p_read(lclCfg_init_dout),
-    .p_read1(lclCfg_mode_dout),
-    .ap_return_0(Block_proc206_U0_ap_return_0),
-    .ap_return_1(Block_proc206_U0_ap_return_1)
-);
-
-Block_proc207 Block_proc207_U0(
-    .ap_clk(ap_clk),
-    .ap_rst(ap_rst_n_inv),
-    .ap_start(Block_proc207_U0_ap_start),
-    .ap_done(Block_proc207_U0_ap_done),
-    .ap_continue(Block_proc207_U0_ap_continue),
-    .ap_idle(Block_proc207_U0_ap_idle),
-    .ap_ready(Block_proc207_U0_ap_ready),
-    .p_read(lclCfg_init_load_loc_dout),
-    .p_read1(lclCfg_mode_load_loc_dout),
-    .monitor_cfg_m_mode(Block_proc207_U0_monitor_cfg_m_mode),
-    .monitor_cfg_m_mode_ap_vld(Block_proc207_U0_monitor_cfg_m_mode_ap_vld),
-    .monitor_cfg_m_ncfgs(Block_proc207_U0_monitor_cfg_m_ncfgs),
-    .monitor_cfg_m_ncfgs_ap_vld(Block_proc207_U0_monitor_cfg_m_ncfgs_ap_vld)
-);
-
-update update_U0(
-    .ap_clk(ap_clk),
-    .ap_rst(ap_rst_n_inv),
-    .ap_start(update_U0_ap_start),
-    .ap_done(update_U0_ap_done),
-    .ap_continue(update_U0_ap_continue),
-    .ap_idle(update_U0_ap_idle),
-    .ap_ready(update_U0_ap_ready),
-    .gbl_pattern(update_U0_gbl_pattern),
-    .gbl_pattern_ap_vld(update_U0_gbl_pattern_ap_vld)
 );
 
 handle_packet handle_packet_U0(
@@ -494,382 +207,25 @@ handle_packet handle_packet_U0(
     .ap_continue(handle_packet_U0_ap_continue)
 );
 
-fifo_w32_d2_A_x_x_x config_init_c3_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(DuneDataCompressionC_2_U0_config_init_out_din),
-    .if_full_n(config_init_c3_full_n),
-    .if_write(DuneDataCompressionC_2_U0_config_init_out_write),
-    .if_dout(config_init_c3_dout),
-    .if_empty_n(config_init_c3_empty_n),
-    .if_read(DuneDataCompressionC_1_U0_config_init_read)
-);
+assign ap_done = handle_packet_U0_ap_done;
 
-fifo_w32_d2_A_x_x_x config_mode_c4_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(DuneDataCompressionC_2_U0_config_mode_out_din),
-    .if_full_n(config_mode_c4_full_n),
-    .if_write(DuneDataCompressionC_2_U0_config_mode_out_write),
-    .if_dout(config_mode_c4_dout),
-    .if_empty_n(config_mode_c4_empty_n),
-    .if_read(DuneDataCompressionC_1_U0_config_mode_read)
-);
+assign ap_idle = handle_packet_U0_ap_idle;
 
-fifo_w32_d2_A_x_x_x config_limit_c5_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(DuneDataCompressionC_2_U0_config_limit_out_din),
-    .if_full_n(config_limit_c5_full_n),
-    .if_write(DuneDataCompressionC_2_U0_config_limit_out_write),
-    .if_dout(config_limit_c5_dout),
-    .if_empty_n(config_limit_c5_empty_n),
-    .if_read(DuneDataCompressionC_1_U0_config_limit_read)
-);
-
-fifo_w32_d2_A_x_x_x config_init_c_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(DuneDataCompressionC_1_U0_config_init_out_din),
-    .if_full_n(config_init_c_full_n),
-    .if_write(DuneDataCompressionC_1_U0_config_init_out_write),
-    .if_dout(config_init_c_dout),
-    .if_empty_n(config_init_c_empty_n),
-    .if_read(Block_proc_U0_config_init_read)
-);
-
-fifo_w32_d2_A_x_x_x config_mode_c_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(DuneDataCompressionC_1_U0_config_mode_out_din),
-    .if_full_n(config_mode_c_full_n),
-    .if_write(DuneDataCompressionC_1_U0_config_mode_out_write),
-    .if_dout(config_mode_c_dout),
-    .if_empty_n(config_mode_c_empty_n),
-    .if_read(Block_proc_U0_config_mode_read)
-);
-
-fifo_w32_d2_A_x_x_x newret_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(Block_proc_U0_ap_return_0),
-    .if_full_n(newret_full_n),
-    .if_write(ap_channel_done_newret),
-    .if_dout(newret_dout),
-    .if_empty_n(newret_empty_n),
-    .if_read(copy_U0_ap_ready)
-);
-
-fifo_w32_d2_A_x_x_x newret1_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(Block_proc_U0_ap_return_1),
-    .if_full_n(newret1_full_n),
-    .if_write(ap_channel_done_newret1),
-    .if_dout(newret1_dout),
-    .if_empty_n(newret1_empty_n),
-    .if_read(copy_U0_ap_ready)
-);
-
-fifo_w32_d2_A_x_x_x lclCfg_init_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(copy_U0_ap_return_0),
-    .if_full_n(lclCfg_init_full_n),
-    .if_write(ap_channel_done_lclCfg_init),
-    .if_dout(lclCfg_init_dout),
-    .if_empty_n(lclCfg_init_empty_n),
-    .if_read(Block_proc206_U0_ap_ready)
-);
-
-fifo_w32_d2_A_x_x_x lclCfg_mode_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(copy_U0_ap_return_1),
-    .if_full_n(lclCfg_mode_full_n),
-    .if_write(ap_channel_done_lclCfg_mode),
-    .if_dout(lclCfg_mode_dout),
-    .if_empty_n(lclCfg_mode_empty_n),
-    .if_read(Block_proc206_U0_ap_ready)
-);
-
-fifo_w32_d2_A_x_x_x lclCfg_init_load_loc_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(Block_proc206_U0_ap_return_0),
-    .if_full_n(lclCfg_init_load_loc_full_n),
-    .if_write(ap_channel_done_lclCfg_init_load_loc),
-    .if_dout(lclCfg_init_load_loc_dout),
-    .if_empty_n(lclCfg_init_load_loc_empty_n),
-    .if_read(Block_proc207_U0_ap_ready)
-);
-
-fifo_w32_d2_A_x_x_x lclCfg_mode_load_loc_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(Block_proc206_U0_ap_return_1),
-    .if_full_n(lclCfg_mode_load_loc_full_n),
-    .if_write(ap_channel_done_lclCfg_mode_load_loc),
-    .if_dout(lclCfg_mode_load_loc_dout),
-    .if_empty_n(lclCfg_mode_load_loc_empty_n),
-    .if_read(Block_proc207_U0_ap_ready)
-);
-
-start_for_DuneDateJT start_for_DuneDateJT_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(start_for_DuneDataCompressionC_1_U0_din),
-    .if_full_n(start_for_DuneDataCompressionC_1_U0_full_n),
-    .if_write(DuneDataCompressionC_2_U0_start_write),
-    .if_dout(start_for_DuneDataCompressionC_1_U0_dout),
-    .if_empty_n(start_for_DuneDataCompressionC_1_U0_empty_n),
-    .if_read(DuneDataCompressionC_1_U0_ap_ready)
-);
-
-start_for_Block_peKT start_for_Block_peKT_U(
-    .clk(ap_clk),
-    .reset(ap_rst_n_inv),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(start_for_Block_proc_U0_din),
-    .if_full_n(start_for_Block_proc_U0_full_n),
-    .if_write(DuneDataCompressionC_1_U0_start_write),
-    .if_dout(start_for_Block_proc_U0_dout),
-    .if_empty_n(start_for_Block_proc_U0_empty_n),
-    .if_read(Block_proc_U0_ap_ready)
-);
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        DuneDataCompressionC_2_U0_ap_ready_count <= 2'd0;
-    end else begin
-        if (((1'b0 == DuneDataCompressionC_2_U0_ap_ready) & (ap_sync_ready == 1'b1))) begin
-            DuneDataCompressionC_2_U0_ap_ready_count <= (DuneDataCompressionC_2_U0_ap_ready_count - 2'd1);
-        end else if (((1'b1 == DuneDataCompressionC_2_U0_ap_ready) & (ap_sync_ready == 1'b0))) begin
-            DuneDataCompressionC_2_U0_ap_ready_count <= (DuneDataCompressionC_2_U0_ap_ready_count + 2'd1);
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_DuneDataCompressionC_2_U0_ap_ready <= 1'b0;
-    end else begin
-        if (((ap_sync_ready & ap_start) == 1'b1)) begin
-            ap_sync_reg_DuneDataCompressionC_2_U0_ap_ready <= 1'b0;
-        end else begin
-            ap_sync_reg_DuneDataCompressionC_2_U0_ap_ready <= ap_sync_DuneDataCompressionC_2_U0_ap_ready;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_channel_write_lclCfg_init <= 1'b0;
-    end else begin
-        if (((copy_U0_ap_done & copy_U0_ap_continue) == 1'b1)) begin
-            ap_sync_reg_channel_write_lclCfg_init <= 1'b0;
-        end else begin
-            ap_sync_reg_channel_write_lclCfg_init <= ap_sync_channel_write_lclCfg_init;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_channel_write_lclCfg_init_load_loc <= 1'b0;
-    end else begin
-        if (((Block_proc206_U0_ap_done & Block_proc206_U0_ap_continue) == 1'b1)) begin
-            ap_sync_reg_channel_write_lclCfg_init_load_loc <= 1'b0;
-        end else begin
-            ap_sync_reg_channel_write_lclCfg_init_load_loc <= ap_sync_channel_write_lclCfg_init_load_loc;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_channel_write_lclCfg_mode <= 1'b0;
-    end else begin
-        if (((copy_U0_ap_done & copy_U0_ap_continue) == 1'b1)) begin
-            ap_sync_reg_channel_write_lclCfg_mode <= 1'b0;
-        end else begin
-            ap_sync_reg_channel_write_lclCfg_mode <= ap_sync_channel_write_lclCfg_mode;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_channel_write_lclCfg_mode_load_loc <= 1'b0;
-    end else begin
-        if (((Block_proc206_U0_ap_done & Block_proc206_U0_ap_continue) == 1'b1)) begin
-            ap_sync_reg_channel_write_lclCfg_mode_load_loc <= 1'b0;
-        end else begin
-            ap_sync_reg_channel_write_lclCfg_mode_load_loc <= ap_sync_channel_write_lclCfg_mode_load_loc;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_channel_write_newret <= 1'b0;
-    end else begin
-        if (((Block_proc_U0_ap_done & Block_proc_U0_ap_continue) == 1'b1)) begin
-            ap_sync_reg_channel_write_newret <= 1'b0;
-        end else begin
-            ap_sync_reg_channel_write_newret <= ap_sync_channel_write_newret;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_channel_write_newret1 <= 1'b0;
-    end else begin
-        if (((Block_proc_U0_ap_done & Block_proc_U0_ap_continue) == 1'b1)) begin
-            ap_sync_reg_channel_write_newret1 <= 1'b0;
-        end else begin
-            ap_sync_reg_channel_write_newret1 <= ap_sync_channel_write_newret1;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        ap_sync_reg_handle_packet_U0_ap_ready <= 1'b0;
-    end else begin
-        if (((ap_sync_ready & ap_start) == 1'b1)) begin
-            ap_sync_reg_handle_packet_U0_ap_ready <= 1'b0;
-        end else begin
-            ap_sync_reg_handle_packet_U0_ap_ready <= ap_sync_handle_packet_U0_ap_ready;
-        end
-    end
-end
-
-always @ (posedge ap_clk) begin
-    if (ap_rst_n_inv == 1'b1) begin
-        handle_packet_U0_ap_ready_count <= 2'd0;
-    end else begin
-        if (((ap_sync_ready == 1'b1) & (handle_packet_U0_ap_ready == 1'b0))) begin
-            handle_packet_U0_ap_ready_count <= (handle_packet_U0_ap_ready_count - 2'd1);
-        end else if (((handle_packet_U0_ap_ready == 1'b1) & (ap_sync_ready == 1'b0))) begin
-            handle_packet_U0_ap_ready_count <= (handle_packet_U0_ap_ready_count + 2'd1);
-        end
-    end
-end
-
-assign Block_proc206_U0_ap_continue = (ap_sync_channel_write_lclCfg_mode_load_loc & ap_sync_channel_write_lclCfg_init_load_loc);
-
-assign Block_proc206_U0_ap_start = (lclCfg_mode_empty_n & lclCfg_init_empty_n);
-
-assign Block_proc206_U0_start_full_n = 1'b1;
-
-assign Block_proc206_U0_start_write = 1'b0;
-
-assign Block_proc207_U0_ap_continue = ap_sync_done;
-
-assign Block_proc207_U0_ap_start = (lclCfg_mode_load_loc_empty_n & lclCfg_init_load_loc_empty_n);
-
-assign Block_proc207_U0_start_full_n = 1'b1;
-
-assign Block_proc207_U0_start_write = 1'b0;
-
-assign Block_proc_U0_ap_continue = (ap_sync_channel_write_newret1 & ap_sync_channel_write_newret);
-
-assign Block_proc_U0_ap_start = start_for_Block_proc_U0_empty_n;
-
-assign Block_proc_U0_start_full_n = 1'b1;
-
-assign Block_proc_U0_start_write = 1'b0;
-
-assign DuneDataCompressionC_1_U0_ap_continue = 1'b1;
-
-assign DuneDataCompressionC_1_U0_ap_start = start_for_DuneDataCompressionC_1_U0_empty_n;
-
-assign DuneDataCompressionC_2_U0_ap_continue = 1'b1;
-
-assign DuneDataCompressionC_2_U0_ap_start = ((ap_sync_reg_DuneDataCompressionC_2_U0_ap_ready ^ 1'b1) & ap_start);
-
-assign ap_channel_done_lclCfg_init = ((ap_sync_reg_channel_write_lclCfg_init ^ 1'b1) & copy_U0_ap_done);
-
-assign ap_channel_done_lclCfg_init_load_loc = ((ap_sync_reg_channel_write_lclCfg_init_load_loc ^ 1'b1) & Block_proc206_U0_ap_done);
-
-assign ap_channel_done_lclCfg_mode = ((ap_sync_reg_channel_write_lclCfg_mode ^ 1'b1) & copy_U0_ap_done);
-
-assign ap_channel_done_lclCfg_mode_load_loc = ((ap_sync_reg_channel_write_lclCfg_mode_load_loc ^ 1'b1) & Block_proc206_U0_ap_done);
-
-assign ap_channel_done_newret = ((ap_sync_reg_channel_write_newret ^ 1'b1) & Block_proc_U0_ap_done);
-
-assign ap_channel_done_newret1 = ((ap_sync_reg_channel_write_newret1 ^ 1'b1) & Block_proc_U0_ap_done);
-
-assign ap_done = ap_sync_done;
-
-assign ap_idle = (update_U0_ap_idle & handle_packet_U0_ap_idle & (lclCfg_mode_load_loc_empty_n ^ 1'b1) & (lclCfg_init_load_loc_empty_n ^ 1'b1) & (lclCfg_mode_empty_n ^ 1'b1) & (lclCfg_init_empty_n ^ 1'b1) & (newret1_empty_n ^ 1'b1) & (newret_empty_n ^ 1'b1) & copy_U0_ap_idle & DuneDataCompressionC_2_U0_ap_idle & DuneDataCompressionC_1_U0_ap_idle & Block_proc_U0_ap_idle & Block_proc207_U0_ap_idle & Block_proc206_U0_ap_idle);
-
-assign ap_ready = ap_sync_ready;
+assign ap_ready = handle_packet_U0_ap_ready;
 
 always @ (*) begin
     ap_rst_n_inv = ~ap_rst_n;
 end
 
-assign ap_sync_DuneDataCompressionC_2_U0_ap_ready = (ap_sync_reg_DuneDataCompressionC_2_U0_ap_ready | DuneDataCompressionC_2_U0_ap_ready);
+assign ap_sync_continue = 1'b1;
 
-assign ap_sync_channel_write_lclCfg_init = ((lclCfg_init_full_n & ap_channel_done_lclCfg_init) | ap_sync_reg_channel_write_lclCfg_init);
+assign ap_sync_done = handle_packet_U0_ap_done;
 
-assign ap_sync_channel_write_lclCfg_init_load_loc = ((lclCfg_init_load_loc_full_n & ap_channel_done_lclCfg_init_load_loc) | ap_sync_reg_channel_write_lclCfg_init_load_loc);
+assign ap_sync_ready = handle_packet_U0_ap_ready;
 
-assign ap_sync_channel_write_lclCfg_mode = ((lclCfg_mode_full_n & ap_channel_done_lclCfg_mode) | ap_sync_reg_channel_write_lclCfg_mode);
+assign handle_packet_U0_ap_continue = 1'b1;
 
-assign ap_sync_channel_write_lclCfg_mode_load_loc = ((lclCfg_mode_load_loc_full_n & ap_channel_done_lclCfg_mode_load_loc) | ap_sync_reg_channel_write_lclCfg_mode_load_loc);
-
-assign ap_sync_channel_write_newret = ((newret_full_n & ap_channel_done_newret) | ap_sync_reg_channel_write_newret);
-
-assign ap_sync_channel_write_newret1 = ((newret1_full_n & ap_channel_done_newret1) | ap_sync_reg_channel_write_newret1);
-
-assign ap_sync_continue = ap_sync_done;
-
-assign ap_sync_done = (update_U0_ap_done & handle_packet_U0_ap_done & Block_proc207_U0_ap_done);
-
-assign ap_sync_handle_packet_U0_ap_ready = (handle_packet_U0_ap_ready | ap_sync_reg_handle_packet_U0_ap_ready);
-
-assign ap_sync_ready = (ap_sync_handle_packet_U0_ap_ready & ap_sync_DuneDataCompressionC_2_U0_ap_ready);
-
-assign copy_U0_ap_continue = (ap_sync_channel_write_lclCfg_mode & ap_sync_channel_write_lclCfg_init);
-
-assign copy_U0_ap_start = (newret_empty_n & newret1_empty_n);
-
-assign copy_U0_start_full_n = 1'b1;
-
-assign copy_U0_start_write = 1'b0;
-
-assign handle_packet_U0_ap_continue = ap_sync_done;
-
-assign handle_packet_U0_ap_start = ((ap_sync_reg_handle_packet_U0_ap_ready ^ 1'b1) & ap_start);
+assign handle_packet_U0_ap_start = ap_start;
 
 assign handle_packet_U0_start_full_n = 1'b1;
 
@@ -892,17 +248,5 @@ assign mAxis_TUSER = handle_packet_U0_mAxis_TUSER;
 assign mAxis_TVALID = handle_packet_U0_mAxis_TVALID;
 
 assign sAxis_TREADY = handle_packet_U0_sAxis_TREADY;
-
-assign start_for_Block_proc_U0_din = 1'b1;
-
-assign start_for_DuneDataCompressionC_1_U0_din = 1'b1;
-
-assign update_U0_ap_continue = ap_sync_done;
-
-assign update_U0_ap_start = ap_start;
-
-assign update_U0_start_full_n = 1'b1;
-
-assign update_U0_start_write = 1'b0;
 
 endmodule //DuneDataCompressionCore

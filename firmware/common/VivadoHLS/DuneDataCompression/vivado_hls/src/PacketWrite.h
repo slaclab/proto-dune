@@ -53,8 +53,7 @@
 
 static void  write_packet (AxisOut                                   &mAxis,
                            PacketContext                            &pktCtx,
-                           CompressionContext                       &cmpCtx,
-                           MonitorRead                         &monitorRead);
+                           CompressionContext                       &cmpCtx);
 
 
 /* ====================================================================== */
@@ -162,20 +161,9 @@ static void write_sizes_print (int ichan, int csize, int osize);
  \* ---------------------------------------------------------------------- */
 static void  write_packet (AxisOut                               &mAxis,
                            PacketContext                        &pktCtx,
-                           CompressionContext                   &cmpCtx,
-                           MonitorWrite                   &monitorWrite)
+                           CompressionContext                   &cmpCtx)
 {
    #define HLS INLINE
-
-
-   static bool        First= true;
-   static MonitorWrite lclMonitor;
-
-   if (First)
-   {
-      lclMonitor.init ();
-      First = false;
-   }
 
 
    int             odx = 0;
@@ -218,14 +206,6 @@ static void  write_packet (AxisOut                               &mAxis,
    // word.
    // ----------------------------------------------------------------
    epilogue (mAxis, odx, Identifier::DataType::COMPRESSED, status);
-
-
-   lclMonitor.nbytes    += odx << 3;
-   lclMonitor.npackets  += 1;
-   lclMonitor.npromoted += 1;
-
-   monitorWrite = lclMonitor;
-
 
    return;
 }
