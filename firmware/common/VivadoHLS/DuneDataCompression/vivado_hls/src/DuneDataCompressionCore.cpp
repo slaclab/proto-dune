@@ -532,7 +532,8 @@ static void acquire_frame (AxisIn                                        &sAxis,
    #pragma HLS RESOURCE        variable=frame.m_dat.d          core=RAM_2P_LUTRAM
    #pragma HLS ARRAY_PARTITION variable=frame.m_dat.d cyclic factor=2
 
-   ReadStatus status = frame.read        (sAxis);
+   //ReadStatus status = frame.read        (sAxis);
+   frame.read        (sAxis);
    /// STRIP -- lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
    process_frame     (frame, iframe, config, pktCtx, cmpCtx);
 }
