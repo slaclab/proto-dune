@@ -269,7 +269,7 @@ public:
 
       const static int HeaderFmt   = 3; // Generic Header Format = 3
       const static int HdrsRecType = 1; // TpcStream Record Subtype = 1;
-      const static int HdrFixedN64 = 2; // Record Header + last timestamp
+      const static int HdrFixedN64 = 1; // Record Header
 
       // -------------------------------------------------------------------------------
       // Compose the record header word
@@ -288,6 +288,7 @@ public:
       for (int idx = 0; idx < m_cedx; idx++)
       {
          #pragma HLS LOOP_TRIPCOUNT min=0 avg=1 max=256
+         #pragma HLS PIPELINE
          ::commit (axis, odx, write, m_excsBuf[idx], 0, 0);
       }
 
@@ -297,11 +298,9 @@ public:
       for (int idx = 0; idx < cnt; idx++)
       {
          #pragma HLS LOOP_TRIPCOUNT min=6 avg=6 max=1024
+         #pragma HLS PIPELINE
          ::commit (axis, odx, write, m_hdrsBuf[idx], 0, 0);
       }
-
-      // Write the timestamp of the last WIB frame;
-      ::commit (axis, odx, write, m_lasttimestamp, 0, 0);
 
       return;
    }
@@ -311,7 +310,6 @@ public:
    int                                 m_chdx;  /*!< Header buffer index      */
    int                                 m_cedx;  /*!< Exception buffer index   */
    ReadStatus_t                      m_status;  /*!< Summary status           */
-   uint64_t                   m_lasttimestamp;  /*!< Timestamp of last frame  */
 
    uint64_t m_hdrsBuf[ 7];   /*!< Buffer for header words */
    uint64_t m_excsBuf[ 2];   /*!< Buffer for 8 exceptions */
@@ -472,8 +470,8 @@ static void process_frame
       uint64_t tmp_status = status;
       HdrLcl.reset ();
       HdrLcl.m_status  = status = ReadStatus::errsOnFirst (status);
-
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[0]);
+      HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[1]);
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[1]);
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[2]);
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[3]);
@@ -494,7 +492,8 @@ static void process_frame
    // Together with the first timestamp captured in the m_hdrsBuf[1],
    // it is used to define the time range of the packet.
    // ---------------------------------------------------------------
-   pktCtx.m_lasttimestamp = d[1];
+   pktCtx.m_hdrsBuf[2] = d[1];
+
 
    // -------------------------------------------------------
    // Add the headers that do agree with the expected values

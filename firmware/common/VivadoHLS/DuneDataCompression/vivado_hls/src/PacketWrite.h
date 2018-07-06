@@ -267,6 +267,7 @@ static void   write_toc (AxisOut                       &mAxis,
    WRITE_TOC_LOOP:
    for (int ichan = 0; ichan <= nchans; ichan += 2)
    {
+      #pragma HLS PIPELINE
       w64  = offsets[ichan];
       w64  |= (uint64_t)offsets[ichan + 1] << 32;
       commit (mAxis, odx, true, w64, 0, 0);
@@ -357,8 +358,8 @@ static inline void
                     Histogram                                 &hist3,
                     int                                        ichan)
 {
-   #pragma HLS INLINE off
-  #pragma HLS DATAFLOW
+   #pragma HLS INLINE off /// STRIP 2018-07-01 off -- With inline on it fails at chan 4
+   #pragma HLS DATAFLOW
 
 
    struct Container
@@ -414,16 +415,35 @@ static __inline void encode4 (APE_etxOut                          *etx,
       }
 
       bool failure0 = encode_check (etx[0], hists0, adcs0);
-      if  (failure0)    APE_encode (etx[0], hists0, adcs0, PACKET_K_NSAMPLES);
+      if  (failure0)
+      {
+         APE_encode (etx[0], hists0, adcs0, PACKET_K_NSAMPLES);
+         encode_check (etx[0], hists0, adcs0);
+
+      }
 
       bool failure1 = encode_check (etx[1], hists1, adcs1);
-      if  (failure1)    APE_encode (etx[1], hists1, adcs1, PACKET_K_NSAMPLES);
+      if  (failure1)
+      {
+         APE_encode (etx[1], hists1, adcs1, PACKET_K_NSAMPLES);
+         encode_check (etx[1], hists1, adcs1);
+
+      }
 
       bool failure2 = encode_check (etx[2], hists2, adcs2);
-      if  (failure2)    APE_encode (etx[2], hists2, adcs2, PACKET_K_NSAMPLES);
+      if  (failure2)
+      {
+         APE_encode (etx[2], hists2, adcs2, PACKET_K_NSAMPLES);
+         encode_check (etx[2], hists2, adcs2);
+
+      }
 
       bool failure3 = encode_check (etx[3], hists3, adcs3);
-      if  (failure3)    APE_encode (etx[3], hists3, adcs3, PACKET_K_NSAMPLES);
+      if  (failure3)
+      {
+         APE_encode (etx[3], hists3, adcs3, PACKET_K_NSAMPLES);
+         encode_check (etx[3], hists3, adcs3);
+      }
 
       if (failure0 || failure1 || failure2 || failure3)
       {
@@ -598,8 +618,8 @@ static void pack (AxisBitStream                     &bAxis,
    for (int idx = 0; idx < cnt; idx++)
    {
        #pragma HLS LOOP_TRIPCOUNT min=12 max=48 avg=16
+       /// #pragma HLS PIPELINE /// STRIP fails when pipelined
        #pragma HLS UNROLL factor=2
-       ///#pragma HLS PIPELINE
 
       // Make room. get and insert the new 64-bts worth of data
        #if USE_FIFO
@@ -751,7 +771,7 @@ static bool decode_data (uint16_t      dadcs[PACKET_K_NSAMPLES],
 
       if (dadcs[idy] != adcs[idy])
       {
-         std::cout << std::endl << "Error @" << std::hex << idy << std::endl;
+         std::cout << std::endl << "Error @" << std::hex << idy << "sym: " << std::hex << sym << std::endl;
          if (Nerrs++ > 20) return true;
       }
 
@@ -760,12 +780,14 @@ static bool decode_data (uint16_t      dadcs[PACKET_K_NSAMPLES],
          break;
       }
 
+
       sym = APD_decode (&dtx, table);
       if (sym == 0)
       {
          // Have overflow
-         int ovr = _bfu_extractR (obfu, obuf, oposition, novrflw);
-         sym     =  nbins + ovr;
+         // Insert check for novrflw == 0, the bit extracter does not do 0
+         int ovr = novrflw ? _bfu_extractR (obfu, obuf, oposition, novrflw) : 0;
+         sym     = nbins + ovr;
       }
 
       prv += restore (sym);
