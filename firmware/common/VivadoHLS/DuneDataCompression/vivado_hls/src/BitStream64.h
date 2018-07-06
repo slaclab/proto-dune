@@ -241,12 +241,12 @@ __inline void BitStream64::insert (OStream &ostream, uint64_t bits, int nbits)
       #ifndef __SYNTHESIS__
          nbidx += left;
 
-         /*  !!! STRIP - remove output 2018-06-28 -- restore */
+         /*  !!! STRIP - remove output 2018-06-28
          std::cout << "BS64:" << ostream.name() << ':'
                    << std::setfill ('0') << std::hex << std::setw (16) << m_cur
                    << ':'       <<  std::hex << std::setw(8) << std::setfill (' ') << bits
                    << " len = " <<  std::hex << std::setw(4) << std::setfill (' ') << nbidx << std::endl;
-         /**/
+         */
       #endif
 
       m_cur   = bits;

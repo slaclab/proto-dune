@@ -665,7 +665,7 @@ static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
    if (npending)
    {
       nbits -= 1;
-      uint32_t leading_bit = bits[nbits];
+      uint64_t leading_bit = bits[nbits];
       buf |=   leading_bit << (nbuf-1);
       if (leading_bit == 0)
       {
