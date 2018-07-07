@@ -62,6 +62,11 @@ architecture compression_tb of compression_tb is
    signal emuData      : slv(15 downto 0);
    signal emuDataK     : slv(1 downto 0);
 
+   signal rxEnable     : sl;
+
+   signal curCnt       : slv(31 downto 0);
+   signal nxtCnt       : slv(31 downto 0);
+
 begin
 
    process begin
@@ -90,7 +95,7 @@ begin
       wait for (42 ns);
       emuRst <= '0';
       wait;
-   end process;
+  end process;
 
    U_Hls: entity work.ProtoDuneDpmHls
       generic map (
@@ -120,12 +125,30 @@ begin
    loopbackMaster <= AXI_STREAM_MASTER_INIT_C;
    dmaIbSlave     <= AXI_STREAM_SLAVE_FORCE_C;
 
+   process(axilClk)
+   begin
+      if rising_edge(axilClk) then
+         if axilRst = '1' then
+            curCnt <= (others=>'0');
+            nxtCnt <= (others=>'0');
+         elsif dmaIbMaster.tValid = '1' then
+            nxtCnt <= nxtCnt + 1;
+
+            if dmaIbMaster.tLast = '1' then
+               curCnt <= nxtCnt + 1;
+               nxtCnt <= (others=>'0');
+            end if;
+         end if;
+      end if;
+   end process;
+
    process begin
 
-      enableTx        <= '1';
+      rxEnable        <= '0';
+      enableTx        <= '0';
       enableTrig      <= '0';
       chNoiseCgf      <= (others=>(others=>'0'));
-      cmNoiseCgf      <= "000";
+      cmNoiseCgf      <= "011";
       chDlyCfg        <= (others => (others => '0'));
       axilWriteMaster <= AXI_LITE_WRITE_MASTER_INIT_C;
       axilReadMaster  <= AXI_LITE_READ_MASTER_INIT_C;
@@ -134,10 +157,13 @@ begin
       wait for 5 US;
 
       axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0000000", x"00000081", true); -- Enable compression
-      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0010000", x"00000081", true); -- Enable compression
+      --axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0010000", x"00000081", true); -- Enable compression
+      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000002", true);
 
       wait for 1 US;
       enableTx <= '1';
+      wait for 5 US;
+      rxEnable <= '0';
 
       wait;
    end process;
@@ -242,8 +268,8 @@ begin
             logEn           => open,
             logClr          => open,
             -- Timing Interface (clk domain)
-            swFlush         => '1',
-            runEnable       => '1',
+            swFlush         => '0',
+            runEnable       => rxEnable,
             -- WIB Interface (axilClk domain)
             wibMaster       => wibMasters(i),
             wibSlave        => wibSlaves(i));
