@@ -175,10 +175,8 @@ APE_etxOut::APE_etxOut ()
    //     5 bits * 1024 = 5,120 bits -> 80 64 bit words
    //
    // Round these to 256 and 128
-   // #pragma HLS STREAM          variable=ha depth=256 dim=1 off  /// STRIP off  // from jj_baseline
-  //  #pragma HLS STREAM          variable=ba depth=128 dim=1 off  ///  STRIP off  // from jj_baseline
-   #pragma HLS STREAM          variable=ha depth=256 dim=1  // from e55....
-   #pragma HLS STREAM          variable=ba depth=128 dim=1  // from e55....
+   #pragma HLS STREAM          variable=ha depth=256 dim=1 off  /// STRIP off
+   #pragma HLS STREAM          variable=ba depth=128 dim=1 off  ///  STRIP off
 
    return;
 }
@@ -644,8 +642,6 @@ static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
    // The total number of bits to insert cannot exceed 32.
    // This can be fixed, but at a later date
    // ----------------------------------------------------
-   assert (npending + nbits <= 64);
-#if 0
    if (npending + nbits > 32)
    {
       if (npending + nbits > 64)
@@ -658,7 +654,7 @@ static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
          std::cout << "Large number of encoding bits " << npending << ':' << nbits << std::endl;
       }
    }
-#endif
+
 
    uint64_t buf = 0;
    int     nbuf = npending + nbits;

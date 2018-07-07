@@ -443,6 +443,7 @@ static void process4_adcs_prv_sym_print
 static void process_frame
             (ReadFrame        const                        &frame,
              ap_uint<PACKET_B_NSAMPLES>                    iframe,
+             ModuleConfig     const                       &config,
              PacketContext                                &pktCtx,
              CompressionContext                           &cmpCtx)
 {
