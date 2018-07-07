@@ -28,14 +28,11 @@ set_property default_lib xil_defaultlib [current_project]
 set_property target_language Verilog [current_project]
 set_property ip_cache_permissions {read write} [current_project]
 read_verilog -library xil_defaultlib {
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode150.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode150_tabbFp.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode151.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode152.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode153.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/Block_proc.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/Block_proc203.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/Block_proc204.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode141.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode141_tabbFp.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode142.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode143.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/APE_encode144.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressibGp.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressibHp.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressibIp.v
@@ -43,48 +40,45 @@ read_verilog -library xil_defaultlib {
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressibKp.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressibLp.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressibPq.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressionC_1.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressionC_2.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressionCore.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/DuneDataCompressionCore_BUS_A_s_axi.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/acquire_packet.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/copy.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/dataflow_in_loop_ACQ.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/dataflow_in_loop_bDo.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/dataflow_in_loop_bDo_memcore.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/encode4.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/encode4_entry211.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/encode4_entry199.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w10_d2_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w1_d2_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w32_d2_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w32_d2_A_x.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w32_d2_A_x_x.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w32_d2_A_x_x_x.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w32_d3_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w4_d2_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w5_d2_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w5_d2_A_x.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w64_d128_A.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w64_d256_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w64_d2_A.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w64_d2_A_x.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w64_d3_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/fifo_w7_d3_A.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpb1s.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpb1s_memcore.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcFz.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcFz_memcore.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcGz.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcGz_memcore.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpb9t.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpb9t_memcore.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpbTr.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpbTr_memcore.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpchv.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpchv_memcore.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcpw.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcpw_memcore.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcxx.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcxx_memcore.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktb0s.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktb0s_memcore.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktbZs.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktbZs_memcore.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcyx.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_cmpcyx_memcore.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktbRq.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktbRq_memcore.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktbSr.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/handle_packet_pktbSr_memcore.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/process_frame.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/process_frame_Hisbkb.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/process_frame_Hisbkb_ram.v
@@ -103,17 +97,12 @@ read_verilog -library xil_defaultlib {
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/process_frame_PrvHfu.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/process_frame_adcbBo.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/process_packet.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/read208.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/start_for_Block_peSV.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/start_for_DuneDateRU.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/update.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/read196.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/writeN.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_adcs4.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_adcs4_contabQq.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_adcs4_contabQq_memcore.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_adcs4_entry217.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_adcs4_entry205.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_packet.v
-  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_packet_offsbYs.v
+  /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_packet_offsbQq.v
   /u1/rherbst/build/DuneDataCompression/DuneDataCompression_project/solution1/impl/verilog/write_r.v
 }
 # Mark all dcp files as not used in implementation to prevent them from being
