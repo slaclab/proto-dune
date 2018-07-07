@@ -175,8 +175,8 @@ begin
             INT_PIPE_STAGES_G   => 1,
             PIPE_STAGES_G       => 1,
             SLAVE_READY_EN_G    => true,
-            --VALID_THOLD_G       => 128,  -- Hold until enough to burst into the interleaving MUX
-            --VALID_BURST_MODE_G  => true,
+            VALID_THOLD_G       => 128,  -- Hold until enough to burst into the interleaving MUX
+            VALID_BURST_MODE_G  => true,
             -- FIFO configurations
             BRAM_EN_G           => true,
             XIL_DEVICE_G        => "7SERIES",

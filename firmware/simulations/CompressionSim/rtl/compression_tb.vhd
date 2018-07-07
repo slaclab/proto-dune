@@ -117,8 +117,8 @@ begin
          loopbackMaster   => loopbackMaster,
          loopbackSlave    => loopbackSlave,
          -- AXI Stream Interface (dmaClk domain)
-         dmaClk           => axilClk,
-         dmaRst           => axilRst,
+         dmaClk           => emuClk,
+         dmaRst           => emuRst,
          dmaIbMaster      => dmaIbMaster,
          dmaIbSlave       => dmaIbSlave);
 
@@ -157,8 +157,8 @@ begin
       wait for 5 US;
 
       axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0000000", x"00000081", true); -- Enable compression
-      --axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0010000", x"00000081", true); -- Enable compression
-      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000002", true);
+      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0010000", x"00000081", true); -- Enable compression
+      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000000", true);
 
       wait for 1 US;
       enableTx <= '1';
