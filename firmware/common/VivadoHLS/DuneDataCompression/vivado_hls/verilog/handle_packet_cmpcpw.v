@@ -10,7 +10,7 @@
 
 module handle_packet_cmpcpw
 #(parameter
-    DataWidth    = 4,
+    DataWidth    = 10,
     AddressRange = 32,
     AddressWidth = 2,
     BufferCount  = 2,

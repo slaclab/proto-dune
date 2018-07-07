@@ -10,7 +10,7 @@
 
 module handle_packet_cmpchv
 #(parameter
-    DataWidth    = 10,
+    DataWidth    = 32,
     AddressRange = 32,
     AddressWidth = 2,
     BufferCount  = 2,

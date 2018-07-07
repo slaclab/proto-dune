@@ -62,6 +62,9 @@
 `define AUTOTB_TVIN_mAxis_V_last_V  "./c.DuneDataCompressionCore.autotvin_mAxis_V_last_V.dat"
 `define AUTOTB_TVIN_mAxis_V_id_V  "./c.DuneDataCompressionCore.autotvin_mAxis_V_id_V.dat"
 `define AUTOTB_TVIN_mAxis_V_dest_V  "./c.DuneDataCompressionCore.autotvin_mAxis_V_dest_V.dat"
+`define AUTOTB_TVIN_config_init  "./c.DuneDataCompressionCore.autotvin_config_init.dat"
+`define AUTOTB_TVIN_config_mode  "./c.DuneDataCompressionCore.autotvin_config_mode.dat"
+`define AUTOTB_TVIN_config_limit  "./c.DuneDataCompressionCore.autotvin_config_limit.dat"
 `define AUTOTB_TVIN_sAxis_V_data_V_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_sAxis_V_data_V.dat"
 `define AUTOTB_TVIN_sAxis_V_keep_V_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_sAxis_V_keep_V.dat"
 `define AUTOTB_TVIN_sAxis_V_strb_V_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_sAxis_V_strb_V.dat"
@@ -76,6 +79,9 @@
 `define AUTOTB_TVIN_mAxis_V_last_V_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_mAxis_V_last_V.dat"
 `define AUTOTB_TVIN_mAxis_V_id_V_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_mAxis_V_id_V.dat"
 `define AUTOTB_TVIN_mAxis_V_dest_V_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_mAxis_V_dest_V.dat"
+`define AUTOTB_TVIN_config_init_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_config_init.dat"
+`define AUTOTB_TVIN_config_mode_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_config_mode.dat"
+`define AUTOTB_TVIN_config_limit_out_wrapc  "./rtl.DuneDataCompressionCore.autotvin_config_limit.dat"
 `define AUTOTB_TVOUT_mAxis_V_data_V  "./c.DuneDataCompressionCore.autotvout_mAxis_V_data_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_keep_V  "./c.DuneDataCompressionCore.autotvout_mAxis_V_keep_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_strb_V  "./c.DuneDataCompressionCore.autotvout_mAxis_V_strb_V.dat"
@@ -83,6 +89,13 @@
 `define AUTOTB_TVOUT_mAxis_V_last_V  "./c.DuneDataCompressionCore.autotvout_mAxis_V_last_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_id_V  "./c.DuneDataCompressionCore.autotvout_mAxis_V_id_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_dest_V  "./c.DuneDataCompressionCore.autotvout_mAxis_V_dest_V.dat"
+`define AUTOTB_TVOUT_monitor_common_pattern  "./c.DuneDataCompressionCore.autotvout_monitor_common_pattern.dat"
+`define AUTOTB_TVOUT_monitor_cfg_m_mode  "./c.DuneDataCompressionCore.autotvout_monitor_cfg_m_mode.dat"
+`define AUTOTB_TVOUT_monitor_cfg_m_ncfgs  "./c.DuneDataCompressionCore.autotvout_monitor_cfg_m_ncfgs.dat"
+`define AUTOTB_TVOUT_monitor_write_nbytes  "./c.DuneDataCompressionCore.autotvout_monitor_write_nbytes.dat"
+`define AUTOTB_TVOUT_monitor_write_npromoted  "./c.DuneDataCompressionCore.autotvout_monitor_write_npromoted.dat"
+`define AUTOTB_TVOUT_monitor_write_ndropped  "./c.DuneDataCompressionCore.autotvout_monitor_write_ndropped.dat"
+`define AUTOTB_TVOUT_monitor_write_npackets  "./c.DuneDataCompressionCore.autotvout_monitor_write_npackets.dat"
 `define AUTOTB_TVOUT_mAxis_V_data_V_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_mAxis_V_data_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_keep_V_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_mAxis_V_keep_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_strb_V_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_mAxis_V_strb_V.dat"
@@ -90,11 +103,18 @@
 `define AUTOTB_TVOUT_mAxis_V_last_V_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_mAxis_V_last_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_id_V_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_mAxis_V_id_V.dat"
 `define AUTOTB_TVOUT_mAxis_V_dest_V_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_mAxis_V_dest_V.dat"
+`define AUTOTB_TVOUT_monitor_common_pattern_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_monitor_common_pattern.dat"
+`define AUTOTB_TVOUT_monitor_cfg_m_mode_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_monitor_cfg_m_mode.dat"
+`define AUTOTB_TVOUT_monitor_cfg_m_ncfgs_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_monitor_cfg_m_ncfgs.dat"
+`define AUTOTB_TVOUT_monitor_write_nbytes_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_monitor_write_nbytes.dat"
+`define AUTOTB_TVOUT_monitor_write_npromoted_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_monitor_write_npromoted.dat"
+`define AUTOTB_TVOUT_monitor_write_ndropped_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_monitor_write_ndropped.dat"
+`define AUTOTB_TVOUT_monitor_write_npackets_out_wrapc  "./impl_rtl.DuneDataCompressionCore.autotvout_monitor_write_npackets.dat"
 module `AUTOTB_TOP;
 
 parameter AUTOTB_TRANSACTION_NUM = 1;
 parameter PROGRESS_TIMEOUT = 10000000;
-parameter LATENCY_ESTIMATION = 113933;
+parameter LATENCY_ESTIMATION = 127501;
 parameter LENGTH_sAxis_V_data_V = 30720;
 parameter LENGTH_sAxis_V_keep_V = 30720;
 parameter LENGTH_sAxis_V_strb_V = 30720;
@@ -109,6 +129,16 @@ parameter LENGTH_mAxis_V_user_V = 10921;
 parameter LENGTH_mAxis_V_last_V = 10921;
 parameter LENGTH_mAxis_V_id_V = 10921;
 parameter LENGTH_mAxis_V_dest_V = 10921;
+parameter LENGTH_config_init = 1;
+parameter LENGTH_config_mode = 1;
+parameter LENGTH_config_limit = 1;
+parameter LENGTH_monitor_common_pattern = 1;
+parameter LENGTH_monitor_cfg_m_mode = 1;
+parameter LENGTH_monitor_cfg_m_ncfgs = 1;
+parameter LENGTH_monitor_write_nbytes = 1;
+parameter LENGTH_monitor_write_npromoted = 1;
+parameter LENGTH_monitor_write_ndropped = 1;
+parameter LENGTH_monitor_write_npackets = 1;
 
 task read_token;
     input integer fp;
@@ -256,6 +286,8 @@ reg ready_last_n;
 reg ready_delay_last_n;
 reg done_delay_last_n;
 reg interface_done = 0;
+wire BUS_A_read_data_finish;
+wire BUS_A_write_data_finish;
 wire AESL_slave_start;
 wire AESL_slave_write_start_in;
 wire AESL_slave_write_start_finish;
@@ -319,9 +351,9 @@ assign AESL_reset = rst;
 assign AESL_start = start;
 assign AESL_ce = ce;
 assign AESL_continue = tb_continue;
-  assign AESL_slave_write_start_in = slave_start_status ;
+  assign AESL_slave_write_start_in = slave_start_status  & BUS_A_write_data_finish;
   assign AESL_slave_start = AESL_slave_write_start_finish;
-  assign AESL_done = slave_done_status ;
+  assign AESL_done = slave_done_status  & BUS_A_read_data_finish;
 
 always @(posedge AESL_clock)
 begin
@@ -505,6 +537,8 @@ AESL_axi_slave_BUS_A AESL_AXI_SLAVE_BUS_A(
     .TRAN_s_axi_BUS_A_BREADY (BUS_A_BREADY),
     .TRAN_s_axi_BUS_A_BRESP (BUS_A_BRESP),
     .TRAN_BUS_A_interrupt (BUS_A_INTERRUPT),
+    .TRAN_BUS_A_read_data_finish(BUS_A_read_data_finish),
+    .TRAN_BUS_A_write_data_finish(BUS_A_write_data_finish),
     .TRAN_BUS_A_ready_out (AESL_ready),
     .TRAN_BUS_A_ready_in (AESL_slave_ready),
     .TRAN_BUS_A_done_out (AESL_slave_output_done),
@@ -706,6 +740,36 @@ reg [31:0] size_mAxis_V_id_V_backup;
 reg end_mAxis_V_dest_V;
 reg [31:0] size_mAxis_V_dest_V;
 reg [31:0] size_mAxis_V_dest_V_backup;
+reg end_config_init;
+reg [31:0] size_config_init;
+reg [31:0] size_config_init_backup;
+reg end_config_mode;
+reg [31:0] size_config_mode;
+reg [31:0] size_config_mode_backup;
+reg end_config_limit;
+reg [31:0] size_config_limit;
+reg [31:0] size_config_limit_backup;
+reg end_monitor_common_pattern;
+reg [31:0] size_monitor_common_pattern;
+reg [31:0] size_monitor_common_pattern_backup;
+reg end_monitor_cfg_m_mode;
+reg [31:0] size_monitor_cfg_m_mode;
+reg [31:0] size_monitor_cfg_m_mode_backup;
+reg end_monitor_cfg_m_ncfgs;
+reg [31:0] size_monitor_cfg_m_ncfgs;
+reg [31:0] size_monitor_cfg_m_ncfgs_backup;
+reg end_monitor_write_nbytes;
+reg [31:0] size_monitor_write_nbytes;
+reg [31:0] size_monitor_write_nbytes_backup;
+reg end_monitor_write_npromoted;
+reg [31:0] size_monitor_write_npromoted;
+reg [31:0] size_monitor_write_npromoted_backup;
+reg end_monitor_write_ndropped;
+reg [31:0] size_monitor_write_ndropped;
+reg [31:0] size_monitor_write_ndropped_backup;
+reg end_monitor_write_npackets;
+reg [31:0] size_monitor_write_npackets;
+reg [31:0] size_monitor_write_npackets_backup;
 
 initial begin : initial_process
     integer proc_rand;
@@ -1115,6 +1179,216 @@ initial begin : dump_tvout_runtime_sign_mAxis_V_dest_V
 end
 
 
+reg dump_tvout_finish_monitor_common_pattern;
+
+initial begin : dump_tvout_runtime_sign_monitor_common_pattern
+    integer fp;
+    dump_tvout_finish_monitor_common_pattern = 0;
+    fp = $fopen(`AUTOTB_TVOUT_monitor_common_pattern_out_wrapc, "w");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_common_pattern_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[runtime]]]");
+    $fclose(fp);
+    wait (done_cnt == AUTOTB_TRANSACTION_NUM);
+    // last transaction is saved at negedge right after last done
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    fp = $fopen(`AUTOTB_TVOUT_monitor_common_pattern_out_wrapc, "a");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_common_pattern_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[/runtime]]]");
+    $fclose(fp);
+    dump_tvout_finish_monitor_common_pattern = 1;
+end
+
+
+reg dump_tvout_finish_monitor_cfg_m_mode;
+
+initial begin : dump_tvout_runtime_sign_monitor_cfg_m_mode
+    integer fp;
+    dump_tvout_finish_monitor_cfg_m_mode = 0;
+    fp = $fopen(`AUTOTB_TVOUT_monitor_cfg_m_mode_out_wrapc, "w");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_cfg_m_mode_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[runtime]]]");
+    $fclose(fp);
+    wait (done_cnt == AUTOTB_TRANSACTION_NUM);
+    // last transaction is saved at negedge right after last done
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    fp = $fopen(`AUTOTB_TVOUT_monitor_cfg_m_mode_out_wrapc, "a");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_cfg_m_mode_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[/runtime]]]");
+    $fclose(fp);
+    dump_tvout_finish_monitor_cfg_m_mode = 1;
+end
+
+
+reg dump_tvout_finish_monitor_cfg_m_ncfgs;
+
+initial begin : dump_tvout_runtime_sign_monitor_cfg_m_ncfgs
+    integer fp;
+    dump_tvout_finish_monitor_cfg_m_ncfgs = 0;
+    fp = $fopen(`AUTOTB_TVOUT_monitor_cfg_m_ncfgs_out_wrapc, "w");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_cfg_m_ncfgs_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[runtime]]]");
+    $fclose(fp);
+    wait (done_cnt == AUTOTB_TRANSACTION_NUM);
+    // last transaction is saved at negedge right after last done
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    fp = $fopen(`AUTOTB_TVOUT_monitor_cfg_m_ncfgs_out_wrapc, "a");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_cfg_m_ncfgs_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[/runtime]]]");
+    $fclose(fp);
+    dump_tvout_finish_monitor_cfg_m_ncfgs = 1;
+end
+
+
+reg dump_tvout_finish_monitor_write_nbytes;
+
+initial begin : dump_tvout_runtime_sign_monitor_write_nbytes
+    integer fp;
+    dump_tvout_finish_monitor_write_nbytes = 0;
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_nbytes_out_wrapc, "w");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_nbytes_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[runtime]]]");
+    $fclose(fp);
+    wait (done_cnt == AUTOTB_TRANSACTION_NUM);
+    // last transaction is saved at negedge right after last done
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_nbytes_out_wrapc, "a");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_nbytes_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[/runtime]]]");
+    $fclose(fp);
+    dump_tvout_finish_monitor_write_nbytes = 1;
+end
+
+
+reg dump_tvout_finish_monitor_write_npromoted;
+
+initial begin : dump_tvout_runtime_sign_monitor_write_npromoted
+    integer fp;
+    dump_tvout_finish_monitor_write_npromoted = 0;
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_npromoted_out_wrapc, "w");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_npromoted_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[runtime]]]");
+    $fclose(fp);
+    wait (done_cnt == AUTOTB_TRANSACTION_NUM);
+    // last transaction is saved at negedge right after last done
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_npromoted_out_wrapc, "a");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_npromoted_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[/runtime]]]");
+    $fclose(fp);
+    dump_tvout_finish_monitor_write_npromoted = 1;
+end
+
+
+reg dump_tvout_finish_monitor_write_ndropped;
+
+initial begin : dump_tvout_runtime_sign_monitor_write_ndropped
+    integer fp;
+    dump_tvout_finish_monitor_write_ndropped = 0;
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_ndropped_out_wrapc, "w");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_ndropped_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[runtime]]]");
+    $fclose(fp);
+    wait (done_cnt == AUTOTB_TRANSACTION_NUM);
+    // last transaction is saved at negedge right after last done
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_ndropped_out_wrapc, "a");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_ndropped_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[/runtime]]]");
+    $fclose(fp);
+    dump_tvout_finish_monitor_write_ndropped = 1;
+end
+
+
+reg dump_tvout_finish_monitor_write_npackets;
+
+initial begin : dump_tvout_runtime_sign_monitor_write_npackets
+    integer fp;
+    dump_tvout_finish_monitor_write_npackets = 0;
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_npackets_out_wrapc, "w");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_npackets_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[runtime]]]");
+    $fclose(fp);
+    wait (done_cnt == AUTOTB_TRANSACTION_NUM);
+    // last transaction is saved at negedge right after last done
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    @ (posedge AESL_clock);
+    fp = $fopen(`AUTOTB_TVOUT_monitor_write_npackets_out_wrapc, "a");
+    if (fp == 0) begin
+        $display("Failed to open file \"%s\"!", `AUTOTB_TVOUT_monitor_write_npackets_out_wrapc);
+        $display("ERROR: Simulation using HLS TB failed.");
+        $finish;
+    end
+    $fdisplay(fp,"[[[/runtime]]]");
+    $fclose(fp);
+    dump_tvout_finish_monitor_write_npackets = 1;
+end
+
+
 ////////////////////////////////////////////
 // progress and performance
 ////////////////////////////////////////////
@@ -1326,10 +1600,5 @@ endtask
 `ifndef POST_SYN
 
 `endif
-
-AESL_deadlock_detector deadlock_detector(
-    .reset(AESL_reset),
-    .clock(AESL_clock));
-
 
 endmodule

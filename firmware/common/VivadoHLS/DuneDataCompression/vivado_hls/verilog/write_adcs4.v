@@ -8,6 +8,8 @@
 `timescale 1 ns / 1 ps 
 
 module write_adcs4 (
+        ap_clk,
+        ap_rst,
         bAxis_m_cur,
         bAxis_m_cur_read,
         bAxis_m_idx,
@@ -1791,8 +1793,6 @@ module write_adcs4 (
         hist3_7_m_bins_1_V_q1,
         hist3_7_m_bins_1_V_we1,
         ichan,
-        ap_clk,
-        ap_rst,
         adcs0_V_offset_ap_vld,
         ichan_ap_vld,
         bAxis_m_cur_read_ap_vld,
@@ -2159,6 +2159,8 @@ module write_adcs4 (
 );
 
 
+input   ap_clk;
+input   ap_rst;
 output  [63:0] bAxis_m_cur;
 input  [63:0] bAxis_m_cur_read;
 output  [31:0] bAxis_m_idx;
@@ -3942,8 +3944,6 @@ output  [9:0] hist3_7_m_bins_1_V_d1;
 input  [9:0] hist3_7_m_bins_1_V_q1;
 output   hist3_7_m_bins_1_V_we1;
 input  [6:0] ichan;
-input   ap_clk;
-input   ap_rst;
 input   adcs0_V_offset_ap_vld;
 input   ichan_ap_vld;
 input   bAxis_m_cur_read_ap_vld;
@@ -4308,19 +4308,35 @@ output   ap_ready;
 output   ap_idle;
 input   ap_continue;
 
-wire    write_adcs4_entry205_U0_ap_start;
-wire    write_adcs4_entry205_U0_ap_done;
-wire    write_adcs4_entry205_U0_ap_continue;
-wire    write_adcs4_entry205_U0_ap_idle;
-wire    write_adcs4_entry205_U0_ap_ready;
-wire   [4:0] write_adcs4_entry205_U0_adcs0_V_offset_c_din;
-wire    write_adcs4_entry205_U0_adcs0_V_offset_c_write;
-wire   [6:0] write_adcs4_entry205_U0_ichan_c_din;
-wire    write_adcs4_entry205_U0_ichan_c_write;
-wire   [63:0] write_adcs4_entry205_U0_bAxis_m_cur_read_out_din;
-wire    write_adcs4_entry205_U0_bAxis_m_cur_read_out_write;
-wire   [31:0] write_adcs4_entry205_U0_bAxis_m_idx_read_out_din;
-wire    write_adcs4_entry205_U0_bAxis_m_idx_read_out_write;
+wire   [63:0] container_etxOut_ha_s_i_q0;
+wire   [63:0] container_etxOut_ha_s_t_q0;
+wire   [63:0] container_etxOut_ha_1_i_q0;
+wire   [63:0] container_etxOut_ha_1_t_q0;
+wire   [63:0] container_etxOut_ha_2_i_q0;
+wire   [63:0] container_etxOut_ha_2_t_q0;
+wire   [63:0] container_etxOut_ha_3_i_q0;
+wire   [63:0] container_etxOut_ha_3_t_q0;
+wire   [63:0] container_etxOut_ba_s_i_q0;
+wire   [63:0] container_etxOut_ba_s_t_q0;
+wire   [63:0] container_etxOut_ba_1_i_q0;
+wire   [63:0] container_etxOut_ba_1_t_q0;
+wire   [63:0] container_etxOut_ba_2_i_q0;
+wire   [63:0] container_etxOut_ba_2_t_q0;
+wire   [63:0] container_etxOut_ba_3_i_q0;
+wire   [63:0] container_etxOut_ba_3_t_q0;
+wire    write_adcs4_entry217_U0_ap_start;
+wire    write_adcs4_entry217_U0_ap_done;
+wire    write_adcs4_entry217_U0_ap_continue;
+wire    write_adcs4_entry217_U0_ap_idle;
+wire    write_adcs4_entry217_U0_ap_ready;
+wire   [4:0] write_adcs4_entry217_U0_adcs0_V_offset_c_din;
+wire    write_adcs4_entry217_U0_adcs0_V_offset_c_write;
+wire   [6:0] write_adcs4_entry217_U0_ichan_c_din;
+wire    write_adcs4_entry217_U0_ichan_c_write;
+wire   [63:0] write_adcs4_entry217_U0_bAxis_m_cur_read_out_din;
+wire    write_adcs4_entry217_U0_bAxis_m_cur_read_out_write;
+wire   [31:0] write_adcs4_entry217_U0_bAxis_m_idx_read_out_din;
+wire    write_adcs4_entry217_U0_bAxis_m_idx_read_out_write;
 wire   [63:0] encode4_U0_etx_0_ha_m_ccur;
 wire   [63:0] encode4_U0_etx_1_ha_m_ccur;
 wire   [63:0] encode4_U0_etx_2_ha_m_ccur;
@@ -4329,14 +4345,38 @@ wire   [31:0] encode4_U0_etx_0_ha_m_cidx;
 wire   [31:0] encode4_U0_etx_1_ha_m_cidx;
 wire   [31:0] encode4_U0_etx_2_ha_m_cidx;
 wire   [31:0] encode4_U0_etx_3_ha_m_cidx;
-wire   [63:0] encode4_U0_etx_0_ha_m_buf_din;
-wire    encode4_U0_etx_0_ha_m_buf_write;
-wire   [63:0] encode4_U0_etx_1_ha_m_buf_din;
-wire    encode4_U0_etx_1_ha_m_buf_write;
-wire   [63:0] encode4_U0_etx_2_ha_m_buf_din;
-wire    encode4_U0_etx_2_ha_m_buf_write;
-wire   [63:0] encode4_U0_etx_3_ha_m_buf_din;
-wire    encode4_U0_etx_3_ha_m_buf_write;
+wire   [7:0] encode4_U0_etx_0_ha_m_buf_address0;
+wire    encode4_U0_etx_0_ha_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_0_ha_m_buf_d0;
+wire    encode4_U0_etx_0_ha_m_buf_we0;
+wire   [7:0] encode4_U0_etx_0_ha_m_buf_address1;
+wire    encode4_U0_etx_0_ha_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_0_ha_m_buf_d1;
+wire    encode4_U0_etx_0_ha_m_buf_we1;
+wire   [7:0] encode4_U0_etx_1_ha_m_buf_address0;
+wire    encode4_U0_etx_1_ha_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_1_ha_m_buf_d0;
+wire    encode4_U0_etx_1_ha_m_buf_we0;
+wire   [7:0] encode4_U0_etx_1_ha_m_buf_address1;
+wire    encode4_U0_etx_1_ha_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_1_ha_m_buf_d1;
+wire    encode4_U0_etx_1_ha_m_buf_we1;
+wire   [7:0] encode4_U0_etx_2_ha_m_buf_address0;
+wire    encode4_U0_etx_2_ha_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_2_ha_m_buf_d0;
+wire    encode4_U0_etx_2_ha_m_buf_we0;
+wire   [7:0] encode4_U0_etx_2_ha_m_buf_address1;
+wire    encode4_U0_etx_2_ha_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_2_ha_m_buf_d1;
+wire    encode4_U0_etx_2_ha_m_buf_we1;
+wire   [7:0] encode4_U0_etx_3_ha_m_buf_address0;
+wire    encode4_U0_etx_3_ha_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_3_ha_m_buf_d0;
+wire    encode4_U0_etx_3_ha_m_buf_we0;
+wire   [7:0] encode4_U0_etx_3_ha_m_buf_address1;
+wire    encode4_U0_etx_3_ha_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_3_ha_m_buf_d1;
+wire    encode4_U0_etx_3_ha_m_buf_we1;
 wire   [63:0] encode4_U0_etx_0_ba_m_ccur;
 wire   [63:0] encode4_U0_etx_1_ba_m_ccur;
 wire   [63:0] encode4_U0_etx_2_ba_m_ccur;
@@ -4345,14 +4385,38 @@ wire   [31:0] encode4_U0_etx_0_ba_m_cidx;
 wire   [31:0] encode4_U0_etx_1_ba_m_cidx;
 wire   [31:0] encode4_U0_etx_2_ba_m_cidx;
 wire   [31:0] encode4_U0_etx_3_ba_m_cidx;
-wire   [63:0] encode4_U0_etx_0_ba_m_buf_din;
-wire    encode4_U0_etx_0_ba_m_buf_write;
-wire   [63:0] encode4_U0_etx_1_ba_m_buf_din;
-wire    encode4_U0_etx_1_ba_m_buf_write;
-wire   [63:0] encode4_U0_etx_2_ba_m_buf_din;
-wire    encode4_U0_etx_2_ba_m_buf_write;
-wire   [63:0] encode4_U0_etx_3_ba_m_buf_din;
-wire    encode4_U0_etx_3_ba_m_buf_write;
+wire   [7:0] encode4_U0_etx_0_ba_m_buf_address0;
+wire    encode4_U0_etx_0_ba_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_0_ba_m_buf_d0;
+wire    encode4_U0_etx_0_ba_m_buf_we0;
+wire   [7:0] encode4_U0_etx_0_ba_m_buf_address1;
+wire    encode4_U0_etx_0_ba_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_0_ba_m_buf_d1;
+wire    encode4_U0_etx_0_ba_m_buf_we1;
+wire   [7:0] encode4_U0_etx_1_ba_m_buf_address0;
+wire    encode4_U0_etx_1_ba_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_1_ba_m_buf_d0;
+wire    encode4_U0_etx_1_ba_m_buf_we0;
+wire   [7:0] encode4_U0_etx_1_ba_m_buf_address1;
+wire    encode4_U0_etx_1_ba_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_1_ba_m_buf_d1;
+wire    encode4_U0_etx_1_ba_m_buf_we1;
+wire   [7:0] encode4_U0_etx_2_ba_m_buf_address0;
+wire    encode4_U0_etx_2_ba_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_2_ba_m_buf_d0;
+wire    encode4_U0_etx_2_ba_m_buf_we0;
+wire   [7:0] encode4_U0_etx_2_ba_m_buf_address1;
+wire    encode4_U0_etx_2_ba_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_2_ba_m_buf_d1;
+wire    encode4_U0_etx_2_ba_m_buf_we1;
+wire   [7:0] encode4_U0_etx_3_ba_m_buf_address0;
+wire    encode4_U0_etx_3_ba_m_buf_ce0;
+wire   [63:0] encode4_U0_etx_3_ba_m_buf_d0;
+wire    encode4_U0_etx_3_ba_m_buf_we0;
+wire   [7:0] encode4_U0_etx_3_ba_m_buf_address1;
+wire    encode4_U0_etx_3_ba_m_buf_ce1;
+wire   [63:0] encode4_U0_etx_3_ba_m_buf_d1;
+wire    encode4_U0_etx_3_ba_m_buf_we1;
 wire   [1:0] encode4_U0_hists0_0_m_omask_V_address0;
 wire    encode4_U0_hists0_0_m_omask_V_ce0;
 wire   [31:0] encode4_U0_hists0_0_m_omask_V_d0;
@@ -5764,8 +5828,12 @@ wire   [11:0] encode4_U0_adcs3_3_V_d1;
 wire    encode4_U0_adcs3_3_V_we1;
 wire    encode4_U0_etx_0_ha_m_ccur_ap_vld;
 wire    encode4_U0_etx_0_ha_m_cidx_ap_vld;
+wire    encode4_U0_etx_0_ha_m_buf_full_n;
+wire    encode4_U0_etx_0_ha_m_buf_write;
 wire    encode4_U0_etx_0_ba_m_ccur_ap_vld;
 wire    encode4_U0_etx_0_ba_m_cidx_ap_vld;
+wire    encode4_U0_etx_0_ba_m_buf_full_n;
+wire    encode4_U0_etx_0_ba_m_buf_write;
 wire    encode4_U0_hists0_0_m_omask_V_read;
 wire    encode4_U0_hists0_1_m_omask_V_read;
 wire    encode4_U0_hists0_2_m_omask_V_read;
@@ -5813,8 +5881,12 @@ wire    encode4_U0_adcs0_3_V_read;
 wire    encode4_U0_ap_done;
 wire    encode4_U0_etx_1_ha_m_ccur_ap_vld;
 wire    encode4_U0_etx_1_ha_m_cidx_ap_vld;
+wire    encode4_U0_etx_1_ha_m_buf_full_n;
+wire    encode4_U0_etx_1_ha_m_buf_write;
 wire    encode4_U0_etx_1_ba_m_ccur_ap_vld;
 wire    encode4_U0_etx_1_ba_m_cidx_ap_vld;
+wire    encode4_U0_etx_1_ba_m_buf_full_n;
+wire    encode4_U0_etx_1_ba_m_buf_write;
 wire    encode4_U0_hists1_0_m_omask_V_read;
 wire    encode4_U0_hists1_1_m_omask_V_read;
 wire    encode4_U0_hists1_2_m_omask_V_read;
@@ -5861,8 +5933,12 @@ wire    encode4_U0_adcs1_2_V_read;
 wire    encode4_U0_adcs1_3_V_read;
 wire    encode4_U0_etx_2_ha_m_ccur_ap_vld;
 wire    encode4_U0_etx_2_ha_m_cidx_ap_vld;
+wire    encode4_U0_etx_2_ha_m_buf_full_n;
+wire    encode4_U0_etx_2_ha_m_buf_write;
 wire    encode4_U0_etx_2_ba_m_ccur_ap_vld;
 wire    encode4_U0_etx_2_ba_m_cidx_ap_vld;
+wire    encode4_U0_etx_2_ba_m_buf_full_n;
+wire    encode4_U0_etx_2_ba_m_buf_write;
 wire    encode4_U0_hists2_0_m_omask_V_read;
 wire    encode4_U0_hists2_1_m_omask_V_read;
 wire    encode4_U0_hists2_2_m_omask_V_read;
@@ -5909,8 +5985,12 @@ wire    encode4_U0_adcs2_2_V_read;
 wire    encode4_U0_adcs2_3_V_read;
 wire    encode4_U0_etx_3_ha_m_ccur_ap_vld;
 wire    encode4_U0_etx_3_ha_m_cidx_ap_vld;
+wire    encode4_U0_etx_3_ha_m_buf_full_n;
+wire    encode4_U0_etx_3_ha_m_buf_write;
 wire    encode4_U0_etx_3_ba_m_ccur_ap_vld;
 wire    encode4_U0_etx_3_ba_m_cidx_ap_vld;
+wire    encode4_U0_etx_3_ba_m_buf_full_n;
+wire    encode4_U0_etx_3_ba_m_buf_write;
 wire    encode4_U0_hists3_0_m_omask_V_read;
 wire    encode4_U0_hists3_1_m_omask_V_read;
 wire    encode4_U0_hists3_2_m_omask_V_read;
@@ -6311,6 +6391,18 @@ wire    encode4_U0_adcs3_2_V_full_n;
 wire    encode4_U0_adcs3_2_V_write;
 wire    encode4_U0_adcs3_3_V_full_n;
 wire    encode4_U0_adcs3_3_V_write;
+wire    ap_channel_done_container_etxOut_ba_3;
+reg    ap_sync_reg_channel_write_container_etxOut_ba_3;
+wire    ap_sync_channel_write_container_etxOut_ba_3;
+wire    ap_channel_done_container_etxOut_ba_2;
+reg    ap_sync_reg_channel_write_container_etxOut_ba_2;
+wire    ap_sync_channel_write_container_etxOut_ba_2;
+wire    ap_channel_done_container_etxOut_ba_1;
+reg    ap_sync_reg_channel_write_container_etxOut_ba_1;
+wire    ap_sync_channel_write_container_etxOut_ba_1;
+wire    ap_channel_done_container_etxOut_ba_s;
+reg    ap_sync_reg_channel_write_container_etxOut_ba_s;
+wire    ap_sync_channel_write_container_etxOut_ba_s;
 wire    ap_channel_done_container_etxOut_3_s;
 wire    container_etxOut_3_s_full_n;
 reg    ap_sync_reg_channel_write_container_etxOut_3_s;
@@ -6343,6 +6435,18 @@ wire    ap_channel_done_container_etxOut_0_1;
 wire    container_etxOut_0_1_full_n;
 reg    ap_sync_reg_channel_write_container_etxOut_0_1;
 wire    ap_sync_channel_write_container_etxOut_0_1;
+wire    ap_channel_done_container_etxOut_ha_3;
+reg    ap_sync_reg_channel_write_container_etxOut_ha_3;
+wire    ap_sync_channel_write_container_etxOut_ha_3;
+wire    ap_channel_done_container_etxOut_ha_2;
+reg    ap_sync_reg_channel_write_container_etxOut_ha_2;
+wire    ap_sync_channel_write_container_etxOut_ha_2;
+wire    ap_channel_done_container_etxOut_ha_1;
+reg    ap_sync_reg_channel_write_container_etxOut_ha_1;
+wire    ap_sync_channel_write_container_etxOut_ha_1;
+wire    ap_channel_done_container_etxOut_ha_s;
+reg    ap_sync_reg_channel_write_container_etxOut_ha_s;
+wire    ap_sync_channel_write_container_etxOut_ha_s;
 wire    ap_channel_done_container_etxOut_3_2;
 wire    container_etxOut_3_2_full_n;
 reg    ap_sync_reg_channel_write_container_etxOut_3_2;
@@ -6395,17 +6499,41 @@ wire    writeN_U0_offsets_ce0;
 wire    writeN_U0_offsets_we0;
 wire   [31:0] writeN_U0_offsets_d0;
 wire    writeN_U0_ichan_read;
-wire    writeN_U0_etx_0_ha_m_buf_read;
-wire    writeN_U0_etx_1_ha_m_buf_read;
-wire    writeN_U0_etx_2_ha_m_buf_read;
-wire    writeN_U0_etx_3_ha_m_buf_read;
-wire    writeN_U0_etx_0_ba_m_buf_read;
-wire    writeN_U0_etx_1_ba_m_buf_read;
-wire    writeN_U0_etx_2_ba_m_buf_read;
-wire    writeN_U0_etx_3_ba_m_buf_read;
+wire   [7:0] writeN_U0_etx_0_ha_m_buf_address0;
+wire    writeN_U0_etx_0_ha_m_buf_ce0;
+wire   [7:0] writeN_U0_etx_1_ha_m_buf_address0;
+wire    writeN_U0_etx_1_ha_m_buf_ce0;
+wire   [7:0] writeN_U0_etx_2_ha_m_buf_address0;
+wire    writeN_U0_etx_2_ha_m_buf_ce0;
+wire   [7:0] writeN_U0_etx_3_ha_m_buf_address0;
+wire    writeN_U0_etx_3_ha_m_buf_ce0;
+wire   [7:0] writeN_U0_etx_0_ba_m_buf_address0;
+wire    writeN_U0_etx_0_ba_m_buf_ce0;
+wire   [7:0] writeN_U0_etx_1_ba_m_buf_address0;
+wire    writeN_U0_etx_1_ba_m_buf_ce0;
+wire   [7:0] writeN_U0_etx_2_ba_m_buf_address0;
+wire    writeN_U0_etx_2_ba_m_buf_ce0;
+wire   [7:0] writeN_U0_etx_3_ba_m_buf_address0;
+wire    writeN_U0_etx_3_ba_m_buf_ce0;
 wire   [63:0] writeN_U0_ap_return_0;
 wire   [31:0] writeN_U0_ap_return_1;
 wire    ap_sync_continue;
+wire    container_etxOut_ha_s_i_full_n;
+wire    container_etxOut_ha_s_t_empty_n;
+wire    container_etxOut_ha_1_i_full_n;
+wire    container_etxOut_ha_1_t_empty_n;
+wire    container_etxOut_ha_2_i_full_n;
+wire    container_etxOut_ha_2_t_empty_n;
+wire    container_etxOut_ha_3_i_full_n;
+wire    container_etxOut_ha_3_t_empty_n;
+wire    container_etxOut_ba_s_i_full_n;
+wire    container_etxOut_ba_s_t_empty_n;
+wire    container_etxOut_ba_1_i_full_n;
+wire    container_etxOut_ba_1_t_empty_n;
+wire    container_etxOut_ba_2_i_full_n;
+wire    container_etxOut_ba_2_t_empty_n;
+wire    container_etxOut_ba_3_i_full_n;
+wire    container_etxOut_ba_3_t_empty_n;
 wire    adcs0_V_offset_c_full_n;
 wire   [4:0] adcs0_V_offset_c_dout;
 wire    adcs0_V_offset_c_empty_n;
@@ -6434,18 +6562,6 @@ wire   [31:0] container_etxOut_2_2_dout;
 wire    container_etxOut_2_2_empty_n;
 wire   [31:0] container_etxOut_3_2_dout;
 wire    container_etxOut_3_2_empty_n;
-wire    container_etxOut_ha_s_full_n;
-wire   [63:0] container_etxOut_ha_s_dout;
-wire    container_etxOut_ha_s_empty_n;
-wire    container_etxOut_ha_1_full_n;
-wire   [63:0] container_etxOut_ha_1_dout;
-wire    container_etxOut_ha_1_empty_n;
-wire    container_etxOut_ha_2_full_n;
-wire   [63:0] container_etxOut_ha_2_dout;
-wire    container_etxOut_ha_2_empty_n;
-wire    container_etxOut_ha_3_full_n;
-wire   [63:0] container_etxOut_ha_3_dout;
-wire    container_etxOut_ha_3_empty_n;
 wire   [63:0] container_etxOut_0_1_dout;
 wire    container_etxOut_0_1_empty_n;
 wire   [63:0] container_etxOut_1_1_dout;
@@ -6462,28 +6578,16 @@ wire   [31:0] container_etxOut_2_s_dout;
 wire    container_etxOut_2_s_empty_n;
 wire   [31:0] container_etxOut_3_s_dout;
 wire    container_etxOut_3_s_empty_n;
-wire    container_etxOut_ba_s_full_n;
-wire   [63:0] container_etxOut_ba_s_dout;
-wire    container_etxOut_ba_s_empty_n;
-wire    container_etxOut_ba_1_full_n;
-wire   [63:0] container_etxOut_ba_1_dout;
-wire    container_etxOut_ba_1_empty_n;
-wire    container_etxOut_ba_2_full_n;
-wire   [63:0] container_etxOut_ba_2_dout;
-wire    container_etxOut_ba_2_empty_n;
-wire    container_etxOut_ba_3_full_n;
-wire   [63:0] container_etxOut_ba_3_dout;
-wire    container_etxOut_ba_3_empty_n;
 wire    ap_sync_done;
 wire    ap_sync_ready;
-reg    ap_sync_reg_write_adcs4_entry205_U0_ap_ready;
-wire    ap_sync_write_adcs4_entry205_U0_ap_ready;
-reg   [1:0] write_adcs4_entry205_U0_ap_ready_count;
+reg    ap_sync_reg_write_adcs4_entry217_U0_ap_ready;
+wire    ap_sync_write_adcs4_entry217_U0_ap_ready;
+reg   [1:0] write_adcs4_entry217_U0_ap_ready_count;
 reg    ap_sync_reg_encode4_U0_ap_ready;
 wire    ap_sync_encode4_U0_ap_ready;
 reg   [1:0] encode4_U0_ap_ready_count;
-wire    write_adcs4_entry205_U0_start_full_n;
-wire    write_adcs4_entry205_U0_start_write;
+wire    write_adcs4_entry217_U0_start_full_n;
+wire    write_adcs4_entry217_U0_start_write;
 wire    encode4_U0_start_full_n;
 wire    encode4_U0_start_write;
 wire    writeN_U0_start_full_n;
@@ -6491,6 +6595,10 @@ wire    writeN_U0_start_write;
 
 // power-on initialization
 initial begin
+#0 ap_sync_reg_channel_write_container_etxOut_ba_3 = 1'b0;
+#0 ap_sync_reg_channel_write_container_etxOut_ba_2 = 1'b0;
+#0 ap_sync_reg_channel_write_container_etxOut_ba_1 = 1'b0;
+#0 ap_sync_reg_channel_write_container_etxOut_ba_s = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_3_s = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_2_s = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_1_s = 1'b0;
@@ -6499,6 +6607,10 @@ initial begin
 #0 ap_sync_reg_channel_write_container_etxOut_2_1 = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_1_1 = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_0_1 = 1'b0;
+#0 ap_sync_reg_channel_write_container_etxOut_ha_3 = 1'b0;
+#0 ap_sync_reg_channel_write_container_etxOut_ha_2 = 1'b0;
+#0 ap_sync_reg_channel_write_container_etxOut_ha_1 = 1'b0;
+#0 ap_sync_reg_channel_write_container_etxOut_ha_s = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_3_2 = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_2_2 = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_1_2 = 1'b0;
@@ -6507,36 +6619,236 @@ initial begin
 #0 ap_sync_reg_channel_write_container_etxOut_2_3 = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_1_3 = 1'b0;
 #0 ap_sync_reg_channel_write_container_etxOut_0_3 = 1'b0;
-#0 ap_sync_reg_write_adcs4_entry205_U0_ap_ready = 1'b0;
-#0 write_adcs4_entry205_U0_ap_ready_count = 2'd0;
+#0 ap_sync_reg_write_adcs4_entry217_U0_ap_ready = 1'b0;
+#0 write_adcs4_entry217_U0_ap_ready_count = 2'd0;
 #0 ap_sync_reg_encode4_U0_ap_ready = 1'b0;
 #0 encode4_U0_ap_ready_count = 2'd0;
 end
 
-write_adcs4_entry205 write_adcs4_entry205_U0(
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ha_s_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_0_ha_m_buf_address0),
+    .i_ce0(encode4_U0_etx_0_ha_m_buf_ce0),
+    .i_we0(encode4_U0_etx_0_ha_m_buf_we0),
+    .i_d0(encode4_U0_etx_0_ha_m_buf_d0),
+    .i_q0(container_etxOut_ha_s_i_q0),
+    .t_address0(writeN_U0_etx_0_ha_m_buf_address0),
+    .t_ce0(writeN_U0_etx_0_ha_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ha_s_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ha_s_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ha_s),
+    .t_empty_n(container_etxOut_ha_s_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ha_1_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_1_ha_m_buf_address0),
+    .i_ce0(encode4_U0_etx_1_ha_m_buf_ce0),
+    .i_we0(encode4_U0_etx_1_ha_m_buf_we0),
+    .i_d0(encode4_U0_etx_1_ha_m_buf_d0),
+    .i_q0(container_etxOut_ha_1_i_q0),
+    .t_address0(writeN_U0_etx_1_ha_m_buf_address0),
+    .t_ce0(writeN_U0_etx_1_ha_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ha_1_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ha_1_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ha_1),
+    .t_empty_n(container_etxOut_ha_1_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ha_2_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_2_ha_m_buf_address0),
+    .i_ce0(encode4_U0_etx_2_ha_m_buf_ce0),
+    .i_we0(encode4_U0_etx_2_ha_m_buf_we0),
+    .i_d0(encode4_U0_etx_2_ha_m_buf_d0),
+    .i_q0(container_etxOut_ha_2_i_q0),
+    .t_address0(writeN_U0_etx_2_ha_m_buf_address0),
+    .t_ce0(writeN_U0_etx_2_ha_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ha_2_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ha_2_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ha_2),
+    .t_empty_n(container_etxOut_ha_2_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ha_3_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_3_ha_m_buf_address0),
+    .i_ce0(encode4_U0_etx_3_ha_m_buf_ce0),
+    .i_we0(encode4_U0_etx_3_ha_m_buf_we0),
+    .i_d0(encode4_U0_etx_3_ha_m_buf_d0),
+    .i_q0(container_etxOut_ha_3_i_q0),
+    .t_address0(writeN_U0_etx_3_ha_m_buf_address0),
+    .t_ce0(writeN_U0_etx_3_ha_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ha_3_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ha_3_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ha_3),
+    .t_empty_n(container_etxOut_ha_3_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ba_s_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_0_ba_m_buf_address0),
+    .i_ce0(encode4_U0_etx_0_ba_m_buf_ce0),
+    .i_we0(encode4_U0_etx_0_ba_m_buf_we0),
+    .i_d0(encode4_U0_etx_0_ba_m_buf_d0),
+    .i_q0(container_etxOut_ba_s_i_q0),
+    .t_address0(writeN_U0_etx_0_ba_m_buf_address0),
+    .t_ce0(writeN_U0_etx_0_ba_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ba_s_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ba_s_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ba_s),
+    .t_empty_n(container_etxOut_ba_s_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ba_1_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_1_ba_m_buf_address0),
+    .i_ce0(encode4_U0_etx_1_ba_m_buf_ce0),
+    .i_we0(encode4_U0_etx_1_ba_m_buf_we0),
+    .i_d0(encode4_U0_etx_1_ba_m_buf_d0),
+    .i_q0(container_etxOut_ba_1_i_q0),
+    .t_address0(writeN_U0_etx_1_ba_m_buf_address0),
+    .t_ce0(writeN_U0_etx_1_ba_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ba_1_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ba_1_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ba_1),
+    .t_empty_n(container_etxOut_ba_1_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ba_2_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_2_ba_m_buf_address0),
+    .i_ce0(encode4_U0_etx_2_ba_m_buf_ce0),
+    .i_we0(encode4_U0_etx_2_ba_m_buf_we0),
+    .i_d0(encode4_U0_etx_2_ba_m_buf_d0),
+    .i_q0(container_etxOut_ba_2_i_q0),
+    .t_address0(writeN_U0_etx_2_ba_m_buf_address0),
+    .t_ce0(writeN_U0_etx_2_ba_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ba_2_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ba_2_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ba_2),
+    .t_empty_n(container_etxOut_ba_2_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_contabQq #(
+    .DataWidth( 64 ),
+    .AddressRange( 256 ),
+    .AddressWidth( 8 ))
+container_etxOut_ba_3_U(
+    .clk(ap_clk),
+    .reset(ap_rst),
+    .i_address0(encode4_U0_etx_3_ba_m_buf_address0),
+    .i_ce0(encode4_U0_etx_3_ba_m_buf_ce0),
+    .i_we0(encode4_U0_etx_3_ba_m_buf_we0),
+    .i_d0(encode4_U0_etx_3_ba_m_buf_d0),
+    .i_q0(container_etxOut_ba_3_i_q0),
+    .t_address0(writeN_U0_etx_3_ba_m_buf_address0),
+    .t_ce0(writeN_U0_etx_3_ba_m_buf_ce0),
+    .t_we0(1'b0),
+    .t_d0(64'd0),
+    .t_q0(container_etxOut_ba_3_t_q0),
+    .i_ce(1'b1),
+    .t_ce(1'b1),
+    .i_full_n(container_etxOut_ba_3_i_full_n),
+    .i_write(ap_channel_done_container_etxOut_ba_3),
+    .t_empty_n(container_etxOut_ba_3_t_empty_n),
+    .t_read(writeN_U0_ap_ready)
+);
+
+write_adcs4_entry217 write_adcs4_entry217_U0(
     .ap_clk(ap_clk),
     .ap_rst(ap_rst),
-    .ap_start(write_adcs4_entry205_U0_ap_start),
-    .ap_done(write_adcs4_entry205_U0_ap_done),
-    .ap_continue(write_adcs4_entry205_U0_ap_continue),
-    .ap_idle(write_adcs4_entry205_U0_ap_idle),
-    .ap_ready(write_adcs4_entry205_U0_ap_ready),
+    .ap_start(write_adcs4_entry217_U0_ap_start),
+    .ap_done(write_adcs4_entry217_U0_ap_done),
+    .ap_continue(write_adcs4_entry217_U0_ap_continue),
+    .ap_idle(write_adcs4_entry217_U0_ap_idle),
+    .ap_ready(write_adcs4_entry217_U0_ap_ready),
     .adcs0_V_offset(adcs0_V_offset),
     .ichan(ichan),
-    .adcs0_V_offset_c_din(write_adcs4_entry205_U0_adcs0_V_offset_c_din),
+    .adcs0_V_offset_c_din(write_adcs4_entry217_U0_adcs0_V_offset_c_din),
     .adcs0_V_offset_c_full_n(adcs0_V_offset_c_full_n),
-    .adcs0_V_offset_c_write(write_adcs4_entry205_U0_adcs0_V_offset_c_write),
-    .ichan_c_din(write_adcs4_entry205_U0_ichan_c_din),
+    .adcs0_V_offset_c_write(write_adcs4_entry217_U0_adcs0_V_offset_c_write),
+    .ichan_c_din(write_adcs4_entry217_U0_ichan_c_din),
     .ichan_c_full_n(ichan_c_full_n),
-    .ichan_c_write(write_adcs4_entry205_U0_ichan_c_write),
+    .ichan_c_write(write_adcs4_entry217_U0_ichan_c_write),
     .bAxis_m_cur_read(bAxis_m_cur_read),
     .bAxis_m_idx_read(bAxis_m_idx_read),
-    .bAxis_m_cur_read_out_din(write_adcs4_entry205_U0_bAxis_m_cur_read_out_din),
+    .bAxis_m_cur_read_out_din(write_adcs4_entry217_U0_bAxis_m_cur_read_out_din),
     .bAxis_m_cur_read_out_full_n(bAxis_m_cur_read_c_full_n),
-    .bAxis_m_cur_read_out_write(write_adcs4_entry205_U0_bAxis_m_cur_read_out_write),
-    .bAxis_m_idx_read_out_din(write_adcs4_entry205_U0_bAxis_m_idx_read_out_din),
+    .bAxis_m_cur_read_out_write(write_adcs4_entry217_U0_bAxis_m_cur_read_out_write),
+    .bAxis_m_idx_read_out_din(write_adcs4_entry217_U0_bAxis_m_idx_read_out_din),
     .bAxis_m_idx_read_out_full_n(bAxis_m_idx_read_c_full_n),
-    .bAxis_m_idx_read_out_write(write_adcs4_entry205_U0_bAxis_m_idx_read_out_write)
+    .bAxis_m_idx_read_out_write(write_adcs4_entry217_U0_bAxis_m_idx_read_out_write)
 );
 
 encode4 encode4_U0(
@@ -6548,18 +6860,46 @@ encode4 encode4_U0(
     .etx_1_ha_m_cidx(encode4_U0_etx_1_ha_m_cidx),
     .etx_2_ha_m_cidx(encode4_U0_etx_2_ha_m_cidx),
     .etx_3_ha_m_cidx(encode4_U0_etx_3_ha_m_cidx),
-    .etx_0_ha_m_buf_din(encode4_U0_etx_0_ha_m_buf_din),
-    .etx_0_ha_m_buf_full_n(container_etxOut_ha_s_full_n),
-    .etx_0_ha_m_buf_write(encode4_U0_etx_0_ha_m_buf_write),
-    .etx_1_ha_m_buf_din(encode4_U0_etx_1_ha_m_buf_din),
-    .etx_1_ha_m_buf_full_n(container_etxOut_ha_1_full_n),
-    .etx_1_ha_m_buf_write(encode4_U0_etx_1_ha_m_buf_write),
-    .etx_2_ha_m_buf_din(encode4_U0_etx_2_ha_m_buf_din),
-    .etx_2_ha_m_buf_full_n(container_etxOut_ha_2_full_n),
-    .etx_2_ha_m_buf_write(encode4_U0_etx_2_ha_m_buf_write),
-    .etx_3_ha_m_buf_din(encode4_U0_etx_3_ha_m_buf_din),
-    .etx_3_ha_m_buf_full_n(container_etxOut_ha_3_full_n),
-    .etx_3_ha_m_buf_write(encode4_U0_etx_3_ha_m_buf_write),
+    .etx_0_ha_m_buf_address0(encode4_U0_etx_0_ha_m_buf_address0),
+    .etx_0_ha_m_buf_ce0(encode4_U0_etx_0_ha_m_buf_ce0),
+    .etx_0_ha_m_buf_d0(encode4_U0_etx_0_ha_m_buf_d0),
+    .etx_0_ha_m_buf_q0(64'd0),
+    .etx_0_ha_m_buf_we0(encode4_U0_etx_0_ha_m_buf_we0),
+    .etx_0_ha_m_buf_address1(encode4_U0_etx_0_ha_m_buf_address1),
+    .etx_0_ha_m_buf_ce1(encode4_U0_etx_0_ha_m_buf_ce1),
+    .etx_0_ha_m_buf_d1(encode4_U0_etx_0_ha_m_buf_d1),
+    .etx_0_ha_m_buf_q1(64'd0),
+    .etx_0_ha_m_buf_we1(encode4_U0_etx_0_ha_m_buf_we1),
+    .etx_1_ha_m_buf_address0(encode4_U0_etx_1_ha_m_buf_address0),
+    .etx_1_ha_m_buf_ce0(encode4_U0_etx_1_ha_m_buf_ce0),
+    .etx_1_ha_m_buf_d0(encode4_U0_etx_1_ha_m_buf_d0),
+    .etx_1_ha_m_buf_q0(64'd0),
+    .etx_1_ha_m_buf_we0(encode4_U0_etx_1_ha_m_buf_we0),
+    .etx_1_ha_m_buf_address1(encode4_U0_etx_1_ha_m_buf_address1),
+    .etx_1_ha_m_buf_ce1(encode4_U0_etx_1_ha_m_buf_ce1),
+    .etx_1_ha_m_buf_d1(encode4_U0_etx_1_ha_m_buf_d1),
+    .etx_1_ha_m_buf_q1(64'd0),
+    .etx_1_ha_m_buf_we1(encode4_U0_etx_1_ha_m_buf_we1),
+    .etx_2_ha_m_buf_address0(encode4_U0_etx_2_ha_m_buf_address0),
+    .etx_2_ha_m_buf_ce0(encode4_U0_etx_2_ha_m_buf_ce0),
+    .etx_2_ha_m_buf_d0(encode4_U0_etx_2_ha_m_buf_d0),
+    .etx_2_ha_m_buf_q0(64'd0),
+    .etx_2_ha_m_buf_we0(encode4_U0_etx_2_ha_m_buf_we0),
+    .etx_2_ha_m_buf_address1(encode4_U0_etx_2_ha_m_buf_address1),
+    .etx_2_ha_m_buf_ce1(encode4_U0_etx_2_ha_m_buf_ce1),
+    .etx_2_ha_m_buf_d1(encode4_U0_etx_2_ha_m_buf_d1),
+    .etx_2_ha_m_buf_q1(64'd0),
+    .etx_2_ha_m_buf_we1(encode4_U0_etx_2_ha_m_buf_we1),
+    .etx_3_ha_m_buf_address0(encode4_U0_etx_3_ha_m_buf_address0),
+    .etx_3_ha_m_buf_ce0(encode4_U0_etx_3_ha_m_buf_ce0),
+    .etx_3_ha_m_buf_d0(encode4_U0_etx_3_ha_m_buf_d0),
+    .etx_3_ha_m_buf_q0(64'd0),
+    .etx_3_ha_m_buf_we0(encode4_U0_etx_3_ha_m_buf_we0),
+    .etx_3_ha_m_buf_address1(encode4_U0_etx_3_ha_m_buf_address1),
+    .etx_3_ha_m_buf_ce1(encode4_U0_etx_3_ha_m_buf_ce1),
+    .etx_3_ha_m_buf_d1(encode4_U0_etx_3_ha_m_buf_d1),
+    .etx_3_ha_m_buf_q1(64'd0),
+    .etx_3_ha_m_buf_we1(encode4_U0_etx_3_ha_m_buf_we1),
     .etx_0_ba_m_ccur(encode4_U0_etx_0_ba_m_ccur),
     .etx_1_ba_m_ccur(encode4_U0_etx_1_ba_m_ccur),
     .etx_2_ba_m_ccur(encode4_U0_etx_2_ba_m_ccur),
@@ -6568,18 +6908,46 @@ encode4 encode4_U0(
     .etx_1_ba_m_cidx(encode4_U0_etx_1_ba_m_cidx),
     .etx_2_ba_m_cidx(encode4_U0_etx_2_ba_m_cidx),
     .etx_3_ba_m_cidx(encode4_U0_etx_3_ba_m_cidx),
-    .etx_0_ba_m_buf_din(encode4_U0_etx_0_ba_m_buf_din),
-    .etx_0_ba_m_buf_full_n(container_etxOut_ba_s_full_n),
-    .etx_0_ba_m_buf_write(encode4_U0_etx_0_ba_m_buf_write),
-    .etx_1_ba_m_buf_din(encode4_U0_etx_1_ba_m_buf_din),
-    .etx_1_ba_m_buf_full_n(container_etxOut_ba_1_full_n),
-    .etx_1_ba_m_buf_write(encode4_U0_etx_1_ba_m_buf_write),
-    .etx_2_ba_m_buf_din(encode4_U0_etx_2_ba_m_buf_din),
-    .etx_2_ba_m_buf_full_n(container_etxOut_ba_2_full_n),
-    .etx_2_ba_m_buf_write(encode4_U0_etx_2_ba_m_buf_write),
-    .etx_3_ba_m_buf_din(encode4_U0_etx_3_ba_m_buf_din),
-    .etx_3_ba_m_buf_full_n(container_etxOut_ba_3_full_n),
-    .etx_3_ba_m_buf_write(encode4_U0_etx_3_ba_m_buf_write),
+    .etx_0_ba_m_buf_address0(encode4_U0_etx_0_ba_m_buf_address0),
+    .etx_0_ba_m_buf_ce0(encode4_U0_etx_0_ba_m_buf_ce0),
+    .etx_0_ba_m_buf_d0(encode4_U0_etx_0_ba_m_buf_d0),
+    .etx_0_ba_m_buf_q0(64'd0),
+    .etx_0_ba_m_buf_we0(encode4_U0_etx_0_ba_m_buf_we0),
+    .etx_0_ba_m_buf_address1(encode4_U0_etx_0_ba_m_buf_address1),
+    .etx_0_ba_m_buf_ce1(encode4_U0_etx_0_ba_m_buf_ce1),
+    .etx_0_ba_m_buf_d1(encode4_U0_etx_0_ba_m_buf_d1),
+    .etx_0_ba_m_buf_q1(64'd0),
+    .etx_0_ba_m_buf_we1(encode4_U0_etx_0_ba_m_buf_we1),
+    .etx_1_ba_m_buf_address0(encode4_U0_etx_1_ba_m_buf_address0),
+    .etx_1_ba_m_buf_ce0(encode4_U0_etx_1_ba_m_buf_ce0),
+    .etx_1_ba_m_buf_d0(encode4_U0_etx_1_ba_m_buf_d0),
+    .etx_1_ba_m_buf_q0(64'd0),
+    .etx_1_ba_m_buf_we0(encode4_U0_etx_1_ba_m_buf_we0),
+    .etx_1_ba_m_buf_address1(encode4_U0_etx_1_ba_m_buf_address1),
+    .etx_1_ba_m_buf_ce1(encode4_U0_etx_1_ba_m_buf_ce1),
+    .etx_1_ba_m_buf_d1(encode4_U0_etx_1_ba_m_buf_d1),
+    .etx_1_ba_m_buf_q1(64'd0),
+    .etx_1_ba_m_buf_we1(encode4_U0_etx_1_ba_m_buf_we1),
+    .etx_2_ba_m_buf_address0(encode4_U0_etx_2_ba_m_buf_address0),
+    .etx_2_ba_m_buf_ce0(encode4_U0_etx_2_ba_m_buf_ce0),
+    .etx_2_ba_m_buf_d0(encode4_U0_etx_2_ba_m_buf_d0),
+    .etx_2_ba_m_buf_q0(64'd0),
+    .etx_2_ba_m_buf_we0(encode4_U0_etx_2_ba_m_buf_we0),
+    .etx_2_ba_m_buf_address1(encode4_U0_etx_2_ba_m_buf_address1),
+    .etx_2_ba_m_buf_ce1(encode4_U0_etx_2_ba_m_buf_ce1),
+    .etx_2_ba_m_buf_d1(encode4_U0_etx_2_ba_m_buf_d1),
+    .etx_2_ba_m_buf_q1(64'd0),
+    .etx_2_ba_m_buf_we1(encode4_U0_etx_2_ba_m_buf_we1),
+    .etx_3_ba_m_buf_address0(encode4_U0_etx_3_ba_m_buf_address0),
+    .etx_3_ba_m_buf_ce0(encode4_U0_etx_3_ba_m_buf_ce0),
+    .etx_3_ba_m_buf_d0(encode4_U0_etx_3_ba_m_buf_d0),
+    .etx_3_ba_m_buf_q0(64'd0),
+    .etx_3_ba_m_buf_we0(encode4_U0_etx_3_ba_m_buf_we0),
+    .etx_3_ba_m_buf_address1(encode4_U0_etx_3_ba_m_buf_address1),
+    .etx_3_ba_m_buf_ce1(encode4_U0_etx_3_ba_m_buf_ce1),
+    .etx_3_ba_m_buf_d1(encode4_U0_etx_3_ba_m_buf_d1),
+    .etx_3_ba_m_buf_q1(64'd0),
+    .etx_3_ba_m_buf_we1(encode4_U0_etx_3_ba_m_buf_we1),
     .hists0_0_m_omask_V_address0(encode4_U0_hists0_0_m_omask_V_address0),
     .hists0_0_m_omask_V_ce0(encode4_U0_hists0_0_m_omask_V_ce0),
     .hists0_0_m_omask_V_d0(encode4_U0_hists0_0_m_omask_V_d0),
@@ -8347,8 +8715,12 @@ encode4 encode4_U0(
     .ap_rst(ap_rst),
     .etx_0_ha_m_ccur_ap_vld(encode4_U0_etx_0_ha_m_ccur_ap_vld),
     .etx_0_ha_m_cidx_ap_vld(encode4_U0_etx_0_ha_m_cidx_ap_vld),
+    .etx_0_ha_m_buf_full_n(container_etxOut_ha_s_i_full_n),
+    .etx_0_ha_m_buf_write(encode4_U0_etx_0_ha_m_buf_write),
     .etx_0_ba_m_ccur_ap_vld(encode4_U0_etx_0_ba_m_ccur_ap_vld),
     .etx_0_ba_m_cidx_ap_vld(encode4_U0_etx_0_ba_m_cidx_ap_vld),
+    .etx_0_ba_m_buf_full_n(container_etxOut_ba_s_i_full_n),
+    .etx_0_ba_m_buf_write(encode4_U0_etx_0_ba_m_buf_write),
     .hists0_0_m_omask_V_empty_n(1'b0),
     .hists0_0_m_omask_V_read(encode4_U0_hists0_0_m_omask_V_read),
     .hists0_1_m_omask_V_empty_n(1'b0),
@@ -8440,8 +8812,12 @@ encode4 encode4_U0(
     .ap_done(encode4_U0_ap_done),
     .etx_1_ha_m_ccur_ap_vld(encode4_U0_etx_1_ha_m_ccur_ap_vld),
     .etx_1_ha_m_cidx_ap_vld(encode4_U0_etx_1_ha_m_cidx_ap_vld),
+    .etx_1_ha_m_buf_full_n(container_etxOut_ha_1_i_full_n),
+    .etx_1_ha_m_buf_write(encode4_U0_etx_1_ha_m_buf_write),
     .etx_1_ba_m_ccur_ap_vld(encode4_U0_etx_1_ba_m_ccur_ap_vld),
     .etx_1_ba_m_cidx_ap_vld(encode4_U0_etx_1_ba_m_cidx_ap_vld),
+    .etx_1_ba_m_buf_full_n(container_etxOut_ba_1_i_full_n),
+    .etx_1_ba_m_buf_write(encode4_U0_etx_1_ba_m_buf_write),
     .hists1_0_m_omask_V_empty_n(1'b0),
     .hists1_0_m_omask_V_read(encode4_U0_hists1_0_m_omask_V_read),
     .hists1_1_m_omask_V_empty_n(1'b0),
@@ -8532,8 +8908,12 @@ encode4 encode4_U0(
     .adcs1_3_V_read(encode4_U0_adcs1_3_V_read),
     .etx_2_ha_m_ccur_ap_vld(encode4_U0_etx_2_ha_m_ccur_ap_vld),
     .etx_2_ha_m_cidx_ap_vld(encode4_U0_etx_2_ha_m_cidx_ap_vld),
+    .etx_2_ha_m_buf_full_n(container_etxOut_ha_2_i_full_n),
+    .etx_2_ha_m_buf_write(encode4_U0_etx_2_ha_m_buf_write),
     .etx_2_ba_m_ccur_ap_vld(encode4_U0_etx_2_ba_m_ccur_ap_vld),
     .etx_2_ba_m_cidx_ap_vld(encode4_U0_etx_2_ba_m_cidx_ap_vld),
+    .etx_2_ba_m_buf_full_n(container_etxOut_ba_2_i_full_n),
+    .etx_2_ba_m_buf_write(encode4_U0_etx_2_ba_m_buf_write),
     .hists2_0_m_omask_V_empty_n(1'b0),
     .hists2_0_m_omask_V_read(encode4_U0_hists2_0_m_omask_V_read),
     .hists2_1_m_omask_V_empty_n(1'b0),
@@ -8624,8 +9004,12 @@ encode4 encode4_U0(
     .adcs2_3_V_read(encode4_U0_adcs2_3_V_read),
     .etx_3_ha_m_ccur_ap_vld(encode4_U0_etx_3_ha_m_ccur_ap_vld),
     .etx_3_ha_m_cidx_ap_vld(encode4_U0_etx_3_ha_m_cidx_ap_vld),
+    .etx_3_ha_m_buf_full_n(container_etxOut_ha_3_i_full_n),
+    .etx_3_ha_m_buf_write(encode4_U0_etx_3_ha_m_buf_write),
     .etx_3_ba_m_ccur_ap_vld(encode4_U0_etx_3_ba_m_ccur_ap_vld),
     .etx_3_ba_m_cidx_ap_vld(encode4_U0_etx_3_ba_m_cidx_ap_vld),
+    .etx_3_ba_m_buf_full_n(container_etxOut_ba_3_i_full_n),
+    .etx_3_ba_m_buf_write(encode4_U0_etx_3_ba_m_buf_write),
     .hists3_0_m_omask_V_empty_n(1'b0),
     .hists3_0_m_omask_V_read(encode4_U0_hists3_0_m_omask_V_read),
     .hists3_1_m_omask_V_empty_n(1'b0),
@@ -8758,18 +9142,18 @@ writeN writeN_U0(
     .etx_1_ha_m_cidx(container_etxOut_1_2_dout),
     .etx_2_ha_m_cidx(container_etxOut_2_2_dout),
     .etx_3_ha_m_cidx(container_etxOut_3_2_dout),
-    .etx_0_ha_m_buf_dout(container_etxOut_ha_s_dout),
-    .etx_0_ha_m_buf_empty_n(container_etxOut_ha_s_empty_n),
-    .etx_0_ha_m_buf_read(writeN_U0_etx_0_ha_m_buf_read),
-    .etx_1_ha_m_buf_dout(container_etxOut_ha_1_dout),
-    .etx_1_ha_m_buf_empty_n(container_etxOut_ha_1_empty_n),
-    .etx_1_ha_m_buf_read(writeN_U0_etx_1_ha_m_buf_read),
-    .etx_2_ha_m_buf_dout(container_etxOut_ha_2_dout),
-    .etx_2_ha_m_buf_empty_n(container_etxOut_ha_2_empty_n),
-    .etx_2_ha_m_buf_read(writeN_U0_etx_2_ha_m_buf_read),
-    .etx_3_ha_m_buf_dout(container_etxOut_ha_3_dout),
-    .etx_3_ha_m_buf_empty_n(container_etxOut_ha_3_empty_n),
-    .etx_3_ha_m_buf_read(writeN_U0_etx_3_ha_m_buf_read),
+    .etx_0_ha_m_buf_address0(writeN_U0_etx_0_ha_m_buf_address0),
+    .etx_0_ha_m_buf_ce0(writeN_U0_etx_0_ha_m_buf_ce0),
+    .etx_0_ha_m_buf_q0(container_etxOut_ha_s_t_q0),
+    .etx_1_ha_m_buf_address0(writeN_U0_etx_1_ha_m_buf_address0),
+    .etx_1_ha_m_buf_ce0(writeN_U0_etx_1_ha_m_buf_ce0),
+    .etx_1_ha_m_buf_q0(container_etxOut_ha_1_t_q0),
+    .etx_2_ha_m_buf_address0(writeN_U0_etx_2_ha_m_buf_address0),
+    .etx_2_ha_m_buf_ce0(writeN_U0_etx_2_ha_m_buf_ce0),
+    .etx_2_ha_m_buf_q0(container_etxOut_ha_2_t_q0),
+    .etx_3_ha_m_buf_address0(writeN_U0_etx_3_ha_m_buf_address0),
+    .etx_3_ha_m_buf_ce0(writeN_U0_etx_3_ha_m_buf_ce0),
+    .etx_3_ha_m_buf_q0(container_etxOut_ha_3_t_q0),
     .etx_0_ba_m_ccur(container_etxOut_0_1_dout),
     .etx_1_ba_m_ccur(container_etxOut_1_1_dout),
     .etx_2_ba_m_ccur(container_etxOut_2_1_dout),
@@ -8778,18 +9162,18 @@ writeN writeN_U0(
     .etx_1_ba_m_cidx(container_etxOut_1_s_dout),
     .etx_2_ba_m_cidx(container_etxOut_2_s_dout),
     .etx_3_ba_m_cidx(container_etxOut_3_s_dout),
-    .etx_0_ba_m_buf_dout(container_etxOut_ba_s_dout),
-    .etx_0_ba_m_buf_empty_n(container_etxOut_ba_s_empty_n),
-    .etx_0_ba_m_buf_read(writeN_U0_etx_0_ba_m_buf_read),
-    .etx_1_ba_m_buf_dout(container_etxOut_ba_1_dout),
-    .etx_1_ba_m_buf_empty_n(container_etxOut_ba_1_empty_n),
-    .etx_1_ba_m_buf_read(writeN_U0_etx_1_ba_m_buf_read),
-    .etx_2_ba_m_buf_dout(container_etxOut_ba_2_dout),
-    .etx_2_ba_m_buf_empty_n(container_etxOut_ba_2_empty_n),
-    .etx_2_ba_m_buf_read(writeN_U0_etx_2_ba_m_buf_read),
-    .etx_3_ba_m_buf_dout(container_etxOut_ba_3_dout),
-    .etx_3_ba_m_buf_empty_n(container_etxOut_ba_3_empty_n),
-    .etx_3_ba_m_buf_read(writeN_U0_etx_3_ba_m_buf_read),
+    .etx_0_ba_m_buf_address0(writeN_U0_etx_0_ba_m_buf_address0),
+    .etx_0_ba_m_buf_ce0(writeN_U0_etx_0_ba_m_buf_ce0),
+    .etx_0_ba_m_buf_q0(container_etxOut_ba_s_t_q0),
+    .etx_1_ba_m_buf_address0(writeN_U0_etx_1_ba_m_buf_address0),
+    .etx_1_ba_m_buf_ce0(writeN_U0_etx_1_ba_m_buf_ce0),
+    .etx_1_ba_m_buf_q0(container_etxOut_ba_1_t_q0),
+    .etx_2_ba_m_buf_address0(writeN_U0_etx_2_ba_m_buf_address0),
+    .etx_2_ba_m_buf_ce0(writeN_U0_etx_2_ba_m_buf_ce0),
+    .etx_2_ba_m_buf_q0(container_etxOut_ba_2_t_q0),
+    .etx_3_ba_m_buf_address0(writeN_U0_etx_3_ba_m_buf_address0),
+    .etx_3_ba_m_buf_ce0(writeN_U0_etx_3_ba_m_buf_ce0),
+    .etx_3_ba_m_buf_q0(container_etxOut_ba_3_t_q0),
     .ap_return_0(writeN_U0_ap_return_0),
     .ap_return_1(writeN_U0_ap_return_1)
 );
@@ -8799,9 +9183,9 @@ fifo_w5_d2_A_x adcs0_V_offset_c_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(write_adcs4_entry205_U0_adcs0_V_offset_c_din),
+    .if_din(write_adcs4_entry217_U0_adcs0_V_offset_c_din),
     .if_full_n(adcs0_V_offset_c_full_n),
-    .if_write(write_adcs4_entry205_U0_adcs0_V_offset_c_write),
+    .if_write(write_adcs4_entry217_U0_adcs0_V_offset_c_write),
     .if_dout(adcs0_V_offset_c_dout),
     .if_empty_n(adcs0_V_offset_c_empty_n),
     .if_read(encode4_U0_hists0_m_omask_V_offset_read)
@@ -8812,9 +9196,9 @@ fifo_w7_d3_A ichan_c_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(write_adcs4_entry205_U0_ichan_c_din),
+    .if_din(write_adcs4_entry217_U0_ichan_c_din),
     .if_full_n(ichan_c_full_n),
-    .if_write(write_adcs4_entry205_U0_ichan_c_write),
+    .if_write(write_adcs4_entry217_U0_ichan_c_write),
     .if_dout(ichan_c_dout),
     .if_empty_n(ichan_c_empty_n),
     .if_read(writeN_U0_ichan_read)
@@ -8825,9 +9209,9 @@ fifo_w64_d3_A bAxis_m_cur_read_c_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(write_adcs4_entry205_U0_bAxis_m_cur_read_out_din),
+    .if_din(write_adcs4_entry217_U0_bAxis_m_cur_read_out_din),
     .if_full_n(bAxis_m_cur_read_c_full_n),
-    .if_write(write_adcs4_entry205_U0_bAxis_m_cur_read_out_write),
+    .if_write(write_adcs4_entry217_U0_bAxis_m_cur_read_out_write),
     .if_dout(bAxis_m_cur_read_c_dout),
     .if_empty_n(bAxis_m_cur_read_c_empty_n),
     .if_read(writeN_U0_bAxis_m_cur_read_read)
@@ -8838,9 +9222,9 @@ fifo_w32_d3_A bAxis_m_idx_read_c_U(
     .reset(ap_rst),
     .if_read_ce(1'b1),
     .if_write_ce(1'b1),
-    .if_din(write_adcs4_entry205_U0_bAxis_m_idx_read_out_din),
+    .if_din(write_adcs4_entry217_U0_bAxis_m_idx_read_out_din),
     .if_full_n(bAxis_m_idx_read_c_full_n),
-    .if_write(write_adcs4_entry205_U0_bAxis_m_idx_read_out_write),
+    .if_write(write_adcs4_entry217_U0_bAxis_m_idx_read_out_write),
     .if_dout(bAxis_m_idx_read_c_dout),
     .if_empty_n(bAxis_m_idx_read_c_empty_n),
     .if_read(writeN_U0_bAxis_m_idx_read_read)
@@ -8950,58 +9334,6 @@ fifo_w32_d2_A_x container_etxOut_3_2_U(
     .if_read(writeN_U0_ap_ready)
 );
 
-fifo_w64_d256_A container_etxOut_ha_s_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_0_ha_m_buf_din),
-    .if_full_n(container_etxOut_ha_s_full_n),
-    .if_write(encode4_U0_etx_0_ha_m_buf_write),
-    .if_dout(container_etxOut_ha_s_dout),
-    .if_empty_n(container_etxOut_ha_s_empty_n),
-    .if_read(writeN_U0_etx_0_ha_m_buf_read)
-);
-
-fifo_w64_d256_A container_etxOut_ha_1_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_1_ha_m_buf_din),
-    .if_full_n(container_etxOut_ha_1_full_n),
-    .if_write(encode4_U0_etx_1_ha_m_buf_write),
-    .if_dout(container_etxOut_ha_1_dout),
-    .if_empty_n(container_etxOut_ha_1_empty_n),
-    .if_read(writeN_U0_etx_1_ha_m_buf_read)
-);
-
-fifo_w64_d256_A container_etxOut_ha_2_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_2_ha_m_buf_din),
-    .if_full_n(container_etxOut_ha_2_full_n),
-    .if_write(encode4_U0_etx_2_ha_m_buf_write),
-    .if_dout(container_etxOut_ha_2_dout),
-    .if_empty_n(container_etxOut_ha_2_empty_n),
-    .if_read(writeN_U0_etx_2_ha_m_buf_read)
-);
-
-fifo_w64_d256_A container_etxOut_ha_3_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_3_ha_m_buf_din),
-    .if_full_n(container_etxOut_ha_3_full_n),
-    .if_write(encode4_U0_etx_3_ha_m_buf_write),
-    .if_dout(container_etxOut_ha_3_dout),
-    .if_empty_n(container_etxOut_ha_3_empty_n),
-    .if_read(writeN_U0_etx_3_ha_m_buf_read)
-);
-
 fifo_w64_d2_A container_etxOut_0_1_U(
     .clk(ap_clk),
     .reset(ap_rst),
@@ -9104,58 +9436,6 @@ fifo_w32_d2_A_x container_etxOut_3_s_U(
     .if_dout(container_etxOut_3_s_dout),
     .if_empty_n(container_etxOut_3_s_empty_n),
     .if_read(writeN_U0_ap_ready)
-);
-
-fifo_w64_d128_A container_etxOut_ba_s_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_0_ba_m_buf_din),
-    .if_full_n(container_etxOut_ba_s_full_n),
-    .if_write(encode4_U0_etx_0_ba_m_buf_write),
-    .if_dout(container_etxOut_ba_s_dout),
-    .if_empty_n(container_etxOut_ba_s_empty_n),
-    .if_read(writeN_U0_etx_0_ba_m_buf_read)
-);
-
-fifo_w64_d128_A container_etxOut_ba_1_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_1_ba_m_buf_din),
-    .if_full_n(container_etxOut_ba_1_full_n),
-    .if_write(encode4_U0_etx_1_ba_m_buf_write),
-    .if_dout(container_etxOut_ba_1_dout),
-    .if_empty_n(container_etxOut_ba_1_empty_n),
-    .if_read(writeN_U0_etx_1_ba_m_buf_read)
-);
-
-fifo_w64_d128_A container_etxOut_ba_2_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_2_ba_m_buf_din),
-    .if_full_n(container_etxOut_ba_2_full_n),
-    .if_write(encode4_U0_etx_2_ba_m_buf_write),
-    .if_dout(container_etxOut_ba_2_dout),
-    .if_empty_n(container_etxOut_ba_2_empty_n),
-    .if_read(writeN_U0_etx_2_ba_m_buf_read)
-);
-
-fifo_w64_d128_A container_etxOut_ba_3_U(
-    .clk(ap_clk),
-    .reset(ap_rst),
-    .if_read_ce(1'b1),
-    .if_write_ce(1'b1),
-    .if_din(encode4_U0_etx_3_ba_m_buf_din),
-    .if_full_n(container_etxOut_ba_3_full_n),
-    .if_write(encode4_U0_etx_3_ba_m_buf_write),
-    .if_dout(container_etxOut_ba_3_dout),
-    .if_empty_n(container_etxOut_ba_3_empty_n),
-    .if_read(writeN_U0_etx_3_ba_m_buf_read)
 );
 
 always @ (posedge ap_clk) begin
@@ -9352,6 +9632,102 @@ end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ba_1 <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ba_1 <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ba_1 <= ap_sync_channel_write_container_etxOut_ba_1;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ba_2 <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ba_2 <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ba_2 <= ap_sync_channel_write_container_etxOut_ba_2;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ba_3 <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ba_3 <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ba_3 <= ap_sync_channel_write_container_etxOut_ba_3;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ba_s <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ba_s <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ba_s <= ap_sync_channel_write_container_etxOut_ba_s;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ha_1 <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ha_1 <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ha_1 <= ap_sync_channel_write_container_etxOut_ha_1;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ha_2 <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ha_2 <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ha_2 <= ap_sync_channel_write_container_etxOut_ha_2;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ha_3 <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ha_3 <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ha_3 <= ap_sync_channel_write_container_etxOut_ha_3;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
+        ap_sync_reg_channel_write_container_etxOut_ha_s <= 1'b0;
+    end else begin
+        if (((encode4_U0_ap_done & encode4_U0_ap_continue) == 1'b1)) begin
+            ap_sync_reg_channel_write_container_etxOut_ha_s <= 1'b0;
+        end else begin
+            ap_sync_reg_channel_write_container_etxOut_ha_s <= ap_sync_channel_write_container_etxOut_ha_s;
+        end
+    end
+end
+
+always @ (posedge ap_clk) begin
+    if (ap_rst == 1'b1) begin
         ap_sync_reg_encode4_U0_ap_ready <= 1'b0;
     end else begin
         if (((ap_sync_ready & ap_start) == 1'b1)) begin
@@ -9364,12 +9740,12 @@ end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        ap_sync_reg_write_adcs4_entry205_U0_ap_ready <= 1'b0;
+        ap_sync_reg_write_adcs4_entry217_U0_ap_ready <= 1'b0;
     end else begin
         if (((ap_sync_ready & ap_start) == 1'b1)) begin
-            ap_sync_reg_write_adcs4_entry205_U0_ap_ready <= 1'b0;
+            ap_sync_reg_write_adcs4_entry217_U0_ap_ready <= 1'b0;
         end else begin
-            ap_sync_reg_write_adcs4_entry205_U0_ap_ready <= ap_sync_write_adcs4_entry205_U0_ap_ready;
+            ap_sync_reg_write_adcs4_entry217_U0_ap_ready <= ap_sync_write_adcs4_entry217_U0_ap_ready;
         end
     end
 end
@@ -9378,9 +9754,9 @@ always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
         encode4_U0_ap_ready_count <= 2'd0;
     end else begin
-        if (((encode4_U0_ap_ready == 1'b0) & (ap_sync_ready == 1'b1))) begin
+        if (((ap_sync_ready == 1'b1) & (encode4_U0_ap_ready == 1'b0))) begin
             encode4_U0_ap_ready_count <= (encode4_U0_ap_ready_count - 2'd1);
-        end else if (((ap_sync_ready == 1'b0) & (encode4_U0_ap_ready == 1'b1))) begin
+        end else if (((encode4_U0_ap_ready == 1'b1) & (ap_sync_ready == 1'b0))) begin
             encode4_U0_ap_ready_count <= (encode4_U0_ap_ready_count + 2'd1);
         end
     end
@@ -9388,12 +9764,12 @@ end
 
 always @ (posedge ap_clk) begin
     if (ap_rst == 1'b1) begin
-        write_adcs4_entry205_U0_ap_ready_count <= 2'd0;
+        write_adcs4_entry217_U0_ap_ready_count <= 2'd0;
     end else begin
-        if (((write_adcs4_entry205_U0_ap_ready == 1'b0) & (ap_sync_ready == 1'b1))) begin
-            write_adcs4_entry205_U0_ap_ready_count <= (write_adcs4_entry205_U0_ap_ready_count - 2'd1);
-        end else if (((ap_sync_ready == 1'b0) & (write_adcs4_entry205_U0_ap_ready == 1'b1))) begin
-            write_adcs4_entry205_U0_ap_ready_count <= (write_adcs4_entry205_U0_ap_ready_count + 2'd1);
+        if (((ap_sync_ready == 1'b1) & (write_adcs4_entry217_U0_ap_ready == 1'b0))) begin
+            write_adcs4_entry217_U0_ap_ready_count <= (write_adcs4_entry217_U0_ap_ready_count - 2'd1);
+        end else if (((write_adcs4_entry217_U0_ap_ready == 1'b1) & (ap_sync_ready == 1'b0))) begin
+            write_adcs4_entry217_U0_ap_ready_count <= (write_adcs4_entry217_U0_ap_ready_count + 2'd1);
         end
     end
 end
@@ -9718,9 +10094,25 @@ assign ap_channel_done_container_etxOut_3_3 = ((ap_sync_reg_channel_write_contai
 
 assign ap_channel_done_container_etxOut_3_s = ((ap_sync_reg_channel_write_container_etxOut_3_s ^ 1'b1) & encode4_U0_ap_done);
 
+assign ap_channel_done_container_etxOut_ba_1 = ((ap_sync_reg_channel_write_container_etxOut_ba_1 ^ 1'b1) & encode4_U0_ap_done);
+
+assign ap_channel_done_container_etxOut_ba_2 = ((ap_sync_reg_channel_write_container_etxOut_ba_2 ^ 1'b1) & encode4_U0_ap_done);
+
+assign ap_channel_done_container_etxOut_ba_3 = ((ap_sync_reg_channel_write_container_etxOut_ba_3 ^ 1'b1) & encode4_U0_ap_done);
+
+assign ap_channel_done_container_etxOut_ba_s = ((ap_sync_reg_channel_write_container_etxOut_ba_s ^ 1'b1) & encode4_U0_ap_done);
+
+assign ap_channel_done_container_etxOut_ha_1 = ((ap_sync_reg_channel_write_container_etxOut_ha_1 ^ 1'b1) & encode4_U0_ap_done);
+
+assign ap_channel_done_container_etxOut_ha_2 = ((ap_sync_reg_channel_write_container_etxOut_ha_2 ^ 1'b1) & encode4_U0_ap_done);
+
+assign ap_channel_done_container_etxOut_ha_3 = ((ap_sync_reg_channel_write_container_etxOut_ha_3 ^ 1'b1) & encode4_U0_ap_done);
+
+assign ap_channel_done_container_etxOut_ha_s = ((ap_sync_reg_channel_write_container_etxOut_ha_s ^ 1'b1) & encode4_U0_ap_done);
+
 assign ap_done = writeN_U0_ap_done;
 
-assign ap_idle = (write_adcs4_entry205_U0_ap_idle & writeN_U0_ap_idle & (container_etxOut_3_s_empty_n ^ 1'b1) & (container_etxOut_2_s_empty_n ^ 1'b1) & (container_etxOut_1_s_empty_n ^ 1'b1) & (container_etxOut_0_s_empty_n ^ 1'b1) & (container_etxOut_3_1_empty_n ^ 1'b1) & (container_etxOut_2_1_empty_n ^ 1'b1) & (container_etxOut_1_1_empty_n ^ 1'b1) & (container_etxOut_0_1_empty_n ^ 1'b1) & (container_etxOut_3_2_empty_n ^ 1'b1) & (container_etxOut_2_2_empty_n ^ 1'b1) & (container_etxOut_1_2_empty_n ^ 1'b1) & (container_etxOut_0_2_empty_n ^ 1'b1) & (container_etxOut_3_3_empty_n ^ 1'b1) & (container_etxOut_2_3_empty_n ^ 1'b1) & (container_etxOut_1_3_empty_n ^ 1'b1) & (container_etxOut_0_3_empty_n ^ 1'b1) & encode4_U0_ap_idle);
+assign ap_idle = (write_adcs4_entry217_U0_ap_idle & writeN_U0_ap_idle & (container_etxOut_3_s_empty_n ^ 1'b1) & (container_etxOut_2_s_empty_n ^ 1'b1) & (container_etxOut_1_s_empty_n ^ 1'b1) & (container_etxOut_0_s_empty_n ^ 1'b1) & (container_etxOut_3_1_empty_n ^ 1'b1) & (container_etxOut_2_1_empty_n ^ 1'b1) & (container_etxOut_1_1_empty_n ^ 1'b1) & (container_etxOut_0_1_empty_n ^ 1'b1) & (container_etxOut_3_2_empty_n ^ 1'b1) & (container_etxOut_2_2_empty_n ^ 1'b1) & (container_etxOut_1_2_empty_n ^ 1'b1) & (container_etxOut_0_2_empty_n ^ 1'b1) & (container_etxOut_3_3_empty_n ^ 1'b1) & (container_etxOut_2_3_empty_n ^ 1'b1) & (container_etxOut_1_3_empty_n ^ 1'b1) & (container_etxOut_0_3_empty_n ^ 1'b1) & (container_etxOut_ba_3_t_empty_n ^ 1'b1) & (container_etxOut_ba_2_t_empty_n ^ 1'b1) & (container_etxOut_ba_1_t_empty_n ^ 1'b1) & (container_etxOut_ba_s_t_empty_n ^ 1'b1) & (container_etxOut_ha_3_t_empty_n ^ 1'b1) & (container_etxOut_ha_2_t_empty_n ^ 1'b1) & (container_etxOut_ha_1_t_empty_n ^ 1'b1) & (container_etxOut_ha_s_t_empty_n ^ 1'b1) & encode4_U0_ap_idle);
 
 assign ap_ready = ap_sync_ready;
 
@@ -9756,15 +10148,31 @@ assign ap_sync_channel_write_container_etxOut_3_3 = ((container_etxOut_3_3_full_
 
 assign ap_sync_channel_write_container_etxOut_3_s = ((container_etxOut_3_s_full_n & ap_channel_done_container_etxOut_3_s) | ap_sync_reg_channel_write_container_etxOut_3_s);
 
+assign ap_sync_channel_write_container_etxOut_ba_1 = ((encode4_U0_etx_1_ba_m_buf_full_n & ap_channel_done_container_etxOut_ba_1) | ap_sync_reg_channel_write_container_etxOut_ba_1);
+
+assign ap_sync_channel_write_container_etxOut_ba_2 = ((encode4_U0_etx_2_ba_m_buf_full_n & ap_channel_done_container_etxOut_ba_2) | ap_sync_reg_channel_write_container_etxOut_ba_2);
+
+assign ap_sync_channel_write_container_etxOut_ba_3 = ((encode4_U0_etx_3_ba_m_buf_full_n & ap_channel_done_container_etxOut_ba_3) | ap_sync_reg_channel_write_container_etxOut_ba_3);
+
+assign ap_sync_channel_write_container_etxOut_ba_s = ((encode4_U0_etx_0_ba_m_buf_full_n & ap_channel_done_container_etxOut_ba_s) | ap_sync_reg_channel_write_container_etxOut_ba_s);
+
+assign ap_sync_channel_write_container_etxOut_ha_1 = ((encode4_U0_etx_1_ha_m_buf_full_n & ap_channel_done_container_etxOut_ha_1) | ap_sync_reg_channel_write_container_etxOut_ha_1);
+
+assign ap_sync_channel_write_container_etxOut_ha_2 = ((encode4_U0_etx_2_ha_m_buf_full_n & ap_channel_done_container_etxOut_ha_2) | ap_sync_reg_channel_write_container_etxOut_ha_2);
+
+assign ap_sync_channel_write_container_etxOut_ha_3 = ((encode4_U0_etx_3_ha_m_buf_full_n & ap_channel_done_container_etxOut_ha_3) | ap_sync_reg_channel_write_container_etxOut_ha_3);
+
+assign ap_sync_channel_write_container_etxOut_ha_s = ((encode4_U0_etx_0_ha_m_buf_full_n & ap_channel_done_container_etxOut_ha_s) | ap_sync_reg_channel_write_container_etxOut_ha_s);
+
 assign ap_sync_continue = ap_continue;
 
 assign ap_sync_done = writeN_U0_ap_done;
 
 assign ap_sync_encode4_U0_ap_ready = (encode4_U0_ap_ready | ap_sync_reg_encode4_U0_ap_ready);
 
-assign ap_sync_ready = (ap_sync_write_adcs4_entry205_U0_ap_ready & ap_sync_encode4_U0_ap_ready);
+assign ap_sync_ready = (ap_sync_write_adcs4_entry217_U0_ap_ready & ap_sync_encode4_U0_ap_ready);
 
-assign ap_sync_write_adcs4_entry205_U0_ap_ready = (write_adcs4_entry205_U0_ap_ready | ap_sync_reg_write_adcs4_entry205_U0_ap_ready);
+assign ap_sync_write_adcs4_entry217_U0_ap_ready = (write_adcs4_entry217_U0_ap_ready | ap_sync_reg_write_adcs4_entry217_U0_ap_ready);
 
 assign bAxis_m_cur = writeN_U0_ap_return_0;
 
@@ -9834,9 +10242,25 @@ assign encode4_U0_adcs3_3_V_full_n = adcs3_3_V_empty_n;
 
 assign encode4_U0_adcs3_3_V_write = 1'b0;
 
-assign encode4_U0_ap_continue = (ap_sync_channel_write_container_etxOut_3_s & ap_sync_channel_write_container_etxOut_3_3 & ap_sync_channel_write_container_etxOut_3_2 & ap_sync_channel_write_container_etxOut_3_1 & ap_sync_channel_write_container_etxOut_2_s & ap_sync_channel_write_container_etxOut_2_3 & ap_sync_channel_write_container_etxOut_2_2 & ap_sync_channel_write_container_etxOut_2_1 & ap_sync_channel_write_container_etxOut_1_s & ap_sync_channel_write_container_etxOut_1_3 & ap_sync_channel_write_container_etxOut_1_2 & ap_sync_channel_write_container_etxOut_1_1 & ap_sync_channel_write_container_etxOut_0_s & ap_sync_channel_write_container_etxOut_0_3 & ap_sync_channel_write_container_etxOut_0_2 & ap_sync_channel_write_container_etxOut_0_1);
+assign encode4_U0_ap_continue = (ap_sync_channel_write_container_etxOut_ha_s & ap_sync_channel_write_container_etxOut_ha_3 & ap_sync_channel_write_container_etxOut_ha_2 & ap_sync_channel_write_container_etxOut_ha_1 & ap_sync_channel_write_container_etxOut_ba_s & ap_sync_channel_write_container_etxOut_ba_3 & ap_sync_channel_write_container_etxOut_ba_2 & ap_sync_channel_write_container_etxOut_ba_1 & ap_sync_channel_write_container_etxOut_3_s & ap_sync_channel_write_container_etxOut_3_3 & ap_sync_channel_write_container_etxOut_3_2 & ap_sync_channel_write_container_etxOut_3_1 & ap_sync_channel_write_container_etxOut_2_s & ap_sync_channel_write_container_etxOut_2_3 & ap_sync_channel_write_container_etxOut_2_2 & ap_sync_channel_write_container_etxOut_2_1 & ap_sync_channel_write_container_etxOut_1_s & ap_sync_channel_write_container_etxOut_1_3 & ap_sync_channel_write_container_etxOut_1_2 & ap_sync_channel_write_container_etxOut_1_1 & ap_sync_channel_write_container_etxOut_0_s & ap_sync_channel_write_container_etxOut_0_3 & ap_sync_channel_write_container_etxOut_0_2 & ap_sync_channel_write_container_etxOut_0_1);
 
 assign encode4_U0_ap_start = ((ap_sync_reg_encode4_U0_ap_ready ^ 1'b1) & ap_start);
+
+assign encode4_U0_etx_0_ba_m_buf_full_n = container_etxOut_ba_s_i_full_n;
+
+assign encode4_U0_etx_0_ha_m_buf_full_n = container_etxOut_ha_s_i_full_n;
+
+assign encode4_U0_etx_1_ba_m_buf_full_n = container_etxOut_ba_1_i_full_n;
+
+assign encode4_U0_etx_1_ha_m_buf_full_n = container_etxOut_ha_1_i_full_n;
+
+assign encode4_U0_etx_2_ba_m_buf_full_n = container_etxOut_ba_2_i_full_n;
+
+assign encode4_U0_etx_2_ha_m_buf_full_n = container_etxOut_ha_2_i_full_n;
+
+assign encode4_U0_etx_3_ba_m_buf_full_n = container_etxOut_ba_3_i_full_n;
+
+assign encode4_U0_etx_3_ha_m_buf_full_n = container_etxOut_ha_3_i_full_n;
 
 assign encode4_U0_hists0_0_m_bins_0_s_full_n = hist0_0_m_bins_0_V_empty_n;
 
@@ -13396,18 +13820,18 @@ assign offsets_we1 = 1'b0;
 
 assign writeN_U0_ap_continue = ap_continue;
 
-assign writeN_U0_ap_start = (container_etxOut_3_s_empty_n & container_etxOut_3_3_empty_n & container_etxOut_3_2_empty_n & container_etxOut_3_1_empty_n & container_etxOut_2_s_empty_n & container_etxOut_2_3_empty_n & container_etxOut_2_2_empty_n & container_etxOut_2_1_empty_n & container_etxOut_1_s_empty_n & container_etxOut_1_3_empty_n & container_etxOut_1_2_empty_n & container_etxOut_1_1_empty_n & container_etxOut_0_s_empty_n & container_etxOut_0_3_empty_n & container_etxOut_0_2_empty_n & container_etxOut_0_1_empty_n);
+assign writeN_U0_ap_start = (container_etxOut_ha_s_t_empty_n & container_etxOut_ha_3_t_empty_n & container_etxOut_ha_2_t_empty_n & container_etxOut_ha_1_t_empty_n & container_etxOut_ba_s_t_empty_n & container_etxOut_ba_3_t_empty_n & container_etxOut_ba_2_t_empty_n & container_etxOut_ba_1_t_empty_n & container_etxOut_3_s_empty_n & container_etxOut_3_3_empty_n & container_etxOut_3_2_empty_n & container_etxOut_3_1_empty_n & container_etxOut_2_s_empty_n & container_etxOut_2_3_empty_n & container_etxOut_2_2_empty_n & container_etxOut_2_1_empty_n & container_etxOut_1_s_empty_n & container_etxOut_1_3_empty_n & container_etxOut_1_2_empty_n & container_etxOut_1_1_empty_n & container_etxOut_0_s_empty_n & container_etxOut_0_3_empty_n & container_etxOut_0_2_empty_n & container_etxOut_0_1_empty_n);
 
 assign writeN_U0_start_full_n = 1'b1;
 
 assign writeN_U0_start_write = 1'b0;
 
-assign write_adcs4_entry205_U0_ap_continue = 1'b1;
+assign write_adcs4_entry217_U0_ap_continue = 1'b1;
 
-assign write_adcs4_entry205_U0_ap_start = ((ap_sync_reg_write_adcs4_entry205_U0_ap_ready ^ 1'b1) & ap_start);
+assign write_adcs4_entry217_U0_ap_start = ((ap_sync_reg_write_adcs4_entry217_U0_ap_ready ^ 1'b1) & ap_start);
 
-assign write_adcs4_entry205_U0_start_full_n = 1'b1;
+assign write_adcs4_entry217_U0_start_full_n = 1'b1;
 
-assign write_adcs4_entry205_U0_start_write = 1'b0;
+assign write_adcs4_entry217_U0_start_write = 1'b0;
 
 endmodule //write_adcs4

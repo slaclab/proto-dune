@@ -8,7 +8,7 @@
 `timescale 1 ns / 1 ps
 module handle_packet_cmpchv_memcore_ram (addr0, ce0, d0, we0, q0, addr1, ce1, d1, we1, q1,  clk);
 
-parameter DWIDTH = 10;
+parameter DWIDTH = 32;
 parameter AWIDTH = 3;
 parameter MEM_SIZE = 8;
 
@@ -77,7 +77,7 @@ module handle_packet_cmpchv_memcore(
     d1,
     q1);
 
-parameter DataWidth = 32'd10;
+parameter DataWidth = 32'd32;
 parameter AddressRange = 32'd8;
 parameter AddressWidth = 32'd3;
 input reset;
