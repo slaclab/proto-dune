@@ -158,12 +158,15 @@ begin
 
       axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0000000", x"00000081", true); -- Enable compression
       axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0010000", x"00000081", true); -- Enable compression
-      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000000", true);
+      --axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000000", true);
 
       wait for 1 US;
       enableTx <= '1';
       wait for 5 US;
       rxEnable <= '0';
+      wait for 0.6 MS;
+
+      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000000", true);
 
       wait;
    end process;
