@@ -75,8 +75,8 @@ architecture rtl of ProtoDuneDpmHlsMon is
 
    signal slaves : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
-   -- attribute dont_touch               : string;
-   -- attribute dont_touch of r          : signal is "TRUE";
+   attribute dont_touch               : string;
+   attribute dont_touch of r          : signal is "TRUE";
 
 begin
 
