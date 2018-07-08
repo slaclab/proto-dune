@@ -46,17 +46,17 @@ SetDebugCoreClk ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/axilClk}
 ## Set the debug Probes
 #######################
 
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tUser][1]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tUser][0]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tLast]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/master[tValid]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/slave[tReady]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obHlsMasters[0][tUser][1]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obHlsMasters[0][tUser][0]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obHlsMasters[0][tLast]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obHlsMasters[0][tValid]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obHlsSlaves[0][tReady]}
 
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tUser][1]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tUser][0]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tLast]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibMaster[tValid]}
-ConfigProbe ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/wibSlave[tReady]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obBufMasters[0][tUser][1]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obBufMasters[0][tUser][0]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obBufMasters[0][tLast]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obBufMasters[0][tValid]}
+ConfigProbe ${ilaName} {U_App/U_Hls/obBufSlaves[0][tReady]}
 
 ConfigProbe ${ilaName} {U_App/U_Hls/hlsMasters[0][tUser][1]}
 ConfigProbe ${ilaName} {U_App/U_Hls/hlsMasters[0][tUser][0]}
