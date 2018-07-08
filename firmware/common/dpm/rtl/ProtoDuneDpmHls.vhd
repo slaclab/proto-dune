@@ -138,7 +138,8 @@ begin
             sAxisSlave      => ibHlsSlaves(i),
             -- Outbound Interface
             mAxisMaster     => obHlsMasters(i),
-            mAxisSlave      => obHlsSlaves(i));
+            --mAxisSlave      => obHlsSlaves(i));
+            mAxisSlave      => '1');
 
       --------------
       -- FIFO Module before monitor and blowoff
