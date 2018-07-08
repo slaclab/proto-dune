@@ -139,7 +139,7 @@ begin
             -- Outbound Interface
             mAxisMaster     => obHlsMasters(i),
             --mAxisSlave      => obHlsSlaves(i));
-            mAxisSlave      => '1');
+            mAxisSlave      => AXI_STREAM_SLAVE_FORCE_C);
 
       --------------
       -- FIFO Module before monitor and blowoff
