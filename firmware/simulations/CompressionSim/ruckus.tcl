@@ -15,6 +15,8 @@ loadSource -path  $::env(PROJ_DIR)/../../common/dpm/rtl/ProtoDuneDpmEmuTxFramer.
 loadSource -path  $::env(PROJ_DIR)/../../common/dpm/rtl/ProtoDuneDpmWibRxFramer.vhd
 loadSource -path  $::env(PROJ_DIR)/../../common/dpm/rtl/ProtoDuneDpmWibRxFramerReg.vhd
 
+DcpToVerilogSim
+
 # Load local Source Code and constraints
 loadSource -sim_only -dir "$::DIR_PATH/rtl/"
 
