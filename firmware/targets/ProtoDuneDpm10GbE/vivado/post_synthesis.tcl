@@ -46,7 +46,7 @@ SetDebugCoreClk ${ilaName} {U_App/U_Wib/WIB_LINK[0].U_RX/axilClk}
 ## Set the debug Probes
 #######################
 
-ConfigProbe ${ilaName} {U_App/U_Hls/U_Mon/r.blowoff[*]}
+#ConfigProbe ${ilaName} {U_App/U_Hls/U_Mon/r.blowoff[*]}
 
 ConfigProbe ${ilaName} {U_App/U_Hls/obHlsMasters[0][tUser][1]}
 ConfigProbe ${ilaName} {U_App/U_Hls/obHlsMasters[0][tUser][0]}
