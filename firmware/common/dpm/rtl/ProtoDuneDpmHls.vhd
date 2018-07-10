@@ -67,9 +67,6 @@ architecture mapping of ProtoDuneDpmHls is
    signal obHlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal obHlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
-   signal obBufMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-   signal obBufSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
-
    signal hlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
    signal hlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
@@ -138,40 +135,7 @@ begin
             sAxisSlave      => ibHlsSlaves(i),
             -- Outbound Interface
             mAxisMaster     => obHlsMasters(i),
-            --mAxisSlave      => obHlsSlaves(i));
             mAxisSlave      => AXI_STREAM_SLAVE_FORCE_C);
-
-      --------------
-      -- FIFO Module before monitor and blowoff
-      --------------    
-
-      U_Buff : entity work.AxiStreamFifoV2
-         generic map (
-            -- General Configurations
-            TPD_G               => TPD_G,
-            INT_PIPE_STAGES_G   => 1,
-            PIPE_STAGES_G       => 1,
-            SLAVE_READY_EN_G    => true,
-            VALID_THOLD_G       => 1,
-            -- FIFO configurations
-            BRAM_EN_G           => false,
-            GEN_SYNC_FIFO_G     => true,
-            CASCADE_SIZE_G      => 1,
-            FIFO_ADDR_WIDTH_G   => 4,
-            -- AXI Stream Port Configurations
-            SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
-            MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)
-         port map (
-            -- Slave Port
-            sAxisClk    => axilClk,
-            sAxisRst    => axilRst,
-            sAxisMaster => obHlsMasters(i),
-            sAxisSlave  => obHlsSlaves(i),
-            -- Master Port
-            mAxisClk    => axilClk,
-            mAxisRst    => axilRst,
-            mAxisMaster => obBufMasters(i),
-            mAxisSlave  => obBufSlaves(i));
 
       --------------
       -- FIFO Module after monitor and blowoff
@@ -260,8 +224,8 @@ begin
          -- HLS Interface (axilClk domain)
          ibHlsMasters    => ibHlsMasters,
          ibHlsSlaves     => ibHlsSlaves,
-         obHlsMasters    => obBufMasters,
-         obHlsSlaves     => obBufSlaves,
+         obHlsMasters    => obHlsMasters,
+         obHlsSlaves     => obHlsSlaves,
          hlsMasters      => hlsMasters,
          hlsSlaves       => hlsSlaves);
 

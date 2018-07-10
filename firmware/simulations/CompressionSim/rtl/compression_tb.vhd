@@ -64,8 +64,10 @@ architecture compression_tb of compression_tb is
 
    signal rxEnable     : sl;
 
-   signal curCnt       : slv(31 downto 0);
-   signal nxtCnt       : slv(31 downto 0);
+   signal curCnt       : Slv32Array(1 downto 0);
+   signal nxtCnt       : Slv32Array(1 downto 0);
+   signal sizeError    : slv(1 downto 0);
+   signal lastSize     : Slv16Array(1 downto 0);
 
 begin
 
@@ -125,18 +127,33 @@ begin
    loopbackMaster <= AXI_STREAM_MASTER_INIT_C;
    dmaIbSlave     <= AXI_STREAM_SLAVE_FORCE_C;
 
-   process(axilClk)
+   process(emuClk) is
+      variable tmpCnt : slv(31 downto 0);
    begin
-      if rising_edge(axilClk) then
-         if axilRst = '1' then
-            curCnt <= (others=>'0');
-            nxtCnt <= (others=>'0');
+      if rising_edge(emuClk) then
+         if emuRst = '1' then
+            curCnt <= (others=>(others=>'0'));
+            nxtCnt <= (others=>(others=>'0'));
+            sizeError <= "00";
          elsif dmaIbMaster.tValid = '1' then
-            nxtCnt <= nxtCnt + 1;
+            tmpCnt := nxtCnt(conv_integer(dmaIbMaster.tDest)) + 8;
+
+            lastSize(conv_integer(dmaIbMaster.tDest)) <= dmaIbMaster.tData(15 downto 0);
+
+            nxtCnt(conv_integer(dmaIbMaster.tDest)) <= nxtCnt(conv_integer(dmaIbMaster.tDest)) + 8;
 
             if dmaIbMaster.tLast = '1' then
-               curCnt <= nxtCnt + 1;
-               nxtCnt <= (others=>'0');
+
+               if tmpCnt /= lastSize(conv_integer(dmaIbMaster.tDest)) then
+                  sizeError(conv_integer(dmaIbMaster.tDest)) <= '1';
+               else
+                  sizeError(conv_integer(dmaIbMaster.tDest)) <= '0';
+               end if;
+
+               curCnt(conv_integer(dmaIbMaster.tDest)) <= tmpCnt;
+               nxtCnt(conv_integer(dmaIbMaster.tDest)) <= (others=>'0');
+            else 
+               nxtCnt(conv_integer(dmaIbMaster.tDest)) <= tmpCnt;
             end if;
          end if;
       end if;
@@ -158,15 +175,10 @@ begin
 
       axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0000000", x"00000081", true); -- Enable compression
       axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0010000", x"00000081", true); -- Enable compression
-      --axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000000", true);
+      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000000", true);
 
       wait for 1 US;
       enableTx <= '1';
-      wait for 5 US;
-      rxEnable <= '0';
-      wait for 0.6 MS;
-
-      axiLiteBusSimWrite ( axilClk, axilWriteMaster, axilWriteSlave, x"A0020800", x"00000000", true);
 
       wait;
    end process;
