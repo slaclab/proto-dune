@@ -2421,6 +2421,7 @@ static bool construct (DaqDmaDevice     &dma,
       return false;
    }
 
+
    #if 0
    // Enable the destinations
    status = dma.enable (dests, ndests);
@@ -2793,6 +2794,15 @@ void DaqDmaDevice::vet ()
 
 
 
+static inline void getCompressedTimestampRange (uint64_t    range[2],
+                                                uint64_t const *d64);
+
+static inline void getWibFrameTimestampRange   (uint64_t    range[2],
+                                                uint64_t const  *d64,
+                                                uint32_t      nbytes);
+
+
+
 /* ---------------------------------------------------------------------- *//*!
 
   \brief   Hokey routine to get the timestamp range of the packet.
@@ -2804,9 +2814,92 @@ void DaqDmaDevice::vet ()
 
                                                                           */
 /* ---------------------------------------------------------------------- */
-static inline void getTimestampRange (uint64_t     range[2],
+static inline bool getTimestampRange (uint64_t     range[2],
                                       uint64_t const   *d64,
-                                      uint32_t      nbytes)
+                                      uint32_t       nbytes)
+{
+   static const uint32_t      FrameTypeData = 1;
+   static const uint32_t RecordTypeWibFrame = 1;
+   static const uint32_t RecordTypeCompress = 3;
+
+   uint64_t  tlr =  d64[nbytes/sizeof (*d64) - 2];
+   int frameType = (tlr >> 28) & 0xf;
+   int   recType = (tlr >> 24) & 0xf;
+
+   if ( frameType == FrameTypeData)
+   {
+      if (recType == RecordTypeCompress)
+      {
+         //// fprintf (stderr, "TpcData:Compress:");
+         getCompressedTimestampRange (range, d64);
+      }
+      else if (recType == RecordTypeWibFrame)
+      {
+         //// fprintf (stderr, "TpcData:WibFrame:");
+         getWibFrameTimestampRange (range, d64, nbytes);
+      }
+      else
+      {
+         fprintf (stderr, "Bad trailer identifier = %16.16" PRIx64 "\n",
+                  tlr);
+         return false;
+      }
+
+      /// fprintf (stderr, "%16.16" PRIx64 " %16.16" PRIx64 "%8.8" PRIx32 "\n", 
+      ///         range[0], range[1], nbytes);
+
+      return true;
+
+   }
+   else
+   {
+      fprintf (stderr, "Bad trailer identifier = %16.16" PRIx64 "\n",
+               tlr);
+
+      return false;
+   }
+
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Hokey routine to get the timestamp range of the packet.
+  \return  The  timestamp of the initial WIB frame
+
+  \param[in]  range The timestamp range of this packet
+  \param[in]    d64 64-bit pointer to the data packet
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static inline void getCompressedTimestampRange (uint64_t   range[2],
+                                                uint64_t const *d64)
+{
+   range[0] = d64[2];
+   range[1] = d64[3] + TimingClockTicks::PER_SAMPLE;
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Hokey routine to get the timestamp range of the packet.
+  \return  The  timestamp of the initial WIB frame
+
+  \param[in]  range The timestamp range of this packet
+  \param[in]    d64 64-bit pointer to the data packet
+  \param[in] nbytes The read length
+
+                                                                          */
+/* ---------------------------------------------------------------------- */
+static inline void getWibFrameTimestampRange(uint64_t     range[2],
+                                              uint64_t const   *d64,
+                                              uint32_t      nbytes)
 {
    // --------------------------------------------------------------------
    // 2018.05.07 -- jjr
@@ -3926,11 +4019,41 @@ void DaqBuffer::rxRun ()
             // ---------------------------------------------------
             if (tlrSize != _rxSize)
             {
-               fprintf (stderr,
-                        "rxRun:Error: Frame[%d.%d] %16.16" PRIx64 " -> "
-                        "%16.16" PRIx64 " %8.8" PRIx32 "\n",
-                        dest, index, *dbeg, *dend, _rxSize);
+               static int Count = 0;
+               if ((Count & 0xfff) == 0 || (Count & 0xfff) == 1)
+               {
+                  fprintf (stderr,
+                           "rxRun:Error: Frame[%d.%d] %16.16" PRIx64 " -> "
+                           "%16.16" PRIx64 " %8.8" PRIx32 "\n",
+                           dest, index, *dbeg, *dend, _rxSize);
+                  fprintf (stderr,
+                  "rxRun:Hdr    %16.16" PRIx64 " %16.16" PRIx64 ""
+                              " %16.16" PRIx64 " %16.16" PRIx64 "\n", dbeg[0], dbeg[1], dbeg[2], dbeg[3]);
+                  fprintf (stderr,
+                  "rxRun:Tlr    %16.16" PRIx64 " %16.16" PRIx64 ""
+                              " %16.16" PRIx64 " %16.16" PRIx64 "\n", dend[-3], dend[-2], dend[-1], dend[0]);
 
+
+
+                  {
+                     uint64_t const *p = (uint64_t const *)data;
+                     int           n64 = rxSize / sizeof (*p);
+
+                     for (int idx = 0; idx < n64; idx++)
+                     {
+                        if ((idx%4) == 0) fprintf (stderr, "d[%1d.%3d]:", dest, idx);
+                        fprintf (stderr, " %16.16" PRIx64, p[idx]);
+                        if ((idx%4) == 3) putchar ('\n');
+                     }
+
+
+                     // If have left off in the middle of a line
+                     if (n64 % 4) fputc ('\n', stderr);
+                  }
+
+               }
+
+               Count += 1;
                _counters._rxErrors++;
                _dataDma.free (index);
                continue;
@@ -3938,6 +4061,9 @@ void DaqBuffer::rxRun ()
 
 
             uint64_t timestampRange[2];
+
+
+
             fb = &fbs[index];
 
             /**
@@ -3965,19 +4091,6 @@ void DaqBuffer::rxRun ()
             // Set the size, the two trailer words are included in this size
             fb->m_body.setSize       (rxSize);
             fb->m_body.setRxSequence (_rxSequence++);
-
-#if 0
-            {
-               static int Count = 2000;
-               if (--Count <= 0)
-               {
-                  fprintf (stderr,
-                           "RunMode = %d  trgActive = %d\n",
-                           (int)runMode, trgActive);
-                  Count = 2000;
-               }
-            }
-#endif
 
 
             if (runMode   == RunMode::SOFTWARE &&

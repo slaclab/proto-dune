@@ -175,8 +175,8 @@ APE_etxOut::APE_etxOut ()
    //     5 bits * 1024 = 5,120 bits -> 80 64 bit words
    //
    // Round these to 256 and 128
-   #pragma HLS STREAM          variable=ha depth=256 dim=1 off  /// STRIP off
-   #pragma HLS STREAM          variable=ba depth=128 dim=1 off  ///  STRIP off
+   #pragma HLS STREAM          variable=ha depth=256 dim=1
+   #pragma HLS STREAM          variable=ba depth=128 dim=1
 
    return;
 }
