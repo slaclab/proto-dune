@@ -15,6 +15,22 @@
 //
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2018.07.18 jjr Corrected error in getting the length of the                  
+//                HeaderAndOrigin record in the operator = method.              
+//                The length was being taken from the destination, which        
+//                obviously was not filled in yet.  Corrected to get            
+//                the length from the source.                                   
+//                This error caused the HeaderAndOrigin record to be            
+//                incorrectly copied, resulting in the output data being        
+//                incorrect.                                                    
+//                Other incidental things also corrected                        
+//                 1. Added const to the n64 method in HeaderAndOrigin          
+//                 2. Corrected the spelling of TpcNormal in dump method        
+//                    (was missing the 'l')                                     
+//                 3. Used the passed in 'originator' class instead             
+//                    of the globla HeaderOrigin in dump method                 
+//                 4. Removed the & on header0_dump and originator_dump         
+//                    calls (they are passsed by reference, not pointer)   
 // 2018.03.26 jjr Release 1.2.0-0
 //                Modify TimingMsg to match the V4 firmware
 // 2018.02.05 jjr Release 1.1.0-0
@@ -74,6 +90,7 @@
 
 #include "DaqBuffer.h"
 #include "FrameBuffer.h"
+#include "TimingClockTicks.h"
 #include <AxisDriver.h>
 #include "AxiBufChecker.h"
 #include "Headers.hh"
@@ -100,48 +117,6 @@ typedef uint32_t __u32;
 
 using namespace std;
 
-
-/* ---------------------------------------------------------------------- *//*!
-
-   \class  TimingClockTicks
-   \brief  Captures the parameters of and methods for the timing system
-                                                                          */
-/* ---------------------------------------------------------------------- */
-class TimingClockTicks
-{
-public:
-   /* ------------------------------------------------------------------- *//*!
-
-     \enum  Constants
-     \brief The constants associated with the timing system
-                                                                          */
-   /* ------------------------------------------------------------------- */
-   enum Constants
-   {
-      CLOCK_PERIOD    = 20, /*!< Number of nanoseconds per clock tick     */
-      PER_SAMPLE      = 25, /* Number of clock ticks between ADC samples  */
-      SAMPLE_PERIOD   = CLOCK_PERIOD * PER_SAMPLE,
-                            /*!< Number of nanoseconds between ADC samples*/
-      PER_FRAME       = PER_SAMPLE * 1024,
-                            /*!< Elapsed time, in ticks, in a 1024 packet */
-   };
-   /* ------------------------------------------------------------------- */
-
-
-   /* ------------------------------------------------------------------- *//*!
-
-      \brief  Convert the period in micro seconds to period in clock ticks.
-      \return The period in clock ticks.
-
-      \param[in] period  The period, in usecs, to convert
-                                                                          */
-   /* ------------------------------------------------------------------- */
-   constexpr static inline uint32_t from_usecs (uint32_t period)
-   {
-      return (1000 * period + CLOCK_PERIOD/2) / CLOCK_PERIOD;
-   }
-   /* ------------------------------------------------------------------- */
-};
 
 
 #define MAX_DEST 2
@@ -2266,7 +2241,7 @@ public:
 public:
    HeaderAndOrigin &operator = (HeaderAndOrigin const &src)
    {
-      int nbytes = n64 () * sizeof (uint64_t);
+      int nbytes = src. n64 () * sizeof (uint64_t);
       ///printf ("Copying nbytes = %d\n", nbytes);
       memcpy (this, &src, nbytes);
       return *this;
@@ -2305,7 +2280,7 @@ public:
    // If the trailer is used, the length in the iov is
    // increased by trailer size.
    // ----------------------------------------------------
-   uint32_t n64 ()
+   uint32_t n64 () const
    {
       uint32_t n64l = sizeof(m_header) / sizeof (uint64_t)
                     + m_origin.n64 ();
@@ -2787,154 +2762,6 @@ void DaqDmaDevice::vet ()
    }
 
    fputc ('\n', stderr);
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-static inline void getCompressedTimestampRange (uint64_t    range[2],
-                                                uint64_t const *d64);
-
-static inline void getWibFrameTimestampRange   (uint64_t    range[2],
-                                                uint64_t const  *d64,
-                                                uint32_t      nbytes);
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief   Hokey routine to get the timestamp range of the packet.
-  \return  The  timestamp of the initial WIB frame
-
-  \param[in]  range The timestamp range of this packet
-  \param[in]    d64 64-bit pointer to the data packet
-  \param[in] nbytes The read length
-
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline bool getTimestampRange (uint64_t     range[2],
-                                      uint64_t const   *d64,
-                                      uint32_t       nbytes)
-{
-   static const uint32_t      FrameTypeData = 1;
-   static const uint32_t RecordTypeWibFrame = 1;
-   static const uint32_t RecordTypeCompress = 3;
-
-   uint64_t  tlr =  d64[nbytes/sizeof (*d64) - 2];
-   int frameType = (tlr >> 28) & 0xf;
-   int   recType = (tlr >> 24) & 0xf;
-
-   if ( frameType == FrameTypeData)
-   {
-      if (recType == RecordTypeCompress)
-      {
-         //// fprintf (stderr, "TpcData:Compress:");
-         getCompressedTimestampRange (range, d64);
-      }
-      else if (recType == RecordTypeWibFrame)
-      {
-         //// fprintf (stderr, "TpcData:WibFrame:");
-         getWibFrameTimestampRange (range, d64, nbytes);
-      }
-      else
-      {
-         fprintf (stderr, "Bad trailer identifier = %16.16" PRIx64 "\n",
-                  tlr);
-         return false;
-      }
-
-      /// fprintf (stderr, "%16.16" PRIx64 " %16.16" PRIx64 "%8.8" PRIx32 "\n", 
-      ///         range[0], range[1], nbytes);
-
-      return true;
-
-   }
-   else
-   {
-      fprintf (stderr, "Bad trailer identifier = %16.16" PRIx64 "\n",
-               tlr);
-
-      return false;
-   }
-
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief   Hokey routine to get the timestamp range of the packet.
-  \return  The  timestamp of the initial WIB frame
-
-  \param[in]  range The timestamp range of this packet
-  \param[in]    d64 64-bit pointer to the data packet
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline void getCompressedTimestampRange (uint64_t   range[2],
-                                                uint64_t const *d64)
-{
-   range[0] = d64[2];
-   range[1] = d64[3] + TimingClockTicks::PER_SAMPLE;
-
-   return;
-}
-/* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *//*!
-
-  \brief   Hokey routine to get the timestamp range of the packet.
-  \return  The  timestamp of the initial WIB frame
-
-  \param[in]  range The timestamp range of this packet
-  \param[in]    d64 64-bit pointer to the data packet
-  \param[in] nbytes The read length
-
-                                                                          */
-/* ---------------------------------------------------------------------- */
-static inline void getWibFrameTimestampRange(uint64_t     range[2],
-                                              uint64_t const   *d64,
-                                              uint32_t      nbytes)
-{
-   // --------------------------------------------------------------------
-   // 2018.05.07 -- jjr
-   // Initial header word eliminated for RSSI transport.
-   // The original + 1 new trailer word now contains this information
-   //
-   // Locate the timestamp in the first WIB frame.  Since the data starts
-   // with the WIB frame, the timestamp is in word #1 (starting from 0).
-   // -----------------------------------------------------=-------------
-   uint64_t  begin = d64[1];
-
-
-   // -------------------------------------------------------------------
-   // Locate the start of the last WIBframe and get its timestamp.
-   // Add the number of clock ticks per time sample to get the
-   // ending time.
-   // -------------------------------------------------------------------
-   d64 += nbytes/sizeof (uint64_t) - 30 - 1 - 1;
-   uint64_t end = d64[1] + TimingClockTicks::PER_SAMPLE;
-
-
-   #if 0
-   fprintf (stderr,
-           "Beg %16.16" PRIx64 " End %16.16" PRIx64 " %16.16" PRIx64
-           " %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
-            begin, end, d64[-1], d64[0], d64[1], d64[2]);
-   #endif
-
-
-   // -----------------------------------------------------------
-   // Store timestamp of the first sample in the first WIB frame
-   // and the last sample in the last WIB frame as the range
-   // -----------------------------------------------------------
-   range[0] = begin;
-   range[1] =   end;
 
    return;
 }
@@ -3523,12 +3350,10 @@ static void getWibIdentifiers (uint16_t srcs[MAX_DEST], DaqDmaDevice *dataDma)
 {
    uint32_t mask = (1 << MAX_DEST) - 1;
 
-
    // -------------------------------------------------------
    // This just protects one from going into an infinite wait
    // -------------------------------------------------------
    int maxTries = MAX_DEST * 10;
-
 
    while (mask)
    {
@@ -3553,17 +3378,19 @@ static void getWibIdentifiers (uint16_t srcs[MAX_DEST], DaqDmaDevice *dataDma)
                uint32_t mdest = (1 << dest);
                if (mask & mdest)
                {
-                  uint64_t *data = reinterpret_cast<decltype(data)>
+                  uint64_t *d64 = reinterpret_cast<decltype(d64)>
                                    (dataDma->_map[index]);
-                  uint64_t   csf = (data[0] >> 13) & 0xfff;
-                  srcs[dest]     =    csf;
-                  mask          &= ~mdest;
+
+                  bool okay = FrameBuffer::getWibIdentifier (&srcs[mdest], 
+                                                             d64, 
+                                                             rxSize);
+                  if (okay) mask &= ~mdest;
                }
             }
          }
-
-         dataDma->free (index);
       }
+      
+      dataDma->free (index);
    }
 
    unsigned int src0 = srcs[0];
@@ -3818,7 +3645,8 @@ void DaqBuffer::rxRun ()
 
                if (event == NULL)
                {
-                  fprintf (stderr, "rxRun:Error: Hardware trigger: No event buffers\n");
+                  fprintf (stderr, 
+                           "rxRun:Error: Hardware trigger: No event buffers\n");
                   exit (-1);
                   _timingDma.free (index);
                   trgActive = false;
@@ -4077,14 +3905,15 @@ void DaqBuffer::rxRun ()
             }
             **/
 
-            getTimestampRange (timestampRange, data, rxSize);
-            fb->m_body.setTimeRange  (timestampRange[0],
-                                      timestampRange[1]);
+            FrameBuffer::getTimestampRange (timestampRange, data, rxSize);
+            fb->m_body.setTimeRange        (timestampRange[0],
+                                            timestampRange[1]);
 
             int64_t dt = timestampRange[1] - timestampRange[0];
             if (dt != TimingClockTicks::PER_FRAME)
             {
                fb->m_body.addStatus (FrameBuffer::Missing);
+               fprintf (stderr, "rxRun:: Timestamp error\n");
             }
 
 
@@ -4303,9 +4132,9 @@ static void header0_dump (pdd::Header0 const & header0)
    {
     [(int)fragment::Header<fragment::Type::Data>::RecType::Reserved_0] = "Reserved_0",
     [(int)fragment::Header<fragment::Type::Data>::RecType::Originator] = "Originator",
-    [(int)fragment::Header<fragment::Type::Data>::RecType::TpcNormal ] = "TpcNorma",
+    [(int)fragment::Header<fragment::Type::Data>::RecType::TpcNormal ] = "TpcNormal",
 
-    [(int)fragment::Header<fragment::Type::Data>::RecType::TpcDamaged] = "TocDamaged"
+    [(int )fragment::Header<fragment::Type::Data>::RecType::TpcDamaged] = "TocDamaged"
    };
 
 
@@ -4380,7 +4209,7 @@ static void originator_dump (pdd::fragment::Originator const &originator)
 
 
    {
-      fragment::OriginatorBody const &body   = HeaderOrigin.m_origin.m_body;
+      fragment::OriginatorBody const &body   = originator  .m_body;
 
       fragment::Version const &version = body.version   ();
       char const             *rptSwTag = body.rptSwTag  ();
@@ -4768,8 +4597,8 @@ void DaqBuffer::txRun ()
       // until the event was fully formatted.
       // ------------------------------------
       completeHeader  (&ho->m_header, event, status, txSize);
-      header0_dump    (&ho->m_header);
-      originator_dump (&ho->->m_origin);
+      header0_dump    ( ho->m_header);
+      originator_dump ( ho->->m_origin);
 
 
       // --------------------------------------------

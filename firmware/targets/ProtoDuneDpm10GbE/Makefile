@@ -5,10 +5,12 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000105
+export PRJ_VERSION = 0x00000107
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/07/29 0x00000107 jjr  Use static in pack to get compress/write overlap
+# 2018/07/24 0x00000106 jjr  Use FIFOs for etx output
 # 2018/06/05 0x00000062 jjr  First attempt at building the compression code
 # 2018/06/05 0x00000061 jjr  Incorporate Axis gen2 with HLS firmware that eliminates header word
 # 2018/05/31 0x00000060 llr  surf update: Seperate cache settings in Axis gen2 DMA

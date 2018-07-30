@@ -33,6 +33,8 @@
 #ifndef __FRAME_BUFFER_H__
 #define __FRAME_BUFFER_H__
 
+#include "TimingClockTicks.h"
+
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -46,6 +48,38 @@ public:
    {
       Missing = 1    /*!< Frame has missing time samples */
    };
+
+   /* ------------------------------------------------------------------- *//*!
+
+      \enum   Type
+      \brief  Enumerates the different types of frames that are delivered
+              from the firmware
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   enum class Type
+   {
+      Unknown = -1,
+      Data    =  1
+   };
+   /* ------------------------------------------------------------------- */
+
+
+
+   /* ------------------------------------------------------------------- *//*!
+
+      \enum   DataType
+      \brief  Enumerates the different record types that can occur in a 
+              data frame
+                                                                          */
+   /* ------------------------------------------------------------------- */
+   enum class DataType
+   {
+      WibFrame   = 1,
+      Transposed = 2,
+      Compressed = 3
+   };
+   /* ------------------------------------------------------------------- */
+
         
 
    // -------------------------------------------------------
@@ -91,6 +125,30 @@ public:
    uint32_t  getWriteSize  () const;
    uint32_t  getRxSequence () const;
    uint8_t   getDataFormat () const;
+
+
+public:
+   static uint64_t                     getTrailer (uint64_t const *d64,
+                                                   int32_t      nbytes);
+
+   static enum Type                  getFrameType (uint64_t        tlr);
+   static enum DataType               getDataType (uint64_t        tlr);
+
+   static bool                   getWibIdentifier (uint16_t     *wibId,
+                                                   uint64_t const *d64,
+                                                   int32_t      nbytes);
+
+   static bool                  getTimestampRange (uint64_t   range[2],
+                                                   uint64_t const *d64,
+                                                   int32_t      nbytes);
+
+   static void        getCompressedTimestampRange (uint64_t   range[2],
+                                                   uint64_t const *d64);
+
+
+   static void          getWibFrameTimestampRange (uint64_t   range[2],
+                                                   uint64_t const *d64,
+                                                   int32_t      nbytes);
 
 private:
    uint64_t const *getTrailerAddr64 () const;
@@ -314,10 +372,10 @@ inline uint64_t *FrameBuffer::getBaseAddr64 () const
 /* ---------------------------------------------------------------------- */
 inline uint32_t FrameBuffer::getStatus () const
 {
-   uint64_t const *p64 = getTrailerAddr64 ();
-   uint32_t status = p64[0] >> 32;
+   ///uint64_t const *p64 = getTrailerAddr64 ();
+   ///uint32_t status = p64[0] >> 32;
    
-   return status;
+   return _status;
 }
 /* ---------------------------------------------------------------------- */
 
@@ -350,6 +408,10 @@ inline uint8_t FrameBuffer::getDataFormat () const
 inline uint16_t FrameBuffer::getCsf () const
 {
    // ---------------------------------------------------------------
+   // 2018.07.24 -- jjr
+   // -----------------
+   // Corrected the extraction mask from 0xfff -> 0x3ff
+   //
    // 2018.05.07 -- jjr
    // -----------------
    // With elimination of the header word, the csf is in word 0
@@ -362,13 +424,256 @@ inline uint16_t FrameBuffer::getCsf () const
    uint64_t const *p64 = reinterpret_cast<decltype(p64)>(_data);
    
 
-   uint16_t    id = (p64[0] >> 13) & 0xfff;
+   uint16_t    id = (p64[0] >> 13) & 0x3ff;
    uint16_t crate = (id     >>  3) &  0x1f;
    uint16_t  slot = (id     >>  8) &  0x07;
    uint16_t fiber = (id     >>  0) &  0x07;
    uint16_t   csf = (crate << 6) | (slot << 3) | fiber;
    
    return csf;
+}
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Find and return the trailer word
+  \return The trailer word containing the frame and record types
+
+  \param[in]    d64  Pointer to the frame
+  \param[in] nbytes  The number of bytes in the frame
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline uint64_t  FrameBuffer::getTrailer (uint64_t const *d64,
+                                          int32_t      nbytes)
+{
+   uint64_t  tlr =  d64[nbytes/sizeof (*d64) - 2];
+   return tlr;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Extracts the frame type from the frame's trailer word
+  \return The frame type
+
+  \param[in]  tlr  The trailer word
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline enum FrameBuffer::Type FrameBuffer::getFrameType (uint64_t tlr)
+{
+   enum Type type = static_cast<Type>((tlr >> 28) & 0xf);
+   return    type;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Extracts the record type from the frame's trailer word
+  \return The record type.
+
+  \param[in]  tlr  The trailer word
+
+  \par
+   The frame type must have been previously been verified that it is 
+   a data frame.
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline enum FrameBuffer::DataType 
+            FrameBuffer::getDataType (uint64_t tlr)
+{
+   enum DataType type = static_cast<enum DataType>((tlr >> 24) & 0xf);
+   return        type;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Return the WIB identifier for the specified data
+  \retval == true,  successfully located  the WIB identifier
+  \retval == false, unsuccess in locating the WIB identifier
+
+  \param[out]  wibId  Pointer to the WIB identifier
+  \param[ in]    d64  Beginning of the frame
+  \param[ in] nbytes  The number of bytes in the frame
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline bool FrameBuffer::getWibIdentifier (uint16_t      *wibId,
+                                           uint64_t const  *d64,
+                                           int32_t       nbytes)
+{
+   // -------------------------------------
+   // Locate the word containing the WIB ID
+   // -------------------------------------
+   uint64_t                     tlr = getTrailer  (d64, nbytes);
+   enum FrameBuffer::Type frameType = getFrameType (tlr);
+   
+   if (frameType == FrameBuffer::Type::Data)
+   {
+      // ---------------------------------------------
+      // 2018.07.24 -- jjr
+      // -----------------
+      // Corrected extraction mask from 0xfff -> 0x3ff
+      // ---------------------------------------------
+      enum DataType dataType = getDataType (tlr);
+  
+      if (dataType == DataType::WibFrame)
+      {
+         *wibId = (d64[0] >> 13) & 0x3ff;
+         return true;
+      }
+      else if (dataType == DataType::Compressed)
+      {
+         *wibId = (d64[1] >> 13) & 0x3ff;
+         return true;
+      }
+   }
+
+   return false;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+  
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Hokey routine to get the timestamp range of the packet.
+  \return  The  timestamp of the initial WIB frame
+
+  \param[in]  range The timestamp range of this packet
+  \param[in]    d64 64-bit pointer to the data packet
+  \param[in] nbytes The read length
+
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline bool FrameBuffer::getTimestampRange (uint64_t     range[2],
+                                            uint64_t const   *d64,
+                                            int32_t        nbytes)
+{
+   uint64_t                     tlr =  getTrailer (d64, nbytes);
+   enum FrameBuffer::Type frameType =  getFrameType (tlr);
+
+
+   if ( frameType == Type::Data)
+   {
+      enum DataType recType = getDataType (tlr);
+      if (recType == DataType::Compressed)
+      {
+         //// fprintf (stderr, "TpcData:Compress:");
+         getCompressedTimestampRange (range, d64);
+      }
+      else if (recType == FrameBuffer::DataType::WibFrame)
+      {
+         //// fprintf (stderr, "TpcData:WibFrame:");
+         getWibFrameTimestampRange (range, d64, nbytes);
+      }
+      else
+      {
+         fprintf (stderr, "Bad trailer identifier = %16.16" PRIx64 "\n",
+                  tlr);
+         return false;
+      }
+
+      /// fprintf (stderr, "%16.16" PRIx64 " %16.16" PRIx64 "%8.8" PRIx32 "\n", 
+      ///         range[0], range[1], nbytes);
+
+      return true;
+
+   }
+   else
+   {
+      fprintf (stderr, "Bad trailer identifier = %16.16" PRIx64 "\n",
+               tlr);
+
+      return false;
+   }
+
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Hokey routine to get the timestamp range of the packet.
+  \return  The  timestamp of the initial WIB frame
+
+  \param[in]  range The timestamp range of this packet
+  \param[in]    d64 64-bit pointer to the data packet
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void FrameBuffer::getCompressedTimestampRange (uint64_t   range[2],
+                                                      uint64_t const *d64)
+{
+   range[0] = d64[2];
+   range[1] = d64[3] + TimingClockTicks::PER_SAMPLE;
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief   Hokey routine to get the timestamp range of the packet.
+  \return  The  timestamp of the initial WIB frame
+
+  \param[in]  range The timestamp range of this packet
+  \param[in]    d64 64-bit pointer to the data packet
+  \param[in] nbytes The read length
+
+                                                                          */
+/* ---------------------------------------------------------------------- */
+inline void FrameBuffer::getWibFrameTimestampRange(uint64_t     range[2],
+                                                   uint64_t const   *d64,
+                                                   int32_t        nbytes)
+{
+   // --------------------------------------------------------------------
+   // 2018.05.07 -- jjr
+   // Initial header word eliminated for RSSI transport.
+   // The original + 1 new trailer word now contains this information
+   //
+   // Locate the timestamp in the first WIB frame.  Since the data starts
+   // with the WIB frame, the timestamp is in word #1 (starting from 0).
+   // -----------------------------------------------------=-------------
+   uint64_t  begin = d64[1];
+
+
+   // -------------------------------------------------------------------
+   // Locate the start of the last WIBframe and get its timestamp.
+   // Add the number of clock ticks per time sample to get the
+   // ending time.
+   // -------------------------------------------------------------------
+   d64 += nbytes/sizeof (uint64_t) - 30 - 1 - 1;
+   uint64_t end = d64[1] + TimingClockTicks::PER_SAMPLE;
+
+
+   #if 0
+   fprintf (stderr,
+           "Beg %16.16" PRIx64 " End %16.16" PRIx64 " %16.16" PRIx64
+           " %16.16" PRIx64 " %16.16" PRIx64 " %16.16" PRIx64 "\n",
+            begin, end, d64[-1], d64[0], d64[1], d64[2]);
+   #endif
+
+
+   // -----------------------------------------------------------
+   // Store timestamp of the first sample in the first WIB frame
+   // and the last sample in the last WIB frame as the range
+   // -----------------------------------------------------------
+   range[0] = begin;
+   range[1] =   end;
+
+   return;
 }
 /* ---------------------------------------------------------------------- */
 /* END: GETTERs                                                           */

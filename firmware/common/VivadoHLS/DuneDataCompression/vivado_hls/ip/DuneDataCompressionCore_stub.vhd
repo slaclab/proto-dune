@@ -1,10 +1,10 @@
 -- Copyright 1986-2018 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2018.1 (lin64) Build 2188600 Wed Apr  4 18:39:19 MDT 2018
--- Date        : Fri Jul  6 22:25:54 2018
+-- Date        : Sun Jul 29 19:23:05 2018
 -- Host        : rdusr219.slac.stanford.edu running 64-bit Red Hat Enterprise Linux Server release 6.10 (Santiago)
 -- Command     : write_vhdl -force -mode synth_stub
---               /u/ey/rherbst/projects/lbne/proto-dune_rth_merged/firmware/common/VivadoHLS/DuneDataCompression/vivado_hls/ip/DuneDataCompressionCore_stub.vhd
+--               /u1/DUNE/cob_nfs/russell/proto-dune/firmware/common/VivadoHLS/DuneDataCompression/vivado_hls/ip/DuneDataCompressionCore_stub.vhd
 -- Design      : DuneDataCompressionCore
 -- Purpose     : Stub declaration of top-level module interface
 -- Device      : xc7z045ffg900-2

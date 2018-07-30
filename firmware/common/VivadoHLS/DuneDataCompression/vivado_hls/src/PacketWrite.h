@@ -200,11 +200,12 @@ static void  write_packet (AxisOut                               &mAxis,
    ChannelOffset_t    offsets[MODULE_K_NCHANNELS+2];
    write_adcs (bAxis, mAxis, offsets, cmpCtx);
 
-   odx = (bAxis.m_idx + 63) >> 6;
+   ///odx = (bAxis.m_idx + 63) >> 6;
 
 
-   offsets[NCHANS]   = bAxis.m_idx;
+   ////offsets[NCHANS]   = bAxis.m_idx;
    offsets[NCHANS+1] = 0;
+   odx = (offsets[NCHANS] + 63) >> 6;
    write_toc (mAxis, odx, NCHANS, PACKET_K_NSAMPLES, offsets);
 
    // -----------------------------------------------------------------
@@ -330,7 +331,7 @@ static inline void
                    isg * 4);
    }
 
-   bAxis.flush (mAxis);
+   ///bAxis.flush (mAxis);
 
    return;
 }
@@ -358,7 +359,7 @@ static inline void
                     Histogram                                 &hist3,
                     int                                        ichan)
 {
-   #pragma HLS INLINE off /// STRIP 2018-07-01 off -- With inline on it fails at chan 4
+   #pragma HLS INLINE /// STRIP 2018-07-01 off -- With inline on it fails at chan 4
    #pragma HLS DATAFLOW
 
 
@@ -369,7 +370,8 @@ static inline void
 
    Container container;
    #pragma HLS ARRAY_PARTITION variable=container.etxOut complete dim=1
-   /// #pragma HLS STREAM variable=containet off
+   #pragma HLS STREAM          variable=container depth=2
+   /// #pragma HLS STREAM variable=container off
 
     encode4 (container.etxOut,
              hist0, hist1, hist2, hist3,
@@ -495,7 +497,7 @@ static void encode (APE_etxOut                        &etx,
  *                       be encoded
  *
 \* -------------------------------------------------------------------- */
-static void writeN (AxisBitStream                  &bAxis,
+static void writeN (AxisBitStream                  &tAxis,
                     AxisOut                        &mAxis,
                     ChannelOffset_t             offsets[],
                     APE_etxOut                      etx[],
@@ -505,9 +507,18 @@ static void writeN (AxisBitStream                  &bAxis,
 {
   #pragma HLS INLINE off
 
+   static AxisBitStream bAxis;
+
+   if (ichan == 0)
+   {
+      bAxis.m_idx = 0x200;
+      bAxis.m_cur = 0;
+   }
+
+   int idx;
 
    WRITE_CHANNEL_LOOP:
-   for (int idx = 0;  idx < nstreams; idx++)
+   for (idx = 0;  idx < nstreams; idx++)
    {
       //#pragma HLS PIPELINE -- This caused problems at one time
 
@@ -524,6 +535,12 @@ static void writeN (AxisBitStream                  &bAxis,
       }
 #endif
 
+   }
+
+   if (ichan == 124)
+   {
+      bAxis.flush (mAxis);
+      offsets[idx] = bAxis.m_idx;
    }
 
    return;
