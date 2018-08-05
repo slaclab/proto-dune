@@ -302,7 +302,6 @@ static void
                 ModuleIdx_t                                        moduleIdx,
                 ModuleConfig const                                   &config,
                 MonitorRead                                      &gblMonitor,
-                MonitorRead                                      &lclMonitor,
                 int                                                   iframe);
 /* ====================================================================== */
 
@@ -462,7 +461,7 @@ void acquire_packet (AxisIn                                        &sAxis,
    // Accumulates the statistics and status
    // associated with the reading of a WIB frame.
    // -------------------------------------------
-   static MonitorRead lclMonitor;
+   //// static MonitorRead lclMonitor; /// jjr 2018-08-04 removed
 
    /// STRIP --- if (config.init) lclMonitor.init ();
 
@@ -470,7 +469,7 @@ void acquire_packet (AxisIn                                        &sAxis,
    for (int idx = 0; idx < PACKET_K_NSAMPLES; idx++)
    {
       acquire_frame (sAxis,  pktCtx,      cmpCtx, moduleIdx,
-                     config, monitor, lclMonitor,      idx);
+                     config, monitor, idx);
    }
 
    //// monitor = lclMonitor;
@@ -522,18 +521,21 @@ static void acquire_frame (AxisIn                                        &sAxis,
                            ModuleIdx_t                                moduleIdx,
                            ModuleConfig const                           &config,
                            MonitorRead                              &gblMonitor,
-                           MonitorRead                              &lclMonitor,
                            int                                           iframe)
 {
    #pragma HLS INLINE
    #pragma HLS DATAFLOW
+
+   static MonitorRead lclMonitor; /// jjr 2018-08-04 added
+   #pragma HLS RESOURCE variable=lclMonitor core=RAM_2P_LUTRAM
+
 
    ReadFrame frame;
    #pragma HLS RESOURCE        variable=frame.m_dat.d          core=RAM_2P_LUTRAM
    #pragma HLS ARRAY_PARTITION variable=frame.m_dat.d cyclic factor=2
 
    ReadStatus status = frame.read        (sAxis);
-   /// STRIP -- lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
+   //// lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
    process_frame     (frame, iframe, config, pktCtx, cmpCtx);
 }
 /* ----------------------------------------------------------------------- */

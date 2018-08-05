@@ -715,13 +715,12 @@ DataCompression::Write::Registers::Registers (Device       *device,
 {
    static const Svd_t Svd[] =
    {
-      //  INDEX           NAME        OFFSET                  N32  POLLENABLE
-      //  ---------       -------     ------------------      ---  ----------
-      [Wr_NBytes   ] = { "NBytes",    MONITOR_WRITE_NBYTES,     1,      true },
-      [Wr_NPromoted] = { "NPromoted", MONITOR_WRITE_NPROMOTED,  1,      true },
-      [Wr_NDropped ] = { "NDropped",  MONITOR_WRITE_NDROPPED,   1,      true },
-      [Wr_NPackets ] = { "NPackets",  MONITOR_WRITE_NPACKETS,   1,      true }
- 
+      //  INDEX           NAME          OFFSET                  N32  POLLENABLE
+      //  ---------       -------       ------------------      ---  ----------
+      [Wr_NBytes   ] = { "TotalBytes",  MONITOR_WRITE_NBYTES,     1,     true },
+      [Wr_NPromoted] = { "LastButes",   MONITOR_WRITE_NPROMOTED,  1,     true },
+      [Wr_NDropped ] = { "MaxBytes",    MONITOR_WRITE_NDROPPED,   1,     true },
+      [Wr_NPackets ] = { "TotalPackets",MONITOR_WRITE_NPACKETS,   1,     true }
    };
 
    static int SvdCnt = sizeof (Svd) / sizeof (Svd[0]);

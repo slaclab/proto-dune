@@ -220,10 +220,15 @@ static void  write_packet (AxisOut                               &mAxis,
    // ----------------------------------------------------------------
    epilogue (mAxis, odx, Identifier::DataType::COMPRESSED, status);
 
+   static uint32_t MaxBytes = 0;
+   uint32_t nbytes = odx << 3;
 
-   lclMonitor.nbytes    += odx << 3;
+   MaxBytes = (nbytes > MaxBytes) ? nbytes : MaxBytes;
+
+   lclMonitor.nbytes    += nbytes;
    lclMonitor.npackets  += 1;
-   lclMonitor.npromoted += 1;
+   lclMonitor.ndropped   = MaxBytes; /// KLUDGE
+   lclMonitor.npromoted  = nbytes;
 
    monitorWrite = lclMonitor;
 
@@ -599,7 +604,7 @@ static void pack (AxisBitStream                     &bAxis,
                   AxisOut                           &mAxis,
                   OStream                         &ostream)
 {
-    #pragma HLS INLINE
+    #pragma HLS INLINE off /// jjr 2018-08-02 added the off
     ///#pragma HLS PIPELINE
 
 
@@ -634,9 +639,9 @@ static void pack (AxisBitStream                     &bAxis,
    PACK_LOOP:
    for (int idx = 0; idx < cnt; idx++)
    {
-       #pragma HLS LOOP_TRIPCOUNT min=12 max=48 avg=16
-       /// #pragma HLS PIPELINE /// STRIP fails when pipelined
-       #pragma HLS UNROLL factor=2
+       #pragma HLS LOOP_TRIPCOUNT min=32 max=128 avg=32
+       #pragma HLS PIPELINE /// STRIP fails when pipelined
+       ////#pragma HLS UNROLL factor=2
 
       // Make room. get and insert the new 64-bts worth of data
        #if USE_FIFO

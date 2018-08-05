@@ -5,10 +5,19 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000107
+export PRJ_VERSION = 0x00000111
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/08/05 0x00000111 jjr  Remove updaing of read statistics
+# 2018/08/04 0x00000110 jjr  Add WIB frame read monitoring - next attempt
+#                            Tried to make this local process_frame
+#                            Failed -- same as 108
+# 2018/08/03 0x00000109 jjr  Remove updating of read statistics
+# 2018/08/03 0x00000108 jjr  Improved output timing to 1 cycle/word.
+#                            Added WIB frame read monitoring
+#                            -- Failed.  WibFrame Rate = ~1300 when run on
+#                                        the RCE.  Many dropped frames
 # 2018/07/29 0x00000107 jjr  Use static in pack to get compress/write overlap
 # 2018/07/24 0x00000106 jjr  Use FIFOs for etx output
 # 2018/06/05 0x00000062 jjr  First attempt at building the compression code

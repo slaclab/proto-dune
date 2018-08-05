@@ -74,6 +74,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <unistd.h>
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>

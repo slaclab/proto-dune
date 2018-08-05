@@ -48,7 +48,8 @@ public:
    int                  widx  () const;
 
    void               insert (AxisOut &mAxis, uint64_t bits, int nbits);
-   void                write (AxisOut &mAxis, uint64_t w64);
+   void             insert64 (AxisOut &mAxis, uint64_t bits, ap_uint<6> lshift, ap_uint<6> rshift);
+   void                write (AxisOut &mAxis, uint64_t  w64);
 
 public:
    uint64_t                  m_cur; /*!< Output staging buffer                   */
@@ -162,9 +163,62 @@ __inline void AxisBitStream::insert (AxisOut &mAxis, uint64_t bits, int nbits)
    return;
 }
 
+__inline void AxisBitStream::insert64 (AxisOut &mAxis, uint64_t bits, ap_uint<6> lshift, ap_uint<6> rshift)
+{
+   #pragma HLS PIPELINE
+   #pragma HLS INLINE
+
+
+   ///std::cout << "Adding # bits = " << nbits << std::endl;
+
+
+
+   #ifndef __SYNTHESIS__
+      int nbidx = m_idx;
+   #endif
+
+   uint64_t toWrite;
+
+   if (lshift == 0)
+   {
+      toWrite = bits;
+   }
+   else
+   {
+      toWrite =  (m_cur << lshift) | (bits >> rshift);
+   }
+
+   this->write (mAxis, toWrite);
+
+
+   // There is no need to clear any set bits beyond
+   // the overrun bits, they will eventually by
+   // shifted out the top bit.
+
+   #ifndef __SYNTHESIS__
+      nbidx += lshift;
+
+      /* STRIP remove output 2018-06-28
+      std::cout << "AxisBs: "
+                << std::setfill ('0') << std::hex << std::setw (16) << m_cur
+                << ':'       <<  std::hex << std::setw(16) << std::setfill ('0') << bits
+                << " len = " <<  std::hex << std::setw( 4) << std::setfill (' ') << nbidx << std::endl;
+      */
+   #endif
+
+   m_cur  = bits;
+
+
+   #ifndef __SYNTHESIS__
+   ///   std::cout << "BS64:" << m_out.name () << "len = " << m_idx << std::endl;
+   #endif
+   return;
+}
+
 
 __inline void AxisBitStream::write (AxisOut &mAxis, uint64_t w64)
 {
+   #pragma HLS INLINE
    int odx = widx ();
    commit (mAxis, odx, true, w64, 0, 0);
    return;

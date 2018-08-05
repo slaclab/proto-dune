@@ -989,7 +989,7 @@ static void eval_wib0 (ReadStatus &status, uint64_t hdr, uint16_t wibId)
    bool wibErrCommaChar = WibFrame::commaChar(hdr) != WibFrame::K28_5;
    bool wibErrVersion   = WibFrame::version  (hdr) != WibFrame::VersionNumber;
    bool wibErrId        = WibFrame::id       (hdr) != wibId;
-   bool wibErrRsvd      = WibFrame::rsvd     (hdr) != 0;
+   bool wibErrRsvd      = false; /// WibFrame::rsvd     (hdr)  = ??? jjr -- KLUDGE
    bool wibErrErrors    = WibFrame::wibErrors(hdr) != 0;
 
    update (status, wibErrCommaChar, ReadStatus::Offset::ErrWibComma);
