@@ -58,8 +58,8 @@ architecture mapping of ProtoDuneDpmEmu is
    signal enableTx     : sl;
    signal enableTrig   : sl;
    signal sendCnt      : sl;
-   signal chNoiseCgf   : Slv3Array(127 downto 0);
-   signal cmNoiseCgf   : slv(2 downto 0);
+   signal chNoiseCgf   : Slv4Array(127 downto 0);
+   signal cmNoiseCgf   : slv(3 downto 0);
    signal trigRate     : slv(31 downto 0);
    signal chDlyCfg     : EmuDlyCfg;
    signal convt        : sl;

@@ -60,7 +60,7 @@ DataDpmEmu::DataDpmEmu(uint32_t linkConfig, uint32_t baseAddress, uint32_t index
    rl->getVariable()->setTrueFalse();
    rl->getVariable()->setDescription("true = MGT loopback, false = normal mode");   
 
-   addRegisterLink(rl = new RegisterLink("ComModeNoise",  baseAddress_ + 0xC0C, Variable::Configuration,0,0x7));
+   addRegisterLink(rl = new RegisterLink("ComModeNoise",  baseAddress_ + 0xC0C, Variable::Configuration,0,0xF));
    rl->getVariable()->setComp(0,1,0,"");
    rl->getVariable()->setDescription("Sets the number of common mode noise bits in the emulation adc data");   
    
