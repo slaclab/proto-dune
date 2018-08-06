@@ -874,7 +874,7 @@ static void read_colddata_data (ReadStatus   &status,
    READCOLDDATA_LOOP:
    for (int idx = 0; idx < 12; idx++)
    {
-       //#pragma HLS PIPELINE
+       #pragma HLS PIPELINE
 
       // Get the input word, always copy the data
       in     = axis.read ();

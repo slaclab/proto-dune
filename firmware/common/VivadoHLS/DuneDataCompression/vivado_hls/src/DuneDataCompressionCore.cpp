@@ -527,7 +527,10 @@ static void acquire_frame (AxisIn                                        &sAxis,
    #pragma HLS DATAFLOW
 
    static MonitorRead lclMonitor; /// jjr 2018-08-04 added
-   #pragma HLS RESOURCE variable=lclMonitor core=RAM_2P_LUTRAM
+   #pragma HLS RESOURCE        variable=lclMonitor core=RAM_2P_LUTRAM
+   #pragma HLS ARRAY_PARTITION variable=lclMonitor.errs.nFrameErrs complete dim=1
+   #pragma HLS ARRAY_PARTITION variable=lclMonitor.errs.nWibErrs   complete dim=1
+   #pragma HLS ARRAY_PARTITION variable=lclMonitor.summary.nStates complete dim=1
 
 
    ReadFrame frame;
@@ -535,7 +538,7 @@ static void acquire_frame (AxisIn                                        &sAxis,
    #pragma HLS ARRAY_PARTITION variable=frame.m_dat.d cyclic factor=2
 
    ReadStatus status = frame.read        (sAxis);
-   //// lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
+   lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
    process_frame     (frame, iframe, config, pktCtx, cmpCtx);
 }
 /* ----------------------------------------------------------------------- */

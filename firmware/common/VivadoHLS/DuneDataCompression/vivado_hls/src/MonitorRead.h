@@ -14,6 +14,7 @@ static void update_read (MonitorRead        &lcl,
                            ReadStatus       status)
  {
     #pragma HLS INLINE off
+    #pragma HLS PIPELINE
     update_read (*this, cfg, status);
     gbl = *this;
     return;

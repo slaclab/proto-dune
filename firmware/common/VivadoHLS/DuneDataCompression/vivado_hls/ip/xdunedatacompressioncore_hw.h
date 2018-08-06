@@ -49,11 +49,15 @@
 //         bit 0  - monitor_cfg_m_ncfgs_ap_vld (Read/COR)
 //         others - reserved
 // 0x118 : Data signal of monitor_read_summary_mask_V
-//         bit 31~0 - monitor_read_summary_mask_V[31:0] (Read/Write)
-// 0x11c : reserved
+//         bit 31~0 - monitor_read_summary_mask_V[31:0] (Read)
+// 0x11c : Control signal of monitor_read_summary_mask_V
+//         bit 0  - monitor_read_summary_mask_V_ap_vld (Read/COR)
+//         others - reserved
 // 0x120 : Data signal of monitor_read_summary_nframes
-//         bit 31~0 - monitor_read_summary_nframes[31:0] (Read/Write)
-// 0x124 : reserved
+//         bit 31~0 - monitor_read_summary_nframes[31:0] (Read)
+// 0x124 : Control signal of monitor_read_summary_nframes
+//         bit 0  - monitor_read_summary_nframes_ap_vld (Read/COR)
+//         others - reserved
 // 0x200 : Data signal of monitor_write_nbytes
 //         bit 31~0 - monitor_write_nbytes[31:0] (Read)
 // 0x204 : Control signal of monitor_write_nbytes
@@ -113,8 +117,10 @@
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_CFG_M_NCFGS_CTRL          0x114
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_MASK_V_DATA  0x118
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_SUMMARY_MASK_V_DATA  32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_MASK_V_CTRL  0x11c
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NFRAMES_DATA 0x120
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_READ_SUMMARY_NFRAMES_DATA 32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NFRAMES_CTRL 0x124
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NBYTES_DATA         0x200
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_NBYTES_DATA         32
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NBYTES_CTRL         0x204
