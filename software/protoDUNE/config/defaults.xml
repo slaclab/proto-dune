@@ -303,7 +303,6 @@
       </DataDpmHlsMon>
       <DataDpmTiming>
         <Enabled>True</Enabled>
-        <SwFlush>False</SwFlush>
       </DataDpmTiming>
       <DataDpmWib>
         <Enabled>True</Enabled>
