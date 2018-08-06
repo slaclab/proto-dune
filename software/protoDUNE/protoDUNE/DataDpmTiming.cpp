@@ -110,9 +110,9 @@ DataDpmTiming::DataDpmTiming(uint32_t linkConfig, uint32_t baseAddress, uint32_t
    rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);
 
-   addRegisterLink(rl = new RegisterLink("SwFlush",  baseAddress_ + 0x800, Variable::Configuration,0,0x1));
-   rl->getVariable()->setDescription("true = forces the WIB receiver to generate flush frames, false = run mode");     
-   rl->getVariable()->setTrueFalse(); 
+//   addRegisterLink(rl = new RegisterLink("SwFlush",  baseAddress_ + 0x800, Variable::Configuration,0,0x1));
+//   rl->getVariable()->setDescription("true = forces the WIB receiver to generate flush frames, false = run mode");     
+//   rl->getVariable()->setTrueFalse(); 
    
 //   addRegisterLink(rl = new RegisterLink("CdrEdgeSel",  baseAddress_ + 0x804, Variable::Configuration,0,0x1));
 //   rl->getVariable()->setTrueFalse();

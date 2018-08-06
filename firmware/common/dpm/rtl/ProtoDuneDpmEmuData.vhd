@@ -34,8 +34,8 @@ entity ProtoDuneDpmEmuData is
       enableTx   : in  sl;
       enableTrig : in  sl;
       convt      : in  sl;
-      cmNoiseCgf : in  slv(2 downto 0);
-      chNoiseCgf : in  Slv3Array(127 downto 0);
+      cmNoiseCgf : in  slv(3 downto 0);
+      chNoiseCgf : in  Slv4Array(127 downto 0);
       timingTrig : in  sl;
       cmNoise    : out slv(11 downto 0);
       adcData    : out Slv12Array(127 downto 0));

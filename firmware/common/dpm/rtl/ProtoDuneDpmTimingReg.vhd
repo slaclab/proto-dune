@@ -194,7 +194,11 @@ begin
          WIDTH_G => 1)
       port map (
          clk        => wibClk,
-         dataIn(0)  => r.swFlush,
+         -- dataIn(0)  => r.swFlush,
+         -------------------------------------------
+         -- Removing SW flushing feature (06AUG2018)
+         -------------------------------------------
+         dataIn(0)  => '0',
          dataOut(0) => swFlush);
 
    U_Stat : entity work.SynchronizerFifo
