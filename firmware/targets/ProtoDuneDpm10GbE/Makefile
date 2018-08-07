@@ -5,13 +5,15 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000112
+export PRJ_VERSION = 0x00000113
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/08/06 0x00000113 jjr  Remove update of read statistics
 # 2018/08/06 0x00000112 jjr  Try read-update, eliminates Flush, and increases
 #                            common noise to 12 bits and the number of RSSI 
 #                            buffers
+#                            Failed  WibFrame rate ~1230 Hz
 # 2018/08/05 0x00000111 jjr  Remove updaing of read statistics
 # 2018/08/04 0x00000110 jjr  Add WIB frame read monitoring - next attempt
 #                            Tried to make this local process_frame
