@@ -309,6 +309,7 @@
         <RollOverEn>0x0</RollOverEn>
         <RxPolarity>True</RxPolarity>
         <TxPolarity>False</TxPolarity>
+        <Blowoff>False</Blowoff>
       </DataDpmWib>
       <DataDpmWibDbg>
         <Enabled>True</Enabled>

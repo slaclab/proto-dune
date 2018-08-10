@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmWibRxFramer.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-01-19
+-- Last update: 2018-08-10
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -28,9 +28,9 @@ use work.ProtoDuneDpmPkg.all;
 
 entity ProtoDuneDpmWibRxFramer is
    generic (
-      TPD_G            : time            := 1 ns;
-      AXI_CLK_FREQ_G   : real            := 125.0E+6;  -- units of Hz
-      CASCADE_SIZE_G   : positive        := 1);
+      TPD_G          : time     := 1 ns;
+      AXI_CLK_FREQ_G : real     := 125.0E+6;  -- units of Hz
+      CASCADE_SIZE_G : positive := 1);
    port (
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
@@ -79,6 +79,7 @@ architecture rtl of ProtoDuneDpmWibRxFramer is
       DLY_S);
 
    type RegType is record
+      blowoffWib : sl;
       logEn      : sl;
       oneShot    : sl;
       wibSofDet  : sl;
@@ -105,6 +106,7 @@ architecture rtl of ProtoDuneDpmWibRxFramer is
       dbgState   : DbgStateType;
    end record RegType;
    constant REG_INIT_C : RegType := (
+      blowoffWib => '1',
       logEn      => '0',
       oneShot    => '0',
       wibSofDet  => '0',
@@ -142,6 +144,7 @@ architecture rtl of ProtoDuneDpmWibRxFramer is
    signal pktLenStrb : sl;
    signal startLog   : sl;
    signal oneShotLog : sl;
+   signal blowoffWib : sl;
 
    attribute dont_touch              : string;
    attribute dont_touch of r         : signal is "TRUE";
@@ -151,8 +154,9 @@ architecture rtl of ProtoDuneDpmWibRxFramer is
 
 begin
 
-   comb : process (crcResult, oneShotLog, r, rst, runEnable, rxData, rxDecErr,
-                   rxDispErr, rxValid, rxdataK, startLog, swFlush, txCtrl) is
+   comb : process (blowoffWib, crcResult, oneShotLog, r, rst, runEnable,
+                   rxData, rxDecErr, rxDispErr, rxValid, rxdataK, startLog,
+                   swFlush, txCtrl) is
       variable v : RegType;
    begin
       -- Latch the current value
@@ -179,7 +183,9 @@ begin
          ----------------------------------------------------------------------
          when IDLE_S =>                 -- CNT = 0
             -- Reset the flag
-            v.eofe := '0';
+            v.eofe       := '0';
+            -- Re-sample blowoff bit
+            v.blowoffWib := blowoffWib;
             -- Check for start of packet
             if (r.rxValid = '1') and (r.rxdataK = "01") and (r.rxData(7 downto 0) = K28_5_C) then
                -- Check for back pressure
@@ -188,7 +194,7 @@ begin
                   v.errPktDrop := '1';
                else
                   -- Forward the data to HLS
-                  v.txMaster.tValid             := '1';
+                  v.txMaster.tValid             := not(blowoffWib);
                   v.txMaster.tData(15 downto 0) := r.rxData;
                   -- Set firstTuser
                   axiStreamSetUserBit(WIB_AXIS_CONFIG_C, v.txMaster, WIB_RUN_EN_C, runEnable, 0);
@@ -207,7 +213,7 @@ begin
             -- Check for flush packet insertion 
             elsif (swFlush = '1') and (txCtrl.pause = '0') then
                -- Forward the data to HLS
-               v.txMaster.tValid             := '1';
+               v.txMaster.tValid             := not(blowoffWib);
                v.txMaster.tData(15 downto 0) := r.rxData;
                -- Set firstTuser
                axiStreamSetUserBit(WIB_AXIS_CONFIG_C, v.txMaster, WIB_RUN_EN_C, runEnable, 0);
@@ -215,7 +221,7 @@ begin
                -- Forward the data to CRC 
                v.crcValid                    := '1';
                v.crcData                     := r.rxData;
-               -- Save the flush value
+               -- Save the flush value 
                v.swFlush                     := swFlush;
                v.notSwFlush                  := not(swFlush);
                -- Preset the counter
@@ -226,7 +232,7 @@ begin
          ----------------------------------------------------------------------
          when MOVE_S =>                 -- CNT = [119:1]
             -- Forward the data to HLS
-            v.txMaster.tValid             := '1';
+            v.txMaster.tValid             := not(r.blowoffWib);
             v.txMaster.tData(15 downto 0) := r.rxData;
             -- Forward the data to CRC 
             v.crcValid                    := '1';
@@ -303,7 +309,7 @@ begin
                end if;
             end if;
             -- Send the last RX data
-            v.txMaster.tValid := '1';
+            v.txMaster.tValid := not(r.blowoffWib);
             v.txMaster.tLast  := '1';
             -- Set lastTuser
             axiStreamSetUserBit(WIB_AXIS_CONFIG_C, v.txMaster, WIB_EOFE_C, v.eofe);
@@ -490,8 +496,8 @@ begin
 
    U_Reg : entity work.ProtoDuneDpmWibRxFramerReg
       generic map (
-         TPD_G            => TPD_G,
-         AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G)
+         TPD_G          => TPD_G,
+         AXI_CLK_FREQ_G => AXI_CLK_FREQ_G)
       port map (
          -- Status/Configuration Interface (clk domain)
          clk             => clk,
@@ -502,6 +508,7 @@ begin
          rxBufStatus     => rxBufStatus,
          rxPolarity      => rxPolarity,
          txPolarity      => txPolarity,
+         blowoffWib      => blowoffWib,
          cPllLock        => cPllLock,
          pktSent         => r.txMaster.tLast,
          backpressure    => txCtrl.pause,
