@@ -198,7 +198,7 @@ DataDpmWib::DataDpmWib(uint32_t linkConfig, uint32_t baseAddress, uint32_t index
    addCommand(c = new Command("DebugOneShotCapture"));
    c->setDescription("Start the one-shot waveform capture of WIB frame");   
 
-   addRegisterLink(rl = new RegisterLink("WibFrameBlowoff",  baseAddress_ + 0x718, Variable::Configuration,0,0x1));
+   addRegisterLink(rl = new RegisterLink("Blowoff",  baseAddress_ + 0x718, Variable::Configuration,0,0x1));
    rl->getVariable()->setComp(0,1,0,"");
    rl->getVariable()->setTrueFalse();
    rl->getVariable()->setDescription("WIB Frame blowoff (default=True)");    

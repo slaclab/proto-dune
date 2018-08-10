@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEmuTxFramer.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-12-08
+-- Last update: 2018-08-10
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -36,6 +36,9 @@ entity ProtoDuneDpmEmuTxFramer is
       adcData  : in  Slv12Array(127 downto 0);
       convt    : out sl;
       timingTs : in  slv(63 downto 0);
+      fiberId  : in  slv(2 downto 0);
+      crateId  : in  slv(4 downto 0);
+      slotId   : in  slv(2 downto 0);
       -- TX Data Interface
       txData   : out slv(15 downto 0);
       txdataK  : out slv(1 downto 0));
@@ -80,7 +83,8 @@ architecture rtl of ProtoDuneDpmEmuTxFramer is
 
 begin
 
-   comb : process (adcData, crcResult, enable, r, rst, sendCnt, timingTs) is
+   comb : process (adcData, crateId, crcResult, enable, fiberId, r, rst,
+                   sendCnt, slotId, timingTs) is
       variable v         : RegType;
       variable i         : natural;
       variable coldData1 : slv((64*12)-1 downto 0);
@@ -126,12 +130,13 @@ begin
             -- Check the enable
             if enable = '1' then
                -- Send Start of Frame pattern
-               v.txdataK(0)             := "01";
-               v.txData(0)(7 downto 0)  := K28_5_C;
-               v.txData(0)(15 downto 8) := x"01";
+               v.txdataK(0)              := "01";
+               v.txData(0)(7 downto 0)   := K28_5_C;
+               v.txData(0)(12 downto 8)  := toSlv(1, 5);
+               v.txData(0)(15 downto 13) := fiberId;
                -- Start the CRC engine
-               v.crcValid               := '1';
-               v.crcRst                 := '0';
+               v.crcValid                := '1';
+               v.crcRst                  := '0';
             else
                -- Reset the time stamp
                v.convertCnt := (others => '0');
@@ -142,6 +147,13 @@ begin
                v.crcValid   := '0';
                v.crcRst     := '1';
             end if;
+         ----------------------------------------------------------------------
+         when 2 =>
+            -- Send the WIB crateId and slotId   
+            v.txdataK(0)             := "00";
+            v.txData(0)(4 downto 0)  := crateId;
+            v.txData(0)(7 downto 5)  := slotId;
+            v.txData(0)(15 downto 8) := (others => '0');
          ----------------------------------------------------------------------
          when 5 =>
             -- Send the WIB timestamp       

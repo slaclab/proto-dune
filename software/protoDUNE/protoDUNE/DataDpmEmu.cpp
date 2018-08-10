@@ -84,7 +84,31 @@ DataDpmEmu::DataDpmEmu(uint32_t linkConfig, uint32_t baseAddress, uint32_t index
    rl->getVariable()->setComp(0,1,0,"");
    rl->getVariable()->setTrueFalse();
    rl->getVariable()->setDescription("true = Sends counter data pattern, false = normal mode"); 
+   
+   addRegisterLink(rl = new RegisterLink("FiberId0",  baseAddress_ + 0xC30, Variable::Configuration,0,0x7));
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->getVariable()->setDescription("FiberId0");  
 
+   addRegisterLink(rl = new RegisterLink("CrateId0",  baseAddress_ + 0xC34, Variable::Configuration,0,0x1F));
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->getVariable()->setDescription("CrateId0");  
+
+   addRegisterLink(rl = new RegisterLink("SlotId0",  baseAddress_ + 0xC38, Variable::Configuration,0,0x7));
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->getVariable()->setDescription("SlotId0"); 
+
+   addRegisterLink(rl = new RegisterLink("FiberId1",  baseAddress_ + 0xC40, Variable::Configuration,0,0x7));
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->getVariable()->setDescription("FiberId1");  
+
+   addRegisterLink(rl = new RegisterLink("CrateId1",  baseAddress_ + 0xC44, Variable::Configuration,0,0x1F));
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->getVariable()->setDescription("CrateId1");  
+
+   addRegisterLink(rl = new RegisterLink("SlotId1",  baseAddress_ + 0xC48, Variable::Configuration,0,0x7));
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->getVariable()->setDescription("SlotId1");    
+   
    addRegister(new Register("HardReset",    baseAddress_ + 0xFFC));
 
    // Enable polling

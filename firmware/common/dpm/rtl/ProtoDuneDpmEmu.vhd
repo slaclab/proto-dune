@@ -2,7 +2,7 @@
 -- File       : DuneDpmReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-05
+-- Last update: 2018-08-10
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -26,10 +26,13 @@ use work.ProtoDuneDpmPkg.all;
 
 entity ProtoDuneDpmEmu is
    generic (
-      TPD_G            : time             := 1 ns;
-      SIM_START_G      : sl               := '0';
-      DEFAULT_CNT_G    : sl               := '0';
-      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
+      TPD_G           : time                  := 1 ns;
+      FIBER_ID_G      : Slv3Array(1 downto 0) := (0 => "111", 1 => "111");
+      CRATE_ID_G      : Slv5Array(1 downto 0) := (0 => "11001", 1 => "11001");
+      SLOT_ID_G       : Slv3Array(1 downto 0) := (0 => "101", 1 => "110");
+      SIM_START_G     : sl                    := '0';
+      DEFAULT_CNT_G   : sl                    := '0';
+      AXI_BASE_ADDR_G : slv(31 downto 0)      := x"A0000000");
    port (
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
@@ -46,8 +49,8 @@ entity ProtoDuneDpmEmu is
       emuLoopback     : out sl;
       emuConvt        : out sl;
       emuEnable       : out sl;
-      emuData         : out slv(15 downto 0);
-      emuDataK        : out slv(1 downto 0);
+      emuData         : out Slv16Array(1 downto 0);
+      emuDataK        : out Slv2Array(1 downto 0);
       txPreCursor     : out slv(4 downto 0);
       txPostCursor    : out slv(4 downto 0);
       txDiffCtrl      : out slv(3 downto 0));
@@ -67,20 +70,26 @@ architecture mapping of ProtoDuneDpmEmu is
    signal adcDataDly   : Slv12Array(127 downto 0);
    signal adcDataDlyCM : Slv12Array(127 downto 0);
    signal cmNoise      : slv(11 downto 0);
+   signal fiberId      : Slv3Array(1 downto 0);
+   signal crateId      : Slv5Array(1 downto 0);
+   signal slotId       : Slv3Array(1 downto 0);
 
 begin
 
    emuEnable <= enableTx;
-   emuConvt <= convt;
+   emuConvt  <= convt;
 
    ---------------------
    -- AXI-Lite Registers
    ---------------------
    U_Reg : entity work.ProtoDuneDpmEmuReg
       generic map (
-         TPD_G            => TPD_G,
-         SIM_START_G      => SIM_START_G,
-         DEFAULT_CNT_G    => DEFAULT_CNT_G)
+         TPD_G         => TPD_G,
+         FIBER_ID_G    => FIBER_ID_G,
+         CRATE_ID_G    => CRATE_ID_G,
+         SLOT_ID_G     => SLOT_ID_G,
+         SIM_START_G   => SIM_START_G,
+         DEFAULT_CNT_G => DEFAULT_CNT_G)
       port map (
          -- Status/Configuration Interface (clk domain)
          clk             => clk,
@@ -95,6 +104,9 @@ begin
          txPreCursor     => txPreCursor,
          txPostCursor    => txPostCursor,
          txDiffCtrl      => txDiffCtrl,
+         fiberId         => fiberId,
+         crateId         => crateId,
+         slotId          => slotId,
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
          axilRst         => axilRst,
@@ -157,21 +169,26 @@ begin
    ---------------------
    -- TX Frame Formatter
    ---------------------
-   U_TxFrammer : entity work.ProtoDuneDpmEmuTxFramer
-      generic map (
-         TPD_G => TPD_G)
-      port map (
-         -- Clock and Reset
-         clk      => clk,
-         rst      => rst,
-         -- EMU Data Interface
-         enable   => enableTx,
-         sendCnt  => sendCnt,
-         adcData  => adcDataDlyCM,
-         convt    => convt,
-         timingTs => timingTs,
-         -- TX Data Interface
-         txData   => emuData,
-         txdataK  => emuDataK);
-
+   GEN_VEC :
+   for i in 127 downto 0 generate
+      U_TxFrammer : entity work.ProtoDuneDpmEmuTxFramer
+         generic map (
+            TPD_G => TPD_G)
+         port map (
+            -- Clock and Reset
+            clk      => clk,
+            rst      => rst,
+            -- EMU Data Interface
+            enable   => enableTx,
+            sendCnt  => sendCnt,
+            adcData  => adcDataDlyCM,
+            convt    => convt,
+            timingTs => timingTs,
+            fiberId  => fiberId(i),
+            crateId  => crateId(i),
+            slotId   => slotId(i),
+            -- TX Data Interface
+            txData   => emuData(i),
+            txdataK  => emuDataK(i));
+   end generate GEN_VEC;
 end mapping;
