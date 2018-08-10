@@ -196,7 +196,12 @@ DataDpmWib::DataDpmWib(uint32_t linkConfig, uint32_t baseAddress, uint32_t index
    
    addRegister(new Register("debugOneShotCapture", baseAddress_ + 0x714));
    addCommand(c = new Command("DebugOneShotCapture"));
-   c->setDescription("Start the one-shot waveform capture of WIB frame");      
+   c->setDescription("Start the one-shot waveform capture of WIB frame");   
+
+   addRegisterLink(rl = new RegisterLink("Blowoff",  baseAddress_ + 0x718, Variable::Configuration,0,0x1));
+   rl->getVariable()->setComp(0,1,0,"");
+   rl->getVariable()->setTrueFalse();
+   rl->getVariable()->setDescription("WIB Frame blowoff (default=True)");    
 
    addRegisterLink(rl = new RegisterLink("RollOverEn",  baseAddress_ + 0x7F0, Variable::Configuration,0,0x7FF));
    rl->getVariable()->setDescription("Rollover enable bit mask for status counters");

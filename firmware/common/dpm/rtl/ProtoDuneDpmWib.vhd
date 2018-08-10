@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmWib.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-06-05
+-- Last update: 2018-08-10
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -30,10 +30,10 @@ use unisim.vcomponents.all;
 
 entity ProtoDuneDpmWib is
    generic (
-      TPD_G            : time             := 1 ns;
-      CASCADE_SIZE_G   : positive         := 1;
-      AXI_CLK_FREQ_G   : real             := 125.0E+6;  -- units of Hz
-      AXI_BASE_ADDR_G  : slv(31 downto 0) := x"A0000000");
+      TPD_G           : time             := 1 ns;
+      CASCADE_SIZE_G  : positive         := 1;
+      AXI_CLK_FREQ_G  : real             := 125.0E+6;  -- units of Hz
+      AXI_BASE_ADDR_G : slv(31 downto 0) := x"A0000000");
    port (
       -- Stable clock and reset reference
       clk             : out sl;
@@ -59,8 +59,8 @@ entity ProtoDuneDpmWib is
       emuClk          : in  sl;
       emuRst          : in  sl;
       emuLoopback     : in  sl;
-      emuData         : in  slv(15 downto 0);
-      emuDataK        : in  slv(1 downto 0);
+      emuData         : in  Slv16Array(1 downto 0);
+      emuDataK        : in  Slv2Array(1 downto 0);
       txPreCursor     : in  slv(4 downto 0) := (others => '0');
       txPostCursor    : in  slv(4 downto 0) := (others => '0');
       txDiffCtrl      : in  slv(3 downto 0) := "1111";
@@ -202,8 +202,8 @@ begin
             emuClk       => emuClk,
             emuRst       => emuRst,
             emuLoopback  => emuLoopback,
-            emuData      => emuData,
-            emuDataK     => emuDataK,
+            emuData      => emuData(i),
+            emuDataK     => emuDataK(i),
             -- RX Data Interface (clk domain)
             rxValid      => rxValid(i),
             rxData       => rxData(i),
@@ -216,9 +216,9 @@ begin
       ------------------------  
       U_RX : entity work.ProtoDuneDpmWibRxFramer
          generic map (
-            TPD_G            => TPD_G,
-            AXI_CLK_FREQ_G   => AXI_CLK_FREQ_G,
-            CASCADE_SIZE_G   => CASCADE_SIZE_G)
+            TPD_G          => TPD_G,
+            AXI_CLK_FREQ_G => AXI_CLK_FREQ_G,
+            CASCADE_SIZE_G => CASCADE_SIZE_G)
          port map (
             -- AXI-Lite Port (axilClk domain)
             axilClk         => axilClk,

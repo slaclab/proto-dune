@@ -14,7 +14,7 @@ export PRJ_VERSION = 0x00000113
 #                            common noise to 12 bits and the number of RSSI 
 #                            buffers
 #                            Failed  WibFrame rate ~1230 Hz
-# 2018/08/05 0x00000111 jjr  Remove updaing of read statistics
+# 2018/08/05 0x00000111 jjr  Remove updating of read statistics
 # 2018/08/04 0x00000110 jjr  Add WIB frame read monitoring - next attempt
 #                            Tried to make this local process_frame
 #                            Failed -- same as 108
@@ -24,10 +24,10 @@ export PRJ_VERSION = 0x00000113
 #                            -- Failed.  WibFrame Rate = ~1300 when run on
 #                                        the RCE.  Many dropped frames
 # 2018/07/29 0x00000107 jjr  Use static in pack to get compress/write overlap
-# 2018/07/24 0x00000106 jjr  Use FIFOs for etx output
+# 2018/07/24 0x00000106 jjr  Use FIFOs for extra output
 # 2018/06/05 0x00000062 jjr  First attempt at building the compression code
 # 2018/06/05 0x00000061 jjr  Incorporate Axis gen2 with HLS firmware that eliminates header word
-# 2018/05/31 0x00000060 llr  surf update: Seperate cache settings in Axis gen2 DMA
+# 2018/05/31 0x00000060 llr  surf update: Separate cache settings in Axis gen2 DMA
 # 2018/05/30 0x00000059 llr  Switching RSSI from MTU1500 to MTU900 (jumbo) ETH frames
 # 2018/05/24 0x00000058 llr  Adding DMA[0].TDEST[3] loopback path
 # 2018/05/23 0x00000057 llr  Adding SRPv3 interface to ProtoDuneDpmEth for debugging RSSI
@@ -47,10 +47,10 @@ export PRJ_VERSION = 0x00000113
 # 2017/05/22 0x00000044 llr  Bug fix in ProtoDuneDpmTimingMsg.vhd
 # 2017/05/18 0x00000043 llr  Updating to CERN timing receiver V3C
 # 2017/05/11 0x00000042 llr  Added the timing stream to the inbound DMA
-# 2017/05/10 0x00000041 jjr  Believe this Ryan's attempt to correcct a bug
+# 2017/05/10 0x00000041 jjr  Believe this Ryan's attempt to correct a bug
 #                            which resulted in the length of a packet being
 #                            returned 1 byte larger than it should have.
-# 2017/05/09 0x00000040 jjr  Ryan's attemtp to fix the drop packet problem. 
+# 2017/05/09 0x00000040 jjr  Ryan's attempt to fix the drop packet problem. 
 #                            This correction addresses the handling of the
 #                            cache properties, both on the main DMA data path
 #                            and the descriptor path.
@@ -63,7 +63,7 @@ export PRJ_VERSION = 0x00000113
 # 2017/05/04 0x00000037 jjr  Add ILA for both HLS modules
 # 2017/05/04 0x00000036 jjr  Small SsiFifo + ILA 
 # 2017/05/04 0x00000035 jjr  Larry thinks that we need a small SsiFifo between
-#                            the HLS module and the 'large' fifo to filter out
+#                            the HLS module and the 'large' FIFO to filter out
 #                            'garbage' seen at a power cycle.
 # 2017/05/03 0x00000034 jjr  Back to using the SsiFifo. This works as 
 #                            anticipated, being basically back 0x30
@@ -71,7 +71,7 @@ export PRJ_VERSION = 0x00000113
 #                            to use ILA as a monitor, but that failed when
 #                            the driver would not load.  Rebuild without ILA.
 #                            This also hung the processor. (I did not properly
-#                            label the initial build with ILA, it was versioned
+#                            label the initial build with ILA, it was version-ed
 #                            as 32. But since it did not work, it will never
 #                            be used again.
 # 2017/05/03 0x00000032 jjr  Neuter the output to verify that the back-pressure
@@ -106,7 +106,7 @@ export PRJ_VERSION = 0x00000113
 # 2017/04/21 0x0000002E jjr  Try version of DMA driver with multiple 
 #                            independent FIFO's. This is an attempt to up
 #                            the thru-put.
-# 2017/04/18 0x0000002D jjr  Incorportates Ryan's  V2 rce_stream driver which
+# 2017/04/18 0x0000002D jjr  Incorporates Ryan's  V2 rce_stream driver which
 #                            uses the ACP rather than HP as the DMA path 
 # 2017/03/22 0x0000002C llr  Added the first draft of the CERN Timing receiver
 # 2017/03/01 0x0000002B rth  Added register settable cache setting for DMA
@@ -118,7 +118,7 @@ export PRJ_VERSION = 0x00000113
 # 2016/12/04 0x00000025 llr  For WIB Error Frame capture module, set undefined to 0xEE
 # 2016/12/02 0x00000024 llr  Added WIB SOF detected rate status register
 #                            Added WIB Error Frame capture module
-# 2016/12/02 0x00000023 llr  Added WIB paket rate (pre-SSI filter) status register
+# 2016/12/02 0x00000023 llr  Added WIB packet rate (pre-SSI filter) status register
 #                            Change GT from LPM mode to DFE mode
 #                            Change the EMU TX txPreCursor default from 0xF to 0x0
 # 2016/12/01 0x00000022 llr  Added ErrGtRxBuffer status register
@@ -142,7 +142,7 @@ export PRJ_VERSION = 0x00000113
 #                            of that FIFO
 # 2016/11/18 0x0000001D jjr  Add diagnostic counters to see if the input
 #                            AXI stream may not be empty on startup. This
-#                            would result in the WIB frames not being synched
+#                            would result in the WIB frames not being synced
 #                            correctly.
 # 2016/11/02 0x0000001B jjr  Try to fix failure to increment the write count,
 #                            but failed.  Rebuild with the latest from Larry
@@ -162,7 +162,7 @@ export PRJ_VERSION = 0x00000113
 #                            methods.
 # 2016/10/22 0000000015 jjr  A serial implementation.  This is not 100%
 #                            correct, but maybe it will result in something
-#                            useable to commission the WIB.
+#                            usable to commission the WIB.
 #                            To first order, this works as expected.
 # 2016/10/22 0000000014 jjr  Combined read status with temporary buffer.
 #                            This adds some flow control to the read/copy
@@ -202,12 +202,12 @@ export PRJ_VERSION = 0x00000113
 #                            made the ModuleConfig init and mode fields to be
 #                            uint32_t to make it easier to set from the
 #                            processor.
-# 2016/10/20 0x0000000B jjr  Attermpt to fix the thru-put problem.  Previous
+# 2016/10/20 0x0000000B jjr  Attempt to fix the thru-put problem.  Previous
 #                            version were only running at ~1744 Hz, not 1952.
 #                            Don't have a lot of confidence. While the timing
 #                            reported during synthesis has change (now 40/40
 #                            for latency and iteration, was 74/40) the reports
-#                            seem to indicate streaming behaviour between the
+#                            seem to indicate streaming behavior between the
 #                            readFrame and copyFrame methods which is not right
 # 2016/10/19 0x0000000A jjr  Add more debugging (timestamp check) and
 #                            configuration/flow control
@@ -223,7 +223,7 @@ export PRJ_VERSION = 0x00000113
 #                            jacketing .vhd code to implement and support
 #                            this register.
 # 2016/09/17 0x00000006 jjr  Added ability to blowoff either WIB source
-#                            Allowing both simoulaneously exceeds the
+#                            Allowing both simultaneously exceeds the
 #                            available bandwidth
 # 2016/09/16 0x00000005 jjr  Larry restored filter module in DMA path
 # 2016/09/15 0x00000004 jjr  Correct last and user setting in output axis
