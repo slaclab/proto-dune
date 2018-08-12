@@ -65,7 +65,7 @@ architecture mapping of ProtoDuneDpmEmu is
    signal cmNoiseCgf   : slv(3 downto 0);
    signal trigRate     : slv(31 downto 0);
    signal chDlyCfg     : EmuDlyCfg;
-   signal convt        : sl;
+   signal convt        : slv(1 downto 0);
    signal adcData      : Slv12Array(127 downto 0);
    signal adcDataDly   : Slv12Array(127 downto 0);
    signal adcDataDlyCM : Slv12Array(127 downto 0);
@@ -77,7 +77,7 @@ architecture mapping of ProtoDuneDpmEmu is
 begin
 
    emuEnable <= enableTx;
-   emuConvt  <= convt;
+   emuConvt  <= convt(0);
 
    ---------------------
    -- AXI-Lite Registers
@@ -128,7 +128,7 @@ begin
          -- EMU Data Interface
          enableTx   => enableTx,
          enableTrig => enableTrig,
-         convt      => convt,
+         convt      => convt(0),
          cmNoiseCgf => cmNoiseCgf,
          chNoiseCgf => chNoiseCgf,
          timingTrig => timingTrig,
@@ -150,7 +150,7 @@ begin
             WIDTH_G      => 12)
          port map (
             clk   => clk,
-            en    => convt,
+            en    => convt(0),
             delay => chDlyCfg(i),
             din   => adcData(i),
             dout  => adcDataDly(i));
@@ -158,7 +158,7 @@ begin
       process(clk)
       begin
          if rising_edge(clk) then
-            if convt = '1' then
+            if convt(0) = '1' then
                adcDataDlyCM(i) <= adcDataDly(i) + cmNoise after TPD_G;
             end if;
          end if;
@@ -182,7 +182,7 @@ begin
             enable   => enableTx,
             sendCnt  => sendCnt,
             adcData  => adcDataDlyCM,
-            convt    => convt,
+            convt    => convt(i),
             timingTs => timingTs,
             fiberId  => fiberId(i),
             crateId  => crateId(i),
