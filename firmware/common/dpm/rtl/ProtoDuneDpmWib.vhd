@@ -322,7 +322,7 @@ begin
          emuClk      => emuClk,
          emuRst      => emuRst,
          emuLoopback => emuLoopback,
-         emuData     => (others=>'0'),
-         emuDataK    => (others=>'0'));
+         emuData     => emuData(0),
+         emuDataK    => emuDataK(0));
 
 end mapping;
