@@ -169,7 +169,7 @@ begin
    ---------------------
    -- TX Frame Formatter
    ---------------------
-   GEN_VEC :
+   GEN_LANE :
    for i in 1 downto 0 generate
       U_TxFrammer : entity work.ProtoDuneDpmEmuTxFramer
          generic map (
@@ -190,5 +190,5 @@ begin
             -- TX Data Interface
             txData   => emuData(i),
             txdataK  => emuDataK(i));
-   end generate GEN_VEC;
+   end generate GEN_LANE;
 end mapping;
