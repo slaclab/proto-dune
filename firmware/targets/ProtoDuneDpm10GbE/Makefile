@@ -9,7 +9,8 @@ export PRJ_VERSION = 0x00000115
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
-# 2018/08/11 0x00000115 jjr  Added filling of header/exception data block
+# 2018/08/11 0x00000115 jjr  Added WIB blowoff and setting of WIB ids 
+#                            Provided by Larry
 # 2018/08/07 0x00000114 jjr  The increase in RSSI buffers did not make it in
 #                            0x113.  This increases it from 8 -> 16
 # 2018/08/06 0x00000113 jjr  Remove update of read statistics
