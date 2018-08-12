@@ -120,6 +120,90 @@ static void print_adcs (AdcIn_t const adcs0[PACKET_K_NSAMPLES],
 #endif
 
 
+/* ---------------------------------------------------------------------------- *//*!
+ *
+ *  \class PacketContext
+ *  \brief This is write portion of the per packet information.
+ *
+\* ---------------------------------------------------------------------------- */
+class PacketContext
+{
+public:
+   const static int MaxExc = 32;
+
+public:
+   PacketContext ()
+   {
+      //// STRIP #pragma HLS ARRAY_PARTITION variable=m_excsBuf cyclic factor=8 dim=1
+      //// STRIP #pragma HLS ARRAY_PARTITION variable=m_hdrsBuf cyclic factor=8 dim=1
+      return;
+   }
+
+
+
+   void commit (AxisOut  &axis, int &odx, bool first, bool write, uint32_t status) const
+   {
+      #pragma HLS INLINE
+      #pragma HLS PIPELINE
+
+
+      const static int HeaderFmt   = 3; // Generic Header Format = 3
+      const static int HdrsRecType = 1; // TpcStream Record Subtype = 1;
+      const static int HdrFixedN64 = 1; // Record Header
+
+      // -------------------------------------------------------------------------------
+      // Compose the record header word
+      //    status(32) | exception count(8) | length (16) | RecType(4) | HeaderFormat(4)
+      // -------------------------------------------------------------------------------
+      int cedx = (m_cedx + 3) >> 2;
+      uint64_t recHeader =  (static_cast<uint64_t>(status) << 32)
+                         |  (m_cedx                        << 24)
+                         | ((cedx + m_chdx + HdrFixedN64)  <<  8)
+                         |  (HdrsRecType                   <<  4)
+                         |  (HeaderFmt                     <<  0);
+      ::commit (axis, odx, write, recHeader,  first ? (1 << (int)AxisUserFirst::Sof) : 0, 0);
+
+
+      // Write out the headers
+      int chdx = m_chdx;
+      HEADER_CONTEXT_HDR_LOOP:
+      for (int idx = 0; idx < chdx; idx++)
+      {
+         #pragma HLS LOOP_TRIPCOUNT min=6 avg=6 max=1024
+         #pragma HLS PIPELINE
+         ::commit (axis, odx, write, m_hdrsBuf[idx], 0, 0);
+      }
+
+      // Write out the exception buffer
+      HEADER_CONTEXT_EXC_LOOP:
+      for (int idx = 0; idx < cedx; idx++)
+      {
+         #pragma HLS LOOP_TRIPCOUNT min=0 avg=1 max=256
+         #pragma HLS PIPELINE
+         ::commit (axis, odx, write, m_excsBuf[idx], 0, 0);
+      }
+
+      return;
+   }
+
+
+public:
+   int                                 m_chdx;  /*!< Header buffer index      */
+   int                                 m_cedx;  /*!< Exception buffer index   */
+   ReadStatus_t                      m_status;  /*!< Summary status           */
+
+   uint64_t m_hdrsBuf[7+6*MaxExc];              /*!< Buffer for header words  */
+   uint64_t m_excsBuf[  MaxExc/4];              /*!< Buffer for 8 exceptions  */
+
+#if 0 //// STRIP
+    uint64_t m_hdrsBuf[ 6 * PACKET_K_NSAMPLES];   /*!< Buffer for header words*/
+    uint64_t m_excsBuf[(6 * PACKET_K_NSAMPLES)
+                    / (sizeof (uint64_t)
+                    /  sizeof (uint16_t))];     /*!< Buffer for exceptions    */
+#endif
+};
+/* ------------------------------------------------------------------------- */
+
 /* ======================================================================== *//*!
  *
  *  \class HeaderContextLcl
@@ -163,15 +247,18 @@ class HeaderContextLcl
          ap_int<2> shift =  m_edx & 0x3;
 
 
-         exc = static_cast<uint64_t>(exc << (shift<<4));
-         if (shift == 0) m_tmp  = exc;
-         else            m_tmp |= exc;
+         uint64_t    exc64 = exc;
+         ap_uint<6>  shf64 = shift;
+         if (shift == 0) m_tmp  = exc64;
+         else            m_tmp |= exc64 << (shf64<<4);
 
-         if (~shift)
+         if (~shift == 0)
          {
-            excBuf[m_edx] = m_tmp;
-            m_edx        += 1;
+            excBuf[m_edx>>2] = m_tmp;
          }
+
+         m_edx        += 1;
+
       }
 
       void evaluate (uint64_t          *hdrBuf,
@@ -188,44 +275,46 @@ class HeaderContextLcl
          #pragma HLS INLINE
          #pragma HLS PIPELINE
 
+         if (m_edx >= PacketContext::MaxExc) return;
+
          ap_uint<6> exceptions = 0;
-         if ( (iframe == 0) || ReadStatus::isWibHdr0Bad (status))
+         if (ReadStatus::isWibHdr0Bad (status))
          {
             addHeader (hdrBuf, wib0);
             exceptions.set (0);
          }
 
-         if ( (iframe == 0) || ReadStatus::isWibHdr1Bad (status))
+         if (ReadStatus::isWibHdr1Bad (status))
          {
             addHeader (hdrBuf, wib1);
             exceptions.set (1);
          }
 
-         if ( (iframe == 0) || ReadStatus::isCd0Hdr0Bad (status))
+         if (ReadStatus::isCd0Hdr0Bad (status))
          {
             addHeader (hdrBuf, cd00);
             exceptions.set (2);
          }
 
-         if ((iframe == 0) || ReadStatus::isCd0Hdr1Bad (status))
+         if (ReadStatus::isCd0Hdr1Bad (status))
          {
             addHeader (hdrBuf, cd01);
             exceptions.set(3);
          }
 
-         if ((iframe == 0) || ReadStatus::isCd1Hdr0Bad (status))
+         if (ReadStatus::isCd1Hdr0Bad (status))
          {
             addHeader (hdrBuf, cd10);
             exceptions.set (4);
          }
 
-         if ( (iframe == 0) || ReadStatus::isCd1Hdr1Bad (status))
+         if (ReadStatus::isCd1Hdr1Bad (status))
          {
             addHeader (hdrBuf, cd11);
             exceptions.set (5);
          }
 
-         if (iframe != 0 && exceptions)
+         if (exceptions)
          {
             addException (excBuf, exceptions, iframe);
          }
@@ -241,87 +330,6 @@ class HeaderContextLcl
 /* ---------------------------------------------------------------------------- */
 
 
-
-
-/* ---------------------------------------------------------------------------- *//*!
- *
- *  \class PacketContext
- *  \brief This is write portion of the per packet information.
- *
-\* ---------------------------------------------------------------------------- */
-class PacketContext
-{
-public:
-   PacketContext ()
-   {
-      //// STRIP #pragma HLS ARRAY_PARTITION variable=m_excsBuf cyclic factor=8 dim=1
-      //// STRIP #pragma HLS ARRAY_PARTITION variable=m_hdrsBuf cyclic factor=8 dim=1
-      return;
-   }
-
-
-
-   void commit (AxisOut  &axis, int &odx, bool first, bool write, uint32_t status) const
-   {
-      #pragma HLS INLINE
-      #pragma HLS PIPELINE
-
-
-      const static int HeaderFmt   = 3; // Generic Header Format = 3
-      const static int HdrsRecType = 1; // TpcStream Record Subtype = 1;
-      const static int HdrFixedN64 = 1; // Record Header
-
-      // -------------------------------------------------------------------------------
-      // Compose the record header word
-      //    status(32) | exception count(8) | length (16) | RecType(4) | HeaderFormat(4)
-      // -------------------------------------------------------------------------------
-      uint64_t recHeader =  (static_cast<uint64_t>(status) << 32)
-                         |  (m_cedx                        << 24)
-                         | ((m_cedx + m_chdx + HdrFixedN64) << 8)
-                         |  (HdrsRecType                    << 4)
-                         |  (HeaderFmt                      << 0);
-      ::commit (axis, odx, write, recHeader,  first ? (1 << (int)AxisUserFirst::Sof) : 0, 0);
-
-
-      // Write out the exception buffer
-      HEADER_CONTEXT_EXC_LOOP:
-      for (int idx = 0; idx < m_cedx; idx++)
-      {
-         #pragma HLS LOOP_TRIPCOUNT min=0 avg=1 max=256
-         #pragma HLS PIPELINE
-         ::commit (axis, odx, write, m_excsBuf[idx], 0, 0);
-      }
-
-      // Write out the headers
-      int cnt = m_chdx;
-      HEADER_CONTEXT_HDR_LOOP:
-      for (int idx = 0; idx < cnt; idx++)
-      {
-         #pragma HLS LOOP_TRIPCOUNT min=6 avg=6 max=1024
-         #pragma HLS PIPELINE
-         ::commit (axis, odx, write, m_hdrsBuf[idx], 0, 0);
-      }
-
-      return;
-   }
-
-
-public:
-   int                                 m_chdx;  /*!< Header buffer index      */
-   int                                 m_cedx;  /*!< Exception buffer index   */
-   ReadStatus_t                      m_status;  /*!< Summary status           */
-
-   uint64_t m_hdrsBuf[ 7];   /*!< Buffer for header words */
-   uint64_t m_excsBuf[ 2];   /*!< Buffer for 8 exceptions */
-
-#if 0 //// STRIP
-    uint64_t m_hdrsBuf[ 6 * PACKET_K_NSAMPLES];   /*!< Buffer for header words*/
-    uint64_t m_excsBuf[(6 * PACKET_K_NSAMPLES)
-                    / (sizeof (uint64_t)
-                    /  sizeof (uint16_t))];     /*!< Buffer for exceptions    */
-#endif
-};
-/* ------------------------------------------------------------------------- */
 
 
 struct Adcs
@@ -447,7 +455,7 @@ static void process_frame
              PacketContext                                &pktCtx,
              CompressionContext                           &cmpCtx)
 {
-   #pragma HLS INLINE off
+   #pragma HLS INLINE off /// 2018-08-10 jjr Removing off did not work
 
    static AdcIn_t Prv[MODULE_K_NCHANNELS];
    #pragma HLS RESET           variable=Prv off
@@ -467,7 +475,6 @@ static void process_frame
 
    if (iframe == 0)
    {
-      uint64_t tmp_status = status;
       HdrLcl.reset ();
       HdrLcl.m_status  = status = ReadStatus::errsOnFirst (status);
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[0]);
@@ -479,11 +486,16 @@ static void process_frame
       HdrLcl.addHeader (pktCtx.m_hdrsBuf, d[17]);
 
 
-      pktCtx.m_excsBuf[0] = 0;
-      pktCtx.m_excsBuf[1] = 0;
+      ///pktCtx.m_excsBuf[0] = 0;
+      ///pktCtx.m_excsBuf[1] = 0;
    }
    else
    {
+      // -----------------------------------------------------------
+      // Add the headers that do not agree with the expected values
+      // -------------------------------------------------------
+      ///HdrLcl.evaluate (pktCtx.m_hdrsBuf, pktCtx.m_excsBuf,
+      ///                 status, iframe, d[0], d[1], d[2], d[3], d[16], d[17]);
       HdrLcl.m_status |= status;
    }
 
@@ -493,19 +505,10 @@ static void process_frame
    // it is used to define the time range of the packet.
    // ---------------------------------------------------------------
    pktCtx.m_hdrsBuf[2] = d[1];
+   pktCtx.m_chdx       = HdrLcl.m_hdx;
+   pktCtx.m_cedx       = HdrLcl.m_edx;
+   pktCtx.m_status     = HdrLcl.m_status;
 
-
-   // -------------------------------------------------------
-   // Add the headers that do agree with the expected values
-   // This always adds the headers for iframe = 0
-   // -------------------------------------------------------
-   /// STRIP HdrLcl.evaluate (pktCtx.m_hdrsBuf, pktCtx.m_excsBuf,
-   /// STRIP                 status, iframe, d[0], d[1], d[2], d[3], d[16], d[17]);
-
-
-   pktCtx.m_chdx   = HdrLcl.m_hdx;
-   pktCtx.m_cedx   = HdrLcl.m_edx;
-   pktCtx.m_status = HdrLcl.m_status;
 
    // ---------------------------------------------------------------------
    // Pack the 128 ADCs into a vector 16 x 96 bits (8 x 12 ADCS per element

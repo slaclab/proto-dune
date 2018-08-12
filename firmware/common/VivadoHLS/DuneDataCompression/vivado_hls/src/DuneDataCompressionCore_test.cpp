@@ -556,6 +556,8 @@ static int fill_packet (Source                                          &src,
        }
        else
        {
+          // Plant bad timestamp to test error reporting
+          if ( (isample & 0x7f) == 8) timestamp += 25;
           src.fill_frame (timestamp, adcs[isample], runEnable, flush, isample);
           nbytes += sizeof (WibFrame);
        }
@@ -877,7 +879,7 @@ static int decode (uint64_t const *buf, int nbuf)
        if (position != toc.m_offsets[ichan])
        {
           std::cout << "Error at chan " << ichan;
-          ///// exit (-1);
+          exit (-1);
        }
 
        position = chan_decode (buf, nbuf, position, printit);
@@ -950,9 +952,11 @@ static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const 
    int      recLen = (recHdr >>  8) & 0xffff;
    int      excCnt = (recHdr >> 24) & 0xff;
            *status = (recHdr >> 32);
+   int    excCnt64 = (excCnt + 3) / 4;
+   int    hdrCnt64 = recLen - excCnt64 -1;
 
-   uint16_t const *excBuf = reinterpret_cast<decltype(excBuf)>(buf + 1);
-   uint64_t const *hdrBuf = reinterpret_cast<decltype(hdrBuf)>(excBuf) + excCnt;
+   uint64_t const *hdrBuf = reinterpret_cast<decltype(hdrBuf)>(buf    +        1);
+   uint16_t const *excBuf = reinterpret_cast<decltype(excBuf)>(hdrBuf + hdrCnt64);
    uint64_t        lastts = buf[recLen - 1];
 
    int nhdrs   = 6;
@@ -981,13 +985,13 @@ static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const 
 
 
    // Decode the exception frames
-   for (int idx = 0; idx <= 4*excCnt; idx++)
+   for (int idx = 0; idx <= excCnt; idx++)
    {
       uint16_t exception = *excBuf++;
 
       if (exception == 0) break;
 
-      uint16_t     frame = exception & 0xffff;
+      uint16_t     frame = exception & 0x3ff;
       uint16_t      mask = exception >> 10;
       uint64_t       hdr;
 

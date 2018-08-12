@@ -897,6 +897,8 @@ RssiConnection::RssiConnection (char const *ip, int nframes)
    m_rssi->application ()->setSlave (m_pack->transport());
    m_pack->transport   ()->setSlave (m_rssi->application());
 
+   m_rssi->start();
+
    return;
 }
 /* ---------------------------------------------------------------------- */

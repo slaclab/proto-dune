@@ -20,6 +20,8 @@
 //
 //       DATE WHO WHAT 
 // ---------- --- ------------------------------------------------------------
+// 2018.08.09 jjr Corrected locating the WIB id.  This is different for raw
+//                WIB frame data and compressed data.
 // 2018.02.06 jjr Added a status mask to accumulate error/status bits
 // 2017.07.11 jjr Moved many methods from .cpp file to be inlined
 //                Added method to get the frame address as a 64 bit number
@@ -421,13 +423,15 @@ inline uint16_t FrameBuffer::getCsf () const
    // Id = slot.3 | crate.5 | fiber.3 - Crate.5 | Slot.3 | Fiber.3
    // --------------------------------------------------------------
 
+   uint16_t wibId;
    uint64_t const *p64 = reinterpret_cast<decltype(p64)>(_data);
+   bool found = getWibIdentifier (&wibId, p64, _size);
+   if (!found)  wibId = 0x3ff;
    
 
-   uint16_t    id = (p64[0] >> 13) & 0x3ff;
-   uint16_t crate = (id     >>  3) &  0x1f;
-   uint16_t  slot = (id     >>  8) &  0x07;
-   uint16_t fiber = (id     >>  0) &  0x07;
+   uint16_t crate = (wibId  >>  3) &  0x1f;
+   uint16_t  slot = (wibId  >>  8) &  0x07;
+   uint16_t fiber = (wibId  >>  0) &  0x07;
    uint16_t   csf = (crate << 6) | (slot << 3) | fiber;
    
    return csf;

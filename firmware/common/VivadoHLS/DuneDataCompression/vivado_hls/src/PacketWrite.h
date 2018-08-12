@@ -516,7 +516,7 @@ static void writeN (AxisBitStream                  &tAxis,
 
    if (ichan == 0)
    {
-      bAxis.m_idx = 0x200;
+      bAxis.m_idx = tAxis.m_idx;
       bAxis.m_cur = 0;
    }
 

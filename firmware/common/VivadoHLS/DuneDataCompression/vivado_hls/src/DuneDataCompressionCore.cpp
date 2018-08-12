@@ -409,6 +409,8 @@ static void handle_packet (AxisOut                   &mAxis,
    PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg2 cyclic factor=NHISTPORTS dim=1)
    PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg3 cyclic factor=NHISTPORTS dim=1)
 
+   ////#pragma    HLS ARRAY_PARTITION variable=pktCtx.m_hdrsBuf cyclic factor=6 dim=1
+
    // -------------------------------------------------
    // Set histogram identifiers, strictly for debugging
    // -------------------------------------------------

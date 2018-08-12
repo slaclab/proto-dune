@@ -40,6 +40,7 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.08.09 jjr Correct Sloc -> Slot in a comment
    2018.02.06 jjr Added a status field to the bridge word.  This is used to
                   accumulate status and error bits.
    2017.08.29 jjr Stripped debugging print statements.
@@ -125,7 +126,7 @@ public:
       enum class Offset
       {
          Format   =  0, /*!< Offset to the bridge words's format field    */
-         Csf      =  4, /*!< Offset to the Crate.Sloc.Fiber field         */  
+         Csf      =  4, /*!< Offset to the Crate.Slot.Fiber field         */
          Left     = 16, /*!< Offset to the number of Tpc Records left     */
          Status   = 24  /*!< Offset to the status field                   */
       };

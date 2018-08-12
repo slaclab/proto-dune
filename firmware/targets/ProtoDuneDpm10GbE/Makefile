@@ -5,10 +5,13 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000113
+export PRJ_VERSION = 0x00000115
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/08/11 0x00000115 jjr  Added filling of header/exception data block
+# 2018/08/07 0x00000114 jjr  The increase in RSSI buffers did not make it in
+#                            0x113.  This increases it from 8 -> 16
 # 2018/08/06 0x00000113 jjr  Remove update of read statistics
 # 2018/08/06 0x00000112 jjr  Try read-update, eliminates Flush, and increases
 #                            common noise to 12 bits and the number of RSSI 
