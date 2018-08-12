@@ -170,7 +170,7 @@ begin
    -- TX Frame Formatter
    ---------------------
    GEN_VEC :
-   for i in 127 downto 0 generate
+   for i in 1 downto 0 generate
       U_TxFrammer : entity work.ProtoDuneDpmEmuTxFramer
          generic map (
             TPD_G => TPD_G)
