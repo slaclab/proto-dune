@@ -20,6 +20,7 @@
 //
 //       DATE WHO WHAT 
 // ---------- --- ------------------------------------------------------------
+// 2018.08.13 jjr Corrected WIB mask from 0x3ff -> 0x7ff in getWibIdentifier
 // 2018.08.09 jjr Corrected locating the WIB id.  This is different for raw
 //                WIB frame data and compressed data.
 // 2018.02.06 jjr Added a status mask to accumulate error/status bits
@@ -410,6 +411,10 @@ inline uint8_t FrameBuffer::getDataFormat () const
 inline uint16_t FrameBuffer::getCsf () const
 {
    // ---------------------------------------------------------------
+   // 2018.08.13 -- jjr
+   // -----------------
+   // Corrected the extraction mask from 0x3ff -> 0x7ff
+   //
    // 2018.07.24 -- jjr
    // -----------------
    // Corrected the extraction mask from 0xfff -> 0x3ff
@@ -426,8 +431,8 @@ inline uint16_t FrameBuffer::getCsf () const
    uint16_t wibId;
    uint64_t const *p64 = reinterpret_cast<decltype(p64)>(_data);
    bool found = getWibIdentifier (&wibId, p64, _size);
-   if (!found)  wibId = 0x3ff;
-   
+   if (!found)  wibId = 0x7ff;
+
 
    uint16_t crate = (wibId  >>  3) &  0x1f;
    uint16_t  slot = (wibId  >>  8) &  0x07;
@@ -529,12 +534,12 @@ inline bool FrameBuffer::getWibIdentifier (uint16_t      *wibId,
   
       if (dataType == DataType::WibFrame)
       {
-         *wibId = (d64[0] >> 13) & 0x3ff;
+         *wibId = (d64[0] >> 13) & 0x7ff;
          return true;
       }
       else if (dataType == DataType::Compressed)
       {
-         *wibId = (d64[1] >> 13) & 0x3ff;
+         *wibId = (d64[1] >> 13) & 0x7ff;
          return true;
       }
    }
@@ -586,8 +591,9 @@ inline bool FrameBuffer::getTimestampRange (uint64_t     range[2],
          return false;
       }
 
-      /// fprintf (stderr, "%16.16" PRIx64 " %16.16" PRIx64 "%8.8" PRIx32 "\n", 
-      ///         range[0], range[1], nbytes);
+      ///fprintf (stderr, 
+      ///"Timestamp range: %16.16" PRIx64 " %16.16" PRIx64 "%8.8" PRIx32 "\n", 
+      ///         range[1], range[0], nbytes);
 
       return true;
 
@@ -617,6 +623,12 @@ inline bool FrameBuffer::getTimestampRange (uint64_t     range[2],
 inline void FrameBuffer::getCompressedTimestampRange (uint64_t   range[2],
                                                       uint64_t const *d64)
 {
+/*
+   fprintf (stderr, 
+            "rxRun:: Timestamp error end-beg:  "
+            "%16.16" PRIx64 " - %16.16" PRIx64 " = %16.16" PRIX64 "\n",
+            d64[3], d64[2], d64[3]-d64[2]);
+*/
    range[0] = d64[2];
    range[1] = d64[3] + TimingClockTicks::PER_SAMPLE;
 

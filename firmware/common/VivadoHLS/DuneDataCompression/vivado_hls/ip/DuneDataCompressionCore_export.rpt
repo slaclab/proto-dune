@@ -4,12 +4,12 @@ Implementation tool: Xilinx Vivado v.2018.1
 Project:             DuneDataCompression_project
 Solution:            solution1
 Device target:       xc7z045ffg900-2
-Report date:         Sat Aug 11 22:14:03 PDT 2018
+Report date:         Tue Aug 14 07:34:40 PDT 2018
 
 #=== Post-Synthesis Resource usage ===
 SLICE:            0
 LUT:          35848
-FF:           22837
+FF:           22839
 DSP:              8
 BRAM:           290
 SRL:             10

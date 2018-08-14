@@ -29,6 +29,7 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2018.08.13  jjr  Release 1.3.1-0 Corrected WIB id in multiple places
 // 2018.06.06  jjr  Release 1.3.0-0
 //                  Added RSSI support.  This has been tested to a moderate
 //                  degree.  Events have integrity and can run in excess of
@@ -813,7 +814,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01030000;
+      static const uint32_t SoftwareVersion = 0x01030100;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;

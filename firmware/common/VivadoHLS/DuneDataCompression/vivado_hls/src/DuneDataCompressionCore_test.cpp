@@ -556,8 +556,8 @@ static int fill_packet (Source                                          &src,
        }
        else
        {
-          // Plant bad timestamp to test error reporting
-          if ( (isample & 0x7f) == 8) timestamp += 25;
+          ///// Plant bad timestamp to test error reporting
+          ////  if ( (isample & 0x7f) == 8) timestamp += 25;
           src.fill_frame (timestamp, adcs[isample], runEnable, flush, isample);
           nbytes += sizeof (WibFrame);
        }

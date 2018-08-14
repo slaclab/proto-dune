@@ -116,12 +116,12 @@ static void  print_id (uint64_t const *data)
    unsigned src1     = (w64 >> 20) & 0xfff;
    unsigned sequence = (w64 >> 32) & 0xffffffff;
 
-   unsigned c0 = (src0 >> 6) & 0x1f;
-   unsigned s0 = (src0 >> 3) & 0x7;
+   unsigned c0 = (src0 >> 3) & 0x1f;
+   unsigned s0 = (src0 >> 8) & 0x7;
    unsigned f0 = (src0 >> 0) & 0x7;
 
-   unsigned c1 = (src1 >> 6) & 0x1f;
-   unsigned s1 = (src1 >> 3) & 0x7;
+   unsigned c1 = (src1 >> 3) & 0x1f;
+   unsigned s1 = (src1 >> 8) & 0x7;
    unsigned f1 = (src1 >> 0) & 0x7;
 
 
@@ -253,8 +253,8 @@ static void print_tpcRecords (uint64_t const *data, int itpc)
 
    unsigned int  left = (bridge >> 16) & 0xf;
    unsigned int   csf = (bridge >>  4) & 0x7ff;
-   unsigned int crate = (csf >> 3) & 0x1f;
-   unsigned int  slot = (csf >> 8) & 0x07;
+   unsigned int crate = (csf >> 6) & 0x1f;
+   unsigned int  slot = (csf >> 3) & 0x07;
    unsigned int fiber = (csf >> 0) & 0x07;
    printf ("Tcp Stream: Crate.Slot.Fiber %2u.%1u.%1u (%3.3x) Remaining = %u\n",
            crate, slot, fiber, csf, left);

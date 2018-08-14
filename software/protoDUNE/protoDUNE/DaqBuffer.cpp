@@ -15,6 +15,13 @@
 //
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2018.08.13 jjr Corrected display of WIB id getWibIdentifiers.  The 
+//                slot number was masked to only 2 bits.  This was only
+//                a display issue.
+//                More seriously the storage of the identifier was 
+//                incorrect. Instead of using the DMA destination number
+//                as the index, the mask of the destination number 
+//                (1 << dest) was used.  
 // 2018.07.18 jjr Corrected error in getting the length of the                  
 //                HeaderAndOrigin record in the operator = method.              
 //                The length was being taken from the destination, which        
@@ -3381,7 +3388,7 @@ static void getWibIdentifiers (uint16_t srcs[MAX_DEST], DaqDmaDevice *dataDma)
                   uint64_t *d64 = reinterpret_cast<decltype(d64)>
                                    (dataDma->_map[index]);
 
-                  bool okay = FrameBuffer::getWibIdentifier (&srcs[mdest], 
+                  bool okay = FrameBuffer::getWibIdentifier (&srcs[dest], 
                                                              d64, 
                                                              rxSize);
                   if (okay) mask &= ~mdest;
@@ -3400,12 +3407,12 @@ static void getWibIdentifiers (uint16_t srcs[MAX_DEST], DaqDmaDevice *dataDma)
             " %2x.%1x.%1x (0x%3.3" PRIx32 ")"
             " %2x.%1x.%1x (0x%3.3" PRIx32 ")\n",
             ((src0 >> 3) & 0x1f),
-            ((src0 >> 8) & 07),
-            ((src0 >> 0) & 0x3),
+            ((src0 >> 8) & 0x7),
+            ((src0 >> 0) & 0x7),
               src0,
             ((src1 >> 3) & 0x1f),
-            ((src1 >> 8) & 07),
-            ((src1 >> 0) & 0x3),
+            ((src1 >> 8) & 0x7),
+            ((src1 >> 0) & 0x7),
               src1);
 
    return;
@@ -3913,7 +3920,10 @@ void DaqBuffer::rxRun ()
             if (dt != TimingClockTicks::PER_FRAME)
             {
                fb->m_body.addStatus (FrameBuffer::Missing);
-               fprintf (stderr, "rxRun:: Timestamp error\n");
+               fprintf (stderr, 
+                        "rxRun:: Timestamp error end-beg:  "
+                        "%16.16" PRIx64 " - %16.16" PRIx64 " = %16.16" PRIX64 "\n",
+                         timestampRange[1], timestampRange[0], dt);
             }
 
 
@@ -5012,7 +5022,6 @@ static int addTpcDataRecord (TxMsg                          *msg,
       uint32_t      index = node->m_body.getIndex      ();
       int      dataFormat = node->m_body.getDataFormat ();
       status             |= node->m_body.getStatus     ();
-
 
       // ------------------------------------------------------
       // Setup buffer pointers and size
