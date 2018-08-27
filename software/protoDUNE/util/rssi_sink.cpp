@@ -371,6 +371,8 @@ int main (int argc, char **argv) {
    // Create the UDP client, jumbo = true
    rogue::protocols::udp::ClientPtr 
           udp  = rogue::protocols::udp::Client::create(daqHost, 8192, true);
+
+   printf("daq host =%s\n",daqHost);
    
    // Make enough room for 'nframes' outstanding buffers
    udp->setRxBufferCount (nframes); 
@@ -397,6 +399,8 @@ int main (int argc, char **argv) {
    boost::shared_ptr<TestSink> 
       sink = boost::make_shared<TestSink>(copyFlag, ndump, fd);
    pack->application(0)->setSlave(sink);
+
+   rssi->start();
 
    // Loop forever showing counts
    lastBytes = 0;

@@ -56,7 +56,7 @@ DataDpmEmuCh::DataDpmEmuCh(uint32_t linkConfig, uint32_t baseAddress, uint32_t i
       sprintf(ChNoiseCfg,"ChNoiseCfg_%03d",i);
       addRegisterLink(rl = new RegisterLink(ChCfg, baseAddress_ + 0x800 + (4*i), 1, 2,
                                             DlyCfg,Variable::Configuration, 0, 0x1F,  // 0                              
-                                            ChNoiseCfg,Variable::Configuration, 16, 0x7));// 1     
+                                            ChNoiseCfg,Variable::Configuration, 16, 0xF));// 1     
       rl->getVariable(0)->setDescription("Delay Configuration (units of 1/2MHz)");        
       rl->getVariable(1)->setDescription("Sets the number of ADC channel noise bits in the emulation adc data");       
    }

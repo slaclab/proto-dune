@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmWibRxFramerReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2017-01-19
+-- Last update: 2018-08-10
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -25,8 +25,8 @@ use work.AxiLitePkg.all;
 
 entity ProtoDuneDpmWibRxFramerReg is
    generic (
-      TPD_G            : time            := 1 ns;
-      AXI_CLK_FREQ_G   : real            := 125.0E+6);  -- units of Hz
+      TPD_G          : time := 1 ns;
+      AXI_CLK_FREQ_G : real := 125.0E+6);  -- units of Hz
    port (
       -- Status/Configuration Interface (clk domain)
       clk             : in  sl;
@@ -38,6 +38,7 @@ entity ProtoDuneDpmWibRxFramerReg is
       cPllLock        : in  sl;
       rxPolarity      : out sl;
       txPolarity      : out sl;
+      blowoffWib      : out sl;
       pktSent         : in  sl;
       backpressure    : in  sl;
       errPktDrop      : in  sl;
@@ -73,6 +74,7 @@ architecture rtl of ProtoDuneDpmWibRxFramerReg is
       minPktLen      : slv(7 downto 0);
       rxPolarity     : sl;
       txPolarity     : sl;
+      blowoffWib     : sl;
       cntRst         : sl;
       rollOverEn     : slv(STATUS_SIZE_C-1 downto 0);
       hardRst        : sl;
@@ -87,6 +89,7 @@ architecture rtl of ProtoDuneDpmWibRxFramerReg is
       minPktLen      => x"FF",
       rxPolarity     => '0',
       txPolarity     => '0',
+      blowoffWib     => '1',
       cntRst         => '1',
       rollOverEn     => toSlv(1, STATUS_SIZE_C),
       hardRst        => '0',
@@ -154,6 +157,7 @@ begin
       axiSlaveRegister(regCon, x"708", 0, v.gtRst);
       axiSlaveRegister(regCon, x"710", 0, v.startLog);
       axiSlaveRegister(regCon, x"714", 0, v.oneShotLog);
+      axiSlaveRegister(regCon, x"718", 0, v.blowoffWib);
       axiSlaveRegister(regCon, x"7F0", 0, v.rollOverEn);
       axiSlaveRegister(regCon, x"7F4", 0, v.cntRst);
       axiSlaveRegister(regCon, x"7FC", 0, v.hardRst);
@@ -272,13 +276,15 @@ begin
    U_SyncOutVec : entity work.SynchronizerVector
       generic map (
          TPD_G   => TPD_G,
-         WIDTH_G => 2)
+         WIDTH_G => 3)
       port map (
          clk        => clk,
          dataIn(0)  => r.rxPolarity,
          dataIn(1)  => r.txPolarity,
+         dataIn(2)  => r.blowoffWib,
          dataOut(0) => rxPolarity,
-         dataOut(1) => txPolarity);
+         dataOut(1) => txPolarity,
+         dataOut(2) => blowoffWib);
 
    gtRxFifoErr <= rxBufStatus(2) and rxLinkUp;
 

@@ -98,10 +98,10 @@ class ModuleConfig
 {
 public:
    ModuleConfig () { return; }
-   void copy (ModuleConfig const &src); 
+   void copy (ModuleConfig const &src, bool &first);
    
 public:   
-   uint32_t                            init;  /*!< Initialization flag    */
+    int32_t                            init;  /*!< Initialization flag    */
    uint32_t                            mode;  /*!< Data processing mode   */
    uint32_t                           limit;  /*!< Limits size of output
                                                    packet, units = 64bit
@@ -118,9 +118,14 @@ public:
  *   \param[ in]  src The configuration block to copy
  *
 \* ---------------------------------------------------------------------- */
-inline void ModuleConfig::copy (ModuleConfig const &src)
+inline void ModuleConfig::copy (ModuleConfig const &src, bool &first)
 {
     *this = src;
+    if (first)
+    {
+       this->init = 1;
+       first      = false;
+    }
     return;
 }
 /* ---------------------------------------------------------------------- */

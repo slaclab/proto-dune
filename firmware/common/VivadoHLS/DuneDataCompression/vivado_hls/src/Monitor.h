@@ -163,6 +163,9 @@ public:
                 MonitorRead        &gbl,
                 ReadStatus      status);
 
+   void update (ModuleConfig  const cfg,
+                ReadStatus       status);
+
 
    /* ------------------------------------------------------------------- *//*!
     *
@@ -459,6 +462,17 @@ public:
 \* ---------------------------------------------------------------------- */
 struct MonitorWrite
 {
+public:
+   MonitorWrite () { return; }
+
+   void init ()
+   {
+      nbytes    = 0;
+      npromoted = 0;
+      ndropped  = 0;
+      npackets  = 0;
+   }
+
    uint32_t    nbytes; /*!< Number of bytes written                       */
    uint32_t npromoted; /*!< Number WIB frame promoted to the output packet*/
    uint32_t  ndropped; /*!< Number WIB frames dropped                     */

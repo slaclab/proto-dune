@@ -2,7 +2,6 @@
 -- File       : ProtoDuneDpmEth.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-11-01
--- Last update: 2018-06-26
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -90,6 +89,11 @@ architecture mapping of ProtoDuneDpmEth is
    signal rssiIbSlaves  : AxiStreamSlaveArray(APP_STREAMS_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
    signal rssiObMasters : AxiStreamMasterArray(APP_STREAMS_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
    signal rssiObSlaves  : AxiStreamSlaveArray(APP_STREAMS_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
+
+   signal rssiStatus     : slv(6 downto 0);
+   signal rssiConnected  : sl;
+   signal rssiConnectedL : sl;
+   signal dmaSlave       : AxiStreamSlaveType;
 
 begin
 
@@ -196,7 +200,8 @@ begin
          SERVER_G            => true,
          RETRANSMIT_ENABLE_G => true,
          BYPASS_CHUNKER_G    => false,
-         WINDOW_ADDR_SIZE_G  => 3,
+         MAX_NUM_OUTS_SEG_G  => 16,
+         WINDOW_ADDR_SIZE_G  => 4,
          PIPE_STAGES_G       => 1,
          APP_AXIS_CONFIG_G   => APP_AXIS_CONFIG_C,
          TSP_AXIS_CONFIG_G   => EMAC_AXIS_CONFIG_C,
@@ -205,6 +210,7 @@ begin
          clk_i             => ethClk,
          rst_i             => ethRst,
          openRq_i          => '1',
+         statusReg_o       => rssiStatus,
          -- Application Layer Interface
          sAppAxisMasters_i => rssiIbMasters,
          sAppAxisSlaves_o  => rssiIbSlaves,
@@ -222,6 +228,18 @@ begin
          axilReadSlave     => axilReadSlaves(RSSI_INDEX_C),
          axilWriteMaster   => axilWriteMasters(RSSI_INDEX_C),
          axilWriteSlave    => axilWriteSlaves(RSSI_INDEX_C));
+
+   U_rssiConnected : entity work.Synchronizer
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         clk     => dmaClk,
+         dataIn  => rssiStatus(0),
+         dataOut => rssiConnected);
+   rssiConnectedL <= not(rssiConnected);
+
+   -- Blowoff inbound RSSI (outbound DMA)
+   dmaObSlave <= dmaSlave when(rssiConnected = '1') else AXI_STREAM_SLAVE_FORCE_C;
 
    ----------------------------------      
    -- SYNC DMA Bus: TDEST=[0x00:0x7F]
@@ -248,9 +266,9 @@ begin
       port map (
          -- Slave Port
          sAxisClk    => dmaClk,
-         sAxisRst    => dmaRst,
+         sAxisRst    => rssiConnectedL,
          sAxisMaster => dmaObMaster,
-         sAxisSlave  => dmaObSlave,
+         sAxisSlave  => dmaSlave,
          -- Master Port
          mAxisClk    => ethClk,
          mAxisRst    => ethRst,

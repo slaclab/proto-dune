@@ -40,6 +40,7 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.07.18 jjr Added a const to the n64() methods
    2018.02.06 jjr Added methods to add the source specifiers (i.e. the WIB
    2017.08.28 jjr Fix position of trigger type in auxilliary block to 
                   match the documentation
@@ -292,8 +293,8 @@ public:
      return;
   }
 
-   int n64 () { return (m_w64 >> static_cast<     int>(Offset::Length))
-                               & static_cast<uint32_t>(  Mask::Length); }
+   int n64 () const { return (m_w64 >> static_cast<     int>(Offset::Length))
+                                    & static_cast<uint32_t>(  Mask::Length); }
 
    /* ------------------------------------------------------------------- *//*!
 
@@ -438,8 +439,8 @@ public:
      return;
   }
 
-   int n64 () { return (m_w32 >> static_cast<     int>(Offset::Length))
-                               & static_cast<uint32_t>(  Mask::Length); }
+   int n64 () const { return (m_w32 >> static_cast<     int>(Offset::Length))
+                                     & static_cast<uint32_t>(  Mask::Length); }
 
    /* ------------------------------------------------------------------- *//*!
 

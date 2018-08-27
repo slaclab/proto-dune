@@ -16,6 +16,7 @@ static bool hist_check (int                                        ihist,
                         uint64_t  const                             *buf,
                         int                                        ebits,
                         Histogram::Entry_t const ebins[Histogram::NBins],
+                        Histogram::BitMask_t                       valid,
                         int                                       efirst,
                         int                                      enovflw);
 
@@ -23,10 +24,12 @@ static bool hist_check (int                                        ihist,
                         BitStream64                                &bs64,
                         int                                        ebits,
                         Histogram::Entry_t const ebins[Histogram::NBins],
+                        Histogram::BitMask_t                       valid,
                         int                                       efirst,
                         int                                      enovflw);
 
 static int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
+                         Histogram::BitMask_t                       valid,
                          uint16_t           const dbins[Histogram::NBins],
                          int                                        ebits,
                          int                                        dbits,
@@ -60,30 +63,40 @@ static int get_nbits   (int                                  nsignificant,
  *
 \* ---------------------------------------------------------------------- */
 static bool hist_check (int                                        ihist,
-                        BitStream64                                &bs64,
+                        OStream                                 &ostream,
                         int                                        ebits,
                         Histogram::Entry_t const ebins[Histogram::NBins],
+                        Histogram::BitMask_t                       valid,
                         int                                       efirst,
                         int                                     enovrflw)
 
  {
-   static uint64_t buf[Histogram::NBins * 10/64 + 10];
-
+   uint64_t buf[128];
 
    // Copy the data into a temporary bit stream
    int idx = 0;
-   while (1)
-   {
-      uint64_t dat;
-      bool okay = bs64.m_out.read_nb (buf[idx++]);
-      if (!okay) break;
-   }
+   #if USE_FIFO
+      while (1)
+      {
+         uint64_t dat;
+         bool okay = ostream.read_nb (buf[idx++]);
+         if (!okay) break;
+      }
+  #else
+      int cnt = (ostream.m_cidx + 63) >> 6;
+      for (idx = 0; idx < cnt; idx++)
+      {
+         buf[idx] = ostream.read (idx);
+      }
+   #endif
+
 
    BfuPosition_t position = 0;
    BFU bfu;
    _bfu_put (bfu, buf[0], 0);
 
-   bool status = hist_check (ihist, bfu, buf, ebits, ebins, efirst, enovrflw);
+   bool status = hist_check (ihist, bfu, buf, ebits, ebins, valid, efirst, enovrflw);
+   return status;
  }
 /* ---------------------------------------------------------------------- */
 
@@ -106,6 +119,7 @@ bool hist_check (int                                        ihist,
                  uint64_t  const                             *buf,
                  int                                        ebits,
                  Histogram::Entry_t const ebins[Histogram::NBins],
+                 Histogram::BitMask_t                       valid,
                  int                                       efirst,
                  int                                     enovrflw)
  {
@@ -117,7 +131,7 @@ bool hist_check (int                                        ihist,
    int     dfirst;
    int   dnovrflw;
    int      dbits = hist_decode  (dbins, &dnbins, &dfirst, &dnovrflw, bfu, buf);
-   int       ecnt = hist_compare (ebins,      (unsigned short const*)dbins,
+   int       ecnt = hist_compare (ebins,       valid, (unsigned short const*)dbins,
                                   ebits,       dbits,
                                   dnbins,
                                   efirst,     dfirst,
@@ -150,6 +164,7 @@ bool hist_check (int                                        ihist,
  *        encoded bits
 \* ---------------------------------------------------------------------- */
 static int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
+                         Histogram::BitMask_t                       valid,
                          uint16_t           const dbins[Histogram::NBins],
                          int                                       ebits,
                          int                                       dbits,
@@ -164,13 +179,13 @@ static int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
    // -----------------------------------------------------
    // Check that the encoded bit count == decoded bit count
    // -----------------------------------------------------
-   if (nbins + 1 != Histogram::NBins)
+   if (nbins != Histogram::NBins)
    {
        std::cout << "Encoded:Decoded nbins mismatch " << Histogram::NBins << "!=" << (nbins+1) << std::endl;
        ecnt += 1;
    }
 
-   if (enovrflw != enovrflw)
+   if (enovrflw != dnovrflw)
    {
       std::cout << "Encoded::Decoded overflow #bits mismatch " << enovrflw << " != " << dnovrflw << std::endl;
       ecnt += 1;
@@ -198,7 +213,7 @@ static int hist_compare (Histogram::Entry_t const hbins[Histogram::NBins],
    // ---------------------------
    for (int idx = 0; idx < Histogram::NBins; idx++)
    {
-      int expected = hbins[idx];
+      int expected = valid.test (idx) ? hbins[idx]: Histogram::Entry_t (0);
       int got      = dbins[idx];
 
 
@@ -259,12 +274,18 @@ static int hist_decode (uint16_t bins[Histogram::NBins], int *nrbins, int *first
    for (int ibin = 0; ibin < nbins; ibin++)
    {
       // Extract the bits
-      int cnts   = _bfu_extractR (bfu, buf, position, nbits);
+      int cnts   = left ? _bfu_extractR (bfu, buf, position, nbits) : 0;
 
       bins[ibin] =  cnts;
-      std::cout << "Hist[" << ibin << std::setw(2) << "] = " << cnts << "nbits = " << nbits << std::endl;
+
+      /* STRIP removed 2018-06-28 to reduce output
+      if ( (ibin & 0xf) == 0x0) std::cout << "Hist[" << std::hex << std::setw(2) << ibin << "] ";
+      std::cout <<  ' ' << std::hex << std::setw(3) << cnts  << ":" << std::hex << std::setw(1) << nbits;
+      if ( (ibin & 0xf) == 0xf) std::cout << std::endl;
+      */
 
       left -= cnts;
+
       nbits = 32 - __builtin_clz (left);
       if (nbits > mbits) nbits = mbits;
    }

@@ -124,6 +124,7 @@
 /* NONE                                                                    */
 /* ----------------------------------------------------------------------- */
 
+
 #include "WibFrame-Write.h"
 
 
@@ -236,34 +237,8 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 #define PRAGMA_SUB(x) _Pragma (#x)
 #define PRAGMA_HLS(x) PRAGMA_SUB(x)
 
-
-#include "DuneDataCompressionHistogram.h"
-typedef Histogram::Symbol_t Symbol_t;
-
-
-
-#include "WibFrame-Process.h"
-
-
-
-
- /* ---------------------------------------------------------------------- *//*!
-  *
-  *  \class CompressContext
-  *  \brief This contains the channel-by-channel histograms used to form
-  *         form the compression tables and the symbols to be compressed
-  *
- \* ---------------------------------------------------------------------- */
- struct CompressContext
- {
-    Histogram hists[MODULE_K_NCHANNELS];
-    Symbol_t   syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES];
- };
- /* ---------------------------------------------------------------------- */
-
-
-
-
+#define MODULE_K_NPARALLEL 4
+#define MODULE_K_NSERIAL  32
 
 /*
  | This ensures that the correct number of parallel instances of Histogram:integrate_
@@ -281,13 +256,14 @@ typedef Histogram::Symbol_t Symbol_t;
  |  If the timing changes, then this '8' should be adjusted accordingly
 */
 #if  MODULE_K_NCHANNELS == 128
-#define NPARALLEL    4
-#define NHISTPORTS  16
-#define NADCPORTS   16
+#define NHISTPORTS    8
+#define NSYMPORTS     4
 #else
 #error  "MODULE_K_NCHANNELS  must be 128 channels"
 #endif
 
+
+#include "WibFrame-Process.h"
 
 
 
@@ -305,9 +281,8 @@ static void
 
 static void
  acquire_packet (AxisIn                                               &sAxis,
-                 HeaderContext                                       &hdrCtx,
-                 Symbol_t        syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-                 Histogram                         hists[MODULE_K_NCHANNELS],
+                 PacketContext                                       &pktCtx,
+                 CompressionContext                                  &cmpCtx,
                  ModuleIdx_t                                       moduleIdx,
                  ModuleConfig const                                  &config,
                  MonitorRead                                        &monitor);
@@ -315,23 +290,18 @@ static void
 
 static void
  process_packet (AxisOut                                              &mAxis,
-                 HeaderContext const                                 &hdrCtx,
-                 Symbol_t  const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-                 Histogram const                   hists[MODULE_K_NCHANNELS],
-                 ModuleIdx_t                                       moduleIdx,
-                 ModuleConfig const                                  &config,
-                 MonitorWrite                                       &monitor);
+                 PacketContext                                       &pktCtx,
+                 CompressionContext                                  &cmpCtx,
+                 MonitorWrite                                  &monitorwrite);
+
 
 static void
  acquire_frame (AxisIn                                                &sAxis,
-                HeaderContext                                        &hdrCtx,
                 PacketContext                                        &pktCtx,
-                Symbol_t         syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-                Histogram                          hists[MODULE_K_NCHANNELS],
+                CompressionContext                                   &cmpCtx,
                 ModuleIdx_t                                        moduleIdx,
                 ModuleConfig const                                   &config,
                 MonitorRead                                      &gblMonitor,
-                MonitorRead                                      &lclMonitor,
                 int                                                   iframe);
 /* ====================================================================== */
 
@@ -382,10 +352,11 @@ void DuneDataCompressionCore (AxisIn            &sAxis,
 
    static MonitorCfg       lclMonitorCfg;
    static MonitorCommon lclMonitorCommon;
+   static bool              First = true;
    ModuleConfig                   lclCfg;
 
    #pragma HLS DATAFLOW
-   lclCfg.copy             (config);
+   lclCfg.copy             (config, First);
    lclMonitorCfg.   update (lclCfg, monitor.cfg);
    lclMonitorCommon.update (lclCfg, monitor.common);
 
@@ -394,7 +365,6 @@ void DuneDataCompressionCore (AxisIn            &sAxis,
    return;
 }
 /* ----------------------------------------------------------------------- */
-
 
 
 /* ----------------------------------------------------------------------- *//*!
@@ -426,28 +396,31 @@ static void handle_packet (AxisOut                   &mAxis,
 {
    #pragma HLS DATAFLOW
 
-    Histogram hists[MODULE_K_NCHANNELS];
-    #pragma     HLS STREAM           variable=hists off
-     PRAGMA_HLS(HLS ARRAY_PARTITION  variable=hists cyclic factor=NHISTPORTS dim=1)
+   PacketContext      pktCtx;
+   CompressionContext cmpCtx;
 
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg0  cyclic factor=NSYMPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg1  cyclic factor=NSYMPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg2  cyclic factor=NSYMPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.adcs.sg3  cyclic factor=NSYMPORTS  dim=1)
 
-    Symbol_t   syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES];
-    #pragma     HLS STREAM           variable=syms off
-    #pragma     HLS RESOURCE         variable=syms         core=RAM_2P_BRAM
-     PRAGMA_HLS(HLS ARRAY_PARTITION  variable=syms  cyclic factor=NADCPORTS  dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg0 cyclic factor=NHISTPORTS dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg1 cyclic factor=NHISTPORTS dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg2 cyclic factor=NHISTPORTS dim=1)
+   PRAGMA_HLS(HLS ARRAY_PARTITION variable=cmpCtx.hists.sg3 cyclic factor=NHISTPORTS dim=1)
 
-     HeaderContext HdrCtx;
+   ////#pragma    HLS ARRAY_PARTITION variable=pktCtx.m_hdrsBuf cyclic factor=6 dim=1
 
-    // -------------------------------------------------
-    // Set histogram identifiers, strictly for debugging
-    // -------------------------------------------------
-    HISTOGRAM_statement (Histogram::set_id (hists, sizeof (hists) / sizeof (hists));)
+   // -------------------------------------------------
+   // Set histogram identifiers, strictly for debugging
+   // -------------------------------------------------
+   HISTOGRAM_statement (cmpCtx.hists.set_ids (MODULE_K_NPARALLEL));
 
-    acquire_packet (sAxis, HdrCtx, syms, hists, moduleIdx, config, monitorRead);
-    process_packet (mAxis, HdrCtx, syms, hists, moduleIdx, config, monitorWrite);
+   acquire_packet (sAxis, pktCtx, cmpCtx, moduleIdx, config, monitorRead);
+   process_packet (mAxis, pktCtx, cmpCtx, monitorWrite);
 
-    return;
- }
+   return;
+}
 /* ----------------------------------------------------------------------- */
 
 
@@ -477,30 +450,33 @@ static void handle_packet (AxisOut                   &mAxis,
  *                         module.
 \* ----------------------------------------------------------------------- */
 void acquire_packet (AxisIn                                        &sAxis,
-                     HeaderContext                                &hdrCtx,
-                     Symbol_t syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-                     Histogram                  hists[MODULE_K_NCHANNELS],
+                     PacketContext                                &pktCtx,
+                     CompressionContext                           &cmpCtx,
                      ModuleIdx_t                                moduleIdx,
                      ModuleConfig  const                          &config,
                      MonitorRead                                 &monitor)
 {
    #pragma HLS INLINE off
 
+
    // -------------------------------------------
    // Accumulates the statistics and status
    // associated with the reading of a WIB frame.
    // -------------------------------------------
-   static MonitorRead lclMonitor;
+   //// static MonitorRead lclMonitor; /// jjr 2018-08-04 removed
 
-   PacketContext pktCtx;
+   /// STRIP --- if (config.init) lclMonitor.init ();
 
    ACQUIRE_LOOP:
    for (int idx = 0; idx < PACKET_K_NSAMPLES; idx++)
    {
-      acquire_frame (sAxis,  hdrCtx, pktCtx, syms, hists, moduleIdx,
-                     config, monitor,   lclMonitor,      idx);
+      acquire_frame (sAxis,  pktCtx,      cmpCtx, moduleIdx,
+                     config, monitor, idx);
    }
 
+   //// monitor = lclMonitor;
+
+   ///Histogram::print (hists, 128);
    return;
 }
 /* ----------------------------------------------------------------------- */
@@ -542,50 +518,57 @@ void acquire_packet (AxisIn                                        &sAxis,
  *
 \* ----------------------------------------------------------------------- */
 static void acquire_frame (AxisIn                                        &sAxis,
-                           HeaderContext                                &hdrCtx,
                            PacketContext                                &pktCtx,
-                           Symbol_t syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-                           Histogram                  hists[MODULE_K_NCHANNELS],
+                           CompressionContext                           &cmpCtx,
                            ModuleIdx_t                                moduleIdx,
                            ModuleConfig const                           &config,
                            MonitorRead                              &gblMonitor,
-                           MonitorRead                              &lclMonitor,
                            int                                           iframe)
 {
    #pragma HLS INLINE
    #pragma HLS DATAFLOW
 
+   static MonitorRead lclMonitor; /// jjr 2018-08-04 added
+   #pragma HLS RESOURCE        variable=lclMonitor core=RAM_2P_LUTRAM
+   #pragma HLS ARRAY_PARTITION variable=lclMonitor.errs.nFrameErrs complete dim=1
+   #pragma HLS ARRAY_PARTITION variable=lclMonitor.errs.nWibErrs   complete dim=1
+   #pragma HLS ARRAY_PARTITION variable=lclMonitor.summary.nStates complete dim=1
+
+
    ReadFrame frame;
    #pragma HLS RESOURCE        variable=frame.m_dat.d          core=RAM_2P_LUTRAM
    #pragma HLS ARRAY_PARTITION variable=frame.m_dat.d cyclic factor=2
 
-   frame.read        (sAxis);
-   ////lclMonitor.update (config, gblMonitor, frame.m_status);
-   process_frame     (frame, iframe, config, hdrCtx, pktCtx, hists, syms);
+   ReadStatus status = frame.read        (sAxis);
+   ////lclMonitor.update (config, gblMonitor, status);  ///// Hangs the RTL cosim if use config
+   process_frame     (frame, iframe, config, pktCtx, cmpCtx);
 }
 /* ----------------------------------------------------------------------- */
 
 
 
 #define WRITE_DATA 1
+
+#if       WRITE_DATA
 #include "PacketWrite.h"
 
 
 /* ----------------------------------------------------------------------- */
 static void process_packet
            (AxisOut                                                  &mAxis,
-            HeaderContext const                                     &hdrCtx,
-            Symbol_t      const syms[MODULE_K_NCHANNELS][PACKET_K_NSAMPLES],
-            Histogram     const                   hists[MODULE_K_NCHANNELS],
-            ModuleIdx_t                                           moduleIdx,
-            ModuleConfig  const                                     &config,
-            MonitorWrite                                           &monitor)
+            PacketContext                                           &pktCtx,
+            CompressionContext                                      &cmpCtx,
+            MonitorWrite                                      &monitorWrite)
 {
    #pragma HLS INLINE off
 
-   write_packet  (mAxis,  hdrCtx, hists, syms, moduleIdx);
+   write_packet  (mAxis,  pktCtx, cmpCtx, monitorWrite);
 
    return;
 }
 /* ----------------------------------------------------------------------- */
+#endif
+/* ----------------------------------------------------------------------- */
+
+
 #endif

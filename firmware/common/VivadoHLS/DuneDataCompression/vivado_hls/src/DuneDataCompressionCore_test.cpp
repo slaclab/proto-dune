@@ -74,6 +74,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <unistd.h>
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -134,10 +135,14 @@ static void print_monitor (MonitorModule const         &s0,
                            MonitorModule const         &s1,
                            int                     ipacket,
                            int                     isample);
+
+static void decode        (AxisOut                  &mAxis);
+
 /* ---------------------------------------------------------------------- */
 
 
-#define NPACKETS 1
+
+int NPackets = 1;
 
 #if PROCESS_K_MODE == PROCESS_K_DATAFLOW
 #define MODE MODE_K_COPY
@@ -171,6 +176,11 @@ int main (int argc, char const *argv[])
    static const char     FileTemplate[] = "%s/run%u_binary/run%u.bin";
    char filename[256];
 
+   // Get the number of 1024 packets to process
+   if (argc > 1)
+   {
+      NPackets = strtoul (argv[1], 0, 0);
+   }
 
    // --------------------------------------
    // Compose the test file name and open it
@@ -227,7 +237,7 @@ static int copy_test (int               fd,
 
 
    static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
-   for (int ipacket = 0; ipacket < NPACKETS; ipacket++)
+   for (int ipacket = 0; ipacket < NPackets; ipacket++)
    {
       uint32_t summary = 0;
 
@@ -284,7 +294,7 @@ static int copy_test (int               fd,
          break;
       }
 
-      printf ("NEXT\n");
+      printf (" %d\n", ipacket);
    }
 
 
@@ -317,12 +327,19 @@ static int compress_test (int               fd,
    MonitorModule                  monitor;
    int                        test_status;
 
+   #pragma HLS STREAM variable=mAxis depth=32768
+
    std::cout << "MODE = COMPRESS" << std::endl;
    std::cout << "-- BY PASSING CHECKING" << std::endl;
 
-   uint64_t timestamp = 0;
+   memset (&expMonitor, 0, sizeof (expMonitor));
+   ////print_monitor (expMonitor, monitor, 0,-1);
 
-   for (int ipacket = 0; ipacket < NPACKETS; ipacket++)
+   // Ignore the first time flag;
+   config.init = -1;
+   uint64_t timestamp = 0x00800000LL;
+
+   for (int ipacket = 0; ipacket < NPackets; ipacket++)
    {
       static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
       uint32_t summary = 0;
@@ -333,31 +350,30 @@ static int compress_test (int               fd,
       ssize_t nread = read_adcs (fd, filename, (uint16_t *)adcs, sizeof (adcs)/ sizeof (adcs[0][0]));
       if (nread == 0) break;
 
-
       int runEnable = 1;
       int flush     = 0;
-
 
       // ----------------------------------
       // Fill a packets worth of Wib frames
       // -----------------------------------
-      int nbytes = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
-
+      int nbytes  = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
+      timestamp  += 25 * PACKET_K_NSAMPLES;
 
       // -------------------
       // Compress the packet
       // -------------------
       DuneDataCompressionCore(src.m_src, mAxis, moduleIdx, config, monitor);
 
-
+      print_monitor (expMonitor, monitor, ipacket, ipacket*0x400);
 
       // ------------------------------
       // Add trailer to the check frame
       // Do the check
       // ------------------------------
       src.add_trailer (version, headerId, summary, nbytes);
-      test_status = MyStreamOut::check (mAxis, src.m_chk, ipacket);
 
+      decode (mAxis);
+      test_status = 0; //// MyStreamOut::check (mAxis, src.m_chk, ipacket);
 
       // -------------------------
       // Abort the test on failure
@@ -368,7 +384,8 @@ static int compress_test (int               fd,
          break;
       }
 
-      printf ("NEXT\n");
+      config.init = 0;
+      printf ("NEXT %d\n", ipacket);
    }
 
 
@@ -378,7 +395,8 @@ static int compress_test (int               fd,
    // ---------------------------------------------------
    if (test_status == 0)
    {
-      test_status = check_empty (mAxis, src.m_src);
+      check_empty (mAxis,     src.m_src);
+      src.drainCheck ();
    }
 
    return test_status;
@@ -486,12 +504,10 @@ static void configure_hls (Source            &src,
 
    DuneDataCompressionCore (src.m_src, mAxis, moduleIdx, config, monitor);
 
-
    // --------------------------------------------------
    // Drain the check stream
    // --------------------------------------------------
    while (!src.m_chk.empty ()) src.m_chk.read ();
-
 
    // --------------------------------------------------
    // The output and input streams must be empty
@@ -533,9 +549,6 @@ static int fill_packet (Source                                          &src,
     int nbytes = 0;
     for (int isample = 0; isample < PACKET_K_NSAMPLES; isample++)
     {
-       timestamp += 25;
-
-
        if (flush | (runEnable == 0))
        {
           printf ("Sample[%4u] Flush:%d runEnable:%d\n", isample, flush, runEnable);
@@ -543,13 +556,19 @@ static int fill_packet (Source                                          &src,
        }
        else
        {
+          ///// Plant bad timestamp to test error reporting
+          ////  if ( (isample & 0x7f) == 8) timestamp += 25;
           src.fill_frame (timestamp, adcs[isample], runEnable, flush, isample);
           nbytes += sizeof (WibFrame);
        }
+
+       timestamp += 25;
     }
 
     return nbytes;
  }
+/* ---------------------------------------------------------------------- */
+
 
 
 /* ---------------------------------------------------------------------- */
@@ -706,7 +725,7 @@ static void print_monitor (MonitorModule const &s0,
 }
 /* ---------------------------------------------------------------------- */
 
-
+#include "BFU.h"
 
 /* ---------------------------------------------------------------------- */
 static int check_empty (MyStreamOut &mAxis, MyStreamIn &sAxis)
@@ -746,11 +765,435 @@ static int check_empty (MyStreamOut &mAxis, MyStreamIn &sAxis)
       }
    }
 
-
    return status;
 }
 /* ---------------------------------------------------------------------- */
 
+
+#define DECODE 1
+
+struct Toc
+{
+   uint16_t            m_n64; /*!< Number of 64 bit words                 */
+   uint16_t       m_nsamples; /*!< Number of samples                      */
+   uint16_t      m_nchannels; /*!< Number of channels                     */
+   uint32_t const *m_offsets; /*!< Pointer to the channel offsets         */
+};
+
+static int          decode (uint64_t const *buf, int nbuf);
+static int      toc_decode (Toc      *toc,                       uint64_t const *buf, int nbuf);
+static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const *buf, int nbuf);
+static int     chan_decode (uint64_t const *buf, int nbuf, int position, bool printit);
+static int     hist_decode (uint16_t *bins, int *nrbins, int *first, int *novrflw, BFU &bfu, uint64_t const *buf, bool printit);
+static void hist_integrate (uint16_t *table,uint16_t *bins, int nbins);
+static int      sym_decode (uint16_t *syms, uint16_t const *table, uint16_t sym, BFU bfu, uint64_t const *buf, int ovrpos, int novrflw, bool printit);
+static int16_t     restore (uint16_t   sym);
+static void  print_decoded (uint16_t   sym, int idy);
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *   \brief Decode the Axis Stream
+ *
+ *   \param[in] mAxis  The output Axis Stream
+ *
+\* ---------------------------------------------------------------------- */
+static void decode (AxisOut &mAxis)
+{
+   int  nbuf = 0;
+   int nerrs = 0;
+   uint64_t buf[(12*1024*128)/64 + 0x800];
+
+   while (1)
+   {
+      bool dst_empty = mAxis.empty ();
+
+      if (!dst_empty)
+      {
+         AxisOut_t  dst = mAxis.read  ();
+         uint64_t  data = dst.data;
+
+         ///if ( (nbuf & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << nbuf << "] = ";
+         ///std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << data;
+         ///if ((nbuf & 0x7) == 7) std::cout << std::endl;
+
+         buf[nbuf] = data;
+         nbuf++;
+      }
+      else
+      {
+         break;
+      }
+   }
+
+   /// if (nbuf & 0x7) std::cout << std::endl;
+
+   decode (buf, nbuf);
+
+}
+/* ---------------------------------------------------------------------- */
+
+static int decode (uint64_t const *buf, int nbuf)
+{
+   // Print the first 32 64-bit words
+    int idx;
+    for (idx = 0; idx < 32; idx++)
+    {
+       if ( (idx & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << idx << "] = ";
+       std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << buf[idx];
+       if ((idx & 0x7) == 7) std::cout << std::endl;
+    }
+
+    std::cout << "...... skipping" << std::endl;
+
+    // Print the last 256 64-bit words
+    int beg = (nbuf > 256) ? ((nbuf - 32*8) & ~0x7) : idx;
+    for (idx = beg; idx < nbuf; idx++)
+    {
+       if ( (idx & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << idx << "] = ";
+       std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << buf[idx];
+       if ((idx & 0x7) == 7) std::cout << std::endl;
+    }
+
+
+    if (nbuf & 0x7) std::cout << std::endl;
+
+
+    #if  1 && DECODE
+    Toc toc;
+    toc_decode (&toc, buf, nbuf);
+
+    uint64_t headers[6*1024];
+    uint32_t status;
+    int n = header_decode (headers, &status,  buf, nbuf);
+
+    int position = n << 6;
+    for (int ichan = 0; ichan < toc.m_nchannels; ichan ++)
+    {
+       std::cout << "Position[" << std::setfill (' ') << std::hex << std::setw (4) << ichan
+                 << "] = " << std::hex << std::setw (8) << position << ':' << toc.m_offsets[ichan]
+                 << std::endl;
+
+       bool printit = (ichan < 4);
+
+       if (position != toc.m_offsets[ichan])
+       {
+          std::cout << "Error at chan " << ichan;
+          exit (-1);
+       }
+
+       position = chan_decode (buf, nbuf, position, printit);
+    }
+    #endif
+
+    return 0;
+}
+
+/* ---------------------------------------------------------------------- */
+static int toc_decode (Toc *toc, uint64_t const *buf, int nbuf)
+{
+   uint64_t const *tlrPtr = buf + nbuf - 1 - 2;
+   uint64_t           tlr = *tlrPtr;
+
+   // Pack the trailer
+    // Rsvd | #Channels-1 | #Samples-1 | Layout | Len64 | RecType | TlrFmt
+    //  12  |         12  |         12 |      4 |    16 |       4 |      4
+    //  52  |         40  |         28 |     24 |     8 |       4 |      0
+   int recType      = ((tlr >>  4) &    0xf);
+   toc->m_n64       = ((tlr >>  8) & 0xffff);
+   toc->m_nsamples  = ((tlr >> 28) &  0xfff) + 1;
+   toc->m_nchannels = ((tlr >> 40) &  0xfff) + 1;
+   toc->m_offsets   = reinterpret_cast<decltype(toc->m_offsets)>(tlrPtr - toc->m_n64 + 1);
+
+   return 0;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static int chan_decode (uint64_t const *buf, int nbuf, int position, bool printit)
+{
+   BFU bfu;
+   _bfu_put (bfu, buf[position>>6], position);
+
+
+   int          nbins;
+   int            sym;
+   int        novrflw;
+   uint16_t bins[128];
+   int ovrpos = hist_decode (bins, &nbins, &sym, &novrflw, bfu, buf, printit);
+
+   uint16_t table[130];
+   hist_integrate (table, bins, nbins);
+
+
+   uint16_t syms[1024];
+   position = sym_decode (syms, table, sym, bfu, buf, ovrpos, novrflw, printit);
+
+   std::cout << "Total Bits " << std::setfill (' ') << std::setw (8) <<  std::hex
+             << position << ':' << ((position + 63 )>> 6) << "  " << nbuf << std::endl;
+
+
+   return position;
+}
+/* ---------------------------------------------------------------------- */
+
+
+static int   header_decode (uint64_t *headers, uint32_t *status, uint64_t const *buf, int nbuf)
+{
+   // -------------------------------------------------------------------------------
+   // Compose the record header word
+   //    status(32) | exception count(8) | length (16) | RecType(4) | HeaderFormat(4)
+   // -------------------------------------------------------------------------------
+   uint64_t recHdr = buf[0];
+   int      hdrFmt = (recHdr >>  0) & 0xf;
+   int      recTyp = (recHdr >>  4) & 0xf;
+   int      recLen = (recHdr >>  8) & 0xffff;
+   int      excCnt = (recHdr >> 24) & 0xff;
+           *status = (recHdr >> 32);
+   int    excCnt64 = (excCnt + 3) / 4;
+   int    hdrCnt64 = recLen - excCnt64 -1;
+
+   uint64_t const *hdrBuf = reinterpret_cast<decltype(hdrBuf)>(buf    +        1);
+   uint16_t const *excBuf = reinterpret_cast<decltype(excBuf)>(hdrBuf + hdrCnt64);
+   uint64_t        lastts = buf[recLen - 1];
+
+   int nhdrs   = 6;
+   uint64_t prv[6];
+   headers[0] = prv[0] = *hdrBuf++;
+   headers[1] = prv[1] = *hdrBuf++;
+   lastts     =          *hdrBuf++;
+   headers[2] = prv[2] = *hdrBuf++;
+   headers[3] = prv[3] = *hdrBuf++;
+   headers[4] = prv[4] = *hdrBuf++;
+   headers[5] = prv[5] = *hdrBuf++;
+
+   std::cout << "Header Record:"
+             <<               "Format   = " << std::setw ( 8) << std::hex <<  hdrFmt    << std::endl
+             << "              RecType  = " << std::setw ( 8) << std::hex <<  recTyp    << std::endl
+             << "              RecLen   = " << std::setw ( 8) << std::hex <<  recLen    << std::endl
+             << "              ExcCnt   = " << std::setw ( 8) << std::hex <<  excCnt    << std::endl
+             << "              Status   = " << std::setw ( 8) << std::hex << *status    << std::endl
+             << "              Wib0     = " << std::setw (16) << std::hex <<  headers[0]<< std::endl
+             << "              Wib01    = " << std::setw (16) << std::hex <<  headers[1]<< std::endl
+             << "              Cd00     = " << std::setw (16) << std::hex <<  headers[2]<< std::endl
+             << "              Cd01     = " << std::setw (16) << std::hex <<  headers[3]<< std::endl
+             << "              Cd10     = " << std::setw (16) << std::hex <<  headers[4]<< std::endl
+             << "              Cd11     = " << std::setw (16) << std::hex <<  headers[5]<< std::endl
+             << "              LastTs   = " << std::setw (16) << std::hex <<  lastts    << std::endl;
+
+
+   // Decode the exception frames
+   for (int idx = 0; idx <= excCnt; idx++)
+   {
+      uint16_t exception = *excBuf++;
+
+      if (exception == 0) break;
+
+      uint16_t     frame = exception & 0x3ff;
+      uint16_t      mask = exception >> 10;
+      uint64_t       hdr;
+
+      // Header word 0, all static fields
+      if (mask &  0x1) hdr = *hdrBuf++;
+      else             hdr =  prv[0];
+      headers[nhdrs++]     =  prv[0] = hdr;
+
+
+      // Header word 1, Timestamp, increment by 25 counts
+      if (mask &  0x2) hdr = *hdrBuf++;
+      else             hdr =  prv[1] + 25;
+      headers[nhdrs++]     =  prv[1] = hdr;
+
+
+      // Header word 2, Cold data convert count, increment by 1
+      if (mask &  0x4) hdr = *hdrBuf++;
+      else             hdr =  prv[2] + (1LL << 48);
+      headers[nhdrs++]     =  prv[2] = hdr;
+
+
+      // Header word 3, Cold data static fields
+      if (mask &  0x8) hdr = *hdrBuf++;
+      else             hdr = prv[3];
+      headers[nhdrs++]     = prv[3] = hdr;
+
+
+      // Header word 4, Cold data convert count, increment by 1
+      if (mask & 0x10) hdr = *hdrBuf++;
+      else             hdr = prv[4] + (1LL << 48);
+      headers[nhdrs++]     = prv[4] = hdr;
+
+
+      // Header word 4, Cold data static fields
+      if (mask & 0x20) hdr = *hdrBuf++;
+      else             hdr = prv[5];
+      headers[nhdrs++]     = prv[5] = hdr;
+   }
+
+   return recLen;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static int hist_decode (uint16_t      *bins,
+                        int         *nrbins,
+                        int          *first,
+                        int        *novrflw,
+                        BFU            &bfu,
+                        uint64_t const *buf,
+                        bool        printit)
+{
+   bool debug = true;
+
+   int64_t  m01s;
+   int left      = PACKET_K_NSAMPLES - 1;
+   int position = _bfu_get_pos  (bfu);
+   int format   = _bfu_extractR (bfu, buf, position,  4);
+   int nbins    = _bfu_extractR (bfu, buf, position,  8) + 1;
+   int mbits    = _bfu_extractR (bfu, buf, position,  4);
+   int nbits    = mbits;
+
+
+   // Return decoding context
+  *first        = _bfu_extractR (bfu, buf, position, 12);
+  *novrflw      = _bfu_extractR (bfu, buf, position,  4);
+  *nrbins       = nbins;
+
+
+   // Extract the histogram bins
+   for (int ibin = 0; ibin < nbins; ibin++)
+   {
+      // Extract the bits
+      int cnts   = left ? _bfu_extractR (bfu, buf, position, nbits) : 0;
+
+      bins[ibin] =  cnts;
+
+      if (printit)
+      {
+         if ( (ibin & 0xf) == 0x0) std::cout << "Hist[" << std::hex << std::setw(2) << ibin << "] ";
+         std::cout <<  ' ' << std::hex << std::setw(3) << cnts  << ":" << std::hex << std::setw(1) << nbits;
+         if ( (ibin & 0xf) == 0xf) std::cout << std::endl;
+      }
+
+      left -= cnts;
+
+      nbits = 32 - __builtin_clz (left);
+      if (nbits > mbits) nbits = mbits;
+   }
+
+   return position;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+/* ---------------------------------------------------------------------- */
+static void hist_integrate (uint16_t *table, uint16_t *bins, int nbins)
+{
+   uint16_t total  = 0;
+   table[0]        = nbins;
+
+   for (int idx = 0; idx < nbins; idx++)
+   {
+      table[idx+1] = total;
+      total       += bins[idx];
+   }
+
+   table[nbins + 1] = total;
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+#include "AP-Decode.h"
+
+/* ---------------------------------------------------------------------- */
+int sym_decode (uint16_t        *syms,
+                uint16_t const *table,
+                uint16_t          sym,
+                BFU               bfu,
+                uint64_t const   *buf,
+                int            ovrpos,
+                int           novrflw,
+                bool          printit)
+{
+   APD_dtx dtx;
+
+   int nbins  = table[0];  // Total number of bins
+   int novr   = table[2];  // Number of overflows
+
+
+   // Compute the number of bits in the overflow array
+   int nobits = novrflw *   novr;
+   int sympos = ovrpos +   nobits;
+
+   APD_start (&dtx, buf, sympos);
+
+   for (int idy = 0; ; idy++)
+   {
+      syms[idy] = sym;
+      if (printit)
+      {
+         print_decoded (sym, idy);
+      }
+
+      if (idy == PACKET_K_NSAMPLES -1)
+      {
+         break;
+      }
+
+      sym = APD_decode (&dtx, table);
+      if (sym == 0)
+      {
+         // Have overflow
+         int ovr = _bfu_extractR (bfu, buf, ovrpos, novrflw);
+         sym     =  nbins + ovr;
+      }
+   }
+
+
+   // Number of bits consumed by the decoding
+   sympos = APD_finish (&dtx);
+
+   // Total number of decoded symbol bits
+   int totbits = sympos + ovrpos;
+   return totbits;
+}
+/* ---------------------------------------------------------------------- */
+
+
+static inline int16_t restore (uint16_t sym)
+{
+   if (sym & 1)  return -(sym >> 1);
+   else          return  (sym >> 1);
+}
+
+static void print_decoded (uint16_t sym, int idy)
+{
+   static uint16_t Adcs[16];
+   static uint16_t Prv;
+
+   int idz = idy & 0xf;
+   if (idz == 0) { std::cout << "Sym[" << std::setfill (' ') << std::hex << std::setw (4) << idy << "] "; }
+   if (idy == 0) { Adcs[0]   = sym; }
+   else          { Adcs[idz] = Adcs[(idz-1) & 0xf] + restore (sym); }
+
+
+   std::cout << std::hex << std::setw (3) << sym;
+
+   if (idz == 0xf)
+   {
+      std::cout << "  ";
+      for (int i = 0; i < 16; i++)  std::cout << std::setfill (' ') << std::hex << std::setw (4) << Adcs[i];
+      std::cout << std::endl;
+   }
+   ///std::cout << "Sym[" << idy << "] = " << syms[idy] << " : " << dsyms[idy] <<  std::hex << std::setw(5) << std::endl);
+
+   return;
+}
 
 
 /* ====================================================================== */

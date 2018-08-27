@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmCore.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2018-05-24
+-- Last update: 2018-08-10
 -------------------------------------------------------------------------------
 -- Description:  
 -------------------------------------------------------------------------------
@@ -103,8 +103,8 @@ architecture mapping of ProtoDuneDpmCore is
 
    signal emuLoopback : sl;
    signal emuEnable   : sl;
-   signal emuData     : slv(15 downto 0);
-   signal emuDataK    : slv(1 downto 0);
+   signal emuData     : Slv16Array(1 downto 0);
+   signal emuDataK    : Slv2Array(1 downto 0);
 
    signal txPreCursor  : slv(4 downto 0);
    signal txPostCursor : slv(4 downto 0);
@@ -302,7 +302,7 @@ begin
          wibSlaves       => wibSlaves,
          -- DMA Loopback Path Interface (dmaClk domain)
          loopbackMaster  => dmaObMasters(1),
-         loopbackSlave   => dmaObSlaves(1),         
+         loopbackSlave   => dmaObSlaves(1),
          -- AXI Stream Interface (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,

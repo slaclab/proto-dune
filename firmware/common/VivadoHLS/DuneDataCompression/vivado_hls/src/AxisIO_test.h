@@ -60,6 +60,9 @@ public:
    void fill_runDisableAndFlush_frame (uint64_t timestamp,
                                        int         iframe);
    
+   int drainCheck ();
+
+
    void                        commit (uint64_t         w,
                                        int           user,
                                        int           last);
@@ -86,6 +89,21 @@ Source::Source () :
 {
    return;
 }
+
+/* ---------------------------------------------------------------------- */
+int Source::drainCheck ()
+{
+   int idx = 0;
+   while (!m_chk.empty ())
+   {
+      AxisOut_t out = m_chk.read ();
+      idx += 1;
+    }
+
+   return idx;
+}
+/* ---------------------------------------------------------------------- */
+
 
 inline void Source::commit (MyStreamIn &stream, uint64_t w, int user, int last)
 {

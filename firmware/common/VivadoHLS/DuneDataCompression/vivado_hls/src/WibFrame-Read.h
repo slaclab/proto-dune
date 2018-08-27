@@ -474,7 +474,7 @@ public:
       return;
   }
 
-   void read (AxisIn &axis);
+   ReadStatus read (AxisIn &axis);
 
 public:
     typedef uint64_t Data;
@@ -526,7 +526,7 @@ public:
 };
 /* ------------------------------------------------------------------------- */
 
-static        void read_frame (ReadFrame      *frame,
+static ReadStatus  read_frame (ReadFrame      *frame,
                                AxisIn          &axis);
 
 static void         read_wib0 (ReadStatus    &status,
@@ -592,15 +592,39 @@ static void           update (ReadStatus           &status,
                               int                      off);
 
 
-static void print_read_frame (ReadFrame const *frame);
+/* ---------------------------------------------------------------------- */
+#ifndef __SYNTHESIS__
+#define READ_FRAME_PRINT 1
+#endif
+/* ---------------------------------------------------------------------- */
+
+#undef READ_FRAME_PRINT
+
+/* ---------------------------------------------------------------------- */
+#if READ_FRAME_PRINT
+/* ---------------------------------------------------------------------- */
+static void print_read_frame (ReadFrame const *frame)
+ {
+   for (int i = 0; i < 30; i++)
+   {
+      std::cout << "Frame.d[" << std::setw(5) << i << "] = " << std::setw(16) << std::hex << frame->d[i] << std::endl;
+   }
+}
+/* ---------------------------------------------------------------------- */
+#else
+/* ---------------------------------------------------------------------- */
+#define print_read_frame(_frame)
+/* ---------------------------------------------------------------------- */
+#endif
+/* ---------------------------------------------------------------------- */
 
 
 
-
-inline void ReadFrame::read (AxisIn &axis)
+inline ReadStatus ReadFrame::read (AxisIn &axis)
 {
     #pragma HLS INLINE off
-    read_frame (this, axis);
+    ReadStatus status = read_frame (this, axis);
+    return status;
 }
 
 
@@ -619,8 +643,8 @@ inline void ReadFrame::read (AxisIn &axis)
  *   the user field of the last word is not set
  *
 \* ---------------------------------------------------------------------- */
-static inline void read_frame (ReadFrame     *frame,
-                               AxisIn         &axis)
+static inline ReadStatus read_frame (ReadFrame     *frame,
+                                     AxisIn         &axis)
 {
    #pragma HLS INLINE
 
@@ -644,7 +668,7 @@ static inline void read_frame (ReadFrame     *frame,
 
    print_read_frame (frame);
 
-   return;
+   return status;
 }
 /* ---------------------------------------------------------------------- */
 
@@ -850,7 +874,7 @@ static void read_colddata_data (ReadStatus   &status,
    READCOLDDATA_LOOP:
    for (int idx = 0; idx < 12; idx++)
    {
-       //#pragma HLS PIPELINE
+       #pragma HLS PIPELINE
 
       // Get the input word, always copy the data
       in     = axis.read ();
@@ -965,7 +989,7 @@ static void eval_wib0 (ReadStatus &status, uint64_t hdr, uint16_t wibId)
    bool wibErrCommaChar = WibFrame::commaChar(hdr) != WibFrame::K28_5;
    bool wibErrVersion   = WibFrame::version  (hdr) != WibFrame::VersionNumber;
    bool wibErrId        = WibFrame::id       (hdr) != wibId;
-   bool wibErrRsvd      = WibFrame::rsvd     (hdr) != 0;
+   bool wibErrRsvd      = false; /// WibFrame::rsvd     (hdr)  = ??? jjr -- KLUDGE
    bool wibErrErrors    = WibFrame::wibErrors(hdr) != 0;
 
    update (status, wibErrCommaChar, ReadStatus::Offset::ErrWibComma);
@@ -1145,35 +1169,5 @@ static void update (ReadStatus           &status,
 }
 /* ---------------------------------------------------------------------- */
 
-
-
-/* ---------------------------------------------------------------------- */
-#ifndef __SYNTHESIS__
-#define READ_FRAME_PRINT 1
-#endif
-/* ---------------------------------------------------------------------- */
-
-#undef READ_FRAME_PRINT
-
-/* ---------------------------------------------------------------------- */
-#if READ_FRAME_PRINT
-/* ---------------------------------------------------------------------- */
-static void print_read_frame (ReadFrame const *frame)
- {
-   for (int i = 0; i < 30; i++)
-   {
-      std::cout << "Frame.d[" << std::setw(5) << i << "] = " << std::setw(16) << std::hex << frame->d[i] << std::endl;
-   }
-}
-/* ---------------------------------------------------------------------- */
-#else
-/* ---------------------------------------------------------------------- */
-static void print_read_frame (ReadFrame const *frame)
-{
-   return;
-}
-/* ---------------------------------------------------------------------- */
-#endif
-/* ---------------------------------------------------------------------- */
 
 #endif

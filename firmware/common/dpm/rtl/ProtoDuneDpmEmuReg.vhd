@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmEmuReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-08
--- Last update: 2017-06-05
+-- Last update: 2018-08-10
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -26,9 +26,12 @@ use work.ProtoDuneDpmPkg.all;
 
 entity ProtoDuneDpmEmuReg is
    generic (
-      TPD_G            : time            := 1 ns;
-      SIM_START_G      : sl              := '0';
-      DEFAULT_CNT_G    : sl              := '0');
+      TPD_G         : time                  := 1 ns;
+      FIBER_ID_G    : Slv3Array(1 downto 0) := (0 => "111", 1 => "111");
+      CRATE_ID_G    : Slv5Array(1 downto 0) := (0 => "11001", 1 => "11001");
+      SLOT_ID_G     : Slv3Array(1 downto 0) := (0 => "101", 1 => "110");
+      SIM_START_G   : sl                    := '0';
+      DEFAULT_CNT_G : sl                    := '0');
    port (
       -- Status/Configuration Interface (clk domain)
       clk             : in  sl;
@@ -37,12 +40,15 @@ entity ProtoDuneDpmEmuReg is
       enableTrig      : out sl;
       sendCnt         : out sl;
       loopback        : out sl;
-      cmNoiseCgf      : out slv(2 downto 0);
-      chNoiseCgf      : out Slv3Array(127 downto 0);
+      cmNoiseCgf      : out slv(3 downto 0);
+      chNoiseCgf      : out Slv4Array(127 downto 0);
       chDlyCfg        : out EmuDlyCfg;
       txPreCursor     : out slv(4 downto 0);
       txPostCursor    : out slv(4 downto 0);
       txDiffCtrl      : out slv(3 downto 0);
+      fiberId         : out Slv3Array(1 downto 0);
+      crateId         : out Slv5Array(1 downto 0);
+      slotId          : out Slv3Array(1 downto 0);
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
       axilRst         : in  sl;
@@ -61,12 +67,15 @@ architecture rtl of ProtoDuneDpmEmuReg is
       enableTrig     : sl;
       sendCnt        : sl;
       loopback       : sl;
-      cmNoiseCgf     : slv(2 downto 0);
-      chNoiseCgf     : Slv3Array(127 downto 0);
+      cmNoiseCgf     : slv(3 downto 0);
+      chNoiseCgf     : Slv4Array(127 downto 0);
       chDlyCfg       : EmuDlyCfg;
       txPreCursor    : slv(4 downto 0);
       txPostCursor   : slv(4 downto 0);
       txDiffCtrl     : slv(3 downto 0);
+      fiberId        : Slv3Array(1 downto 0);
+      crateId        : Slv5Array(1 downto 0);
+      slotId         : Slv3Array(1 downto 0);
       -- cntRst         : sl;
       -- rollOverEn     : slv(STATUS_SIZE_C-1 downto 0);
       hardRst        : sl;
@@ -79,12 +88,15 @@ architecture rtl of ProtoDuneDpmEmuReg is
       enableTrig     => '0',
       sendCnt        => DEFAULT_CNT_G,
       loopback       => '0',
-      cmNoiseCgf     => "000",
+      cmNoiseCgf     => "0000",
       chNoiseCgf     => (others => (others => '0')),
       chDlyCfg       => (others => (others => '0')),
       txPreCursor    => "00000",
       txPostCursor   => "01111",
       txDiffCtrl     => "1111",
+      fiberId        => FIBER_ID_G,
+      crateId        => CRATE_ID_G,
+      slotId         => SLOT_ID_G,
       -- cntRst         => '1',
       -- rollOverEn     => (others => '0'),
       hardRst        => '0',
@@ -142,12 +154,31 @@ begin
       axiSlaveRegister(regCon, x"C18", 0, v.txPostCursor);
       axiSlaveRegister(regCon, x"C1C", 0, v.txDiffCtrl);
       axiSlaveRegister(regCon, x"C20", 0, v.sendCnt);
+
+      axiSlaveRegister(regCon, x"C30", 0, v.fiberId(0));
+      axiSlaveRegister(regCon, x"C34", 0, v.crateId(0));
+      axiSlaveRegister(regCon, x"C38", 0, v.slotId(0));
+
+      axiSlaveRegister(regCon, x"C40", 0, v.fiberId(1));
+      axiSlaveRegister(regCon, x"C44", 0, v.crateId(1));
+      axiSlaveRegister(regCon, x"C48", 0, v.slotId(1));
+
       -- axiSlaveRegister(regCon, x"FF0", 0, v.rollOverEn);
       -- axiSlaveRegister(regCon, x"FF4", 0, v.cntRst);
       axiSlaveRegister(regCon, x"FFC", 0, v.hardRst);
 
       -- Closeout the transaction
       axiSlaveDefault(regCon, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
+
+      -- Check prevent invalid configurations
+      if (v.cmNoiseCgf > 12) then
+         v.cmNoiseCgf := r.cmNoiseCgf;
+      end if;
+      for i in 127 downto 0 loop
+         if (v.chNoiseCgf(i) > 12) then
+            v.chNoiseCgf(i) := r.chNoiseCgf(i);
+         end if;
+      end loop;
 
       -- Synchronous Reset
       if (axilRst = '1') then
@@ -195,5 +226,8 @@ begin
    txPreCursor  <= r.txPreCursor;
    txPostCursor <= r.txPostCursor;
    txDiffCtrl   <= r.txDiffCtrl;
+   fiberId      <= r.fiberId;
+   crateId      <= r.crateId;
+   slotId       <= r.slotId;
 
 end rtl;

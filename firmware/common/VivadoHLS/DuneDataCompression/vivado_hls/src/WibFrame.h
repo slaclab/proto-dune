@@ -47,6 +47,7 @@
    -------
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.08.13 jjr Corrected extraction of WIB id in id () method
    2017.04.19 jjr Updated to the format Eric Hazen published on 2017.03.13
    2016.10.18 jjr Corrected K28.5 definition, was 0xDC -> 0xBC
    2016.06.14 jjr Created
@@ -379,7 +380,7 @@ inline unsigned int WibFrame::version (uint64_t w)
 inline unsigned int WibFrame::id (uint64_t w)
 {
    #pragma HLS INLINE
-   return (w >> 12) & 0x3ff;
+   return (w >> 13) & 0x7ff;
 }
 /* ---------------------------------------------------------------------- */
 
