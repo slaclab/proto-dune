@@ -104,8 +104,8 @@ begin
          busyOut     => busyOut,
          -- sfpTxDis    => sfpTxDis,
          -- sfpTx       => sfpTxDat,
-         sfpTxDis    => '0',
-         sfpTx       => recData,         
+         sfpTxDis    => '1',
+         sfpTx       => '0',
          -- CDR Interface
          recClk      => recClk,
          recData     => recData,
