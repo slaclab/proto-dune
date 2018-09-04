@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmPkg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-03-22
+-- Last update: 2018-09-04
 -------------------------------------------------------------------------------
 -- Description:
 -------------------------------------------------------------------------------
@@ -23,24 +23,28 @@ use work.StdRtlPkg.all;
 package ProtoDuneDtmPkg is
 
    type ProtoDuneDtmConfigType is record
-      busyMask     : slv(7 downto 0);
-      forceBusy    : sl;
-      cdrEdgeSel   : sl;
-      cdrDataInv   : sl;
-      emuTimingSel : sl;
-      emuClkSel    : sl;
-      softRst      : sl;
-      hardRst      : sl;
+      pdtsEndpointAddr : slv(7 downto 0);
+      pdtsEndpointTgrp : slv(1 downto 0);
+      busyMask         : slv(7 downto 0);
+      forceBusy        : sl;
+      cdrEdgeSel       : sl;
+      cdrDataInv       : sl;
+      emuTimingSel     : sl;
+      emuClkSel        : sl;
+      softRst          : sl;
+      hardRst          : sl;
    end record;
    constant PROTO_DUNE_DTM_CONFIG_INIT_C : ProtoDuneDtmConfigType := (
-      busyMask     => (others => '0'),
-      forceBusy    => '1',
-      cdrEdgeSel   => '0',
-      cdrDataInv   => '0',
-      emuTimingSel => '0',
-      emuClkSel    => '0',
-      softRst      => '0',
-      hardRst      => '0');
+      pdtsEndpointAddr => (others => '0'),
+      pdtsEndpointTgrp => (others => '0'),
+      busyMask         => (others => '0'),
+      forceBusy        => '1',
+      cdrEdgeSel       => '0',
+      cdrDataInv       => '0',
+      emuTimingSel     => '0',
+      emuClkSel        => '0',
+      softRst          => '0',
+      hardRst          => '0');
 
    type ProtoDuneDtmTimingType is record
       stat      : slv(3 downto 0);
