@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDtmReg.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-10-28
--- Last update: 2017-05-11
+-- Last update: 2018-09-04
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ use work.ProtoDuneDtmPkg.all;
 
 entity ProtoDuneDtmReg is
    generic (
-      TPD_G            : time            := 1 ns);
+      TPD_G : time := 1 ns);
    port (
       -- Status/Configuration Interface
       cdrClk          : in  sl;
@@ -102,6 +102,9 @@ begin
       axiSlaveRegister(regCon, x"804", 0, v.config.forceBusy);
       axiSlaveRegister(regCon, x"808", 0, v.config.cdrEdgeSel);
       axiSlaveRegister(regCon, x"80C", 0, v.config.cdrDataInv);
+
+      axiSlaveRegister(regCon, x"810", 0, v.config.pdtsEndpointAddr);
+      axiSlaveRegister(regCon, x"814", 0, v.config.pdtsEndpointTgrp);
 
       axiSlaveRegister(regCon, x"900", 0, v.config.emuTimingSel);
       axiSlaveRegister(regCon, x"904", 0, v.config.emuClkSel);

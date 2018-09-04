@@ -102,10 +102,10 @@ begin
          cdrDataInv  => config.cdrDataInv,
          qsfpRst     => qsfpRst,
          busyOut     => busyOut,
-         -- sfpTxDis    => sfpTxDis,
-         -- sfpTx       => sfpTxDat,
-         sfpTxDis    => '1',
-         sfpTx       => '0',
+         sfpTxDis    => sfpTxDis,
+         sfpTx       => sfpTxDat,
+         -- sfpTxDis    => '1',
+         -- sfpTx       => '0',
          -- CDR Interface
          recClk      => recClk,
          recData     => recData,
@@ -221,8 +221,8 @@ begin
       port map (
          sclk       => axilClk,         -- Free-running system clock
          srst       => axilRst,         -- System reset (sclk domain)
-         addr       => x"00",  -- Endpoint address (async, sampled in clk domain)
-         tgrp       => "00",   -- Timing group (async, sampled in clk domain)
+         addr       => config.pdtsEndpointAddr,  -- Endpoint address (async, sampled in clk domain)
+         tgrp       => config.pdtsEndpointTgrp,  -- Timing group (async, sampled in clk domain)
          stat       => status.timing.stat,     -- Status output (sclk domain)
          rec_clk    => recClk,          -- CDR recovered clock from timing link
          rec_d      => recData,  -- CDR recovered data from timing link (rec_clk domain)

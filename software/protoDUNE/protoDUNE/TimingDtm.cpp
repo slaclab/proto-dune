@@ -129,6 +129,13 @@ TimingDtm::TimingDtm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
 //   rl->getVariable()->setTrueFalse();
 //   rl->getVariable()->setDescription("true = invert CDR data polarity, false = non-inverting CDC data polarity");
 
+   addRegisterLink(rl = new RegisterLink("PdtsEndpointAddr",  0xA0000810, Variable::Configuration,0,0xFF));
+   rl->getVariable()->setDescription("Connected to pdts_endpoint.vhd's addr port");
+   
+   addRegisterLink(rl = new RegisterLink("PdtsEndpointTgrp",  0xA0000814, Variable::Configuration,0,0x3));
+   rl->getVariable()->setDescription("Connected to pdts_endpoint.vhd's tgrp port");   
+
+
    addRegister(new Register("SoftReset",    0xA0000FF0));
    addRegister(new Register("HardReset",    0xA0000FF4));
    addRegister(new Register("CounterReset", 0xA0000FFC));
