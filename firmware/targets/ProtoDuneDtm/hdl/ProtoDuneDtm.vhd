@@ -120,8 +120,7 @@ begin
       generic map (
          TPD_G          => TPD_G,
          BUILD_INFO_G   => BUILD_INFO_G,
-         RCE_DMA_MODE_G => RCE_DMA_AXIS_C,
-         OLD_BSI_MODE_G => false)
+         RCE_DMA_MODE_G => RCE_DMA_AXIS_C)
       port map (
          i2cSda             => i2cSda,
          i2cScl             => i2cScl,
