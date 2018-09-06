@@ -29,6 +29,9 @@
 //
 //       DATE  WHO  WHAT
 // ----------  ---  -----------------------------------------------------------
+// 2018.08.29  jjr  Release 1.4.0-0 Support disabling one or more HLS streams
+//                                  Properly identify data records that are
+//                                  are incomplete or empty.
 // 2018.08.13  jjr  Release 1.3.1-0 Corrected WIB id in multiple places
 // 2018.06.06  jjr  Release 1.3.0-0
 //                  Added RSSI support.  This has been tested to a moderate
@@ -714,6 +717,8 @@ public:
 /* ---------------------------------------------------------------------- */
 
 
+class DataDpmHlsMon;
+
 
 /*---------------------------------------------------------------------- *//*!
  *
@@ -814,7 +819,7 @@ private:
 
    private:
       // Software Device Configurations
-      static const uint32_t SoftwareVersion = 0x01030100;
+      static const uint32_t SoftwareVersion = 0x01040000;
       static const uint32_t TxFrameCount    = 100;
       static const uint32_t RxFrameCount    = 10000;
       static const uint32_t WaitTime        = 1000;
@@ -845,6 +850,14 @@ private:
       // Config
 public:
       Config volatile _config;
+
+public:
+      DataDpmHlsMon *_dataDpmHlsMon;
+
+      void setDataDpmHlsMon (DataDpmHlsMon *hls)
+      {
+         _dataDpmHlsMon = hls;
+      }
 
 private:
       uint32_t _rxSize;

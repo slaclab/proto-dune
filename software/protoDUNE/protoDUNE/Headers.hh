@@ -40,6 +40,7 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.09.04 jjr Added DataFragment type TpcEmpty
    2018.07.18 jjr Added a const to the n64() methods
    2018.02.06 jjr Added methods to add the source specifiers (i.e. the WIB
    2017.08.28 jjr Fix position of trigger type in auxilliary block to 
@@ -837,7 +838,8 @@ public:
       Reserved_0   = 0,  /*!< Reserved for future use                     */
       Originator   = 1,  /*!< Originator record type                      */
       TpcNormal    = 2,  /*!< Normal  TPC data, \e i.e. no errors         */
-      TpcDamaged   = 3   /*!< Damaged TPC data, \e i.e. has errors        */
+      TpcDamaged   = 3,  /*!< Damaged TPC data, \e i.e. has errors        */
+      TpcEmpty     = 4   /*!< Empty   TPC data, \e i.e. has no data       */
    };
 
 

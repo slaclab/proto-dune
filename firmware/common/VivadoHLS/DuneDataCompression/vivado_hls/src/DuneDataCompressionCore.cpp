@@ -211,12 +211,16 @@ void DuneDataCompressionCore(AxisIn            &sAxis,
 
    #pragma HLS DATAFLOW
 
+   static bool              First = true;
 
-   lclCfg.copy              (cfg);
+
+   lclCfg.copy              (cfg, First);
    lclMonitor.cfg.   update (lclCfg,     monitor.cfg);
    lclMonitor.common.update (lclCfg,  monitor.common);
 
    frame.read               (sAxis);
+
+   /// 2018-08-29 jjr -- removed to see if this is causing the problem  REPLACED
    lclMonitor.read.  update (lclCfg, monitor.read, frame.m_status);
 
    write_frame              (mAxis,  frame,  monitor.write, lclMonitor.write);

@@ -17,6 +17,17 @@
 // Proprietary and confidential to SLAC.
 //-----------------------------------------------------------------------------
 // Modification history :
+//
+//       DATE WHO WHAT
+// ---------- --- -------------------------------------------------------
+// 2018.09.04 jjr Provide access to blowOff mask.  In addition to the
+//                blowOff mask, a counter indicating when this value has
+//                possibly been modified (m_wrote) is added. High leve
+//                software should use this to prevent needless accessing
+//                of the actual hardware register. If this value has not
+//                changed since the last query, then the contract is that
+//                its value has not either.
+
 // 11/05/2015: created
 //-----------------------------------------------------------------------------
 #ifndef __DATA_DPM_HLS_MON_H__
@@ -39,6 +50,9 @@ class DataDpmHlsMon:public Device {
     void readConfig ( );      
     void writeConfig ( bool force );
     void verifyConfig ( );
+
+    RegisterLink *m_blowOff;
+    int           m_wrote;
 };
 
 #endif

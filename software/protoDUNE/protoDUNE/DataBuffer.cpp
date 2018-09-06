@@ -25,6 +25,8 @@
 //
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2018.09.04 jjr Changed BlowOffDmaData from a boolean to a bit mask so
+//                individual HLS streams can be blown off.
 // 2017.06.19 jjr Updated to use new definition of RunMode
 // 2016.10.28 jjr Added the triggering configuration parameters naccept
 //                and nframe
@@ -122,7 +124,7 @@ void DataBuffer::command (string name, string arg)
 void DataBuffer::hardReset () 
 {
    Variable *v;
-   v = getVariable("BlowOffDmaData"); v->set("False");
+   v = getVariable("BlowOffDmaData"); v->setInt(0);
    v = getVariable("BlowOffTxEth");   v->set("False");
    v = getVariable("EnableRssi");     v->set("False");   
    v = getVariable("PreTrigger");     v->setInt(2500);
@@ -475,8 +477,9 @@ DataBuffer::ConfigurationVariables::ConfigurationVariables (Device *device)
 
    // Variables
    device->addVariable(var = new Variable (sBlowOffDmaData, Variable::Configuration));  
-   var->setTrueFalse();
-   var->set("False");
+   var->setDescription ("Which streams to exclude from event handling");
+   var->setBase16   ();
+   var->setInt      (0);
    v[BlowOffDmaData] = var;
  
 

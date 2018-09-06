@@ -373,7 +373,16 @@ inline Histogram::Symbol_t Histogram::symbol (AdcIn_t cur, AdcIn_t prv)
 
    Histogram::Symbol_t sym;
 
-   int diff = ((prv - cur) << 1) | 1;
+   // ---------------------------------------------------------
+   // 2018-09-06 jjr
+   // Expand the size of arithmetic to accommodate the shift
+   // Technically, in looking at this later when I committed
+   // the code I believe 13 bits would be enough, but doing
+   // 14 should not cost that much. Before the code was written
+   // as (prv - cur) << 1.  For large differences, with this
+   // difference only being 12 bits, some bits could be lost.
+   // ---------------------------------------------------------
+   int diff = ((ap_uint<14>(prv) - ap_uint<14>(cur)) << 1) | 1;
 
    // ----------------------------------------------
    // Massage the difference so that it is positive.

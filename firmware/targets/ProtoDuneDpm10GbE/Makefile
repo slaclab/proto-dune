@@ -5,10 +5,17 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000115
+export PRJ_VERSION = 0x00000116
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/09/06 0x00000116 jjr  In DuneDataCompressionHistogram.h.  A difference
+#                            of two 12 bit numbers was left shifted by 1, 
+#                            leading to a possible underflow. 
+#                            Corrects a design flaw which allowed ill-formed
+#                            WibFrames to reach the HLS compression module.
+# 2018/08/29 0x00000063 jjr  Updated DATAFLOW allowing both the compressed
+#                            and this pass-thru to use the same rceServer
 # 2018/08/11 0x00000115 jjr  Added WIB blowoff and setting of WIB ids 
 #                            Provided by Larry
 # 2018/08/07 0x00000114 jjr  The increase in RSSI buffers did not make it in

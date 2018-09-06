@@ -71,6 +71,7 @@
 #include "WibFrame.h"
 #include "AxisIO_test.h"
 
+#include <getopt.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -87,7 +88,16 @@
 /* ---------------------------------------------------------------------- */
 /* Local Prototypes                                                       */
 /* ---------------------------------------------------------------------- */
-static int      open_file (char const           *filename);
+
+enum class FileType
+{
+   Adcs      = 0,  /*!< Just the ADCs      */
+   WibFrames = 1,  /*!< File of WIB frames */
+};
+
+static int      open_file (char const      **fullfilename,
+                           char const           *filename,
+                           FileType              filetype);
 
 static ssize_t  read_adcs (int                          fd,
                            char const            *filename,
@@ -96,11 +106,13 @@ static ssize_t  read_adcs (int                          fd,
 
 static int  compress_test (int                          fd,
                            char const            *filename,
+                           FileType               filetype,
                            uint32_t               headerId,
                            uint32_t                version);
 
 static int      copy_test (int                          fd,
                            char const            *filename,
+                           FileType               filetype,
                            uint32_t               headerId,
                            uint32_t                version);
 
@@ -113,6 +125,12 @@ static void configure_hls (Source                     &src,
                            ModuleConfig            &config,
                            MonitorModule          &monitor);
 
+static int    fill_packet (Source                    &src,
+                           int                         fd,
+                           uint64_t             timestamp,
+                           int                  runEnable,
+                           int                     flush);
+
 static int    fill_packet (Source                     &src,
                            uint32_t               headerId,
                            uint32_t                version,
@@ -123,6 +141,7 @@ static int    fill_packet (Source                     &src,
                            int                        flush);
 
 static void        update (MonitorModule          &monitor,
+                           uint32_t                 nbytes,
                            bool              output_packet);
 
 static bool        differ (MonitorModule const         &s0,
@@ -140,9 +159,53 @@ static void decode        (AxisOut                  &mAxis);
 
 /* ---------------------------------------------------------------------- */
 
-
-
 int NPackets = 1;
+
+class Parameters
+{
+public:
+   Parameters (int argc, char *const argv[]);
+
+public:
+   int         m_npackets;
+   char const *m_filename;
+   FileType    m_filetype;
+};
+
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \brief  Extract the command line parameters
+
+  \param[in] argc  Count  of the command line parameters
+  \param[in] argv  Vector of the command line parameters
+                                                                          */
+/* ---------------------------------------------------------------------- */
+Parameters::Parameters (int argc, char *const argv[]) :
+      m_npackets (1),
+      m_filename (NULL),
+      m_filetype (FileType::Adcs)
+{
+   char c;
+   while ((c = getopt (argc, argv, "wn:")) != -1 )
+   {
+      switch (c)
+      {
+      case 'n': { m_npackets = strtol (optarg, NULL, 0); break; }
+      case 'w': { m_filetype = FileType::WibFrames;      break; }
+      }
+   }
+
+   if (optind < argc)
+   {
+      m_filename = argv[optind];
+   }
+
+   return;
+}
+/* ---------------------------------------------------------------------- */
+
+
 
 #if PROCESS_K_MODE == PROCESS_K_DATAFLOW
 #define MODE MODE_K_COPY
@@ -162,7 +225,7 @@ int NPackets = 1;
                        terminal.
                                                                           */
 /* ---------------------------------------------------------------------- */
-int main (int argc, char const *argv[])
+int main (int argc, char *const argv[])
 {
 
    uint32_t version  = VERSION_COMPOSE(1, 0, 0, 0);
@@ -170,33 +233,27 @@ int main (int argc, char const *argv[])
                                                Identifier:: DataType:: WIB,
                                                0);
 
-   unsigned int                     run =                       15660;
-   static char const DefaultDirectory[] =       "/u/eb/convery/ForJJ";
-   static char const               *dir =            DefaultDirectory;
-   static const char     FileTemplate[] = "%s/run%u_binary/run%u.bin";
-   char filename[256];
 
-   // Get the number of 1024 packets to process
-   if (argc > 1)
-   {
-      NPackets = strtoul (argv[1], 0, 0);
-   }
+   // Get the command line parameters
+   Parameters prms (argc, argv);
+   NPackets = prms.m_npackets;
+
 
    // --------------------------------------
    // Compose the test file name and open it
    // --------------------------------------
-   sprintf (filename, FileTemplate, dir, run, run);
-   int fd = open_file (filename);
-
+   char const *filename;
+   int fd = open_file (&filename, prms.m_filename, prms.m_filetype);
 
 
    // -----------------------
    // Set the processing mode
    // -----------------------
-   int   mode = MODE;
+   int          mode = MODE;
+   FileType filetype = prms.m_filetype;
    int status = (mode == MODE_K_COPY)
-              ?     copy_test (fd, filename, headerId, version)
-              : compress_test (fd, filename, headerId, version);
+              ?     copy_test (fd, filename, filetype, headerId, version)
+              : compress_test (fd, filename, filetype, headerId, version);
 
 
    if (status == 0)
@@ -214,6 +271,7 @@ int main (int argc, char const *argv[])
 /* ---------------------------------------------------------------------- */
 static int copy_test (int               fd,
                       char const *filename,
+                      FileType    filetype,
                       uint32_t    headerId,
                       uint32_t     version)
 {
@@ -230,10 +288,19 @@ static int copy_test (int               fd,
    uint64_t timestamp = 0xab000000;
 
    configure_hls (src, mAxis, moduleIdx, headerId, version, timestamp, config, monitor);
+   timestamp += 25;
+
+   int status = check_empty (mAxis, src.m_src);
+   if (status)
+   {
+      fprintf (stderr, "PostConfiguration::Streams not empty: %d\n", status);
+   }
+
 
    memset (&expMonitor, 0, sizeof (expMonitor));
    print_monitor (expMonitor, monitor, 0,-1);
-   expMonitor  = monitor;
+   expMonitor                   = monitor;
+   expMonitor.read.summary.mask = 0;
 
 
    static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
@@ -253,6 +320,7 @@ static int copy_test (int               fd,
       // Fill a packets worth of Wib frames
       // -----------------------------------
       int nbytes = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
+      timestamp += PACKET_K_NSAMPLES * 25;
 
       // Process each packet for all time samples
       for (int isample = 0; isample < PACKET_K_NSAMPLES; isample++)
@@ -264,7 +332,7 @@ static int copy_test (int               fd,
          // Report if they are not as expected or this is the
          // last frame in the packet
          // -------------------------------------------------
-         update (expMonitor, isample == (PACKET_K_NSAMPLES -1));
+         update (expMonitor, sizeof (WibFrame), isample == (PACKET_K_NSAMPLES -1));
          if (differ (expMonitor, monitor) || isample == (PACKET_K_NSAMPLES-1))
          {
             static int Count = 0;
@@ -316,6 +384,7 @@ static int copy_test (int               fd,
 /* ---------------------------------------------------------------------- */
 static int compress_test (int               fd,
                           char const *filename,
+                          FileType    filetype,
                           uint32_t    headerId,
                           uint32_t     version)
 {
@@ -344,19 +413,29 @@ static int compress_test (int               fd,
       static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
       uint32_t summary = 0;
 
-      // -------------------
-      // Read one time slice
-      // -------------------
-      ssize_t nread = read_adcs (fd, filename, (uint16_t *)adcs, sizeof (adcs)/ sizeof (adcs[0][0]));
-      if (nread == 0) break;
-
       int runEnable = 1;
       int flush     = 0;
+      int nbytes;
 
-      // ----------------------------------
-      // Fill a packets worth of Wib frames
-      // -----------------------------------
-      int nbytes  = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
+      if (filetype == FileType::Adcs)
+      {
+         // -------------------
+         // Read one time slice
+         // -------------------
+         ssize_t nread = read_adcs (fd, filename, (uint16_t *)adcs, sizeof (adcs)/ sizeof (adcs[0][0]));
+         if (nread == 0) break;
+
+         // ----------------------------------
+         // Fill a packets worth of Wib frames
+         // -----------------------------------
+         nbytes  = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
+      }
+      else if (filetype == FileType::WibFrames)
+      {
+         nbytes = fill_packet (src, fd, timestamp, runEnable, flush);
+         if (nbytes == 0) break;
+      }
+
       timestamp  += 25 * PACKET_K_NSAMPLES;
 
       // -------------------
@@ -416,8 +495,20 @@ static int compress_test (int               fd,
  *    An unsuccessful opens terminates the program
  *
 \* ---------------------------------------------------------------------- */
-static int open_file (char const *filename)
+static int open_file (char const **fullfilename, char const *filename, FileType filetype)
 {
+    if (filetype == FileType::Adcs)
+    {
+        unsigned int                     run =                       15660;
+        static char const DefaultDirectory[] =       "/u/eb/convery/ForJJ";
+        static char const               *dir =            DefaultDirectory;
+        static const char     FileTemplate[] = "%s/run%u_binary/run%u.bin";
+        static char         filenameBuf[256];
+
+        sprintf (filenameBuf, FileTemplate, dir, run, run);
+        filename = filenameBuf;
+    }
+
    int fd = ::open (filename, O_RDONLY);
    if (fd < 0)
    {
@@ -429,6 +520,7 @@ static int open_file (char const *filename)
       exit (-1);
    }
 
+   *fullfilename = filename;
    return fd;
 }
 /* ---------------------------------------------------------------------- */
@@ -529,6 +621,31 @@ static void configure_hls (Source            &src,
 /* ---------------------------------------------------------------------- */
 
 
+static int fill_packet (Source        &src,
+                        int             fd,
+                        uint64_t timestamp,
+                        int      runEnable,
+                        int          flush)
+{
+   WibFrame frame;
+   int     nbytes = 0;
+
+   for (int isample = 0; isample < PACKET_K_NSAMPLES; isample++)
+   {
+      ssize_t nread = ::read (fd, &frame, sizeof (frame));
+
+      if (nread != sizeof (frame))
+      {
+         return 0;
+      }
+
+      nbytes += nread;
+      src.fill_frame (frame, runEnable, flush, isample);
+   }
+
+   return nbytes;
+}
+
 
 /* ---------------------------------------------------------------------- */
 static int fill_packet (Source                                          &src,
@@ -572,13 +689,15 @@ static int fill_packet (Source                                          &src,
 
 
 /* ---------------------------------------------------------------------- */
-static void update (MonitorModule &status, bool output_packet)
+static void update (MonitorModule &status, uint32_t nbytes, bool output_packet)
 {
    status.read.summary.nframes    += 1;
    status.read.summary.nStates[0] += 1;
 
    status.write.npromoted += 1;
    status.write.npackets  += output_packet;
+   status.write.nbytes    += nbytes
+                          + (output_packet ? Source::sizeof_trailer () : 0);
 
    return;
 }
@@ -731,10 +850,10 @@ static void print_monitor (MonitorModule const &s0,
 static int check_empty (MyStreamOut &mAxis, MyStreamIn &sAxis)
 {
    int status = 0;
-   if (!mAxis.empty()) { status = -2; std::cout << "mAxis is not empty" << std::endl; }
-   if (!sAxis.empty()) { status = -3; std::cout << "sAxis is not empty" << std::endl; }
+   if (!mAxis.empty()) { status |= 1; std::cout << "mAxis is not empty" << std::endl; }
+   if (!sAxis.empty()) { status |= 2; std::cout << "sAxis is not empty" << std::endl; }
 
-   if (status == -2)
+   if (status & 1)
    {
       int idx = 0;
       std::cout << "mAxis Data.Dest.  Id.  Keep.Last.Strb.User" << std::endl;
@@ -750,7 +869,7 @@ static int check_empty (MyStreamOut &mAxis, MyStreamIn &sAxis)
    }
 
 
-   if (status == -3)
+   if (status & 2)
    {
       int idx = 0;
       std::cout << "sAxis Data.Dest.  Id.  Keep.Last.Strb.User" << std::endl;
@@ -765,7 +884,7 @@ static int check_empty (MyStreamOut &mAxis, MyStreamIn &sAxis)
       }
    }
 
-   return status;
+   return -status;
 }
 /* ---------------------------------------------------------------------- */
 
