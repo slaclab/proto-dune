@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmWibRxFramer.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2018-08-10
+-- Last update: 2018-09-06
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -472,11 +472,11 @@ begin
          SLAVE_READY_EN_G    => true,
          EN_FRAME_FILTER_G   => true,
          OR_DROP_FLAGS_G     => true,
-         VALID_THOLD_G       => 1,
+         VALID_THOLD_G       => 0,  -- 0 = store the packet then drop if error exists
          -- FIFO configurations
          BRAM_EN_G           => true,
          GEN_SYNC_FIFO_G     => true,
-         CASCADE_SIZE_G      => CASCADE_SIZE_G,
+         CASCADE_SIZE_G      => 1,
          FIFO_ADDR_WIDTH_G   => 9,
          -- AXI Stream Port Configurations
          SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
@@ -492,7 +492,7 @@ begin
          mAxisRst       => axilRst,
          mAxisMaster    => wibMaster,
          mAxisSlave     => wibSlave,
-         mAxisTermFrame => termFrame);
+         mAxisDropWrite => termFrame);
 
    U_Reg : entity work.ProtoDuneDpmWibRxFramerReg
       generic map (
