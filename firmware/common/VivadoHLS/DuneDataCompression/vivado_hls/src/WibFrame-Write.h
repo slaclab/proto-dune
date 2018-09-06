@@ -117,7 +117,7 @@ void write_frame (AxisOut           &axis,
 
       if (axisFirst)
       {
-         printf ("Setting first on %x.%x", idx, ctx.m_odx);
+         printf ("Setting first on %x.%x\n", idx, ctx.m_odx);
       }
       d = frame.m_dat.d[idx];
       commit (axis, ctx.m_odx, writeIt, d, axisFirst, 0);
@@ -136,8 +136,8 @@ void write_frame (AxisOut           &axis,
    bool output;
    if (writeIt && ctx.m_odx && ((ctx.m_fdx & 0x3ff)  == 0))
    {
-      printf ("Outputting packet frame.status = %8.8x ctx.m_fdx = %8.8x\n",
-               status.to_uint(), lcl.npromoted);
+      printf ("Outputting packet frame.status = %8.8x ctx.m_fdx = %8.8x  summary = %8.8x\n",
+               status.to_uint(), lcl.npromoted, (unsigned)summary);
       epilogue (axis, ctx.m_odx, summary);
 
       lcl.nbytes   += ctx.m_odx * 8;

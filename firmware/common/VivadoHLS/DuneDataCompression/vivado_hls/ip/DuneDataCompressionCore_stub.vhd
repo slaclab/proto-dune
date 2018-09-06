@@ -1,7 +1,7 @@
 -- Copyright 1986-2018 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2018.1 (lin64) Build 2188600 Wed Apr  4 18:39:19 MDT 2018
--- Date        : Tue Aug 14 07:36:24 2018
+-- Date        : Wed Aug 29 16:27:31 2018
 -- Host        : rdusr219.slac.stanford.edu running 64-bit Red Hat Enterprise Linux Server release 6.10 (Santiago)
 -- Command     : write_vhdl -force -mode synth_stub
 --               /u1/DUNE/cob_nfs/russell/proto-dune/firmware/common/VivadoHLS/DuneDataCompression/vivado_hls/ip/DuneDataCompressionCore_stub.vhd
@@ -49,10 +49,10 @@ entity DuneDataCompressionCore is
     mAxis_TID : out STD_LOGIC_VECTOR ( 0 to 0 );
     mAxis_TDEST : out STD_LOGIC_VECTOR ( 0 to 0 );
     moduleIdx_V : in STD_LOGIC_VECTOR ( 0 to 0 );
-    mAxis_TVALID : out STD_LOGIC;
-    mAxis_TREADY : in STD_LOGIC;
     sAxis_TVALID : in STD_LOGIC;
-    sAxis_TREADY : out STD_LOGIC
+    sAxis_TREADY : out STD_LOGIC;
+    mAxis_TVALID : out STD_LOGIC;
+    mAxis_TREADY : in STD_LOGIC
   );
 
 end DuneDataCompressionCore;
@@ -61,6 +61,6 @@ architecture stub of DuneDataCompressionCore is
 attribute syn_black_box : boolean;
 attribute black_box_pad_pin : string;
 attribute syn_black_box of stub : architecture is true;
-attribute black_box_pad_pin of stub : architecture is "s_axi_BUS_A_AWVALID,s_axi_BUS_A_AWREADY,s_axi_BUS_A_AWADDR[9:0],s_axi_BUS_A_WVALID,s_axi_BUS_A_WREADY,s_axi_BUS_A_WDATA[31:0],s_axi_BUS_A_WSTRB[3:0],s_axi_BUS_A_ARVALID,s_axi_BUS_A_ARREADY,s_axi_BUS_A_ARADDR[9:0],s_axi_BUS_A_RVALID,s_axi_BUS_A_RREADY,s_axi_BUS_A_RDATA[31:0],s_axi_BUS_A_RRESP[1:0],s_axi_BUS_A_BVALID,s_axi_BUS_A_BREADY,s_axi_BUS_A_BRESP[1:0],ap_clk,ap_rst_n,interrupt,sAxis_TDATA[63:0],sAxis_TKEEP[7:0],sAxis_TSTRB[7:0],sAxis_TUSER[3:0],sAxis_TLAST[0:0],sAxis_TID[0:0],sAxis_TDEST[0:0],mAxis_TDATA[63:0],mAxis_TKEEP[7:0],mAxis_TSTRB[7:0],mAxis_TUSER[3:0],mAxis_TLAST[0:0],mAxis_TID[0:0],mAxis_TDEST[0:0],moduleIdx_V[0:0],mAxis_TVALID,mAxis_TREADY,sAxis_TVALID,sAxis_TREADY";
+attribute black_box_pad_pin of stub : architecture is "s_axi_BUS_A_AWVALID,s_axi_BUS_A_AWREADY,s_axi_BUS_A_AWADDR[9:0],s_axi_BUS_A_WVALID,s_axi_BUS_A_WREADY,s_axi_BUS_A_WDATA[31:0],s_axi_BUS_A_WSTRB[3:0],s_axi_BUS_A_ARVALID,s_axi_BUS_A_ARREADY,s_axi_BUS_A_ARADDR[9:0],s_axi_BUS_A_RVALID,s_axi_BUS_A_RREADY,s_axi_BUS_A_RDATA[31:0],s_axi_BUS_A_RRESP[1:0],s_axi_BUS_A_BVALID,s_axi_BUS_A_BREADY,s_axi_BUS_A_BRESP[1:0],ap_clk,ap_rst_n,interrupt,sAxis_TDATA[63:0],sAxis_TKEEP[7:0],sAxis_TSTRB[7:0],sAxis_TUSER[3:0],sAxis_TLAST[0:0],sAxis_TID[0:0],sAxis_TDEST[0:0],mAxis_TDATA[63:0],mAxis_TKEEP[7:0],mAxis_TSTRB[7:0],mAxis_TUSER[3:0],mAxis_TLAST[0:0],mAxis_TID[0:0],mAxis_TDEST[0:0],moduleIdx_V[0:0],sAxis_TVALID,sAxis_TREADY,mAxis_TVALID,mAxis_TREADY";
 begin
 end;

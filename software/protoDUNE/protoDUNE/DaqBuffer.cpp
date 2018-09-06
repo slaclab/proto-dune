@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 // This file is part of 'DUNE Development Software'.
 // It is subject to the license terms in the LICENSE.txt file found in the
 // top-level directory of this distribution and at:
@@ -96,6 +96,8 @@
 
 
 #include "DaqBuffer.h"
+#include "DataDpmHlsMon.h"
+#include "RegisterLink.h"
 #include "FrameBuffer.h"
 #include "TimingClockTicks.h"
 #include <AxisDriver.h>
@@ -542,11 +544,11 @@ public:
       m_trgNode[0] = 0;
       m_trgNode[1] = 0;
 
-      m_index = index;
-      m_ctbs  = 0;
-      m_nctbs = 0;
+      m_index   = index;
+      m_pndCtbs = 0;
+      m_nctbs   = 0;
 
-      m_pool  = pool;
+      m_pool   = pool;
    }
    /* ------------------------------------------------------------------- */
 
@@ -602,6 +604,20 @@ public:
    /* ------------------------------------------------------------------ */
    void setWindow (uint64_t beg, uint64_t end)
    {
+
+      
+      /// !!! KLUDGE !!! -- to deliberately create empty events
+#if 0
+      uint64_t begOrg = beg;
+      uint64_t endOrg = end;
+      beg -= 0x8000000;
+      end -= 0x8000000;
+      fprintf (stderr, 
+               "Screwing up trg time: %16.16" PRIx64 " -> %16.16" PRIx64 " : "
+               " %16.16" PRIx64 " -> %16.16" PRIx64 "\n",
+               begOrg, beg, endOrg, end);
+#endif
+
       /*
       fprintf (stderr,
                "Trigger Window %16.16" PRIx64 " -> %16.16" PRIx64 "\n",
@@ -680,6 +696,44 @@ public:
    /* ------------------------------------------------------------------- */
 
 
+   /* ------------------------------------------------------------------- *//*!
+
+     \brief  Check if all incomplete contributors are inactive
+     \retval == false
+                if there incomplete, active contributors
+     \retval == true
+                if there are no incomplete active contributors
+ 
+     \param[in]   ctbs  Mask of incomplete contributors
+     \param[in]  npkts  Number of packets in each contributor
+
+     An inactive contributor is one with no packets added to this point
+                                                                         */
+   /* ------------------------------------------------------------------ */
+   inline bool isComplete (uint32_t ctbs, uint16_t const (*npkts)[MAX_DEST])
+   {
+      // Any active contributors that are not complete
+      while (ctbs)
+      {
+         int idx = ffsl (ctbs) - 1;
+         
+         /// fprintf (stderr, "Checking contributor cnts[%d] = %d ctbs = %x\n",
+         ///          idx, (int)(*npkts)[idx], (int)ctbs);
+
+         if ((*npkts)[idx])
+         {
+            return false;
+         }
+            
+         ctbs &= ~(1 << idx);
+      }
+
+      return true;
+   }
+   /* ------------------------------------------------------------------- */
+
+
+
 
    /* ------------------------------------------------------------------- *//*!
 
@@ -740,15 +794,22 @@ public:
 
       uint32_t ctb_mask = (1 << dest);
 
-      // --------------------------------------
+      // ----------------------------------------------------
       // Check if this contribution is complete
-      // --------------------------------------
-      if ((m_ctbs & ctb_mask )== 0)
+      // Add to the latency list only if it not being ignored
+      // Tf it is disabled, it maybe within the event
+      // window, in which case it should be freed. That test
+      // occurs later in this code.
+      // ----------------------------------------------------
+      if ( ((m_pndCtbs | m_dsbCtbs ) & ctb_mask )== 0)
       {
-      // -----------------------------------------
-         // Since this contribution is complete,
-         // it should be added to the latency list
-         // --------------------------------------
+      // ------------------------------------------------------------
+         // Since this contribution is complete and not being ignored
+         // it should be added to the latency list.
+         // ---------------------------------------------------------
+         ///fprintf (stderr, "AddToLatency %d, active:ignore %2.2x : %2.2x\n",
+         ///         dest, (int)m_pndCtbs, (int)m_dsbCtbs);
+
          return ACTION_M_ADDTOLATENCY;
       }
 
@@ -765,7 +826,7 @@ public:
       fprintf (stderr,
                "Adding: %2d: ctbs:%1.1x:%d %16.16" PRIx64 ":%16.16" PRIx64 ""
                ">= %16.16" PRIx64 ":%16.16" PRIx64 " node = %p\n",
-               dest, m_ctbs, m_nctbs,
+               dest, m_pndCtbs, m_nctbs,
                begTime, m_limits.m_beg, endTime, m_limits.m_end, (void *)node);
       **/
 
@@ -815,10 +876,37 @@ public:
          */
 
 
-         // ------------------------------------------
+         // --------------------------------------------
          // Some portion of this node/packet is within
-         // the event window, add it to the event.
-         // ------------------------------------------
+         // the event window, add it to the event, but
+         // only if it is wanted. If disabled, free it
+         // --------------------------------------------
+         if (ctb_mask & m_dsbCtbs)
+         {
+            if (m_pndCtbs == 0 && endTime >= m_limits.m_end)
+            {
+               // -----------------------------------------
+               // This completes the event, but since this
+               // contributor is being ignored, it is not
+               // added to the event
+               // -----------------------------------------
+               
+               fprintf (stderr, "Posting ignored contributor %d:%x\n", 
+                        dest, (int)m_pndCtbs);
+               return ACTION_M_POST |ACTION_M_FREE;
+            }
+            else
+            {
+               // --------------------------------
+               // Still within the event window.
+               // Since being ignore, just free it
+               // --------------------------------               
+               //// fprintf (stderr, "Freeing ignored contributor %d:%x\n", 
+               ////          dest, (int)m_pndCtbs);
+               return ACTION_M_FREE;
+            }                  
+         }
+
          uint16_t npkt = m_npkts[dest];
          m_list [dest].insert_tail (node);
          m_npkts[dest] = npkt + 1;
@@ -857,15 +945,13 @@ public:
             }
             else if (trgTime <= endTime)
             {
-               // ------------------------------------------------
-               // Now know that the trigger time is at or after
-               // the beginning of this node/packet and, with this
-               // check, now know that the trigger time is at or
-               // before the ending time of this node/packet.
+               // ---------------------------------------------------
+               // Now know that the trigger time is at or after the
+               // beginning of this node/packet and, with this check,
                // i.e. the trigger occurred some time within this
                // packet/node. Record the node and packet number
                // of this node/packet as the trigger node.
-               // ------------------------------------------------
+               // --------------------------------------------------
                ///fprintf (stderr, "Adding trigger node\n");
                m_trgNode[dest] = node;
                m_trgNpkt[dest] = npkt;
@@ -880,9 +966,8 @@ public:
             // Yes, this contributor is complete
             // Remove it from the pending list
             // ---------------------------------
-            m_nctbs +=  1;
-            m_ctbs  &= ~ctb_mask;
-
+            m_nctbs          +=  1;
+            m_pndCtbs        &= ~ctb_mask;
             if (m_nctbs > 2)
             {
                fprintf (stderr,
@@ -894,7 +979,8 @@ public:
             // If no more contributors are pending,
             // then this completes the event, so post it
             // -----------------------------------------
-            if (m_ctbs == 0)
+            int32_t complete = isComplete (m_pndCtbs, &m_npkts);
+            if (complete)
             {
                return ACTION_M_POST;
             }
@@ -930,10 +1016,10 @@ public:
          // Note: Since this node/packet is not part of this
          // event, this packet is placed on the latency list.
          // ---------------------------------------------------
-         if (m_ctbs & ctb_mask)
+         if (m_pndCtbs & ctb_mask)
          {
-            m_nctbs += 1;
-            m_ctbs  &= ~ctb_mask;
+            m_nctbs   += 1;
+            m_pndCtbs &= ~ctb_mask;
 
             static int DumpCount = 1000;
             if (DumpCount >= 0)
@@ -943,13 +1029,13 @@ public:
                         "Rejecting packet[%1d:%4d] begTime > window endTime "
                         "%16.16" PRIx64 " > %16.16" PRIx64 " Ctbs:%2.2x:%d\n",
                         dest, DumpCount,
-                        begTime, m_limits.m_end, m_ctbs, m_nctbs);
+                        begTime, m_limits.m_end, m_pndCtbs, m_nctbs);
             }
 
             // ---------------------------------
             // Check if all contributions are in
             // ---------------------------------
-            if (m_ctbs == 0)
+            if (m_pndCtbs == 0)
             {
                // ---------------------------------------------
                // This completed the event
@@ -996,21 +1082,35 @@ public:
              being assembled resulted in the completion of the event.
              This is rare but can happen when packets are dropped
 
-     \param[in]  lists  The array of latency lists for all the contributors
-     \param[in]     fd  The fd used to return the unused packets
-     \param[in]   ctbs  Bit mask of the enabled contributors
+     \param[in]    lists  The array of latency lists for all the contributors
+     \param[in]       fd  The fd used to return the unused packets
+     \param[in]  enbCtbs  Bit mask of the enabled contributors
+     \param[in]  dsbCtbs  Bit mask of the disable contributors
                                                                           */
    /* ------------------------------------------------------------------- */
-   int seedAndDrain (LatencyList *lists, int fd, uint32_t ctbs)
+   int seedAndDrain (LatencyList *lists, 
+                     int             fd,
+                     uint32_t   enbCtbs,
+                     uint32_t   dsbCtbs)
    {
       // Initialize the pending list to waiting for all enable contributors
-      m_ctbs  = ctbs;
-      m_nctbs = 0;
+      m_pndCtbs = enbCtbs;
+      m_enbCtbs = enbCtbs;
+      m_dsbCtbs = dsbCtbs;
+      m_nctbs   = 0;
+
+      // ---------------------------------------------------------
+      // If there are no enabled contributors, post an empty event
+      // ---------------------------------------------------------
+      if (enbCtbs == 0) 
+      {
+         return ACTION_M_POST;
+      }
 
       /**
       fprintf (stderr,
                "Pending contributors %2.2" PRIx16 " (%d)\n",
-               m_ctbs,
+               m_pndCtbs,
                m_nctbs);
       **/
 
@@ -1248,7 +1348,7 @@ public:
             // If this contribution is complete, move on to the
             // next contributor
             // ------------------------------------------------
-            if ( (m_ctbs & (1 << ictb)) == 0)
+            if ( (m_pndCtbs & (1 << ictb)) == 0)
             {
                break;
             }
@@ -1468,11 +1568,11 @@ public:
    List<FrameBuffer>::Node
            const *m_trgNode[2];  /*!< The triggering node                 */
    uint16_t       m_trgNpkt[2];  /*!< The triggering packet index         */
-   int                 m_nctbs;  /*!< Count of contributors               */
-   uint32_t             m_ctbs;  /*!< When building, bit mask of
-                                      incomplete contributors
-                                      When completed, bit mask of
-                                      contributions present               */
+   int                 m_nctbs;  /*!< Count of completed contributors     */
+   uint32_t          m_enbCtbs;  /*!< Bit list of enabled  contributors   */
+   uint32_t          m_dsbCtbs;  /*!< Bit list of disabled contributors   */
+   uint32_t          m_pndCtbs;  /*!< Bit list of pending contributors    */
+
    uint16_t         m_ctdid[2];  /*!< The WIB crate.slot.fiber id         */
    uint16_t         m_npkts[2];  /*!< The number of packets in this event */
    uint16_t            m_index;  /*!< Associated dma frame buffer index   */
@@ -3280,27 +3380,10 @@ static void postEventAndReset (CommQueue     *queue,
                                Event         *event,
                                LatencyList *latency)
 {
-   // Get the list of contributors
-   uint32_t ctbs = ((1 << MAX_DEST) - 1) & ~event->m_ctbs;
-
-
-   static int Cnt[4] = { 0, 1, 1, 2 };
-   if (Cnt[ctbs] != event->m_nctbs)
-   {
-      fprintf (stderr,
-               "ctbs = %4.4" PRIx32 ":%4.4" PRIx32
-               "inconsistent with event->m_nctbs = %d\n",
-               ctbs, event->m_ctbs, event->m_nctbs);
-      exit (-1);
-   }
-
-
-   event->m_ctbs = ctbs;
-
    /**
    fprintf (stderr,
            "Posting %p ctbs = %4.4" PRIx32 ":%d\n",
-            (void *)(event), event->m_ctbs, event->m_nctbs);
+            (void *)(event), event->m_pndCtbs, event->m_nctbs);
    **/
 
    queue->push (event);
@@ -3419,6 +3502,61 @@ static void getWibIdentifiers (uint16_t srcs[MAX_DEST], DaqDmaDevice *dataDma)
 }
 /* ---------------------------------------------------------------------- */
 
+
+/* ---------------------------------------------------------------------- *//*!
+
+  \class HlsBlowOff
+  \brief Returns the mask HLS streams that are being blown off
+                                                                          */
+/* ---------------------------------------------------------------------- */
+class HlsBlowOff
+{
+public:
+   HlsBlowOff (DataDpmHlsMon *hlsMon) :
+      m_hlsMon  (hlsMon),
+      m_var     (hlsMon->m_blowOff->getVariable ()),
+      m_cacheId (-1)
+      {
+         m_mask = fetch ();
+      }
+
+public:
+   uint32_t fetch ()
+   {
+      uint32_t cacheId = m_hlsMon->m_wrote;
+
+      // --------------------------------------------------
+      // Since it is somewhat disruptive to fetch the mask,
+      // it is only fetched when the cache has changed
+      // --------------------------------------------------
+      if (cacheId != m_cacheId)
+      {
+         // Value may have changed, refetch it
+         m_mask     = m_var->getInt ();
+         m_cacheId  = cacheId;
+         /// fprintf (stderr, "Hls Blowoff = %x\n", m_mask);
+      }
+
+      return m_mask;
+   }
+
+public:
+   void trim (uint32_t *enbCtbs, uint32_t *dsbCtbs)
+   {
+      uint32_t mask = fetch ();
+      *dsbCtbs |=  mask;
+      *enbCtbs &= ~mask;
+      return;
+   }
+
+
+private:
+   DataDpmHlsMon *m_hlsMon; /*!< HLS monitoring class                     */
+   Variable         *m_var; /*!< The blow off variable                    */
+   uint32_t      m_cacheId; /*!< Blowoff cache id                         */
+   uint32_t         m_mask; /*!< Blowoff mask                             */
+};
+/* ---------------------------------------------------------------------- */
 
 
 
@@ -3560,16 +3698,22 @@ void DaqBuffer::rxRun ()
    FD_SET (timingFd, &fds);
 
    RunMode         runMode = _config._runMode;
-   bool     blowOffDmaData = _config._blowOffDmaData;
+   uint32_t blowOffDmaData = _config._blowOffDmaData;
 
    struct timeval prvTime[2];
    gettimeofday (prvTime + 0, NULL);
    gettimeofday (prvTime + 1, NULL);
 
-   // Initialize the contributor mask
-   uint32_t ctbs = ((1 << MAX_DEST) - 1);
-   fprintf (stderr,
-            "Ctbs = %2.2" PRIx32 "\n", ctbs);
+   // ---------------------------------------------
+   // Initialize the contributor masks
+   //  enbCtbs =  enabled contributors
+   //  dsbCtbs = disabled contributors
+   uint32_t dsbCtbs =  blowOffDmaData;
+   uint32_t enbCtbs = ~dsbCtbs &((1 << MAX_DEST) - 1);
+   // ---------------------------------------------
+
+   HlsBlowOff hlsBlowOff (_dataDpmHlsMon);
+
 
    // Run while enabled
    while (_rxThreadEn)
@@ -3604,13 +3748,18 @@ void DaqBuffer::rxRun ()
       if (nfds > 0)
       {
          // --------------------------------------------------------
-         // Can only change the run mode while not event in progress
+         // Can only change the run mode and list of contributors
+         // when no event in progress.  Even this is not sufficient.
+         // If the trigger comes before the latency buffer is filled
+         // the first event after the change may not be missing the
+         // pre-trigger packets.
          // --------------------------------------------------------
          if (event == NULL)
          {
             runMode        = _config._runMode;
             blowOffDmaData = _config._blowOffDmaData;
-            ctbs           = ((1 << MAX_DEST) - 1);
+            dsbCtbs          =  blowOffDmaData;
+            enbCtbs          = ~dsbCtbs & ((1 << MAX_DEST) - 1);
          }
 
 
@@ -3619,10 +3768,15 @@ void DaqBuffer::rxRun ()
          // --------------------------------------------
          if (FD_ISSET (timingFd, &fds))
          {
+            // ------------------------------------------------------
+            // With the ability to selectively kill HLS streams it is
+            // incorrect for the blowOffDmaData to kill the trigger
+            // message, so this argument is effectively set to false
+            // ------------------------------------------------------
             int index;
             TimingMsg const *tmsg = readTimingMsg (&index,
                                                    _timingDma,
-                                                   blowOffDmaData,
+                                                   0, /// blowOffDmaData,
                                                    runMode,
                                                    trgActive,
                                                    _counters._triggers,
@@ -3639,7 +3793,6 @@ void DaqBuffer::rxRun ()
                InCnt [0] = InCnt [1] = 0;
                OutCnt[0] = OutCnt[1] = 0;
                uint64_t trgTimestamp = tmsg->timestamp ();
-
 
                // -----------------------------------------------
                // Allocate a new event.
@@ -3672,6 +3825,13 @@ void DaqBuffer::rxRun ()
                   _timingDma.free (index);
 
 
+                  // ---------------------------------------------------------
+                  // Update the contributions with hls streams being blown off
+                  // --------------------------------------------------------
+                  hlsBlowOff.trim (&enbCtbs, &dsbCtbs);
+
+                  fprintf (stderr, "Ext::Enabled:Disabled ctbs = %x:%x\n", (unsigned)enbCtbs, (unsigned)dsbCtbs);
+
                   // -------------------------------------------------
                   // Transfer any data packets on the latency queue
                   // that are within the event window to this event.
@@ -3679,7 +3839,7 @@ void DaqBuffer::rxRun ()
                   // queue contains all the packets needed to complete
                   // this event.
                   // -------------------------------------------------
-                  int32_t post = event->seedAndDrain (latency, dataFd, ctbs);
+                  int32_t post = event->seedAndDrain (latency, dataFd, enbCtbs, dsbCtbs);
                   if (post)
                   {
                      postEventAndReset (_txReqQueue, event, latency);
@@ -3770,12 +3930,12 @@ void DaqBuffer::rxRun ()
             // If data is from an unknown destination or
             // it is not being serviced, dispose of it.
             // -----------------------------------------
-            if ( (dest > (MAX_DEST - 1)) || blowOffDmaData)
+            if ( (dest > (MAX_DEST - 1)) )
             {
                if (dest > (MAX_DEST - 1))
                {
                   fprintf (stderr, "rxRun:Error: Bad destination = %d\n", dest);
-               }
+               } 
 
                _dataDma.free (index);
                continue;
@@ -3849,13 +4009,14 @@ void DaqBuffer::rxRun ()
             uint32_t tlrSize = *reinterpret_cast<uint32_t const *>(dend - 1)
                              & 0xffffff;
 
+
             // ---------------------------------------------------
             // Check if the read size matches the anticipated size
             // ---------------------------------------------------
             if (tlrSize != _rxSize)
             {
                static int Count = 0;
-               if ((Count & 0xfff) == 0 || (Count & 0xfff) == 1)
+               //if ((Count & 0xfff) == 0 || (Count & 0xfff) == 1)
                {
                   fprintf (stderr,
                            "rxRun:Error: Frame[%d.%d] %16.16" PRIx64 " -> "
@@ -3868,13 +4029,20 @@ void DaqBuffer::rxRun ()
                   "rxRun:Tlr    %16.16" PRIx64 " %16.16" PRIx64 ""
                               " %16.16" PRIx64 " %16.16" PRIx64 "\n", dend[-3], dend[-2], dend[-1], dend[0]);
 
-
+#if 0
 
                   {
                      uint64_t const *p = (uint64_t const *)data;
                      int           n64 = rxSize / sizeof (*p);
 
-                     for (int idx = 0; idx < n64; idx++)
+                     for (int idx = 0; idx < 64; idx++)
+                     {
+                        if ((idx%4) == 0) fprintf (stderr, "d[%1d.%3d]:", dest, idx);
+                        fprintf (stderr, " %16.16" PRIx64, p[idx]);
+                        if ((idx%4) == 3) putchar ('\n');
+                     }
+
+                     for (int idx = n64-64; idx < n64; idx++)
                      {
                         if ((idx%4) == 0) fprintf (stderr, "d[%1d.%3d]:", dest, idx);
                         fprintf (stderr, " %16.16" PRIx64, p[idx]);
@@ -3885,6 +4053,7 @@ void DaqBuffer::rxRun ()
                      // If have left off in the middle of a line
                      if (n64 % 4) fputc ('\n', stderr);
                   }
+#endif
 
                }
 
@@ -3896,9 +4065,6 @@ void DaqBuffer::rxRun ()
 
 
             uint64_t timestampRange[2];
-
-
-
             fb = &fbs[index];
 
             /**
@@ -3960,13 +4126,21 @@ void DaqBuffer::rxRun ()
                      exit (-1);
                   }
 
+
+                  // ---------------------------------------------------------
+                  // Update the contributions with hls streams being blown off
+                  // --------------------------------------------------------
+                  hlsBlowOff.trim (&enbCtbs, &dsbCtbs);
+
+ 
+                  ///fprintf (stderr, "Enabled:Disabled ctbs = %x:%x\n", (unsigned)enbCtbs, (unsigned)dsbCtbs);
                   event->m_trigger.init (triggerTime,
                                          softTriggerCnt++, 0);
                   event->setWindow (triggerTime - _config._pretrigger,
                                     triggerTime + _config._posttrigger);
 
                   latency[dest].check (fb, 12, "rxRun:seedAndDrain (before)");
-                  int32_t post = event->seedAndDrain (latency, dataFd, ctbs);
+                  int32_t post = event->seedAndDrain (latency, dataFd, enbCtbs, dsbCtbs);
                   latency[dest].check (fb, 12, "rxRun:seedAndDrain (after)");
 
                   /**
@@ -4495,6 +4669,8 @@ static inline void completeHeader (pdd::fragment::Header<pdd::fragment::Type::Da
                                                          *header,
                                    Event const            *event,
                                    uint32_t               status,
+                                   uint32_t              enbCtbs,
+                                   uint32_t            emptyCtbs,
                                    uint32_t               txSize);
 
 static uint32_t   addContributors (TxMsg                          *msg,
@@ -4502,7 +4678,7 @@ static uint32_t   addContributors (TxMsg                          *msg,
                                    pdd::fragment::tpc::Stream  *stream,
                                    void                  **nextAddress,
                                    uint32_t                 *retStatus,
-                                   uint32_t                     *mctbs);
+                                   uint32_t              *retEmptyCtbs);
 
 static int       addTpcDataRecord (TxMsg                          *msg,
                                    pdd::fragment::tpc::Stream  *stream,
@@ -4586,27 +4762,29 @@ void DaqBuffer::txRun ()
       // onerous to arrange.
       // -----------------------------------------------------------------------
       uint32_t contributorSize;
-      uint32_t           mctbs;
+      uint32_t       emptyCtbs;
       uint32_t          status;
-      pdd::Trailer    *trailer = &HeaderOrigin.getTrailer ();
+      pdd::Trailer    *trailer = &ho->getTrailer ();
       pdd::fragment::tpc::Stream *streamRecord = ho->getStreamRecord ();
       txMsg.setIovlen (1);
+
+
       txSize += contributorSize = addContributors (&txMsg,
                                                    event,
                                                    streamRecord,
                                                    (void **)&trailer,
                                                    &status,
-                                                   &mctbs);
+                                                   &emptyCtbs);
+
 
       txSize += sizeof (pdd::Trailer);
-
 
       // ------------------------------------
       // Complete the header/orginator
       // with the values that were not known
       // until the event was fully formatted.
       // ------------------------------------
-      completeHeader  (&ho->m_header, event, status, txSize);
+      completeHeader  (&ho->m_header, event, status, event->m_enbCtbs, emptyCtbs, txSize);
       header0_dump    ( ho->m_header);
       originator_dump ( ho->->m_origin);
 
@@ -4617,7 +4795,19 @@ void DaqBuffer::txRun ()
       // firmware trailer is usurped for the trailer.
       // --------------------------------------------
       trailer->construct (ho->m_header.retrieve ());
-      txMsg.increaseLast (sizeof (*trailer));
+      if (contributorSize == 0) 
+      {
+         txMsg.increase (0, sizeof (*trailer));
+
+         ////uint64_t const *ptr = (uint64_t const *)txMsg.m_msg_iov[0].iov_base;
+         ////int         cnt = txMsg.m_msg_iov[0].iov_len / sizeof (*ptr);
+      }
+      else
+      {
+         txMsg.increaseLast (sizeof (*trailer));
+      }
+
+
 
 
       // -------------------------------------------------
@@ -4878,17 +5068,18 @@ static uint32_t  addContributors (TxMsg                         *msg,
                                   pdd::fragment::tpc::Stream *stream,
                                   void                 **nextAddress,
                                   uint32_t                *retStatus,
-                                  uint32_t                 *retMctbs)
+                                  uint32_t             *retEmptyCtbs)
 {
-   unsigned int  ctbs = event->m_ctbs;
-   unsigned int nctbs = event->m_nctbs;
-   unsigned int mctbs = nctbs;
-   uint32_t   ctbSize = 0;
-   uint32_t    status = 0;
+   unsigned int      ctbs = event->m_enbCtbs;
+   unsigned int     nctbs = event->m_nctbs;
+   unsigned int emptyCtbs = 0;
+   uint32_t       ctbSize = 0;
+   uint32_t        status = 0;
 
 
    // ------------------------------------------------
    // Capture the frames from each incoming HLS source
+   // This loop only examines enable contributors
    // ------------------------------------------------
    while (ctbs)
    {
@@ -4902,11 +5093,11 @@ static uint32_t  addContributors (TxMsg                         *msg,
 
       if (list->is_empty ())
       {
-         // -------------------------------------------
-         // Reduce the number of non-empty contributors
-         // -------------------------------------------
-         mctbs -= 1;
-         fprintf (stderr, "Empty contributor %d\n", ictb);
+         // -------------------------------------------------
+         // Record this contributor in empty contributor mask
+         // ------------------=------------------------------
+         emptyCtbs |= (1 << ictb);
+         fprintf (stderr, "Empty contributor %d #non-empty = %d\n", ictb, emptyCtbs);
       }
       else
       {
@@ -4932,9 +5123,9 @@ static uint32_t  addContributors (TxMsg                         *msg,
       stream = reinterpret_cast<decltype (stream)>(*nextAddress);
    }
 
-   *retMctbs  =  mctbs;
-   *retStatus = status;
-   return      ctbSize;
+   *retEmptyCtbs = emptyCtbs;
+   *retStatus    =    status;
+   return            ctbSize;
 }
 /* ---------------------------------------------------------------------- */
 
@@ -5230,6 +5421,8 @@ static inline void completeHeader (pdd::fragment::
                                    Header<pdd::fragment::Type::Data> *header,
                                    Event const                        *event,
                                    uint32_t                           status,
+                                   uint32_t                          enbCtbs,
+                                   uint32_t                        emptyCtbs,
                                    uint32_t                           txSize)
 
 {
@@ -5237,8 +5430,11 @@ static inline void completeHeader (pdd::fragment::
    // If any error status bits have been accumulated, declare this data
    // packet as Damaged
    // -----------------------------------------------------------------
-   pdd::fragment::Header<pdd::fragment::Type::Data>::RecType
-   recType = (status == 0)
+   pdd::fragment::Header<pdd::fragment::Type::Data>::RecType recType;
+
+   recType = (emptyCtbs == enbCtbs) 
+           ? pdd::fragment::Header<pdd::fragment::Type::Data>::RecType::TpcEmpty
+           : (status == 0) && (emptyCtbs == 0)
            ?  pdd::fragment::Header<pdd::fragment::Type::Data>::RecType::TpcNormal
            :  pdd::fragment::Header<pdd::fragment::Type::Data>::RecType::TpcDamaged;
 
@@ -5435,6 +5631,7 @@ void DaqBuffer::setConfig (uint32_t blowOffDmaData,
                            uint32_t       duration,
                            uint32_t         period)
 {
+
    _config._blowOffDmaData  = blowOffDmaData;
    _config._blowOffTxEth    = blowOffTxEth;
    _config._enableRssi      = enableRssi;

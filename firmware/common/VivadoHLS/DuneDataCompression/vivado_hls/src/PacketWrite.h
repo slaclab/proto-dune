@@ -735,7 +735,7 @@ static void print_decoded (uint16_t sym, int idy)
    if (idz == 0) { std::cout << "Sym[" << std::hex << std::setw (4) << idy << "] "; }
    if (idy == 0) { Adcs[0]   = sym; }
    else          { Adcs[idz] = Adcs[(idz-1) & 0xf] + restore (sym); }
-   std::cout << std::hex << std::setw (3) << sym;
+   std::cout << std::hex << std::setw (4) << sym;
 
 
    // ----------------------------------------

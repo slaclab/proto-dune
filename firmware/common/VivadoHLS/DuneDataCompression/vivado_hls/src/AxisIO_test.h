@@ -40,6 +40,13 @@ public:
                                        uint32_t  status,
                                        uint32_t  nbytes);
 
+   static uint32_t       sizeof_trailer ();
+
+   void                    fill_frame  (WibFrame const &frame,
+                                        int         runEnable,
+                                        int             flush,
+                                        int            iframe);
+
    void                    fill_frame (uint64_t                      timestamp,
                                        uint16_t  const adcs[MODULE_K_NCHANNELS],
                                        int                           runEnable,
@@ -191,6 +198,12 @@ void Source::add_trailer (uint32_t version, uint32_t id, uint32_t status, uint32
 }
 
 
+uint32_t Source::sizeof_trailer ()
+{
+   return sizeof (uint64_t) + sizeof (Trailer);
+}
+
+
 
 void Source::fill_dummy_frame (uint64_t timestamp,
                                int          first,
@@ -295,6 +308,28 @@ inline void Source::fill_empty_frame (uint64_t timestamp,
 }
 /* ---------------------------------------------------------------------- */
 
+
+void  Source::fill_frame  (WibFrame const &frame, int runEnable, int flush, int iframe)
+{
+   int first =                    (1 << (int)AxisUserFirst::Sof)
+             |  (runEnable      ? (1 << (int)AxisUserFirst::RunEnable) : 0);
+   flush     = flush ? (1 << (int)AxisUserLast::Flush) : 0;
+
+   commit (m_src, frame.m_w0, first, 0);
+   commit (m_chk, frame.m_w0, (iframe == 0) ? first : 0, 0);
+
+   uint64_t const *w64 = reinterpret_cast<decltype(w64)>(&frame.m_w0);
+   for (int idx = 1; idx < 30-1; idx++)
+   {
+      uint64_t d = w64[idx];
+      commit (d, 0, 0);
+   }
+
+   commit (m_src, w64[29], 0, 1 << (int)AxisLast::Eof);
+   commit (m_chk, w64[29], 0, 0);
+
+   return;
+}
 
 
 /* ---------------------------------------------------------------------- *//*!
