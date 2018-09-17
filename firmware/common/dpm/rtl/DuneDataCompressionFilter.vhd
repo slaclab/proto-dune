@@ -21,6 +21,7 @@ use ieee.std_logic_arith.all;
 use work.StdRtlPkg.all;
 use work.AxiStreamPkg.all;
 use work.SsiPkg.all;
+use work.RceG3Pkg.all;
 
 entity DuneDataCompressionFilter is
    generic (
@@ -76,7 +77,7 @@ begin
             -- Check for new data
             if (sAxisMaster.tValid = '1') then
                -- Check if ready to move data
-               if (v.txMaster.tValid = '0') then
+               if (v.mAxisMaster.tValid = '0') then
                   -- Forward the data
                   v.mAxisMaster := sAxisMaster;
                else
@@ -85,7 +86,7 @@ begin
                   -- Terminate the frame
                   v.mAxisMaster.tLast := '1';
                   -- Next state
-                  v.state             := BLOWOFF_S
+                  v.state             := BLOWOFF_S;
                end if;
             end if;
          ----------------------------------------------------------------------
@@ -93,7 +94,7 @@ begin
             -- Check for last transfer to move data and ready for SOF in next cycle
             if (sAxisMaster.tValid = '1') and (sAxisMaster.tLast = '1') and (v.mAxisMaster.tValid = '0') then
                -- Next state
-               v.state := MOVE_S
+               v.state := MOVE_S;
             end if;
       ----------------------------------------------------------------------
       end case;
