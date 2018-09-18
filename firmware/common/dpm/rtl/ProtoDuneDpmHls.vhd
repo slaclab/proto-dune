@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHls.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2018-09-17
+-- Last update: 2018-09-18
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -75,6 +75,9 @@ architecture mapping of ProtoDuneDpmHls is
    signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
    signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
 
+   signal hlsRst   : sl;
+   signal hlsReset : sl;
+
    attribute dont_touch                 : string;
    attribute dont_touch of ibHlsMasters : signal is "TRUE";
    attribute dont_touch of ibHlsSlaves  : signal is "TRUE";
@@ -87,6 +90,8 @@ architecture mapping of ProtoDuneDpmHls is
    attribute dont_touch of dmaIbSlaves  : signal is "TRUE";
 
 begin
+
+   hlsReset <= hlsRst or axilRst;
 
    --------------------
    -- AXI-Lite Crossbar
@@ -126,7 +131,7 @@ begin
          port map (
             -- Clock and Reset
             axilClk         => axilClk,
-            axilRst         => axilRst,
+            axilRst         => hlsReset,
             -- AXI-Lite Port
             axilReadMaster  => axilReadMasters(i),
             axilReadSlave   => axilReadSlaves(i),
@@ -208,6 +213,7 @@ begin
          axilWriteMaster => axilWriteMasters(WIB_SIZE_C),
          axilWriteSlave  => axilWriteSlaves(WIB_SIZE_C),
          -- HLS Interface (axilClk domain)
+         hlsRst          => hlsRst,
          ibHlsMasters    => ibHlsMasters,
          ibHlsSlaves     => ibHlsSlaves,
          obHlsMasters    => obHlsMasters,

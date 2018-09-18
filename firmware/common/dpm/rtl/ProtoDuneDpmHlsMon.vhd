@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHlsMon.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-09-01
--- Last update: 2018-09-17
+-- Last update: 2018-09-18
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -40,6 +40,7 @@ entity ProtoDuneDpmHlsMon is
       axilWriteMaster : in  AxiLiteWriteMasterType;
       axilWriteSlave  : out AxiLiteWriteSlaveType;
       -- HLS Interface (axilClk domain)
+      hlsRst          : out sl;
       ibHlsMasters    : in  AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
       ibHlsSlaves     : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
       obHlsMasters    : in  AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
@@ -53,6 +54,7 @@ architecture rtl of ProtoDuneDpmHlsMon is
    type RegType is record
       blowoff        : slv(WIB_SIZE_C-1 downto 0);
       hardRst        : sl;
+      hlsRst         : sl;
       axilReadSlave  : AxiLiteReadSlaveType;
       axilWriteSlave : AxiLiteWriteSlaveType;
    end record;
@@ -60,6 +62,7 @@ architecture rtl of ProtoDuneDpmHlsMon is
    constant REG_INIT_C : RegType := (
       blowoff        => (others => '1'),
       hardRst        => '0',
+      hlsRst         => '0',
       axilReadSlave  => AXI_LITE_READ_SLAVE_INIT_C,
       axilWriteSlave => AXI_LITE_WRITE_SLAVE_INIT_C);
 
@@ -138,6 +141,7 @@ begin
 
       -- Reset the strobes
       v.hardRst := '0';
+      v.hlsRst  := '0';
 
       -- Check for hard reset
       if (r.hardRst = '1') then
@@ -166,6 +170,7 @@ begin
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.blowoff);
+      axiSlaveRegister(regCon, x"FF8", 0, v.hlsRst);
       axiSlaveRegister(regCon, x"FFC", 0, v.hardRst);
 
       -- Closeout the transaction
@@ -182,6 +187,7 @@ begin
       -- Outputs
       axilWriteSlave <= r.axilWriteSlave;
       axilReadSlave  <= r.axilReadSlave;
+      hlsRst         <= r.hlsRst;
 
    end process comb;
 
