@@ -85,6 +85,13 @@ DataDpmHlsMon::DataDpmHlsMon(uint32_t linkConfig, uint32_t baseAddress, uint32_t
 	rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);      
 
+   addRegisterLink(rl = new RegisterLink("StatusRegister", baseAddress_ + 0x400, 1, 4,
+                                         "IbValid", Variable::Status, 0, 0x3,  
+                                         "IbReady", Variable::Status, 2, 0x3,  
+                                         "ObValid", Variable::Status, 4, 0x3,  
+                                         "ObReady", Variable::Status, 6, 0x3));    
+   rl->setPollEnable(true);  
+     
    addRegisterLink(rl = new RegisterLink("Blowoff",  baseAddress_ + 0x800, Variable::Configuration,0,0x3));
    rl->getVariable()->setDescription("true = blow off HLS output data, false = normal mode");  
    

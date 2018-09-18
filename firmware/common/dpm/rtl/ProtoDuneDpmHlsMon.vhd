@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHlsMon.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-09-01
--- Last update: 2017-01-19
+-- Last update: 2018-09-17
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -29,8 +29,8 @@ use work.RceG3Pkg.all;
 
 entity ProtoDuneDpmHlsMon is
    generic (
-      TPD_G            : time            := 1 ns;
-      AXI_CLK_FREQ_G   : real            := 125.0E+6);  -- units of Hz
+      TPD_G          : time := 1 ns;
+      AXI_CLK_FREQ_G : real := 125.0E+6);  -- units of Hz
    port (
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
@@ -75,8 +75,8 @@ architecture rtl of ProtoDuneDpmHlsMon is
 
    signal slaves : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
-   attribute dont_touch               : string;
-   attribute dont_touch of r          : signal is "TRUE";
+   attribute dont_touch      : string;
+   attribute dont_touch of r : signal is "TRUE";
 
 begin
 
@@ -128,7 +128,8 @@ begin
    end generate GEN_LINK;
 
    comb : process (axilReadMaster, axilRst, axilWriteMaster, ibBandwidth,
-                   ibFrameRate, obBandwidth, obFrameRate, r) is
+                   ibFrameRate, ibHlsMasters, ibHlsSlaves, obBandwidth,
+                   obFrameRate, obHlsMasters, r, slaves) is
       variable v      : RegType;
       variable regCon : AxiLiteEndPointType;
    begin
@@ -154,6 +155,14 @@ begin
          axiSlaveRegisterR(regCon, toSlv((24*i)+12, 12), 0, obFrameRate(i));
          axiSlaveRegisterR(regCon, toSlv((24*i)+16, 12), 0, obBandwidth(i));
       end loop;
+      axiSlaveRegisterR(regCon, x"400", 0, ibHlsMasters(0).tValid);
+      axiSlaveRegisterR(regCon, x"400", 1, ibHlsMasters(1).tValid);
+      axiSlaveRegisterR(regCon, x"400", 2, ibHlsSlaves(0).tReady);
+      axiSlaveRegisterR(regCon, x"400", 3, ibHlsSlaves(1).tReady);
+      axiSlaveRegisterR(regCon, x"400", 4, obHlsMasters(0).tValid);
+      axiSlaveRegisterR(regCon, x"400", 5, obHlsMasters(1).tValid);
+      axiSlaveRegisterR(regCon, x"400", 6, slaves(0).tReady);
+      axiSlaveRegisterR(regCon, x"400", 7, slaves(1).tReady);
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.blowoff);
