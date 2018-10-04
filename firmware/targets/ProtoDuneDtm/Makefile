@@ -1,5 +1,4 @@
 # define firmware version
-<<<<<<< HEAD
 export PRJ_VERSION = 0x00000056
 
 #       DATE    VERSION WHO  DESCRITPTION

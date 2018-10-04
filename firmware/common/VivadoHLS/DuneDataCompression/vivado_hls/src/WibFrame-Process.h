@@ -649,6 +649,10 @@ static void process4 (AdcIn_t adcs0[PACKET_K_NSAMPLES],
    AdcIn_t adc2 = extract_adc2 (adcs4);
    AdcIn_t adc3 = extract_adc3 (adcs4);
 
+
+   /// !!! KLUDGE !!! jjr 2018-09-19 try to induce the lockup
+   /// adc0 = 0x800 | (iframe & 1);
+
    // ----------------------------------------
    // Check if the frist sample in this packet
    // ----------------------------------------

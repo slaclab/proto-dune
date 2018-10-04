@@ -24,14 +24,14 @@
 //         bit 0  - Channel 0 (ap_done)
 //         bit 1  - Channel 1 (ap_ready)
 //         others - reserved
-// 0x010 : Data signal of cfg_init
-//         bit 31~0 - cfg_init[31:0] (Read/Write)
+// 0x010 : Data signal of config_init
+//         bit 31~0 - config_init[31:0] (Read/Write)
 // 0x014 : reserved
-// 0x018 : Data signal of cfg_mode
-//         bit 31~0 - cfg_mode[31:0] (Read/Write)
+// 0x018 : Data signal of config_mode
+//         bit 31~0 - config_mode[31:0] (Read/Write)
 // 0x01c : reserved
-// 0x020 : Data signal of cfg_limit
-//         bit 31~0 - cfg_limit[31:0] (Read/Write)
+// 0x020 : Data signal of config_limit
+//         bit 31~0 - config_limit[31:0] (Read/Write)
 // 0x024 : reserved
 // 0x100 : Data signal of monitor_common_pattern
 //         bit 31~0 - monitor_common_pattern[31:0] (Read)
@@ -75,11 +75,11 @@
 //         bit 0  - monitor_write_npackets_ap_vld (Read/COR)
 //         others - reserved
 // 0x080 ~
-// 0x0ff : Memory 'cfg_chns_disabled' (128 * 1b)
-//         Word n : bit [ 0: 0] - cfg_chns_disabled[4n]
-//                  bit [ 8: 8] - cfg_chns_disabled[4n+1]
-//                  bit [16:16] - cfg_chns_disabled[4n+2]
-//                  bit [24:24] - cfg_chns_disabled[4n+3]
+// 0x0ff : Memory 'config_chns_disabled' (128 * 1b)
+//         Word n : bit [ 0: 0] - config_chns_disabled[4n]
+//                  bit [ 8: 8] - config_chns_disabled[4n+1]
+//                  bit [16:16] - config_chns_disabled[4n+2]
+//                  bit [24:24] - config_chns_disabled[4n+3]
 //                  others      - reserved
 // 0x130 ~
 // 0x13f : Memory 'monitor_read_summary_nStates' (4 * 32b)
@@ -96,12 +96,12 @@
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_GIE                               0x004
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_IER                               0x008
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_ISR                               0x00c
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_INIT_DATA                     0x010
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_INIT_DATA                     32
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_MODE_DATA                     0x018
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_MODE_DATA                     32
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_LIMIT_DATA                    0x020
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CFG_LIMIT_DATA                    32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CONFIG_INIT_DATA                  0x010
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CONFIG_INIT_DATA                  32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CONFIG_MODE_DATA                  0x018
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CONFIG_MODE_DATA                  32
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CONFIG_LIMIT_DATA                 0x020
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_CONFIG_LIMIT_DATA                 32
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_DATA       0x100
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_COMMON_PATTERN_DATA       32
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_COMMON_PATTERN_CTRL       0x104
@@ -127,10 +127,10 @@
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NPACKETS_DATA       0x218
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_BITS_MONITOR_WRITE_NPACKETS_DATA       32
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_WRITE_NPACKETS_CTRL       0x21c
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_CHNS_DISABLED_BASE            0x080
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CFG_CHNS_DISABLED_HIGH            0x0ff
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_WIDTH_CFG_CHNS_DISABLED                1
-#define XDUNEDATACOMPRESSIONCORE_BUS_A_DEPTH_CFG_CHNS_DISABLED                128
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CONFIG_CHNS_DISABLED_BASE         0x080
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_CONFIG_CHNS_DISABLED_HIGH         0x0ff
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_WIDTH_CONFIG_CHNS_DISABLED             1
+#define XDUNEDATACOMPRESSIONCORE_BUS_A_DEPTH_CONFIG_CHNS_DISABLED             128
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NSTATES_BASE 0x130
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_MONITOR_READ_SUMMARY_NSTATES_HIGH 0x13f
 #define XDUNEDATACOMPRESSIONCORE_BUS_A_WIDTH_MONITOR_READ_SUMMARY_NSTATES     32

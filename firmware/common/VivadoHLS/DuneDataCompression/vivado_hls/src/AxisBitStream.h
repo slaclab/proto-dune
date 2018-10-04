@@ -38,6 +38,16 @@ public:
    AxisBitStream ();
    AxisBitStream (int bdx);
 
+   // -----------------------------------------------------
+   // !!! IMPROVEMENT OPPORTUNITY !!!
+   // -------------------------------
+   // 32-bits is way overkill. The maximum number of output
+   // words is around 30K. It really can't be any more
+   // than somewhat less the 64K, otherwise there would
+   // not be enough time to write them all out.
+   // However, given that there is only 1 copy of this
+   // per HLS stream, making it 'large' is not a big deal.
+   // -----------------------------------------------------
    typedef uint32_t Idx_t;
 
 public:
@@ -120,18 +130,55 @@ __inline void AxisBitStream::insert (AxisOut &mAxis, uint64_t bits, int nbits)
       int nbidx = m_idx;
    #endif
 
+   uint64_t obits;
    int shift  =  overrun > 0 ? left : nbits;
+   m_idx     += nbits;
 
+#if 1
    if (nbits != 0x40) bits &= (1LL << nbits) - 1;
    if (shift == 0x40)
    {
       m_cur  = bits;
+      obits  = bits;
    }
    else
    {
-      m_cur <<= shift;
-      m_cur  |=  overrun > 0 ? (bits >> overrun) : bits;
+      uint64_t tmp = m_cur << shift;
+      if (overrun >= 0)
+      {
+         obits = tmp | (bits >> overrun);
+         m_cur = bits;
+      }
+      else
+      {
+         m_cur = tmp | bits;
+         return;
+      }
    }
+
+#else
+
+   if (nbits != 0x40) bits &= (1LL << nbits) - 1;
+   if (shift == 0x40)
+   {
+      obits = bits;
+      m_cur = bits;
+   }
+   
+  
+   if (overrun > 0)
+   {
+      obits  = (m_cur << left) | (bits >> overrun);
+      m_cur  = bits;
+   }
+   else
+   {
+      m_cur <<= nbits;
+      m_cur  |= bits;
+   }
+#endif
+
+
 
    // Check if there is enough room in the current word
    if (overrun >= 0)
@@ -139,7 +186,7 @@ __inline void AxisBitStream::insert (AxisOut &mAxis, uint64_t bits, int nbits)
       // There is no need to clear any set bits beyond
       // the overrun bits, they will eventually by
       // shifted out the top bit.
-      this->write (mAxis, m_cur);
+      this->write (mAxis, obits);
 
       #ifndef __SYNTHESIS__
          nbidx += left;
@@ -151,11 +198,8 @@ __inline void AxisBitStream::insert (AxisOut &mAxis, uint64_t bits, int nbits)
                    << " len = " <<  std::hex << std::setw( 4) << std::setfill (' ') << nbidx << std::endl;
          */
       #endif
-
-      m_cur   = bits;
    }
 
-   m_idx += nbits;
 
    #ifndef __SYNTHESIS__
    ///   std::cout << "BS64:" << m_out.name () << "len = " << m_idx << std::endl;

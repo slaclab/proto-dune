@@ -113,7 +113,8 @@ static void             encode (APE_etxOut                           &etx,
 
 static void               pack (AxisBitStream                      &baxis,
                                 AxisOut                            &mAxis,
-                                OStream                           &osream);
+                                OStream                          &ostream,
+                                bool                             ovrcheck);
 
 /* ---------------------------------------------------------------------- */
 #if WRITE_ADCS_PRINT
@@ -207,6 +208,7 @@ static void  write_packet (AxisOut                               &mAxis,
    offsets[NCHANS+1] = 0;
    odx = (offsets[NCHANS] + 63) >> 6;
    write_toc (mAxis, odx, NCHANS, PACKET_K_NSAMPLES, offsets);
+
 
    // -----------------------------------------------------------------
    // The header has been removed. Before, information in this header
@@ -530,8 +532,8 @@ static void writeN (AxisBitStream                  &tAxis,
       offsets[idx] = bAxis.m_idx;
 
       // Output the Histogram/ADC overflow and compressed bit streams
-      pack (bAxis, mAxis, etx[idx].ha);
-      pack (bAxis, mAxis, etx[idx].ba);
+      pack (bAxis, mAxis, etx[idx].ha, false);
+      pack (bAxis, mAxis, etx[idx].ba, true);
 
 #if 0
       if (ichan >= (NCHANS-1))
@@ -586,6 +588,15 @@ std::cout << "Pack data read("
 /* -------------------------------------------------------------------- */
 
 
+enum State
+{
+   ReadData    = 0,
+   ReadShard   = 1,
+   ProcessOver = 2,
+   AddPending  = 3,
+   AddBits     = 4
+};
+
 /* ---------------------------------------------------------------------- *//*!
  *
  *   \brief  Packs and writes \a ostream to the output stream
@@ -602,7 +613,8 @@ std::cout << "Pack data read("
 \* ---------------------------------------------------------------------- */
 static void pack (AxisBitStream                     &bAxis,
                   AxisOut                           &mAxis,
-                  OStream                         &ostream)
+                  OStream                         &ostream,
+                  bool                            ovrcheck)
 {
     #pragma HLS INLINE off /// jjr 2018-08-02 added the off
     ///#pragma HLS PIPELINE
@@ -614,18 +626,12 @@ static void pack (AxisBitStream                     &bAxis,
    // and b) the leftovers from the input stream  bsbuf of bsvld bits
    // ---------------------------------------------------------------
 
-
    // ----------------------------------
    // Count the bits that will be output
    // when the loop is completed.
    // -----------------------------------
-   uint64_t           data;
-   BitStream64::Idx_t cidx = ostream.m_cidx;
 
-   ///bs.m_cidx.read (cidx);
-   int bleft = cidx;
-
-   AxisOut_t out;
+   AxisOut_t  out;
    out.keep = 0xFF;
    out.strb = 0x0;
    out.user = 0;
@@ -633,74 +639,153 @@ static void pack (AxisBitStream                     &bAxis,
    out.id   = 0x0;
    out.dest = 0x0;
 
-   int cnt = bleft >> 6;
+   int cnt = ostream.m_widx;
+   int cur_widx = 0;
+   int cur_didx = 0;
+   int cur_oidx = 0;
 
-#if 1
+   State state = ReadData;
+   BitStream64::OvrNBits_t       nbits;
+   BitStream64::OvrNPending_t npending;
+   BitStream64::OvrNShard_t     nshard;
+   BitStream64::OvrBits_t         bits;
+   int       pendingBit;
+   uint64_t pendingBits;
+
+   uint64_t        data;
+   uint64_t         ovr;
+   int            ndata;
+
+   // ------------------------------------------------------------
+   // The loop is carefully constructed such that only one
+   // write to the output serialization stream can occur
+   // per iteration.  This allows the loop to execute in
+   // 1 cycle per iteration.
+   //
+   // The cost of this is that it may take a few more iterations
+   // than absolutely necessary. These extra iterations only
+   // occur when more than 64 bits are attempted to be stored
+   // for an iteration of the compression encoder and are
+   // very rare. The cost is 5-6 extra cycles for each one. This
+   // is not a problem because the serializer is well within
+   // its time budget (35K cycles and likely have 55K to serialize).
+   // This cushion would allow on the order of 25 on each of the
+   // 128 channels. This is damn near impossible given that I've
+   // only been able generate 1 of these even in an artificially
+   // construced scenerio.
+   //
+   // Note that the number of these extra iterations is self-limiting.
+   // By defintion these must involve the encoding of a number of
+   // symbols. In the artificially constructed example, this was
+   // a large number of symbols, which means the total count is
+   // less than the maximum of 80.
+   // ---------------------------------------------------------------
    PACK_LOOP:
-   for (int idx = 0; idx < cnt; idx++)
+   for (int idx = 0; idx <= cnt;)
    {
        #pragma HLS LOOP_TRIPCOUNT min=32 max=128 avg=32
        #pragma HLS PIPELINE /// STRIP fails when pipelined
        ////#pragma HLS UNROLL factor=2
 
-      // Make room. get and insert the new 64-bts worth of data
-       #if USE_FIFO
-           data = ostream.read ();
-       #else
-          data = ostream.read (idx);
-       #endif
+      if (state == ReadData || state == ReadShard)
+      {
+         if (idx == cnt)
+         {
+            // This flushes out the final remenant
+            ndata = ostream.m_bidx;
+            data  = ostream.m_shard;
+            idx  += 1;
+         }
+         else
+         {
+            // -------------------------------------------------------------------
+            // Limit mask index to the size of omsk (128 bits)
+            // This contains the index to the m_omsk bit test to be within bounds.
+            // -------------------------------------------------------------------
+            BitStream64::MIdx_t omsk_idx = idx;
+            data = ostream.read (idx++);
+            ndata = 64;
 
-       bAxis.insert (mAxis, data, 64);
+            if (state == ReadShard)
+            {
+               state = ProcessOver;
+               continue;
+            }
+            else if (ostream.m_omsk.test(omsk_idx))
+            {
+               ovr   = data;
+               state = ReadShard;
+               continue;
+            }
+            else
+            {
+               ///bAxis.insert (mAxis, data, 0x40);
+               ///continue;
+            }
+         }
+      }
+
+      else if (state == ProcessOver)
+      {
+         BitStream64::extract (ovr, nbits, npending, nshard, bits);
+         /*
+          printf ("Have an overflow, %16.16llx %2x %2x %2x %4.4x\n",
+               (unsigned long long)ovr,
+               (unsigned int)nbits.VAL,
+               (unsigned int)npending.VAL,
+               (unsigned int)nshard.VAL,
+               (unsigned int)bits.VAL);
+               */
+         nbits      -= 1;
+         pendingBit  = bits[nbits];
+         pendingBits = pendingBit == 0 ? 0xFFFFFFFFFFFFFFFFLL : 0;
+         bits.clear (nbits);
+
+         if (nshard)
+         {
+            data  &= (1LL << nshard) - 1;
+         }
+         data <<= 1;
+         data  |= pendingBit;
+         ndata  = nshard + 1;
+         state  = AddPending;
+      }
+
+      else if (state == AddPending)
+      {
+         data = pendingBits;
+         if (npending > 64)
+         {
+            ndata     = 64;
+            npending -= 64;
+         }
+         else
+         {
+            ndata = npending;
+            data  = pendingBits >> (64 - npending);
+            state =  nbits ? AddBits : ReadData;
+         }
+      }
+
+      else if (state == AddBits)
+      {
+         data  =  bits;
+         ndata = nbits;
+         state = ReadData;
+      }
+
+      bAxis.insert (mAxis, data, ndata);
    }
-#else
-   PACK_LOOP:
-   int cntRnd = cnt & ~0x1;
-   for (int idx = 0; idx < cntRnd; idx += 2)
-   {
-      #pragma HLS LOOP_TRIPCOUNT min=12 max=48 avg=16
-
-      #pragma HLS PIPELINE II=2     /// STRIP -- this caused problems at one time
-      #pragma HLS UNROLL factor=1
-
-      // Make room. get and insert the new 64-bts worth of data
-      #if USE_FIFO
-          data = ostream.read ();
-      #else
-         data = ostream.read (idx);
-      #endif
-
-      bAxis.insert (mAxis, data, 64);
 
 
-      // Make room. get and insert the new 64-bts worth of data
-     #if USE_FIFO
-         data = ostream.read ();
-     #else
-         data = ostream.read (idx + 1);
-     #endif
-
-      bAxis.insert (mAxis, data, 64);
-   }
-
-   if (cnt&1)
-   {
-      #if USE_FIFO
-          data = ostream.read ();
-      #else
-          data = ostream.read (cnt-1);
-      #endif
-
-      bAxis.insert (mAxis, data, 64);
-   }
-#endif
-
+   /*
    // Push an leftover input bits into the output stream.
-   int nbits = bleft & 0x3f; // NEW ostream.bidx();
-   if (nbits)
+   int bleft = ostream.m_bidx;
+   if (bleft)
    {
-      bAxis.insert (mAxis, ostream.m_ccur, nbits);
+      bAxis.insert (mAxis, ostream.m_shard, bleft);
    }
-
+   */
 
    return;
 }
@@ -760,6 +845,9 @@ static bool decode_data (uint16_t      dadcs[PACKET_K_NSAMPLES],
                          Histogram const                  &hist,
                          AdcIn_t const  adcs[PACKET_K_NSAMPLES])
 {
+   /// !!! KLUDGE !!! jjr 2018-09-17 Kill the check when gobbering the output
+   return false;
+
    // Integrate the histogram
    APD_table_t table[Histogram::NBins + 2];
    int  cnt  = hist.m_lastgt0 + 1;
@@ -836,7 +924,7 @@ static int copy (uint64_t *buf, OStream &ostream)
       }
    #else
       int idx;
-      int cnt = ostream.m_cidx >> 6;
+      int cnt = ostream.m_widx;;
       for (idx = 0; idx < cnt; idx++)
       {
          buf[idx] = ostream.read (idx);
@@ -848,10 +936,10 @@ static int copy (uint64_t *buf, OStream &ostream)
    // This is kind of cheating. It believes that
    // bs.m_cur is not going to change between this
    // copy and the restore.
-   int left = ostream.m_cidx & 0x3f;
+   int left = ostream.m_bidx;
    if (left)
    {
-      uint64_t last =  ostream.m_ccur << (0x40 - left);
+      uint64_t last =  ostream.m_shard << (0x40 - left);
       buf[idx] = last;
    }
 

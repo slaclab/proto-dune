@@ -15,6 +15,9 @@
 //
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2018.10.03 jjr Increased the maximum duration of an event to 50 msecs.
+//                Changed the software trigger period to 64-bits so can
+//                set the period > 32 bits (i.e. around 4.2 seconds)
 // 2018.08.13 jjr Corrected display of WIB id getWibIdentifiers.  The 
 //                slot number was masked to only 2 bits.  This was only
 //                a display issue.
@@ -1717,6 +1720,7 @@ public:
    void configure (uint32_t period)
    {
       m_period = TimingClockTicks::from_usecs (period);
+      fprintf (stderr, "Period = %8d %8.8" PRIx32 "\n", period, period);
    }
    /* ------------------------------------------------------------------- */
 
@@ -1735,7 +1739,7 @@ public:
      \param[in]  timestamp  The beginning and ending time range to check
                                                                           */
    /* ------------------------------------------------------------------- */
-   static int64_t check (uint64_t timestamp[2], uint32_t period)
+   static int64_t check (uint64_t timestamp[2], uint64_t period)
    {
       /* Hardwire trigger rate to 1 sec */
       uint32_t beg = timestamp[0] % period;
@@ -1748,8 +1752,9 @@ public:
          uint64_t delta = timestamp[1] - timestamp[0];
          fprintf (stderr,
                   "Check %16.16" PRIx64 ":%8.8" PRIx32 ":"
-                  "%16.16" PRIx64 ":%8.8" PRIx32 " trigger -> yes  %16.16" PRIx64 "\n",
-                  timestamp[0], beg, timestamp[1], end, delta);
+                  "%16.16" PRIx64 ":%8.8" PRIx32 " trigger -> yes"
+                  " %16.16" PRIx64 " %16.16" PRIx64 "\n",
+                  timestamp[0], beg, timestamp[1], end, delta, period);
          **/
 
          return timestamp[1] - end;
@@ -1766,7 +1771,7 @@ public:
 
 
 private:
-   int32_t  m_period;
+   uint64_t  m_period;
 };
 /* ---------------------------------------------------------------------- */
 /* END: SoftTrigger                                                       */
@@ -3830,7 +3835,6 @@ void DaqBuffer::rxRun ()
                   // --------------------------------------------------------
                   hlsBlowOff.trim (&enbCtbs, &dsbCtbs);
 
-                  fprintf (stderr, "Ext::Enabled:Disabled ctbs = %x:%x\n", (unsigned)enbCtbs, (unsigned)dsbCtbs);
 
                   // -------------------------------------------------
                   // Transfer any data packets on the latency queue
@@ -4657,8 +4661,15 @@ static void stream_dump (uint32_t *streamRecord, Event const *event)
 
 
 
+// Define the maximum time range for an event window (.512 packets)
+#define TIMERANGE_K_MSEC 50
 
-typedef TxMessage<32> TxMsg;
+// The number of IO message vectors is 
+//     + 1 for the header
+//     * 2 for .512 msec/packet
+//     * 2 for each of the two streams
+#define TXMESSAGE_COUNT(_msec) (2*2*(_msec) + 1)
+typedef TxMessage<TXMESSAGE_COUNT(TIMERANGE_K_MSEC)> TxMsg;
 
 static  inline uint32_t addHeaderOrigin (TxMsg               *msg,
                                          HeaderAndOrigin  *hdrOrg,

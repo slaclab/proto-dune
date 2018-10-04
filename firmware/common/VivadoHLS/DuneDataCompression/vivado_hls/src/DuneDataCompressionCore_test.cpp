@@ -91,8 +91,10 @@
 
 enum class FileType
 {
-   Adcs      = 0,  /*!< Just the ADCs      */
-   WibFrames = 1,  /*!< File of WIB frames */
+   Adcs      = 0,  /*!< Just the ADCs                */
+   WibFrames = 1,  /*!< File of WIB frames           */
+   Random    = 2,  /*!< No file, just random numbers */
+   Frame     = 3   /*!< 1024 Ascii Adcs              */
 };
 
 static int      open_file (char const      **fullfilename,
@@ -103,6 +105,12 @@ static ssize_t  read_adcs (int                          fd,
                            char const            *filename,
                            uint16_t                  *adcs,
                            int                       nadcs);
+static ssize_t
+         read_frame_adcs (int                           fd,
+                          char const             *filename,
+                          uint16_t                   *adcs,
+                          int                        nadcs);
+
 
 static int  compress_test (int                          fd,
                            char const            *filename,
@@ -139,6 +147,9 @@ static int    fill_packet (Source                     &src,
                                        [MODULE_K_NCHANNELS],
                            int                    runEnable,
                            int                        flush);
+
+static void fill_random  (Source &src);
+
 
 static void        update (MonitorModule          &monitor,
                            uint32_t                 nbytes,
@@ -187,12 +198,14 @@ Parameters::Parameters (int argc, char *const argv[]) :
       m_filetype (FileType::Adcs)
 {
    char c;
-   while ((c = getopt (argc, argv, "wn:")) != -1 )
+   while ((c = getopt (argc, argv, "frwn:")) != -1 )
    {
       switch (c)
       {
       case 'n': { m_npackets = strtol (optarg, NULL, 0); break; }
       case 'w': { m_filetype = FileType::WibFrames;      break; }
+      case 'r': { m_filetype = FileType::Random;         break; }
+      case 'f': { m_filetype = FileType::Frame;          break; }
       }
    }
 
@@ -408,9 +421,16 @@ static int compress_test (int               fd,
    config.init = -1;
    uint64_t timestamp = 0x00800000LL;
 
+   static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
+
+   if (filetype == FileType::Frame)
+   {
+      read_frame_adcs (fd, filename, (uint16_t *)adcs, sizeof (adcs)/ sizeof (adcs[0][0]));
+   }
+
    for (int ipacket = 0; ipacket < NPackets; ipacket++)
    {
-      static uint16_t adcs[PACKET_K_NSAMPLES][MODULE_K_NCHANNELS];
+
       uint32_t summary = 0;
 
       int runEnable = 1;
@@ -434,6 +454,14 @@ static int compress_test (int               fd,
       {
          nbytes = fill_packet (src, fd, timestamp, runEnable, flush);
          if (nbytes == 0) break;
+      }
+      else if (filetype == FileType::Random)
+      {
+         fill_random (src);
+      }
+      else if (filetype == FileType::Frame)
+      {
+         int nbytes = fill_packet (src, headerId, version, timestamp, adcs, runEnable, flush);
       }
 
       timestamp  += 25 * PACKET_K_NSAMPLES;
@@ -483,6 +511,35 @@ static int compress_test (int               fd,
 /* ---------------------------------------------------------------------- */
 
 
+/* ---------------------------------------------------------------------- */
+static void fill_random (Source &src)
+{
+   for (int idx = 0; idx < 1024; idx++)
+   {
+      AxisIn_t in;
+
+      for (int idy = 0; idy < 30; idy++)
+      {
+         uint32_t lo = mrand48 ();
+         uint64_t  d = mrand48 ();
+         d <<= 32;
+         d  |= lo;
+
+         in.data = d;
+         in.id   = 0;
+         in.keep = 0xff;
+         in.strb = 0;
+         in.user = idy == 0  ?  (1 << (int)AxisUserFirst::Sof) : 0;
+         in.last = idy == 29 ?  (1 << (int)AxisLast::Eof) : 0;
+
+         src.m_src.write (in);
+         src.m_chk.write (in);
+      }
+  }
+}
+/* ---------------------------------------------------------------------- */
+
+
 
 /* ---------------------------------------------------------------------- *//*!
  *
@@ -509,16 +566,20 @@ static int open_file (char const **fullfilename, char const *filename, FileType 
         filename = filenameBuf;
     }
 
-   int fd = ::open (filename, O_RDONLY);
-   if (fd < 0)
-   {
-      char const *err = strerror (errno);
 
-      fprintf (stderr,
-               "ERROR : Unable to open: %s\n"
-               "Reason: %s\n", filename, err);
-      exit (-1);
+
+    int fd = ::open (filename, O_RDONLY);
+    if (fd < 0)
+    {
+       char const *err = strerror (errno);
+
+       fprintf (stderr,
+                "ERROR : Unable to open: %s\n"
+                "Reason: %s\n", filename, err);
+       exit (-1);
    }
+
+
 
    *fullfilename = filename;
    return fd;
@@ -572,7 +633,35 @@ static ssize_t read_adcs (int               fd,
 }
 /* ---------------------------------------------------------------------- */
 
+static ssize_t read_frame_adcs (int                           fd,
+                                char const             *filename,
+                                uint16_t                   *adcs,
+                                int                        nadcs)
+{
+   FILE *fp = fdopen (fd, "r");
 
+   uint16_t tmp[1024];
+   uint16_t *curAdc = tmp;
+   for (int idx = 0; idx < 1024/16; idx++)
+   {
+      char line[128];
+      fgets(line, sizeof (line), fp);
+
+      char *cur = line;
+      for (int idy = 0; idy < 16; idy++)
+      {
+         *curAdc++ = strtoul (cur, &cur, 0);
+      }
+   }
+
+   for (int idx = 0; idx < 128; idx++)
+   {
+      for (int idy = 0; idy < 1024; idy++)
+      {
+         adcs[idy*128+idx] = tmp[idy];
+      }
+   }
+}
 
 /* ---------------------------------------------------------------------- */
 static void configure_hls (Source            &src,
@@ -921,7 +1010,7 @@ static void decode (AxisOut &mAxis)
 {
    int  nbuf = 0;
    int nerrs = 0;
-   uint64_t buf[(12*1024*128)/64 + 0x800];
+   uint64_t buf[((13+5)*1024*128)/64 +0x800];
 
    while (1)
    {
@@ -932,9 +1021,14 @@ static void decode (AxisOut &mAxis)
          AxisOut_t  dst = mAxis.read  ();
          uint64_t  data = dst.data;
 
-         ///if ( (nbuf & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << nbuf << "] = ";
-         ///std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << data;
-         ///if ((nbuf & 0x7) == 7) std::cout << std::endl;
+         /*
+          if (nbuf >= 0x6900 - 0x20)
+          {
+             if ( (nbuf & 0x7) == 0) std::cout << "Decode[" << std::setfill (' ') << std::hex << std::setw (5) << nbuf << "] = ";
+             std::cout << ' ' << std::setfill ('0') << std::hex << std::setw (16) << data;
+             if ((nbuf & 0x7) == 7) std::cout << std::endl;
+          }
+          */
 
          buf[nbuf] = data;
          nbuf++;
@@ -947,8 +1041,17 @@ static void decode (AxisOut &mAxis)
 
    /// if (nbuf & 0x7) std::cout << std::endl;
 
-   decode (buf, nbuf);
+#if 0
+   //// !!! KLUDGE !!! -- jjr 2018.09.17  Don't check the output
+   ///                                    which has been neutered
 
+   for (int idx = 0; idx < 8; idx++)
+   {
+      printf ("NOT CHECKING THE OUTPUT -- put back when HLS module output is reinstated\n");
+   }
+#else
+   decode (buf, nbuf);
+#endif
 }
 /* ---------------------------------------------------------------------- */
 
@@ -1301,7 +1404,7 @@ static void print_decoded (uint16_t sym, int idy)
    else          { Adcs[idz] = Adcs[(idz-1) & 0xf] + restore (sym); }
 
 
-   std::cout << std::hex << std::setw (3) << sym;
+   std::cout << std::hex << std::setw (5) << sym;
 
    if (idz == 0xf)
    {

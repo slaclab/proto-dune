@@ -5,10 +5,58 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000116
+export PRJ_VERSION = 0x00000118
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/09/30  0x0000118 jjr  Builds on 117, but corrects an error in the
+#                            histogram/overflow were the word index size
+#                            was specified to be only 7 bits, not 8.
+#                            Given a maximum of somewhat less than 256
+#                            words, this caused a failure when the noise
+#                            level (i.e. # of overflows) was high.
+# 2018/09/28  0x0000117 jjr  Removes the modification. Baseline attempt at
+#                            a version that solves the lockup problem.
+# 2018/09/29  0xf000117 jjr  Tests fix of lockup problem. This modifies the
+#                            input data produce the lockup pattern (same as
+#                            was done with 0xf4000116).
+# 2018/09/18  0xf400116 jjr  Still on lockup problem.  This version modifies
+#                            the input data to artificialy induce and 
+#                            demonstrate the lockup problem on the SLAC
+#                            teststand. It is not meant to be run at CERN.
+#                            This data pattern has been shown to lockup the
+#                            VCS CoSimulation run within Vivado HLS.  However,
+#                            Ryan's more complete simulation has failed to
+#                            show a lockup.  Hence the need to try it on the
+#                            RCE.
+# 2018/09/18 0xf3000116 jjr  Still on lockup problem.  As per the evidence in
+#                            0xf2000116, have gobbered the npending to be 0
+#                            when it is too large. The compression will be 
+#                            incorrect in this case, but, if this prevents the
+#                            lockup, will pursue a correct fix.
+# 2018/09/17 0xf2000116 jjr  Still on lockup problem. The overflow ADCs are not
+#                            written in this version. Tests if the problem is
+#                            related to the overflowing a FIFO.  Going on the
+#                            assumption that something bad is happening on an
+#                            individual channel, i.e. this is not like too
+#                            much data causes too much time to be used. Doing
+#                            11-bit noise correctly would seem to rule that out.
+#                            RESULT -- Locks up.  Problem must be in the encoder
+#                            Suspect the npending too large. Somewhat confirmed
+#                            with the CoSim.  Gave it a distribution that 
+#                            produces a large npending and it locks-up, but
+#                            not if gobber npending to be 0.
+# 2018/09/17 0xf1000116 jjr  Still on lockup problem. This kills the output
+#                            from the compression.  The pack routine handle
+#                            all the data, it just does not write it to the
+#                            output AXI stream.  This tests if the problem is
+#                            related to the output. RESULT -- Locks up
+# 2018/09/12 0xf0000116 jjr  This is only a test version to try to isolate the
+#                            lockup problem.  This replaces the incoming data
+#                            in attempt to see if the lockup is data related.
+#                            In all other respects it is the same as 0x116.
+#                            RESULT -- Did not lockup, so looks like this is
+#                            a data dependend problem.
 # 2018/09/06 0x00000116 jjr  In DuneDataCompressionHistogram.h.  A difference
 #                            of two 12 bit numbers was left shifted by 1, 
 #                            leading to a possible underflow. 
