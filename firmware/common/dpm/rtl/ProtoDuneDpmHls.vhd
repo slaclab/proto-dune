@@ -2,7 +2,7 @@
 -- File       : ProtoDuneDpmHls.vhd
 -- Company    : SLAC National Accelerator Laboratory
 -- Created    : 2016-08-04
--- Last update: 2018-05-24
+-- Last update: 2018-09-18
 -------------------------------------------------------------------------------
 -- Description: 
 -------------------------------------------------------------------------------
@@ -61,33 +61,37 @@ architecture mapping of ProtoDuneDpmHls is
    signal axilReadMasters  : AxiLiteReadMasterArray(WIB_SIZE_C downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(WIB_SIZE_C downto 0);
 
-   signal ibHlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-   signal ibHlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+   signal ibHlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
+   signal ibHlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
 
-   signal obHlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-   signal obHlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+   signal obMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
 
-   signal obBufMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-   signal obBufSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+   signal obHlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
+   signal obHlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
 
-   signal hlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-   signal hlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+   signal hlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
+   signal hlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
 
-   signal ssiMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-   signal ssiSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+   signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
+   signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
 
-   signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C downto 0);
-   signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C downto 0);
+   signal hlsRst   : sl;
+   signal hlsReset : sl;
 
    attribute dont_touch                 : string;
    attribute dont_touch of ibHlsMasters : signal is "TRUE";
    attribute dont_touch of ibHlsSlaves  : signal is "TRUE";
+   attribute dont_touch of obMasters    : signal is "TRUE";
    attribute dont_touch of obHlsMasters : signal is "TRUE";
    attribute dont_touch of obHlsSlaves  : signal is "TRUE";
+   attribute dont_touch of hlsMasters   : signal is "TRUE";
+   attribute dont_touch of hlsSlaves    : signal is "TRUE";
    attribute dont_touch of dmaIbMasters : signal is "TRUE";
    attribute dont_touch of dmaIbSlaves  : signal is "TRUE";
 
 begin
+
+   hlsReset <= hlsRst or axilRst;
 
    --------------------
    -- AXI-Lite Crossbar
@@ -127,7 +131,7 @@ begin
          port map (
             -- Clock and Reset
             axilClk         => axilClk,
-            axilRst         => axilRst,
+            axilRst         => hlsReset,
             -- AXI-Lite Port
             axilReadMaster  => axilReadMasters(i),
             axilReadSlave   => axilReadSlaves(i),
@@ -137,74 +141,28 @@ begin
             sAxisMaster     => ibHlsMasters(i),
             sAxisSlave      => ibHlsSlaves(i),
             -- Outbound Interface
-            mAxisMaster     => obHlsMasters(i),
-            --mAxisSlave      => obHlsSlaves(i));
-            mAxisSlave      => AXI_STREAM_SLAVE_FORCE_C);
+            mAxisMaster     => obMasters(i),
+            mAxisSlave      => AXI_STREAM_SLAVE_FORCE_C);  -- Never back pressure the HLS module
+
+      -------------------    
+      -- Filter Out Drops
+      -------------------    
+      U_Filter : entity work.DuneDataCompressionFilter
+         generic map (
+            TPD_G => TPD_G)
+         port map (
+            -- Clock and Reset
+            axisClk     => axilClk,
+            axisRst     => axilRst,
+            -- Inbound Interface
+            sAxisMaster => obMasters(i),
+            -- Outbound Interface
+            mAxisMaster => obHlsMasters(i),
+            mAxisSlave  => obHlsSlaves(i));
 
       --------------
-      -- FIFO Module before monitor and blowoff
-      --------------    
-
-      U_Buff : entity work.AxiStreamFifoV2
-         generic map (
-            -- General Configurations
-            TPD_G               => TPD_G,
-            INT_PIPE_STAGES_G   => 1,
-            PIPE_STAGES_G       => 1,
-            SLAVE_READY_EN_G    => true,
-            VALID_THOLD_G       => 1,
-            -- FIFO configurations
-            BRAM_EN_G           => false,
-            GEN_SYNC_FIFO_G     => true,
-            CASCADE_SIZE_G      => 1,
-            FIFO_ADDR_WIDTH_G   => 4,
-            -- AXI Stream Port Configurations
-            SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
-            MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)
-         port map (
-            -- Slave Port
-            sAxisClk    => axilClk,
-            sAxisRst    => axilRst,
-            sAxisMaster => obHlsMasters(i),
-            sAxisSlave  => obHlsSlaves(i),
-            -- Master Port
-            mAxisClk    => axilClk,
-            mAxisRst    => axilRst,
-            mAxisMaster => obBufMasters(i),
-            mAxisSlave  => obBufSlaves(i));
-
-      --------------
-      -- FIFO Module after monitor and blowoff
-      --------------    
-
-      U_Filter : entity work.SsiFifo
-         generic map (
-            -- General Configurations
-            TPD_G               => TPD_G,
-            INT_PIPE_STAGES_G   => 1,
-            PIPE_STAGES_G       => 1,
-            SLAVE_READY_EN_G    => true,
-            VALID_THOLD_G       => 1,
-            -- FIFO configurations
-            BRAM_EN_G           => false,
-            GEN_SYNC_FIFO_G     => true,
-            CASCADE_SIZE_G      => 1,
-            FIFO_ADDR_WIDTH_G   => 4,
-            -- AXI Stream Port Configurations
-            SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
-            MASTER_AXI_CONFIG_G => RCEG3_AXIS_DMA_CONFIG_C)
-         port map (
-            -- Slave Port
-            sAxisClk    => axilClk,
-            sAxisRst    => axilRst,
-            sAxisMaster => hlsMasters(i),
-            sAxisSlave  => hlsSlaves(i),
-            -- Master Port
-            mAxisClk    => axilClk,
-            mAxisRst    => axilRst,
-            mAxisMaster => ssiMasters(i),
-            mAxisSlave  => ssiSlaves(i));
-
+      -- Packet FIFO
+      --------------              
       U_Fifo : entity work.AxiStreamFifoV2
          generic map (
             -- General Configurations
@@ -216,10 +174,7 @@ begin
             VALID_BURST_MODE_G  => true,
             -- FIFO configurations
             BRAM_EN_G           => true,
-            XIL_DEVICE_G        => "7SERIES",
-            USE_BUILT_IN_G      => false,
             GEN_SYNC_FIFO_G     => false,
-            CASCADE_SIZE_G      => 1,
             FIFO_ADDR_WIDTH_G   => 12,
             -- AXI Stream Port Configurations
             SLAVE_AXI_CONFIG_G  => RCEG3_AXIS_DMA_CONFIG_C,
@@ -228,8 +183,8 @@ begin
             -- Slave Port
             sAxisClk    => axilClk,
             sAxisRst    => axilRst,
-            sAxisMaster => ssiMasters(i),
-            sAxisSlave  => ssiSlaves(i),
+            sAxisMaster => hlsMasters(i),
+            sAxisSlave  => hlsSlaves(i),
             -- Master Port
             mAxisClk    => dmaClk,
             mAxisRst    => dmaRst,
@@ -258,10 +213,11 @@ begin
          axilWriteMaster => axilWriteMasters(WIB_SIZE_C),
          axilWriteSlave  => axilWriteSlaves(WIB_SIZE_C),
          -- HLS Interface (axilClk domain)
+         hlsRst          => hlsRst,
          ibHlsMasters    => ibHlsMasters,
          ibHlsSlaves     => ibHlsSlaves,
-         obHlsMasters    => obBufMasters,
-         obHlsSlaves     => obBufSlaves,
+         obHlsMasters    => obHlsMasters,
+         obHlsSlaves     => obHlsSlaves,
          hlsMasters      => hlsMasters,
          hlsSlaves       => hlsSlaves);
 

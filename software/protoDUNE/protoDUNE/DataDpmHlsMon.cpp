@@ -95,12 +95,20 @@ DataDpmHlsMon::DataDpmHlsMon(uint32_t linkConfig, uint32_t baseAddress, uint32_t
 	rl->getVariable()->setComp(0,1,0,"");
    rl->setPollEnable(true);      
 
+   addRegisterLink(rl = new RegisterLink("StatusRegister", baseAddress_ + 0x400, 1, 4,
+                                         "IbValid", Variable::Status, 0, 0x3,  
+                                         "IbReady", Variable::Status, 2, 0x3,  
+                                         "ObValid", Variable::Status, 4, 0x3,  
+                                         "ObReady", Variable::Status, 6, 0x3));    
+   rl->setPollEnable(true);  
+     
    addRegisterLink(rl = new RegisterLink("Blowoff",  baseAddress_ + 0x800, Variable::Configuration,0,0x3));
    rl->getVariable()->setDescription("true = blow off HLS output data, false = normal mode");  
    m_blowOff = rl;
    m_wrote   =  0;
    
-   addRegister(new Register("HardReset",    baseAddress_ + 0xFFC));
+   addRegister(new Register("HlsRst",    baseAddress_ + 0xFF8));
+   addRegister(new Register("HardReset", baseAddress_ + 0xFFC));   
 
    // Enable polling
    pollEnable_ = true;   
@@ -112,7 +120,33 @@ DataDpmHlsMon::~DataDpmHlsMon ( ) { }
 
 // command
 void DataDpmHlsMon::command(string name, string arg) {
-   Device::command(name, arg);
+   Register *r;
+   if (name == "HlsReset") {
+      REGISTER_LOCK
+      r = getRegister("HlsRst"); r->set(0x1); writeRegister(r, true);
+      REGISTER_UNLOCK
+   }
+   ///////////////////////////////////////////////////////////////////////////////////
+   // After executing the HlsReset, you "might" have to execute enableHLSmodule and 
+   //                               reload the HLS configurations
+   ///////////////////////////////////////////////////////////////////////////////////
+   //void DataCompression::enableHLSmodule (uint32_t addrSize)
+   //{
+   //   uint32_t address = baseAddress_ 
+   //                    + (XDUNEDATACOMPRESSIONCORE_BUS_A_ADDR_AP_CTRL>>2)*addrSize;   
+   // 
+   //   Register *r = new Register ("AxiLiteCtrl", address);
+   //   addRegister (r);
+   //
+   //   REGISTER_LOCK
+   //      r->set        (0x81); 
+   //      writeRegister (r, true); 
+   //      readRegister  (r);
+   //   REGISTER_UNLOCK     
+   //   
+   //   return;
+   //}   
+   ///////////////////////////////////////////////////////////////////////////////////
 }
 
 // Hard Reset
