@@ -20,6 +20,8 @@
 //
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2018.09.04 jjr Expose daqBuffer_ as public so can find the variables 
+//                in DataBuffer in the DaqBuffer class.
 // 2016.10.28 jjr Added history block, creation date, unknown
 //-----------------------------------------------------------------------------
 #ifndef __DATA_BUFFER_H__
@@ -144,9 +146,11 @@ public:
 
     void readStatus ( );
 
-private:
+public:
       // DAQ Handlers
       DaqBuffer       *daqBuffer_;
+
+private:
       StatusVariables         sv_;
       ConfigurationVariables  cv_;
 };

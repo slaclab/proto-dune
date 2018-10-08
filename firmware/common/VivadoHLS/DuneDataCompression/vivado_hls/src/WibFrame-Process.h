@@ -504,10 +504,10 @@ static void process_frame
    // Together with the first timestamp captured in the m_hdrsBuf[1],
    // it is used to define the time range of the packet.
    // ---------------------------------------------------------------
-   if (iframe > 1020)
-   {
-        std::cout << "Timestamp[" << std::hex << std::setw (3) << iframe << "] = " << d[1] << std::endl;
-   }
+   ///if (iframe > 1020)
+   ///{
+   ///     std::cout << "Timestamp[" << std::hex << std::setw (3) << iframe << "] = " << d[1] << std::endl;
+   ///}
    pktCtx.m_hdrsBuf[2] = d[1];
    pktCtx.m_chdx       = HdrLcl.m_hdx;
    pktCtx.m_cedx       = HdrLcl.m_edx;
@@ -648,6 +648,10 @@ static void process4 (AdcIn_t adcs0[PACKET_K_NSAMPLES],
    AdcIn_t adc1 = extract_adc1 (adcs4);
    AdcIn_t adc2 = extract_adc2 (adcs4);
    AdcIn_t adc3 = extract_adc3 (adcs4);
+
+
+   /// !!! KLUDGE !!! jjr 2018-09-19 try to induce the lockup
+   /// adc0 = 0x800 | (iframe & 1);
 
    // ----------------------------------------
    // Check if the frist sample in this packet

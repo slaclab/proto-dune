@@ -1,6 +1,11 @@
 # define firmware version
 export PRJ_VERSION = 0x00000056
 
+#       DATE    VERSION WHO  DESCRITPTION
+# ---------- ---------- ---  -------------------------------------------------
+# 2018/09/06 0x00000056 jjr  Incorporates the setting of the timing endpoint
+#                            address.
+
 # Define target output
 target: bit
 

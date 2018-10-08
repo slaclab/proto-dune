@@ -126,6 +126,25 @@ public:
 /* ---------------------------------------------------------------------- */
 
 
+/* ---------------------------------------------------------------------- */
+class APE_ovr
+{
+public:
+   APE_ovr () :
+      m_wrd (0),
+      m_vld (false)
+   {
+      return;
+    }
+
+public:
+   uint64_t m_wrd;  /*!< The packed overflow word */
+   bool     m_vld;  /*!< Is the word valid        */
+};
+/* ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------- */
 class APE_etxOut
 {
 public:
@@ -134,7 +153,10 @@ public:
 public:
    OStream               ha; /*!< Output bit array (histogram+ overflow)   */
    OStream               ba; /*!< Output bit array (encoded symbols        */
+   ////OverStream           boa; /*!< Overflow stream buffer                   */
+   ////OverStream           hoa; /*!< Dummy overflow histogram stream buffer   */
 };
+/* ---------------------------------------------------------------------- */
 
 
 /* ---------------------------------------------------------------------- *//*!
@@ -154,7 +176,6 @@ public:
   BitStream64           ha; /*!< The encoded histogram/overflow data      */
   BitStream64           ba; /*!< The encoded symbols                      */
   unsigned int    tofollow; /*!< Used when lo,hi straddle the .5 boundary */
-  int                nhist; /*!< Number of bits in the encoded histogram  */
 };
 /* ---------------------------------------------------------------------- */
 
@@ -177,9 +198,14 @@ APE_etxOut::APE_etxOut ()
    // Round these to 256 and 128
    #pragma HLS STREAM          variable=ha depth=512 dim=1
    #pragma HLS STREAM          variable=ba depth=256 dim=1
+ ///  #pragma HLS STREAM         variable=boa depth=32  dim=1
+ ///  #pragma HLS STREAM         variable=hoa depth=1 dim=1
 
    #pragma HLS RESOURCE        variable=ha.m_buf core=RAM_2P_LUTRAM
    #pragma HLS RESOURCE        variable=ba.m_buf core=RAM_2P_LUTRAM
+///   #pragma HLS RESOURCE       variable=boa.m_ovr core=RAM_2P_LUTRAM
+///   #pragma HLS RESOURCE       variable=hoa.m_ovr core=RAM_2P_LUTRAM
+
 
    return;
 }
@@ -205,16 +231,17 @@ class APE_checker
 public:
       APE_checker (int npending ) : m_npending (npending) { return; }
 
+      typedef uint64_t Bits_t;
 public:
       void        reduce (APE_cv const &cv);
-      bool        check  (APE_cv const &cv, int npending,  int nbits,  uint32_t bits);
-      static void put_bit_plus_pending (uint32_t &bits, bool      bit, int &npending);
+      bool        check  (APE_cv const &cv, int npending,  int nbits);
+      static void put_bit_plus_pending (Bits_t &bits, bool      bit, int &npending);
 
 public:
    uint16_t    m_low;  /*!< The reduced low  limit of the code value      */
    uint16_t   m_high;  /*!< The reduced high limit of the code value      */
    int    m_npending;  /*!< The old and new number of pending bits        */
-   uint32_t   m_bits;  /*!< The bit pattern resulting from the reduction  */
+   Bits_t     m_bits;  /*!< The bit pattern resulting from the reduction  */
    int       m_nbits;  /*!< The number of bits in the bit pattern         */
 };
 /* ---------------------------------------------------------------------- */
@@ -251,7 +278,15 @@ bool encode_check (APE_etxOut                         &etx,
 /* ---------------------------------------------------------------------- */
 /* LOCAL PROTOTYPES                                                       */
 /* ---------------------------------------------------------------------- */
-static inline uint64_t compose (APE_cv_t bits, int nbits, int npending);
+static inline int      output  (BitStream64 &bs,
+                                OStream    &out,
+                                APE_ovr    &ovr,
+ ///                               OverContext  &os,
+ ///                               OverStream &ovrstream,
+                                APE_cv_t   bits,
+                                int       nbits,
+                                int    npending);
+static inline uint64_t compose (APE_cv_t bits, int nbits, int &npending);
 /* ---------------------------------------------------------------------- */
 
 
@@ -291,8 +326,8 @@ static int inline APE_start (APE_etx &etx)
 
   \fn     unsigned int APE_finish (APE_etx *etx)
   \brief  Finishes the encoding by flushing out any currently buffered bits
-  \retval If > 0, the number of encoded bits.
-          If < 0, the number of bits needed to encode the final piece
+  \retval == If > 0, the number of encoded bits.
+             If < 0, the number of bits needed to encode the final piece
 
   \param  etx  The encoding context
 
@@ -308,17 +343,34 @@ static int inline APE_finish (APE_etxOut &etxOut, APE_etx &etx)
 
    int             tofollow = etx.tofollow + 1;
    ap_uint<1>           bit = etx.cv.m_lo >> (APC_K_NBITS - 2);
+   int               nshard = etx.ba.bidx ();
+   int                 nbuf = tofollow + nshard;
 
-   uint64_t buf = compose (bit, 1, tofollow);
-   etx.ba.insert  (etxOut.ba, buf, 1 + tofollow);
+   /*
+   uint64_t buf = etxOut.ba.compose (1, tofollow, nshard, bit);
+   uint32_t widx = etx.ba.widx ();
+   etxOut.ba.write (buf, widx);
+   etx.ba.m_ovrmsk.set (widx);
+   etx.ba.m_widx  += 1;
+   */
+   APE_ovr ovr;
+   output (etx.ba, etxOut.ba, ovr, bit, 1, tofollow);
 
-   etx.ba.transfer (etxOut.ba);
+   //uint64_t buf = compose (bit, 1, tofollow);
+   //etx.ba.insert  (etxOut.ba, buf, 1 + tofollow);
+
+   etx. ba.transfer (etxOut.ba);
+   ////etx.boa.transfer (etxOut.boa);
 
    //   printf ("Total bits = %u\n", etx->ba.m_idx);
-   // Return the number of bits
-   return etx.ba.m_idx;
+   // Return the number of bits to the output stream
+   // This is not the number of encoded bits, since this includes
+   // any overflow instructions
+   return (etx.ba.m_widx << 6) | etx.ba.m_bidx;
+
 }
 /* ---------------------------------------------------------------------- */
+
 
 
 
@@ -359,6 +411,7 @@ static int APE_encode  (APE_etxOut        &etxOut,
 {
    #pragma HLS INLINE off
    APE_etx etx;
+   APE_ovr over;
 
    Histogram::Table table[Histogram::NBins+1];
    APE_start (etx);
@@ -370,7 +423,6 @@ static int APE_encode  (APE_etxOut        &etxOut,
    // Setup the APE decoding context
    AdcIn_t prv = *syms++;
    hist.encode (etxOut.ha, etx.ha, table, prv);
-   etx.nhist = etx.ha.m_idx;   /// DEBUG
    ////APE_dumpStatement (hist.print (0));
 
 
@@ -524,26 +576,25 @@ static int APE_encode  (APE_etxOut        &etxOut,
        int     nebits;
        APE_dumpStatement (int npending_save = npending);
        //bool   finish = (idx == 0) || (nsyms == 1);
+
+       bits   = lo >> (lo.length () - nsame);
+       nebits = output (etx.ba, etxOut.ba, over, bits, nsame, npending);
+#if 0
        if (nsame) /// || finish)
        {
           bits  = lo >> (lo.length () - nsame);
 
-          APE_ENCODE_STUFF:
-#if 0
-          instruction->m_nbits    = nsame;
-          instruction->m_bits     = bits;
-          instruction->m_npending = npending;
-          instruction            += 1;
-#else
-          ebits  = compose (bits, nsame, npending);
-          nebits = nsame + npending;
-          etx.ba.insert  (etxOut.ba, ebits, nebits);
-#endif
+          nebits = output (etx.ba, etxOut.ba, over, bits, nsame, npending);
+
+          //ebits  = compose (bits, nsame, npending);
+          //nebits = nsame + npending;
+          //etx.ba.insert  (etxOut.ba, ebits, nebits);
+
           // -----------------------------------------------
           // If finishing up for either because we are done
           // or are encoding an overflow symbol.
           // -----------------------------------------------
-#if 0
+          #if 0
           if (finish)
           {
              ap_uint<1>  bit = etx.cv.m_lo >> (APC_K_NBITS - 2);
@@ -559,22 +610,32 @@ static int APE_encode  (APE_etxOut        &etxOut,
              cv.m_hi   = APC_K_HI;
              npending  = 0;
              continue;
-
+          }
           else
           {
              //APE_sharedStatement (ebits =) ba.insert (etxOut.ba, bits, nsame, npending);
              npending = mpending;
           }
-#else
+
+       #else
           npending = mpending;
-#endif
+        #endif
        }
-       else
+#endif
+       ///bits   = lo >> (lo.length () - nsame);
+       ///nebits = output (etx.ba, etxOut.ba, over, bits, nsame, npending);
+
+
+       if (nsame == 0)
        {
           APE_dumpStatement   (  bits = 0);
           APE_sharedStatement ( ebits = 0);
           APE_sharedStatement (nebits = 0);
           npending += mpending;
+       }
+       else
+       {
+          npending = mpending;
        }
 
 
@@ -597,7 +658,7 @@ static int APE_encode  (APE_etxOut        &etxOut,
        // ------------------------------
        APE_dumpStatement   (dump (1023 - nsyms, sym, cv_scaled, nsame, bits,
                                   npending_save, cv,    nebits, ebits));
-       APE_checkerStatement (chk.check (cv, npending, nebits, ebits));
+       APE_checkerStatement (chk.check (cv, npending, nebits));
    }
 
 
@@ -609,6 +670,140 @@ static int APE_encode  (APE_etxOut        &etxOut,
    APE_finish (etxOut, etx);
 
    return nsyms;
+}
+/* ---------------------------------------------------------------------- */
+
+
+
+
+/* ---------------------------------------------------------------------- *//*!
+ *
+ *  \brief Adds the bits to the output stream
+ *
+ *  \param[in:out]      out  The output stream
+ *  \param[    in]     bits  The bit pattern to add
+ *  \param[    in]    nbits  The number of bits in \a bits
+ *  \param[    in] npending  The number pending/carry bits
+ *
+\* ---------------------------------------------------------------------- */
+
+static inline int output (BitStream64  &bs,
+                          OStream &ostream,
+                          APE_ovr     &ovr,
+                          APE_cv_t    bits,
+                          int        nbits,
+                          int     npending)
+{
+   #pragma HLS PIPELINE
+   #pragma HLS INLINE
+
+
+   ///printf ("Bits: %4.4x(%2x:%2x) : %16.16llx %2x\n", bits.VAL, nbits, npending, (unsigned long long)(bs.m_cur), bs.m_bcnt.VAL);
+   int nbuf = npending + nbits;
+
+#if 0
+
+   uint64_t ebits = compose (bits, nbits, npending);
+   int     nebits = nbits + npending;
+   bs.insert (ostream, ebits, nebits);
+
+   ///printf ("Bits: %4.4x(%2x:%2x) : %16.16llx %2x\n", bits.VAL, nbits, npending, (unsigned long long)(bs.m_cur), bs.m_idx);
+   return nebits;
+
+#else
+
+   assert (nbits <= bits.length());
+
+   if (nbuf <= 64 && 0)
+   {
+      assert (nbuf <= 64);
+
+      uint64_t ebits = compose (bits, nbits, npending);
+      int     nebits  = nbits + npending;
+      bs.insert (ostream, ebits, nebits);
+
+       ///printf ("Bits: %4.4x(%2x:%2x) : %16.16llx %2x\n", bits.VAL, nbits, npending, (unsigned long long)(bs.m_cur), bs.m_idx);
+       return nebits;
+   }
+   else
+   {
+      if (ovr.m_vld)
+      {
+         bs.write (ostream, ovr.m_wrd);
+         ovr.m_vld  = false;
+
+         if (nbits)
+         {
+            bs.m_cur   = bits;
+            bs.m_bidx  = nbits;
+         }
+
+         return nbits;
+      }
+
+      else if (nbits == 0)
+      {
+         return 0;
+      }
+
+      else if (nbuf > 64)
+      {
+         // Too big
+         // Output a word containing the context
+         uint32_t widx = bs.widx ();
+         int      bidx = bs.bidx ();
+         bs.m_omsk.set (widx);
+         uint64_t wrd = BitStream64::compose (nbits, npending, bidx, bits);
+         bs.write (ostream, wrd);
+
+         // Push the current word (if any, into the pended output.
+         if (bidx)
+         {
+            ovr.m_wrd = bs.m_cur;
+            ovr.m_vld = true;
+         }
+      }
+
+      else
+      {
+         if (nbits == 0)
+         {
+            return 0;
+         }
+
+         uint64_t buf = 0;
+
+         // Check if any following bits
+         // These are either 0 or 1 depending on the sign of most significant bit in bits
+         if (npending)
+         {
+            nbits -= 1;
+            uint64_t leading_bit = bits[nbits];
+            buf =   leading_bit << (nbuf-1);
+            if (leading_bit == 0)
+            {
+               // Leading bit is 0, must insert 'to_follow' 1s
+               buf |= ((1LL << npending) - 1) << nbits;
+            }
+            else
+            {
+               // Leading bit is 1, must clear it
+               bits.clear (nbits); // ^= 1 << nbits;
+            }
+         }
+
+          buf |= bits;
+          bs.insert (ostream, buf, nbuf);
+      }
+
+   }
+
+   ////printf ("Bits: %4.4x(%2x:%2x) : %16.16llx %2x\n", bits.VAL, nbits, npending, (unsigned long long)(bs.m_cur), bs.m_idx);
+
+
+   return nbuf;
+#endif
+
 }
 /* ---------------------------------------------------------------------- */
 
@@ -632,7 +827,7 @@ static int APE_encode  (APE_etxOut        &etxOut,
  *  \a nbits + \a npending bits
  *
 \* ---------------------------------------------------------------------- */
-static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
+static inline uint64_t compose (APE_cv_t bits, int nbits, int &npending)
 {
    #pragma HLS PIPELINE
    #pragma HLS INLINE
@@ -650,7 +845,11 @@ static inline uint64_t compose (APE_cv_t bits, int nbits, int npending)
       if (npending + nbits > 64)
       {
          std::cout << "Too many bits " << npending << ':' << nbits << std::endl;
-         assert (npending + nbits <= 64);
+         //// !!! KLUDGE !!! remove to test what happens when there are two many bit
+         ///  assert (npending + nbits <= 64);
+
+         /// !!! KLUDGE !!! jjr 2018-09-18 -- see if this stops the lock-ups
+         //// npending = 0;  -- removed to cause lockup
       }
       else
       {
@@ -933,12 +1132,12 @@ inline void APE_cv::reduce_lo (APE_cvcnt_t nreduce)
  *  \param[inLout] npending  The number of npending bits, returned as 0
  *
 \* -------------------------------------------------------------------- */
-inline void APE_checker::put_bit_plus_pending (uint32_t &bits,
-                                               bool       bit,
-                                               int  &npending)
+inline void APE_checker::put_bit_plus_pending (APE_checker::Bits_t &bits,
+                                               bool                  bit,
+                                               int            &npending)
 {
    bits <<= 1;
-   if (bit) bits |= 1;
+   if (bit) bits |= Bits_t(1);
    for ( int i = 0 ; i < npending ; i++ )
    {
       bits <<= 1;
@@ -969,11 +1168,12 @@ inline void APE_checker::put_bit_plus_pending (uint32_t &bits,
  \* ---------------------------------------------------------------------- */
 void APE_checker::reduce (APE_cv const &cv)
 {
-   uint32_t     low = cv.m_lo;
-   uint32_t    high = cv.m_hi;
-   uint32_t    bits = 0;
-   int        nbits = 0;
-   int     npending = m_npending;
+   static int Count = 0;
+   uint32_t      low = cv.m_lo;
+   uint32_t     high = cv.m_hi;
+   Bits_t       bits = 0;
+   int         nbits = 0;
+   int      npending = m_npending;
 
    while (1)
    {
@@ -1047,21 +1247,18 @@ void APE_checker::reduce (APE_cv const &cv)
  *         sophisticated methods match.
  *
  *  \param[in]       cv The code value low and high limits to check
- *  \param[in] npending The number of pending bits to check
- *  \param[in]    nbits the number of bits to check
- *  \param[in]      bit The bit pattern to check
+ *  \param[in] npending The number of pending bits
+ *  \param[in]    nbits the number of output bits
  *
 \* ----------------------------------------------------------------------- */
 bool APE_checker::check (APE_cv const &cv,
                          int     npending,
-                         int        nbits,
-                         uint32_t    bits)
+                         int        nbits)
 {
    if ( (m_npending != npending) ||
-        (m_low      != cv.m_lo)   ||
-        (m_high     != cv.m_hi)   ||
-        (m_nbits    !=   nbits)   ||
-        (m_bits     !=    bits))
+        (m_low      != cv.m_lo)  ||
+        (m_high     != cv.m_hi)  ||
+        (m_nbits    !=   nbits))
    {
       std::cout << "ERROR" << std::endl;
       return false;

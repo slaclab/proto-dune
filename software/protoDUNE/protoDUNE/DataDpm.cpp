@@ -17,6 +17,11 @@
 // Proprietary and confidential to SLAC.
 //-----------------------------------------------------------------------------
 // Modification history :
+//
+//       DATE WHO WHAT
+// ---------- --- -------------------------------------------------------
+// 2018.09.04 jjr Expose HLS monitor so DaqBuffer can query the state of 
+//                the DataDpmHLsMon blowoff mask.
 // 06/19/2014: created
 //-----------------------------------------------------------------------------
 
@@ -33,6 +38,7 @@
 #include <Command.h>
 
 #include <DataDpm.h>
+#include <DaqBuffer.h>
 
 #include <DataBuffer.h>
 #include <RceCommon.h>
@@ -71,6 +77,9 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    addDevice(m_dataBuffer  = new DataBuffer(linkConfig, 0, this));
    m_dataBuffer->pollEnable(true);
 
+
+   DataDpmHlsMon *hls;
+
    addDevice(m_rceCommon = new RceCommon (linkConfig, 0, this));
    m_rceCommon->pollEnable(false);
 
@@ -83,7 +92,7 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    // RCE Firmware Devices
    addDevice(d = new DataCompression(linkConfigApp, 0xA0000000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataCompression(linkConfigApp, 0xA0010000, 1, this, 4));d->pollEnable(true);
-   addDevice(d = new DataDpmHlsMon(  linkConfigApp, 0xA0020000, 0, this, 4));d->pollEnable(true);
+   addDevice(hls = new DataDpmHlsMon(  linkConfigApp, 0xA0020000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataDpmWib(     linkConfigApp, 0xA1000000, 0, this, 4));d->pollEnable(true);
    addDevice(d = new DataDpmWib(     linkConfigApp, 0xA1010000, 1, this, 4));d->pollEnable(true);
    //addDevice(d = new DataDpmWibDbg(linkConfigApp, 0xA1020000, 0, this, 4));d->pollEnable(true);
@@ -94,6 +103,10 @@ DataDpm::DataDpm ( uint32_t linkConfig, uint32_t index, Device *parent ) :
    addDevice(d = new RssiReg(        linkConfigApp, 0xA4010000, 0, this, 4));d->pollEnable(false); d->hideAllCommands(); d->pollEnable(true);
    //addDevice(d = new PrbsTx(       linkConfigApp, 0xA4020000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
    //addDevice(d = new PrbsRx(       linkConfigApp, 0xA4030000, 0, this, 4));d->pollEnable(true); d->hideAllVariables(); d->hideAllCommands();
+
+
+   DaqBuffer *daqBuffer = m_dataBuffer->daqBuffer_;
+   daqBuffer->setDataDpmHlsMon (hls);
 }
 
 // Deconstructor

@@ -20,6 +20,8 @@
 //
 //       DATE WHO WHAT
 // ---------- --- -------------------------------------------------------
+// 2018.10.03 jjr Changed from_usecs to return a 64-bit value allowing
+//                one to convert a period > 32 bits (i.e. ~4.2 seconds)
 // 2018.07.24 jjr Separated from DaqBuffer.h
 // ----------------------------------------------------------------------
 
@@ -62,9 +64,10 @@ public:
       \param[in] period  The period, in usecs, to convert
                                                                           */
    /* ------------------------------------------------------------------- */
-   constexpr static inline uint32_t from_usecs (uint32_t period)
+   constexpr static inline uint64_t from_usecs (uint32_t period)
    {
-      return (1000 * period + CLOCK_PERIOD/2) / CLOCK_PERIOD;
+      return (1000 * static_cast<uint64_t>(period) + CLOCK_PERIOD/2) 
+            / CLOCK_PERIOD;
    }
    /* ------------------------------------------------------------------- */
 };

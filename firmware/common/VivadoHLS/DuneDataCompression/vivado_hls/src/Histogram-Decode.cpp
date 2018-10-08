@@ -83,7 +83,7 @@ static bool hist_check (int                                        ihist,
          if (!okay) break;
       }
   #else
-      int cnt = (ostream.m_cidx + 63) >> 6;
+      int cnt = (ebits + 63) >> 6;
       for (idx = 0; idx < cnt; idx++)
       {
          buf[idx] = ostream.read (idx);

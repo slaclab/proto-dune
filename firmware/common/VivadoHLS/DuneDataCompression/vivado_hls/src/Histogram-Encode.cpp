@@ -174,7 +174,7 @@ void Histogram::encode (OStream &ostream, BitStream64 &bs64, Table table[NBins+1
 
    // DEBUGGING ONLY STREAM
    HIST_ENCODE_CHECK_statement (OStream     CheckStream ("Hist");)
-   HIST_ENCODE_CHECK_statement (BitStream64 CheckBs64; CheckBs64.m_idx = 0; )
+   HIST_ENCODE_CHECK_statement (BitStream64 CheckBs64; /*CheckBs64.m_bcnt = 0; */)
 
 
    // Debug only
@@ -256,6 +256,9 @@ void Histogram::encode (OStream &ostream, BitStream64 &bs64, Table table[NBins+1
    // DEBUG
    #if HIST_ENCODE_CHECK
    {
+      // flushAndCount can only be used when debugging
+      // It does an increment on the word index (read/modify/write) which
+      // is not allowed in a dataflow producer/consumer construct
       int ebits = CheckBs64.flush (CheckStream);
       hist_check (m_id, CheckStream, ebits, m_bins, m_omask, first, nobits);
    }
