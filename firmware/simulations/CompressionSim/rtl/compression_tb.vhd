@@ -50,10 +50,12 @@ architecture compression_tb of compression_tb is
    signal enableTx     : sl;
    signal enableTrig   : sl;
    signal sendCnt      : sl;
-   signal chNoiseCgf   : Slv3Array(127 downto 0);
-   signal cmNoiseCgf   : slv(2 downto 0);
+   signal chNoiseCgf   : Slv4Array(127 downto 0);
+   signal cmNoiseCgf   : slv(3 downto 0);
    signal chDlyCfg     : EmuDlyCfg;
    signal convt        : sl;
+   signal adcDataF     : Slv12Array(127 downto 0);
+   signal adcDataE     : Slv12Array(127 downto 0);
    signal adcData      : Slv12Array(127 downto 0);
    signal adcDataDly   : Slv12Array(127 downto 0);
    signal adcDataDlyCM : Slv12Array(127 downto 0);
@@ -148,7 +150,7 @@ begin
       enableTx        <= '0';
       enableTrig      <= '0';
       chNoiseCgf      <= (others=>(others=>'0'));
-      cmNoiseCgf      <= "011";
+      cmNoiseCgf      <= "1011";
       chDlyCfg        <= (others => (others => '0'));
       axilWriteMaster <= AXI_LITE_WRITE_MASTER_INIT_C;
       axilReadMaster  <= AXI_LITE_READ_MASTER_INIT_C;
@@ -175,7 +177,7 @@ begin
    -- Emulator
    ------------------------------------------
 
-   U_DataGen : entity work.ProtoDuneDpmEmuData
+   U_DataEmu : entity work.ProtoDuneDpmEmuData
       generic map ( TPD_G => TPD_C)
       port map (
          -- Clock and Reset
@@ -189,7 +191,21 @@ begin
          chNoiseCgf => chNoiseCgf,
          timingTrig => '0',
          cmNoise    => cmNoise,
-         adcData    => adcData);
+         adcData    => adcDataE);
+
+   U_DataFile : entity work.ProtoDuneFileData
+      generic map ( TPD_G => TPD_C)
+      port map (
+         -- Clock and Reset
+         clk        => emuClk,
+         rst        => emuRst,
+         -- EMU Data Interface
+         enableTx   => enableTx,
+         convt      => convt,
+         cmNoise    => cmNoise,
+         adcData    => adcDataF);
+
+   adcData <= adcDataF;
 
    ----------------
    -- Delay Modules
