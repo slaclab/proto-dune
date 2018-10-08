@@ -5,10 +5,11 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x00000119
+export PRJ_VERSION = 0x0000011A
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/10/08  0x0000119 rth  Remove pre-dma frame filter.(test)
 # 2018/10/04  0x0000119 jjr  Clean build of 0x118 with code that will be
 #                            checked in
 # 2018/09/30  0x0000118 jjr  Builds on 117, but corrects an error in the

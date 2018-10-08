@@ -147,18 +147,20 @@ begin
       -------------------    
       -- Filter Out Drops
       -------------------    
-      U_Filter : entity work.DuneDataCompressionFilter
-         generic map (
-            TPD_G => TPD_G)
-         port map (
-            -- Clock and Reset
-            axisClk     => axilClk,
-            axisRst     => axilRst,
-            -- Inbound Interface
-            sAxisMaster => obMasters(i),
-            -- Outbound Interface
-            mAxisMaster => obHlsMasters(i),
-            mAxisSlave  => obHlsSlaves(i));
+--      U_Filter : entity work.DuneDataCompressionFilter
+--         generic map (
+--            TPD_G => TPD_G)
+--         port map (
+--            -- Clock and Reset
+--            axisClk     => axilClk,
+--            axisRst     => axilRst,
+--            -- Inbound Interface
+--            sAxisMaster => obMasters(i),
+--            -- Outbound Interface
+--            mAxisMaster => obHlsMasters(i),
+--            mAxisSlave  => obHlsSlaves(i));
+
+      obHlsMasters(i) <= obMasters(i);
 
       --------------
       -- Packet FIFO
