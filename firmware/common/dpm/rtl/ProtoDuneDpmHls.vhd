@@ -141,11 +141,8 @@ begin
             sAxisMaster     => ibHlsMasters(i),
             sAxisSlave      => ibHlsSlaves(i),
             -- Outbound Interface
-            --mAxisMaster     => obMasters(i),
-            mAxisMaster     => open,
+            mAxisMaster     => obMasters(i),
             mAxisSlave      => AXI_STREAM_SLAVE_FORCE_C);  -- Never back pressure the HLS module
-
-      obMasters(i) <= AXI_STREAM_MASTER_INIT_C;
 
       -------------------    
       -- Filter Out Drops
@@ -244,7 +241,11 @@ begin
          sAxisMasters => dmaIbMasters,
          sAxisSlaves  => dmaIbSlaves,
          -- Master
-         mAxisMaster  => dmaIbMaster,
+         --mAxisMaster  => dmaIbMaster,
+         --mAxisSlave   => dmaIbSlave);
+         mAxisMaster  => open,
          mAxisSlave   => dmaIbSlave);
+
+   dmaIbMaster <= AXI_STREAM_MASTER_INIT_C;
 
 end mapping;
