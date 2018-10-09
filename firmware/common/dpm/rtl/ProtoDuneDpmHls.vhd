@@ -141,26 +141,27 @@ begin
             sAxisMaster     => ibHlsMasters(i),
             sAxisSlave      => ibHlsSlaves(i),
             -- Outbound Interface
-            mAxisMaster     => obMasters(i),
+            --mAxisMaster     => obMasters(i),
+            mAxisMaster     => open,
             mAxisSlave      => AXI_STREAM_SLAVE_FORCE_C);  -- Never back pressure the HLS module
+
+      obMasters(i) <= AXI_STREAM_MASTER_INIT_C;
 
       -------------------    
       -- Filter Out Drops
       -------------------    
---      U_Filter : entity work.DuneDataCompressionFilter
---         generic map (
---            TPD_G => TPD_G)
---         port map (
---            -- Clock and Reset
---            axisClk     => axilClk,
---            axisRst     => axilRst,
---            -- Inbound Interface
---            sAxisMaster => obMasters(i),
---            -- Outbound Interface
---            mAxisMaster => obHlsMasters(i),
---            mAxisSlave  => obHlsSlaves(i));
-
-      obHlsMasters(i) <= obMasters(i);
+      U_Filter : entity work.DuneDataCompressionFilter
+         generic map (
+            TPD_G => TPD_G)
+         port map (
+            -- Clock and Reset
+            axisClk     => axilClk,
+            axisRst     => axilRst,
+            -- Inbound Interface
+            sAxisMaster => obMasters(i),
+            -- Outbound Interface
+            mAxisMaster => obHlsMasters(i),
+            mAxisSlave  => obHlsSlaves(i));
 
       --------------
       -- Packet FIFO
