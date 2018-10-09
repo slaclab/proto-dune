@@ -241,11 +241,7 @@ begin
          sAxisMasters => dmaIbMasters,
          sAxisSlaves  => dmaIbSlaves,
          -- Master
-         --mAxisMaster  => dmaIbMaster,
-         --mAxisSlave   => dmaIbSlave);
-         mAxisMaster  => open,
+         mAxisMaster  => dmaIbMaster,
          mAxisSlave   => dmaIbSlave);
-
-   dmaIbMaster <= AXI_STREAM_MASTER_INIT_C;
 
 end mapping;

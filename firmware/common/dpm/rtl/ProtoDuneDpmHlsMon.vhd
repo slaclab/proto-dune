@@ -62,7 +62,7 @@ architecture rtl of ProtoDuneDpmHlsMon is
    constant REG_INIT_C : RegType := (
       blowoff        => (others => '1'),
       hardRst        => '0',
-      hlsRst         => '0',
+      hlsRst         => '1',
       axilReadSlave  => AXI_LITE_READ_SLAVE_INIT_C,
       axilWriteSlave => AXI_LITE_WRITE_SLAVE_INIT_C);
 
