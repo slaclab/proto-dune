@@ -157,8 +157,11 @@ begin
             -- Inbound Interface
             sAxisMaster => obMasters(i),
             -- Outbound Interface
-            mAxisMaster => obHlsMasters(i),
+            -- mAxisMaster => obHlsMasters(i),
+            mAxisMaster => open,
             mAxisSlave  => obHlsSlaves(i));
+
+       obHlsMasters(i) <= AXI_STREAM_MASTER_INIT_C;
 
       --------------
       -- Packet FIFO
