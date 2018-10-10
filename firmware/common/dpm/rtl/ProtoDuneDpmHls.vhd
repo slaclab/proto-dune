@@ -157,11 +157,8 @@ begin
             -- Inbound Interface
             sAxisMaster => obMasters(i),
             -- Outbound Interface
-            -- mAxisMaster => obHlsMasters(i),
-            mAxisMaster => open,
+            mAxisMaster => obHlsMasters(i),
             mAxisSlave  => obHlsSlaves(i));
-
-       obHlsMasters(i) <= AXI_STREAM_MASTER_INIT_C;
 
       --------------
       -- Packet FIFO
@@ -221,8 +218,11 @@ begin
          ibHlsSlaves     => ibHlsSlaves,
          obHlsMasters    => obHlsMasters,
          obHlsSlaves     => obHlsSlaves,
-         hlsMasters      => hlsMasters,
+         --hlsMasters      => hlsMasters,
+         hlsMasters      => open,
          hlsSlaves       => hlsSlaves);
+
+   hlsMasters <= (others=>AXI_STREAM_MASTER_INIT_C);
 
    --------------
    -- MUX Module
