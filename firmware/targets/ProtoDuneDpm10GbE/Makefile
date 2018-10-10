@@ -11,7 +11,6 @@ export PRJ_VERSION = 0x0000011F
 # ---------- ---------- ---  -------------------------------------------------
 # 2018/10/08  0x000011F rth  Drop after packet FIFO
 # 2018/10/08  0x000011E rth  Drop after HLS monitor
-# 2018/10/08  0x000011E rth  Drop after HLS monitor
 # 2018/10/08  0x000011D rth  Drop after compression filter
 # 2018/10/08  0x000011C rth  Adding reset
 # 2018/10/08  0x000011B rth  Nothing to makefile
