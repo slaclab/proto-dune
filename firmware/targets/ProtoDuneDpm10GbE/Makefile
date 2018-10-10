@@ -5,10 +5,12 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x0000011E
+export PRJ_VERSION = 0x0000011F
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/10/08  0x000011F rth  Drop after packet FIFO
+# 2018/10/08  0x000011E rth  Drop after HLS monitor
 # 2018/10/08  0x000011E rth  Drop after HLS monitor
 # 2018/10/08  0x000011D rth  Drop after compression filter
 # 2018/10/08  0x000011C rth  Adding reset

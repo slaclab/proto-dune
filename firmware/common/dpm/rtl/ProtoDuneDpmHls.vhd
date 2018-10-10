@@ -188,8 +188,11 @@ begin
             -- Master Port
             mAxisClk    => dmaClk,
             mAxisRst    => dmaRst,
-            mAxisMaster => dmaIbMasters(i),
+            --mAxisMaster => dmaIbMasters(i),
+            mAxisMaster => open,
             mAxisSlave  => dmaIbSlaves(i));
+
+      dmaIbMasters(i) <= AXI_STREAM_MASTER_INIT_C;
 
    end generate GEN_LINK;
 
@@ -218,11 +221,8 @@ begin
          ibHlsSlaves     => ibHlsSlaves,
          obHlsMasters    => obHlsMasters,
          obHlsSlaves     => obHlsSlaves,
-         --hlsMasters      => hlsMasters,
-         hlsMasters      => open,
+         hlsMasters      => hlsMasters,
          hlsSlaves       => hlsSlaves);
-
-   hlsMasters <= (others=>AXI_STREAM_MASTER_INIT_C);
 
    --------------
    -- MUX Module
