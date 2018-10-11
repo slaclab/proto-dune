@@ -45,7 +45,7 @@ entity ProtoDuneDpmHlsMon is
       ibHlsMasters    : in  AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
       ibHlsSlaves     : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
       obHlsMasters    : in  AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-      obHlsSlaves     : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
+      obHlsSlaves     : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0));
 end ProtoDuneDpmHlsMon;
 
 architecture rtl of ProtoDuneDpmHlsMon is
