@@ -30,6 +30,7 @@ entity DuneDataCompressionFilter is
       -- Clock and Reset
       axisClk     : in  sl;
       axisRst     : in  sl;
+      blowoff     : in  sl;
       -- Inbound Interface
       sAxisMaster : in  AxiStreamMasterType;
       -- Outbound Interface
@@ -50,14 +51,14 @@ architecture rtl of DuneDataCompressionFilter is
 
    constant REG_INIT_C : RegType := (
       mAxisMaster => AXI_STREAM_MASTER_INIT_C,
-      state       => MOVE_S);
+      state       => BLOWOFF_S);
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
 
 begin
 
-   comb : process (axisRst, mAxisSlave, r, sAxisMaster) is
+   comb : process (axisRst, mAxisSlave, r, sAxisMaster, blowoff) is
       variable v : RegType;
    begin
       -- Latch the current value
@@ -77,7 +78,7 @@ begin
             -- Check for new data
             if (sAxisMaster.tValid = '1') then
                -- Check if ready to move data
-               if (v.mAxisMaster.tValid = '0') then
+               if (v.mAxisMaster.tValid = '0' or blowoff = '1' ) then
                   -- Forward the data
                   v.mAxisMaster := sAxisMaster;
                else
@@ -92,7 +93,7 @@ begin
          ----------------------------------------------------------------------
          when BLOWOFF_S =>
             -- Check for last transfer to move data and ready for SOF in next cycle
-            if (sAxisMaster.tValid = '1') and (sAxisMaster.tLast = '1') and (v.mAxisMaster.tValid = '0') then
+            if (blowoff = '0') and (sAxisMaster.tValid = '1') and (sAxisMaster.tLast = '1') and (v.mAxisMaster.tValid = '0') then
                -- Next state
                v.state := MOVE_S;
             end if;

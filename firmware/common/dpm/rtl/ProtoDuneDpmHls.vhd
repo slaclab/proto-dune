@@ -69,11 +69,10 @@ architecture mapping of ProtoDuneDpmHls is
    signal obHlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
    signal obHlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
 
-   signal hlsMasters : AxiStreamMasterArray(WIB_SIZE_C-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
-   signal hlsSlaves  : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
-
    signal dmaIbMasters : AxiStreamMasterArray(WIB_SIZE_C downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
    signal dmaIbSlaves  : AxiStreamSlaveArray(WIB_SIZE_C downto 0)  := (others => AXI_STREAM_SLAVE_FORCE_C);
+
+   signal blowoff : slv(WIB_SIZE_C-1 downto 0);
 
    signal hlsRst   : sl;
    signal hlsReset : sl;
@@ -84,8 +83,6 @@ architecture mapping of ProtoDuneDpmHls is
    attribute dont_touch of obMasters    : signal is "TRUE";
    attribute dont_touch of obHlsMasters : signal is "TRUE";
    attribute dont_touch of obHlsSlaves  : signal is "TRUE";
-   attribute dont_touch of hlsMasters   : signal is "TRUE";
-   attribute dont_touch of hlsSlaves    : signal is "TRUE";
    attribute dont_touch of dmaIbMasters : signal is "TRUE";
    attribute dont_touch of dmaIbSlaves  : signal is "TRUE";
 
@@ -154,6 +151,7 @@ begin
             -- Clock and Reset
             axisClk     => axilClk,
             axisRst     => axilRst,
+            blowoff     => blowoff(i),
             -- Inbound Interface
             sAxisMaster => obMasters(i),
             -- Outbound Interface
@@ -183,8 +181,8 @@ begin
             -- Slave Port
             sAxisClk    => axilClk,
             sAxisRst    => axilRst,
-            sAxisMaster => hlsMasters(i),
-            sAxisSlave  => hlsSlaves(i),
+            sAxisMaster => obHlsMasters(i),
+            sAxisSlave  => obHlsSlaves(i),
             -- Master Port
             mAxisClk    => dmaClk,
             mAxisRst    => dmaRst,
@@ -217,12 +215,11 @@ begin
          axilWriteSlave  => axilWriteSlaves(WIB_SIZE_C),
          -- HLS Interface (axilClk domain)
          hlsRst          => hlsRst,
+         blowoff         => blowoff,
          ibHlsMasters    => ibHlsMasters,
          ibHlsSlaves     => ibHlsSlaves,
          obHlsMasters    => obHlsMasters,
-         obHlsSlaves     => obHlsSlaves,
-         hlsMasters      => hlsMasters,
-         hlsSlaves       => hlsSlaves);
+         obHlsSlaves     => obHlsSlaves);
 
    --------------
    -- MUX Module

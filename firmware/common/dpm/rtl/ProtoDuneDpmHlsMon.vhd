@@ -41,12 +41,11 @@ entity ProtoDuneDpmHlsMon is
       axilWriteSlave  : out AxiLiteWriteSlaveType;
       -- HLS Interface (axilClk domain)
       hlsRst          : out sl;
+      blowoff         : out slv(WIB_SIZE_C-1 downto 0);
       ibHlsMasters    : in  AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
       ibHlsSlaves     : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
       obHlsMasters    : in  AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-      obHlsSlaves     : out AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
-      hlsMasters      : out AxiStreamMasterArray(WIB_SIZE_C-1 downto 0);
-      hlsSlaves       : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0));
+      obHlsSlaves     : in  AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 end ProtoDuneDpmHlsMon;
 
 architecture rtl of ProtoDuneDpmHlsMon is
@@ -75,8 +74,6 @@ architecture rtl of ProtoDuneDpmHlsMon is
 
    signal obFrameRate : Slv32Array(WIB_SIZE_C-1 downto 0);
    signal obBandwidth : Slv64Array(WIB_SIZE_C-1 downto 0);
-
-   signal slaves : AxiStreamSlaveArray(WIB_SIZE_C-1 downto 0);
 
    attribute dont_touch      : string;
    attribute dont_touch of r : signal is "TRUE";
@@ -117,22 +114,18 @@ begin
             axisClk    => axilClk,
             axisRst    => axilRst,
             axisMaster => obHlsMasters(i),
-            axisSlave  => slaves(i),
+            axisSlave  => obHlsSlaves(i),
             -- Status Interface
             statusClk  => axilClk,
             statusRst  => axilRst,
             frameRate  => obFrameRate(i),
             bandwidth  => obBandwidth(i));
 
-      hlsMasters(i)  <= obHlsMasters(i) when(r.blowoff(i) = '0') else SSI_MASTER_FORCE_EOFE_C;
-      slaves(i)      <= hlsSlaves(i)    when(r.blowoff(i) = '0') else AXI_STREAM_SLAVE_FORCE_C;
-      obHlsSlaves(i) <= slaves(i);
-
    end generate GEN_LINK;
 
    comb : process (axilReadMaster, axilRst, axilWriteMaster, ibBandwidth,
                    ibFrameRate, ibHlsMasters, ibHlsSlaves, obBandwidth,
-                   obFrameRate, obHlsMasters, r, slaves) is
+                   obFrameRate, obHlsMasters, r, obHlsSlaves) is
       variable v      : RegType;
       variable regCon : AxiLiteEndPointType;
    begin
@@ -165,8 +158,8 @@ begin
       axiSlaveRegisterR(regCon, x"400", 3, ibHlsSlaves(1).tReady);
       axiSlaveRegisterR(regCon, x"400", 4, obHlsMasters(0).tValid);
       axiSlaveRegisterR(regCon, x"400", 5, obHlsMasters(1).tValid);
-      axiSlaveRegisterR(regCon, x"400", 6, slaves(0).tReady);
-      axiSlaveRegisterR(regCon, x"400", 7, slaves(1).tReady);
+      axiSlaveRegisterR(regCon, x"400", 6, obHlsSlaves(0).tReady);
+      axiSlaveRegisterR(regCon, x"400", 7, obHlsSlaves(1).tReady);
 
       -- Map the write registers
       axiSlaveRegister(regCon, x"800", 0, v.blowoff);
@@ -188,6 +181,7 @@ begin
       axilWriteSlave <= r.axilWriteSlave;
       axilReadSlave  <= r.axilReadSlave;
       hlsRst         <= r.hlsRst;
+      blowoff        <= r.blowoff;
 
    end process comb;
 
