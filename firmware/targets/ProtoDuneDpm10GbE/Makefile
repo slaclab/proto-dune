@@ -9,6 +9,7 @@ export PRJ_VERSION = 0x00000120
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
+# 2018/10/11  0x0000121 rth  Remove force on master. Normal data flow (previous was mistake)
 # 2018/10/08  0x0000120 rth  Fix blowoff mode, normal data flow
 # 2018/10/08  0x000011F rth  Drop after packet FIFO
 # 2018/10/08  0x000011E rth  Drop after HLS monitor

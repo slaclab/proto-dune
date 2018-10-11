@@ -186,11 +186,8 @@ begin
             -- Master Port
             mAxisClk    => dmaClk,
             mAxisRst    => dmaRst,
-            --mAxisMaster => dmaIbMasters(i),
-            mAxisMaster => open,
+            mAxisMaster => dmaIbMasters(i),
             mAxisSlave  => dmaIbSlaves(i));
-
-      dmaIbMasters(i) <= AXI_STREAM_MASTER_INIT_C;
 
    end generate GEN_LINK;
 
