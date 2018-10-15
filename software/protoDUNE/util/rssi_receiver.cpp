@@ -37,6 +37,7 @@
   
    DATE       WHO WHAT
    ---------- --- ---------------------------------------------------------
+   2018.10.11 jjr Added 'true' to rogue::protocols::packetizer::Core::create
    2018.06.05 jjr Added documentation/history header.
                   Modified the copying/accessing of the data in acceptFrame
                   to use a faster access.  This allowed the rate to go to
@@ -885,7 +886,7 @@ RssiConnection::RssiConnection (char const *ip, int nframes)
 
    // Packetizer, ibCrc = false, obCrc = true
    ///m_pack = rogue::protocols::packetizer::CoreV2::create(false,true);
-   m_pack = rogue::protocols::packetizer::Core::create();
+   m_pack = rogue::protocols::packetizer::Core::create (true);
 
 
    // Connect the RSSI engine to the UDP client
