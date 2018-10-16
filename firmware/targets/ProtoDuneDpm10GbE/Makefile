@@ -5,11 +5,18 @@ target: bit
 export PRJ_PART = XC7Z045FFG900-2
 
 # define firmware version
-export PRJ_VERSION = 0x0000011A
+export PRJ_VERSION = 0x00000121
 
 #       DATE    VERSION WHO  DESCRITPTION
 # ---------- ---------- ---  -------------------------------------------------
-# 2018/10/08  0x0000119 rth  Remove pre-dma frame filter.(test)
+# 2018/10/11  0x0000121 rth  Remove force on master. Normal data flow (previous was mistake)
+# 2018/10/08  0x0000120 rth  Fix blowoff mode, normal data flow
+# 2018/10/08  0x000011F rth  Drop after packet FIFO
+# 2018/10/08  0x000011E rth  Drop after HLS monitor
+# 2018/10/08  0x000011D rth  Drop after compression filter
+# 2018/10/08  0x000011C rth  Adding reset
+# 2018/10/08  0x000011B rth  Nothing to makefile
+# 2018/10/08  0x000011A rth  Remove pre-dma frame filter.(test)
 # 2018/10/04  0x0000119 jjr  Clean build of 0x118 with code that will be
 #                            checked in
 # 2018/09/30  0x0000118 jjr  Builds on 117, but corrects an error in the
